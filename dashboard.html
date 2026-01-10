@@ -2,30 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard</title>
+  <title>Deposit Addresses</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Supabase CDN -->
+  <!-- Supabase CDN (v2) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      background: #0f172a;
+      background: linear-gradient(180deg, #020617, #020617);
       color: #e5e7eb;
-      padding: 20px;
+      padding: 24px;
     }
 
     h1 {
-      margin-bottom: 20px;
-    }
-
-    .card {
-      background: #020617;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .loading {
@@ -34,6 +27,21 @@
 
     .error {
       color: #f87171;
+    }
+
+    .card {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    code {
+      word-break: break-all;
+      display: block;
+      margin-top: 6px;
+      color: #a5f3fc;
     }
   </style>
 </head>
@@ -46,12 +54,12 @@
   </div>
 
   <script>
-    // ✅ Supabase credentials (PUBLIC anon key)
+    // ✅ Correct Supabase client usage
     const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-    const supabase = supabaseJs.createClient(
+    const client = supabase.createClient(
       SUPABASE_URL,
       SUPABASE_ANON_KEY
     );
@@ -59,16 +67,13 @@
     async function loadDepositAddresses() {
       const container = document.getElementById("deposit-list");
 
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("deposit_addresses")
-        .select("id, asset, network, address");
-
-      console.log("Supabase data:", data);
-      console.log("Supabase error:", error);
+        .select("*");
 
       if (error) {
         container.innerHTML =
-          "<div class='error'>Error loading data: " + error.message + "</div>";
+          "<div class='error'>Error: " + error.message + "</div>";
         return;
       }
 
@@ -85,7 +90,7 @@
         div.innerHTML = `
           <strong>Asset:</strong> ${row.asset.toUpperCase()}<br>
           <strong>Network:</strong> ${row.network}<br>
-          <strong>Address:</strong><br>
+          <strong>Address:</strong>
           <code>${row.address}</code>
         `;
         container.appendChild(div);
