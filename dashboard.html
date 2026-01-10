@@ -19,30 +19,25 @@
       --success: #22c55e;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: radial-gradient(circle at top, #020617, #020617);
+      background: #020617;
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       padding: 20px;
     }
 
-    header {
-      margin-bottom: 24px;
-    }
-
-    header h1 {
+    h1 {
       font-size: 24px;
       margin-bottom: 6px;
     }
 
-    header p {
+    p {
       color: var(--muted);
       font-size: 14px;
+      margin-bottom: 20px;
     }
 
     .grid {
@@ -52,30 +47,14 @@
     }
 
     .card {
-      background: linear-gradient(180deg, #020617, #020617);
+      background: #020617;
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 18px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(120deg, transparent, rgba(56,189,248,0.08), transparent);
-      opacity: 0;
-      transition: opacity .3s;
-    }
-
-    .card:hover::before {
-      opacity: 1;
     }
 
     .network {
       display: inline-block;
-      background: #020617;
       border: 1px solid var(--border);
       color: var(--primary);
       padding: 4px 12px;
@@ -111,45 +90,23 @@
       font-weight: 700;
       border-radius: 12px;
       cursor: pointer;
-      transition: transform .15s, opacity .15s;
-    }
-
-    button:active {
-      transform: scale(0.98);
-      opacity: .8;
     }
 
     .loading {
       color: var(--primary);
-      font-size: 15px;
     }
 
     .error {
       color: #f87171;
     }
-
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-    }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>Deposit Crypto</h1>
-    <p>Select an asset and send funds to the address below</p>
-  </header>
+  <h1>Deposit Crypto</h1>
+  <p>Select an asset and copy the deposit address</p>
 
-  <div id="deposit-list" class="loading">
-    Loading deposit addresses…
-  </div>
-
-  <footer>
-    © 2026 CoinLuxora. All rights reserved.
-  </footer>
+  <div id="deposit-list" class="loading">Loading deposit addresses…</div>
 
   <script>
     const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
@@ -162,9 +119,18 @@
     );
 
     function copyAddress(address, button) {
-      navigator.clipboard.writeText(address);
+      // Mobile-safe fallback
+      const tempInput = document.createElement("textarea");
+      tempInput.value = address;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      tempInput.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
       button.innerText = "Copied ✓";
       button.style.background = "#22c55e";
+
       setTimeout(() => {
         button.innerText = "Copy Address";
         button.style.background = "#38bdf8";
