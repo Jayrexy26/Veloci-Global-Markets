@@ -1,42 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Sign Up | CoinLuxora</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up - Coinluxora</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+.box{max-width:500px;margin:40px auto;border:1px solid #1e293b;border-radius:14px;padding:18px;background:#020617}
+h2{margin:0 0 14px 0}
+input{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
+button{width:100%;padding:12px;border:none;border-radius:10px;background:#38bdf8;color:#020617;font-weight:800;cursor:pointer}
+a{color:#38bdf8;text-decoration:none;font-weight:800}
+.small{color:#94a3b8;font-size:13px;margin-top:10px}
+.ok{color:#22c55e}
+.err{color:#f87171}
+</style>
 </head>
 
-<body style="background:#0b0f19;color:white;font-family:Arial;padding:40px">
+<body>
 
-<h2>Create CoinLuxora Account</h2>
+<div class="box">
+  <h2>Create Account</h2>
 
-<input id="email" placeholder="Email" /><br><br>
-<input id="password" type="password" placeholder="Password" /><br><br>
-<button onclick="signup()">Sign Up</button>
+  <input id="email" type="email" placeholder="Email address"/>
+  <input id="password" type="password" placeholder="Password (min 6 characters)"/>
 
-<p id="msg"></p>
+  <button onclick="signup()">Sign Up</button>
+
+  <p id="msg" class="small"></p>
+
+  <p class="small">
+    Already have an account?
+    <a href="login.html">Login</a>
+  </p>
+</div>
 
 <script>
-  const supabase = window.supabase.createClient(
-    "https://xdcscknfomlzwysczegc.supabase.co",
-    "PASTE_YOUR_ANON_KEY_HERE"
-  );
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-  async function signup() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    });
-
-    if (error) {
-      document.getElementById("msg").innerText = error.message;
-    } else {
-      document.getElementById("msg").innerText =
-        "Signup successful. Check your email.";
-    }
+// If already logged in → go dashboard
+checkSession();
+async function checkSession(){
+  const { data } = await supabaseClient.auth.getSession();
+  if(data.session){
+    window.location.href="user-dashboard.html";
   }
+}
+
+async function signup(){
+  const msg=document.getElementById("msg");
+  msg.innerHTML="Creating account…";
+
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+
+  if(!email || password.length<6){
+    msg.innerHTML="<span class='err'>Enter valid email + password (min 6 chars)</span>";
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if(error){
+    msg.innerHTML="<span class='err'>"+error.message+"</span>";
+    return;
+  }
+
+  // Insert user into users table (balance = 0)
+  await supabaseClient.from("users").insert([{
+    email,
+    balance: 0,
+    notes: "new user"
+  }]);
+
+  msg.innerHTML="<span class='ok'>Account created ✅ Redirecting…</span>";
+
+  setTimeout(()=>{
+    window.location.href="user-dashboard.html";
+  }, 1500);
+}
 </script>
 
 </body>
