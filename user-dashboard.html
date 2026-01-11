@@ -11,6 +11,7 @@
 body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
 button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
+.menuBtn{background:#0b1224;color:#e5e7eb;border:1px solid #1e293b}
 .box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .card{border:1px solid #1e293b;border-radius:12px;padding:10px}
@@ -18,7 +19,6 @@ h2{margin:0;font-size:18px}
 .small{color:#94a3b8;font-size:12px;margin-top:6px}
 .ok{color:#22c55e}
 .err{color:#f87171}
-.neutral{color:#38bdf8}
 input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
 a{color:#38bdf8;text-decoration:none;font-weight:1000}
 a:hover{text-decoration:underline}
@@ -27,12 +27,60 @@ a:hover{text-decoration:underline}
 .active{background:#38bdf8;color:#020617}
 .completed{background:#22c55e;color:#020617}
 .rejected{background:#f87171;color:#020617}
+
+/* SIDEBAR */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.6);
+  display:none; z-index:999;
+}
+.sidebar{
+  position:fixed; top:0; left:-280px;
+  width:260px; height:100vh;
+  background:#020617;
+  border-right:1px solid #1e293b;
+  padding:16px;
+  transition:.25s ease;
+  z-index:1000;
+}
+.sidebar.open{ left:0; }
+.overlay.show{ display:block; }
+.sideTitle{font-size:18px;font-weight:1000;margin-bottom:12px}
+.sideItem{
+  display:block;
+  padding:12px;
+  border:1px solid #1e293b;
+  border-radius:12px;
+  margin-bottom:10px;
+  color:#e5e7eb;
+  background:#0b1224;
+}
+.sideItem:hover{background:#0f1a33}
+.sideLogout{background:#f87171;color:#020617;border:none;width:100%;padding:12px;border-radius:12px;font-weight:1000}
 </style>
 </head>
 
 <body>
 
+<!-- OVERLAY + SIDEBAR -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sideTitle">Menu</div>
+
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem" href="deposits.html">📌 Deposits History</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+  <a class="sideItem" href="withdrawals.html">📌 Withdrawals History</a>
+
+  <div style="height:10px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
 <header>
+  <button class="menuBtn" onclick="openMenu()">☰ Menu</button>
   <strong>User Dashboard</strong>
   <button onclick="logout()">Logout</button>
 </header>
@@ -109,22 +157,6 @@ a:hover{text-decoration:underline}
   <div id="depMsg" class="small"></div>
 </div>
 
-<div class="box">
-  <h2>Account Pages</h2>
-
-  <a href="portfolio.html">📊 Portfolio</a><br><br>
-
-  <a href="plans.html">💼 Investment Plans</a><br><br>
-
-  <a href="support.html">🧑‍💻 Support / Contact</a><br><br>
-
-  <a href="deposits.html">📌 Deposits History</a><br><br>
-
-  <a href="withdraw.html">➡ Withdraw Funds</a><br><br>
-
-  <a href="withdrawals.html">📌 Withdrawals History</a>
-</div>
-
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -137,9 +169,16 @@ let depositAddresses=[];
 
 init();
 
-function money(n){
-  return "$" + Number(n||0).toFixed(2);
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
 }
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+function money(n){ return "$" + Number(n||0).toFixed(2); }
 function pill(status){
   const s=(status||"pending").toLowerCase();
   return `<span class="pill ${s}">${s}</span>`;
@@ -202,7 +241,6 @@ async function loadActivePlan(){
   }
 
   const plan=data[0];
-
   const amount=Number(plan.amount||0);
   const roi=Number(plan.roi_percent||0);
   const expected=amount+(amount*(roi/100));
@@ -233,7 +271,6 @@ async function loadDepositAddresses(){
   const { data } = await supabaseClient
     .from("deposit_addresses")
     .select("asset,network,address");
-
   depositAddresses = data || [];
 }
 
@@ -286,7 +323,6 @@ async function submitDeposit(){
   }
 
   const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
-
   const upload = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath,file);
 
   if(upload.error){
