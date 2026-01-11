@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdraw Funds</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617}
+h2{margin:0 0 12px 0}
+input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
+button{width:100%;padding:12px;border:none;border-radius:10px;background:#38bdf8;color:#020617;font-weight:700}
+.ok{color:#22c55e}
+.err{color:#f87171}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Withdraw Funds</h2>
+
+  <select id="asset">
+    <option value="btc">BTC</option>
+    <option value="eth">ETH</option>
+    <option value="usdt">USDT</option>
+  </select>
+
+  <select id="network">
+    <option value="BTC">BTC</option>
+    <option value="ERC20">ERC20</option>
+    <option value="TRC20">TRC20</option>
+  </select>
+
+  <input id="amount" type="number" step="0.01" placeholder="Enter amount">
+  <input id="wallet" placeholder="Enter destination wallet address">
+
+  <button onclick="submitWithdrawal()">Submit Withdrawal</button>
+
+  <p id="msg"></p>
+</div>
+
+<script>
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+async function submitWithdrawal(){
+  const msg=document.getElementById("msg");
+  msg.innerHTML="Submitting…";
+
+  const { data } = await supabaseClient.auth.getUser();
+  if(!data.user){
+    msg.innerHTML="<span class='err'>You must be logged in</span>";
+    return;
+  }
+
+  const user_email=data.user.email;
+
+  const asset=document.getElementById("asset").value;
+  const network=document.getElementById("network").value;
+  const amount=Number(document.getElementById("amount").value || 0);
+  const wallet=document.getElementById("wallet").value.trim();
+
+  if(amount<=0 || wallet.length<6){
+    msg.innerHTML="<span class='err'>Fill all fields correctly</span>";
+    return;
+  }
+
+  const res = await supabaseClient.from("withdrawals").insert([{
+    user_email,
+    asset,
+    network,
+    amount,
+    wallet_address: wallet,
+    status: "pending"
+  }]);
+
+  if(res.error){
+    msg.innerHTML="<span class='err'>"+res.error.message+"</span>";
+    return;
+  }
+
+  msg.innerHTML="<span class='ok'>Withdrawal request submitted ✅</span>";
+  document.getElementById("amount").value="";
+  document.getElementById("wallet").value="";
+}
+</script>
+
+</body>
+</html>
