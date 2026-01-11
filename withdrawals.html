@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Withdrawals History</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
+button{border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;background:#38bdf8;color:#020617}
+.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-all}
+th{background:#0b1224}
+.ok{color:#22c55e}
+.err{color:#f87171}
+
+.badge{padding:5px 10px;border-radius:999px;font-weight:800;font-size:12px;display:inline-block}
+.pending{background:#facc15;color:#020617}
+.approved{background:#22c55e;color:#020617}
+.rejected{background:#f87171;color:#020617}
+</style>
+</head>
+
+<body>
+
+<header>
+  <strong>Withdrawals History</strong>
+  <button onclick="goDashboard()">Dashboard</button>
+</header>
+
+<div class="box">
+  <div id="msg">Loading…</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Asset</th>
+        <th>Network</th>
+        <th>Amount</th>
+        <th>Wallet Address</th>
+        <th>Status</th>
+        <th>Admin Note</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<script>
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+loadWithdrawals();
+
+function goDashboard(){
+  window.location.href="user-dashboard.html";
+}
+
+function fmtDate(v){
+  try{ return new Date(v).toLocaleString(); }
+  catch{ return v || "-"; }
+}
+
+function badge(s){
+  const st=(s||"pending").toLowerCase();
+  return `<span class="badge ${st}">${st}</span>`;
+}
+
+async function loadWithdrawals(){
+  const msg=document.getElementById("msg");
+  const tbody=document.getElementById("rows");
+
+  const { data:userData, error:userErr } = await supabaseClient.auth.getUser();
+
+  if(userErr){
+    msg.innerHTML="<span class='err'>Auth error: "+userErr.message+"</span>";
+    return;
+  }
+
+  if(!userData.user){
+    msg.innerHTML="<span class='err'>Not logged in. Please login again.</span>";
+    return;
+  }
+
+  const email=userData.user.email;
+
+  const { data, error } = await supabaseClient
+    .from("withdrawals")
+    .select("*")
+    .eq("user_email", email)
+    .order("created_at",{ascending:false});
+
+  if(error){
+    msg.innerHTML="<span class='err'>"+error.message+"</span>";
+    return;
+  }
+
+  if(!data || data.length===0){
+    msg.innerHTML="<span class='err'>No withdrawals yet.</span>";
+    tbody.innerHTML="";
+    return;
+  }
+
+  msg.innerHTML="<span class='ok'>Showing your withdrawals ✅</span>";
+  tbody.innerHTML="";
+
+  data.forEach(w=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${fmtDate(w.created_at)}</td>
+        <td>${w.asset || "-"}</td>
+        <td>${w.network || "-"}</td>
+        <td>${w.amount || "-"}</td>
+        <td>${w.wallet_address || "-"}</td>
+        <td>${badge(w.status)}</td>
+        <td>${w.admin_note || "-"}</td>
+      </tr>
+    `;
+  });
+}
+</script>
+
+</body>
+</html>
