@@ -10,7 +10,7 @@
   <style>
     body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
     header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:12px}
-    button{border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;color:#020617}
+    button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;color:#020617}
     .logout{background:#38bdf8}
     .credit{background:#22c55e;margin-right:8px}
     .debit{background:#f87171}
@@ -23,12 +23,12 @@
     .ok{color:#22c55e}
     .error{color:#f87171}
     table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-all;vertical-align:top}
+    th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-word;vertical-align:top}
     th{background:#0b1224}
     input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb;font-size:13px;margin-bottom:8px}
     form{border:1px solid #1e293b;border-radius:12px;padding:12px;margin-top:12px}
     .small{font-size:12px;color:#94a3b8;margin-top:6px}
-    a{color:#38bdf8}
+    a{color:#38bdf8;font-weight:900;text-decoration:none}
   </style>
 </head>
 
@@ -108,20 +108,26 @@
 <!-- PORTFOLIO MANAGER -->
 <div class="box">
   <strong>Portfolio Manager</strong>
-  <div class="small">Add / edit user holdings (BTC/ETH/USDT)</div>
+  <div class="small">Add / edit holdings with buy price + notes (BTC/ETH/USDT)</div>
   <div id="pfStatus" style="margin-top:8px;">Loading portfolio…</div>
 
   <input id="pfEmail" placeholder="Search by user email (example@gmail.com)" oninput="loadPortfolios()"/>
 
   <form onsubmit="savePortfolio(event)">
     <input type="hidden" id="pfId">
+
     <input id="pfUserEmail" placeholder="User Email" required>
+
     <select id="pfAsset" required>
       <option value="btc">BTC</option>
       <option value="eth">ETH</option>
       <option value="usdt">USDT</option>
     </select>
+
     <input id="pfAmount" type="number" step="0.00000001" placeholder="Amount (example 0.5)" required>
+    <input id="pfBuyPrice" type="number" step="0.01" placeholder="Buy Price in USD (example 45000)" required>
+    <input id="pfNotes" placeholder="Notes (example: plan bonus / manual credit)">
+
     <button class="save" type="submit">Save Holding</button>
   </form>
 
@@ -131,6 +137,8 @@
         <th>User Email</th>
         <th>Asset</th>
         <th>Amount</th>
+        <th>Buy Price</th>
+        <th>Notes</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -202,6 +210,7 @@ async function loadUsers(){
       </tr>`;
   });
 }
+
 async function credit(id){
   const amt=Number(document.getElementById(`amt-${id}`).value||0);
   const notes=document.getElementById(`note-${id}`).value;
@@ -213,6 +222,7 @@ async function credit(id){
   if(res.error){alert(res.error.message);return;}
   alert("✅ Credited"); loadUsers();
 }
+
 async function debit(id){
   const amt=Number(document.getElementById(`amt-${id}`).value||0);
   const notes=document.getElementById(`note-${id}`).value;
@@ -229,11 +239,14 @@ async function debit(id){
 async function loadDeposits(){
   const status=document.getElementById("depStatus");
   const tbody=document.getElementById("depRows");
+
   const {data,error}=await supabaseClient.from("deposit_confirmations").select("*").order("created_at",{ascending:false});
   if(error){status.innerHTML=`<span class="error">${error.message}</span>`;return;}
   if(!data||data.length===0){status.innerHTML=`<span class="error">No deposits</span>`;tbody.innerHTML="";return;}
+
   status.innerHTML=`<span class="ok">Loaded ${data.length} deposits ✅</span>`;
   tbody.innerHTML="";
+
   data.forEach(d=>{
     const proofLink=`${SUPABASE_URL}/storage/v1/object/public/${d.proof_url}`;
     tbody.innerHTML+=`
@@ -252,20 +265,25 @@ async function loadDeposits(){
       </tr>`;
   });
 }
+
 async function updateDeposit(id,status){
   const res=await supabaseClient.from("deposit_confirmations").update({status}).eq("id",id);
   if(res.error){alert(res.error.message);return;}
   alert("✅ Deposit updated"); loadDeposits(); loadUsers();
 }
+
 async function approveAndCredit(depositId,userEmail,amount){
   if(!userEmail||userEmail==="-"){alert("No user_email");return;}
   const {data:user,error:userErr}=await supabaseClient.from("users").select("*").eq("email",userEmail).single();
   if(userErr){alert("User not found");return;}
+
   const newBalance=Number(user.balance||0)+Number(amount||0);
   const {error:balErr}=await supabaseClient.from("users").update({balance:newBalance}).eq("id",user.id);
   if(balErr){alert(balErr.message);return;}
+
   const {error:depErr}=await supabaseClient.from("deposit_confirmations").update({status:"approved"}).eq("id",depositId);
   if(depErr){alert(depErr.message);return;}
+
   alert("✅ Approved + Credited"); loadDeposits(); loadUsers();
 }
 
@@ -273,11 +291,14 @@ async function approveAndCredit(depositId,userEmail,amount){
 async function loadWithdrawals(){
   const status=document.getElementById("wdStatus");
   const tbody=document.getElementById("wdRows");
+
   const {data,error}=await supabaseClient.from("withdrawals").select("*").order("created_at",{ascending:false});
   if(error){status.innerHTML=`<span class="error">${error.message}</span>`;return;}
   if(!data||data.length===0){status.innerHTML=`<span class="error">No withdrawals yet</span>`;tbody.innerHTML="";return;}
+
   status.innerHTML=`<span class="ok">Loaded ${data.length} withdrawals ✅</span>`;
   tbody.innerHTML="";
+
   data.forEach(w=>{
     tbody.innerHTML+=`
       <tr>
@@ -295,12 +316,14 @@ async function loadWithdrawals(){
       </tr>`;
   });
 }
+
 async function updateWithdrawal(id,status){
   const note=document.getElementById(`note-${id}`).value;
   const res=await supabaseClient.from("withdrawals").update({status,admin_note:note}).eq("id",id);
   if(res.error){alert(res.error.message);return;}
   alert("✅ Withdrawal updated"); loadWithdrawals();
 }
+
 async function approveWithdrawal(withdrawalId,userEmail,amount){
   const note=document.getElementById(`note-${withdrawalId}`).value;
   if(!confirm("Approve this withdrawal and debit user balance?")) return;
@@ -339,13 +362,12 @@ async function loadPortfolios(){
   const tbody=document.getElementById("pfRows");
   const search=document.getElementById("pfEmail").value.trim();
 
-  let query = supabaseClient.from("portfolios").select("*").order("created_at",{ascending:false});
+  let query=supabaseClient.from("portfolios").select("*").order("created_at",{ascending:false});
   if(search.length>2){
-    query = query.ilike("user_email", `%${search}%`);
+    query=query.ilike("user_email", `%${search}%`);
   }
 
   const {data,error}=await query;
-
   if(error){status.innerHTML=`<span class="error">${error.message}</span>`;return;}
   if(!data||data.length===0){status.innerHTML=`<span class="error">No holdings found</span>`;tbody.innerHTML="";return;}
 
@@ -353,13 +375,15 @@ async function loadPortfolios(){
   tbody.innerHTML="";
 
   data.forEach(p=>{
-    tbody.innerHTML += `
+    tbody.innerHTML+=`
       <tr>
         <td>${p.user_email}</td>
         <td>${(p.asset||"").toUpperCase()}</td>
         <td>${p.amount}</td>
+        <td>$${Number(p.buy_price||0).toFixed(2)}</td>
+        <td>${p.notes || "-"}</td>
         <td>
-          <button class="edit" onclick="editPortfolio('${p.id}','${p.user_email}','${p.asset}','${p.amount}')">Edit</button>
+          <button class="edit" onclick="editPortfolio('${p.id}','${p.user_email}','${p.asset}','${p.amount}','${p.buy_price}','${(p.notes||"").replace(/'/g,"")}')">Edit</button>
           <button class="danger" onclick="deletePortfolio('${p.id}')">Delete</button>
         </td>
       </tr>
@@ -367,41 +391,49 @@ async function loadPortfolios(){
   });
 }
 
-function editPortfolio(id,user_email,asset,amount){
+function editPortfolio(id,email,asset,amount,buy_price,notes){
   document.getElementById("pfId").value=id;
-  document.getElementById("pfUserEmail").value=user_email;
+  document.getElementById("pfUserEmail").value=email;
   document.getElementById("pfAsset").value=(asset||"").toLowerCase();
   document.getElementById("pfAmount").value=amount;
+  document.getElementById("pfBuyPrice").value=buy_price;
+  document.getElementById("pfNotes").value=notes || "";
 }
 
 async function savePortfolio(e){
   e.preventDefault();
+
   const id=document.getElementById("pfId").value;
   const user_email=document.getElementById("pfUserEmail").value.trim();
   const asset=document.getElementById("pfAsset").value.trim().toLowerCase();
   const amount=Number(document.getElementById("pfAmount").value||0);
+  const buy_price=Number(document.getElementById("pfBuyPrice").value||0);
+  const notes=document.getElementById("pfNotes").value.trim();
 
-  if(!user_email || amount<=0){alert("Enter valid email + amount");return;}
+  if(!user_email){alert("Enter user email");return;}
+  if(amount<=0){alert("Amount must be > 0");return;}
+  if(buy_price<=0){alert("Buy price must be > 0");return;}
 
   let res;
   if(id){
-    res=await supabaseClient.from("portfolios").update({user_email,asset,amount}).eq("id",id);
+    res=await supabaseClient.from("portfolios").update({user_email,asset,amount,buy_price,notes}).eq("id",id);
   }else{
-    res=await supabaseClient.from("portfolios").insert([{user_email,asset,amount}]);
+    res=await supabaseClient.from("portfolios").insert([{user_email,asset,amount,buy_price,notes}]);
   }
 
   if(res.error){alert("❌ "+res.error.message);return;}
-  alert("✅ Holding saved");
+
+  alert("✅ Holding saved successfully!");
   document.getElementById("pfId").value="";
   e.target.reset();
   loadPortfolios();
 }
 
 async function deletePortfolio(id){
-  if(!confirm("Delete holding?")) return;
+  if(!confirm("Delete this holding?")) return;
   const res=await supabaseClient.from("portfolios").delete().eq("id",id);
-  if(res.error){alert(res.error.message);return;}
-  alert("✅ Holding deleted");
+  if(res.error){alert("❌ "+res.error.message);return;}
+  alert("✅ Holding deleted!");
   loadPortfolios();
 }
 
@@ -409,10 +441,13 @@ async function deletePortfolio(id){
 async function loadAddresses(){
   const status=document.getElementById("addrStatus");
   const tbody=document.getElementById("addrRows");
+
   const {data,error}=await supabaseClient.from("deposit_addresses").select("id,asset,network,address").order("id",{ascending:true});
   if(error){status.innerHTML=`<span class="error">${error.message}</span>`;return;}
+
   status.innerHTML=`<span class="ok">Loaded ${data.length} wallet(s) ✅</span>`;
   tbody.innerHTML="";
+
   data.forEach(a=>{
     tbody.innerHTML+=`
       <tr>
@@ -437,6 +472,7 @@ function editAddress(id,asset,network,address){
 
 async function saveAddress(e){
   e.preventDefault();
+
   const id=document.getElementById("editId").value;
   const asset=document.getElementById("asset").value.trim().toLowerCase();
   const network=document.getElementById("network").value.trim().toUpperCase();
@@ -449,15 +485,20 @@ async function saveAddress(e){
     res=await supabaseClient.from("deposit_addresses").insert([{asset,network,address}]);
   }
 
-  if(res.error){alert(res.error.message);return;}
-  alert("✅ Wallet saved"); document.getElementById("editId").value=""; e.target.reset(); loadAddresses();
+  if(res.error){alert("❌ "+res.error.message);return;}
+
+  alert("✅ Wallet saved successfully!");
+  document.getElementById("editId").value="";
+  e.target.reset();
+  loadAddresses();
 }
 
 async function deleteAddress(id){
-  if(!confirm("Delete this wallet?")) return;
+  if(!confirm("Delete this wallet address?")) return;
   const res=await supabaseClient.from("deposit_addresses").delete().eq("id",id);
-  if(res.error){alert(res.error.message);return;}
-  alert("✅ Deleted"); loadAddresses();
+  if(res.error){alert("❌ "+res.error.message);return;}
+  alert("✅ Wallet deleted!");
+  loadAddresses();
 }
 
 /* ---------------- LOGOUT ---------------- */
