@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>My Portfolio</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
+button{border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer;background:#38bdf8;color:#020617}
+.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:16px}
+h2{margin:0;font-size:18px}
+.big{font-size:30px;font-weight:900;margin-top:10px}
+.small{color:#94a3b8;font-size:12px;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.card{border:1px solid #1e293b;border-radius:12px;padding:12px}
+.ok{color:#22c55e}
+.err{color:#f87171}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-all}
+th{background:#0b1224}
+.progress{height:8px;border-radius:999px;background:#1e293b;margin-top:8px;overflow:hidden}
+.bar{height:8px;background:#22c55e}
+</style>
+</head>
+
+<body>
+
+<header>
+  <strong>My Portfolio</strong>
+  <button onclick="goDashboard()">Dashboard</button>
+</header>
+
+<div class="box">
+  <h2>Total Portfolio Value</h2>
+  <div id="total" class="big">--</div>
+  <div id="email" class="small">Loading…</div>
+</div>
+
+<div class="box">
+  <h2>Holdings Allocation</h2>
+  <div id="alloc" class="grid">
+    <div class="card">Loading…</div>
+  </div>
+</div>
+
+<div class="box">
+  <h2>Holdings Breakdown</h2>
+  <div id="msg" class="small">Loading…</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Amount</th>
+        <th>Price (USD)</th>
+        <th>Value (USD)</th>
+        <th>Allocation</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+
+<script>
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let userEmail="";
+
+init();
+
+function goDashboard(){
+  window.location.href="user-dashboard.html";
+}
+
+async function init(){
+  const { data:userData } = await supabaseClient.auth.getUser();
+  if(!userData.user){
+    document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
+    return;
+  }
+
+  userEmail = userData.user.email;
+  document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${userEmail}</span>`;
+
+  // Load portfolio holdings
+  const { data:holdings, error } = await supabaseClient
+    .from("portfolios")
+    .select("*")
+    .eq("user_email", userEmail)
+    .order("created_at",{ascending:false});
+
+  if(error){
+    document.getElementById("msg").innerHTML="<span class='err'>"+error.message+"</span>";
+    return;
+  }
+
+  if(!holdings || holdings.length===0){
+    document.getElementById("total").innerHTML="$0.00";
+    document.getElementById("alloc").innerHTML="<div class='card err'>No holdings yet</div>";
+    document.getElementById("msg").innerHTML="<span class='err'>No holdings found. Add holdings in Supabase portfolios table.</span>";
+    document.getElementById("rows").innerHTML="";
+    return;
+  }
+
+  // Aggregate by asset
+  const agg = {};
+  holdings.forEach(h=>{
+    const a=(h.asset||"").toLowerCase();
+    agg[a] = (agg[a]||0) + Number(h.amount||0);
+  });
+
+  // Fetch prices from coingecko
+  const idsMap = { btc:"bitcoin", eth:"ethereum", usdt:"tether" };
+  const ids = Object.keys(agg).map(a=>idsMap[a]).filter(Boolean).join(",");
+
+  const pricesRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
+  const prices = await pricesRes.json();
+
+  // Compute rows
+  const rows=[];
+  let totalValue=0;
+
+  Object.keys(agg).forEach(a=>{
+    const id=idsMap[a];
+    const price=Number(prices?.[id]?.usd || 0);
+    const amount=Number(agg[a]||0);
+    const value=amount*price;
+
+    totalValue += value;
+
+    rows.push({ asset:a.toUpperCase(), amount, price, value });
+  });
+
+  document.getElementById("total").innerHTML = "$" + totalValue.toFixed(2);
+
+  // render table
+  const tbody=document.getElementById("rows");
+  tbody.innerHTML="";
+
+  rows.forEach(r=>{
+    const pct = totalValue>0 ? (r.value/totalValue)*100 : 0;
+
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${r.asset}</strong></td>
+        <td>${r.amount}</td>
+        <td>$${r.price.toFixed(2)}</td>
+        <td><strong>$${r.value.toFixed(2)}</strong></td>
+        <td>
+          ${pct.toFixed(2)}%
+          <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+        </td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("msg").innerHTML="<span class='ok'>Portfolio loaded ✅</span>";
+
+  // Allocation cards
+  const alloc=document.getElementById("alloc");
+  alloc.innerHTML="";
+
+  rows.forEach(r=>{
+    const pct = totalValue>0 ? (r.value/totalValue)*100 : 0;
+    alloc.innerHTML += `
+      <div class="card">
+        <strong>${r.asset}</strong>
+        <div class="small">${pct.toFixed(2)}% allocation</div>
+        <div style="margin-top:8px;font-weight:900">$${r.value.toFixed(2)}</div>
+      </div>
+    `;
+  });
+}
+</script>
+
+</body>
+</html>
