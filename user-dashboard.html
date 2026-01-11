@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coinluxora User Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
+button{border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;background:#38bdf8;color:#020617}
+.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{border:1px solid #1e293b;border-radius:12px;padding:10px}
+h2{margin:0;font-size:18px}
+.small{color:#94a3b8;font-size:12px;margin-top:6px}
+.ok{color:#22c55e}
+.err{color:#f87171}
+input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
+a{color:#38bdf8;text-decoration:none;font-weight:700}
+</style>
+</head>
+
+<body>
+
+<header>
+  <strong>User Dashboard</strong>
+  <button onclick="logout()">Logout</button>
+</header>
+
+<div class="box">
+  <h2>Welcome</h2>
+  <div id="email" class="small">Loading…</div>
+</div>
+
+<div class="box">
+  <h2>Balance</h2>
+  <div id="balance" style="font-size:26px;font-weight:800;margin-top:8px;">--</div>
+  <div class="small">Your trading account balance</div>
+</div>
+
+<div class="box">
+  <h2>Live Crypto Prices</h2>
+  <div class="grid" id="prices">
+    <div class="card">Loading…</div>
+  </div>
+</div>
+
+<div class="box">
+  <h2>Deposit</h2>
+  <div class="small">Select asset/network to see wallet address</div>
+
+  <select id="depAsset" onchange="renderDepositAddress()">
+    <option value="btc">BTC</option>
+    <option value="eth">ETH</option>
+    <option value="usdt">USDT</option>
+  </select>
+
+  <select id="depNetwork" onchange="renderDepositAddress()">
+    <option value="BTC">BTC</option>
+    <option value="ERC20">ERC20</option>
+    <option value="TRC20">TRC20</option>
+  </select>
+
+  <div class="card">
+    <div class="small">Deposit Address</div>
+    <div id="depAddress" style="margin-top:8px;font-weight:800;">--</div>
+    <button style="margin-top:10px;width:100%" onclick="copyAddress()">Copy Address</button>
+  </div>
+</div>
+
+<div class="box">
+  <h2>Submit Deposit Proof</h2>
+  <div class="small">After depositing, submit confirmation</div>
+
+  <select id="confAsset">
+    <option value="btc">BTC</option>
+    <option value="eth">ETH</option>
+    <option value="usdt">USDT</option>
+  </select>
+
+  <select id="confNetwork">
+    <option value="BTC">BTC</option>
+    <option value="ERC20">ERC20</option>
+    <option value="TRC20">TRC20</option>
+  </select>
+
+  <input id="confAmount" type="number" step="0.01" placeholder="Amount deposited"/>
+  <input id="confTx" placeholder="Transaction hash"/>
+  <input id="confProof" type="file" accept="image/*,.pdf"/>
+
+  <button style="width:100%" onclick="submitDeposit()">Submit Deposit</button>
+  <div id="depMsg" class="small"></div>
+</div>
+
+<div class="box">
+  <h2>Withdraw</h2>
+  <a href="withdraw.html">➡ Withdraw Funds</a><br><br>
+  <a href="withdrawals.html">📌 Withdrawals History</a>
+</div>
+
+<script>
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let currentUserEmail="";
+let depositAddresses=[];
+
+init();
+
+async function init(){
+  // session check
+  const { data:userData } = await supabaseClient.auth.getUser();
+  if(!userData.user){
+    document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
+    return;
+  }
+
+  currentUserEmail=userData.user.email;
+  document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${currentUserEmail}</span>`;
+
+  await loadBalance();
+  await loadDepositAddresses();
+  renderDepositAddress();
+  fetchPrices();
+}
+
+async function loadBalance(){
+  const { data, error } = await supabaseClient
+    .from("users")
+    .select("*")
+    .eq("email", currentUserEmail)
+    .single();
+
+  if(error || !data){
+    document.getElementById("balance").innerHTML="0.00";
+    return;
+  }
+
+  document.getElementById("balance").innerHTML = Number(data.balance || 0).toFixed(2);
+}
+
+async function loadDepositAddresses(){
+  const { data } = await supabaseClient
+    .from("deposit_addresses")
+    .select("asset,network,address");
+
+  depositAddresses = data || [];
+}
+
+function renderDepositAddress(){
+  const asset=document.getElementById("depAsset").value.toLowerCase();
+  const network=document.getElementById("depNetwork").value.toUpperCase();
+
+  const found=depositAddresses.find(d =>
+    (d.asset||"").toLowerCase()===asset &&
+    (d.network||"").toUpperCase()===network
+  );
+
+  document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
+}
+
+function copyAddress(){
+  const addr=document.getElementById("depAddress").innerText;
+  navigator.clipboard.writeText(addr);
+  alert("Copied ✅");
+}
+
+async function fetchPrices(){
+  try{
+    const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
+    const data=await res.json();
+
+    document.getElementById("prices").innerHTML=`
+      <div class="card"><strong>BTC</strong><br>$${data.bitcoin.usd}</div>
+      <div class="card"><strong>ETH</strong><br>$${data.ethereum.usd}</div>
+      <div class="card"><strong>USDT</strong><br>$${data.tether.usd}</div>
+    `;
+  }catch(e){
+    document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
+  }
+}
+
+async function submitDeposit(){
+  const msg=document.getElementById("depMsg");
+  msg.innerHTML="Submitting…";
+
+  const asset=document.getElementById("confAsset").value;
+  const network=document.getElementById("confNetwork").value;
+  const amount=Number(document.getElementById("confAmount").value||0);
+  const tx_hash=document.getElementById("confTx").value.trim();
+  const file=document.getElementById("confProof").files[0];
+
+  if(amount<=0 || tx_hash.length<5 || !file){
+    msg.innerHTML="<span class='err'>Fill all fields + upload proof</span>";
+    return;
+  }
+
+  // Upload to Supabase Storage (bucket must exist named 'proofs')
+  const filePath = `${Date.now()}-${file.name}`;
+  const upload = await supabaseClient.storage.from("proofs").upload(filePath,file);
+
+  if(upload.error){
+    msg.innerHTML="<span class='err'>Upload failed: "+upload.error.message+"</span>";
+    return;
+  }
+
+  const proof_url = `proofs/${filePath}`;
+
+  const res = await supabaseClient.from("deposit_confirmations").insert([{
+    user_email: currentUserEmail,
+    asset, network, amount, tx_hash,
+    proof_url,
+    status: "pending"
+  }]);
+
+  if(res.error){
+    msg.innerHTML="<span class='err'>"+res.error.message+"</span>";
+    return;
+  }
+
+  msg.innerHTML="<span class='ok'>Deposit submitted ✅</span>";
+  document.getElementById("confAmount").value="";
+  document.getElementById("confTx").value="";
+  document.getElementById("confProof").value="";
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
+}
+</script>
+
+</body>
+</html>
