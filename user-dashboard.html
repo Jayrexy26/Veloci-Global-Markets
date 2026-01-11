@@ -106,6 +106,8 @@ const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
+const BUCKET_NAME="proofs"; // ✅ Correct bucket name
+
 let currentUserEmail="";
 let depositAddresses=[];
 
@@ -128,25 +130,19 @@ async function init(){
 }
 
 async function loadBalance(){
-  const { data, error } = await supabaseClient
+  const { data } = await supabaseClient
     .from("users")
     .select("*")
     .eq("email", currentUserEmail)
     .single();
 
-  if(error || !data){
-    document.getElementById("balance").innerHTML="0.00";
-    return;
-  }
-
-  document.getElementById("balance").innerHTML = Number(data.balance || 0).toFixed(2);
+  document.getElementById("balance").innerHTML = Number(data?.balance || 0).toFixed(2);
 }
 
 async function loadDepositAddresses(){
   const { data } = await supabaseClient
     .from("deposit_addresses")
     .select("asset,network,address");
-
   depositAddresses = data || [];
 }
 
@@ -178,7 +174,7 @@ async function fetchPrices(){
       <div class="card"><strong>ETH</strong><br>$${data.ethereum.usd}</div>
       <div class="card"><strong>USDT</strong><br>$${data.tether.usd}</div>
     `;
-  }catch(e){
+  }catch{
     document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
   }
 }
@@ -198,16 +194,16 @@ async function submitDeposit(){
     return;
   }
 
-  // ✅ Correct bucket name: "proof"
-  const filePath = `${Date.now()}-${file.name}`;
-  const upload = await supabaseClient.storage.from("proof").upload(filePath,file);
+  const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
+
+  const upload = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath,file);
 
   if(upload.error){
     msg.innerHTML="<span class='err'>Upload failed: "+upload.error.message+"</span>";
     return;
   }
 
-  const proof_url = `proof/${filePath}`;
+  const proof_url = `${BUCKET_NAME}/${filePath}`;
 
   const res = await supabaseClient.from("deposit_confirmations").insert([{
     user_email: currentUserEmail,
