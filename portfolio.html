@@ -30,6 +30,13 @@ th{background:#0b1224}
 .tagProfit{background:#22c55e;color:#020617}
 .tagLoss{background:#f87171;color:#020617}
 .tagFlat{background:#38bdf8;color:#020617}
+
+.chartWrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.chartCard{flex:1;min-width:260px;border:1px solid #1e293b;border-radius:12px;padding:12px}
+canvas{width:100%;max-width:100%;height:260px;border-radius:12px;background:#020617}
+.legend{margin-top:10px}
+.legendItem{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.dot{width:12px;height:12px;border-radius:999px;display:inline-block}
 </style>
 </head>
 
@@ -59,9 +66,22 @@ th{background:#0b1224}
 </div>
 
 <div class="box">
-  <h2>Allocation</h2>
-  <div id="alloc" class="grid">
-    <div class="card">Loading…</div>
+  <h2>Charts</h2>
+
+  <div class="chartWrap">
+    <div class="chartCard">
+      <strong>Allocation (Pie)</strong>
+      <div class="small">Shows percentage distribution per asset</div>
+      <canvas id="pieChart" width="400" height="260"></canvas>
+      <div id="pieLegend" class="legend"></div>
+    </div>
+
+    <div class="chartCard">
+      <strong>Performance (Growth)</strong>
+      <div class="small">Compares invested vs current value</div>
+      <canvas id="barChart" width="400" height="260"></canvas>
+      <div class="small">Bars: Invested vs Current Value</div>
+    </div>
   </div>
 </div>
 
@@ -96,8 +116,6 @@ function goDashboard(){ window.location.href="user-dashboard.html"; }
 
 let userEmail="";
 
-init();
-
 function money(n){
   const v = Number(n||0);
   return "$" + v.toFixed(2);
@@ -106,6 +124,8 @@ function pct(n){
   const v = Number(n||0);
   return v.toFixed(2) + "%";
 }
+
+init();
 
 async function init(){
   const { data:userData } = await supabaseClient.auth.getUser();
@@ -117,7 +137,6 @@ async function init(){
   userEmail = userData.user.email;
   document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${userEmail}</span>`;
 
-  // Get holdings
   const { data:holdings, error } = await supabaseClient
     .from("portfolios")
     .select("*")
@@ -131,35 +150,36 @@ async function init(){
 
   if(!holdings || holdings.length===0){
     document.getElementById("total").innerHTML="$0.00";
-    document.getElementById("alloc").innerHTML="<div class='card err'>No holdings yet</div>";
-    document.getElementById("msg").innerHTML="<span class='err'>No holdings found. Admin must add holdings in portfolio manager.</span>";
-    document.getElementById("rows").innerHTML="";
     document.getElementById("invested").innerHTML="$0.00";
     document.getElementById("pnl").innerHTML="$0.00";
     document.getElementById("roi").innerHTML="";
+    document.getElementById("msg").innerHTML="<span class='err'>No holdings yet. Admin must add holdings in Portfolio Manager.</span>";
+    document.getElementById("rows").innerHTML="";
+    drawPie([],[]);
+    drawBars([]);
     return;
   }
 
-  // Aggregate holdings by asset but keep buy_price/notes row-level for table
-  const assetAgg = {};
   const idsMap = { btc:"bitcoin", eth:"ethereum", usdt:"tether" };
 
-  holdings.forEach(h=>{
-    const asset=(h.asset||"").toLowerCase();
-    if(!assetAgg[asset]) assetAgg[asset]=0;
-    assetAgg[asset]+=Number(h.amount||0);
-  });
+  // Fetch prices (for assets present)
+  const uniqueAssets = [...new Set(holdings.map(h => (h.asset||"").toLowerCase()))];
+  const ids = uniqueAssets.map(a => idsMap[a]).filter(Boolean).join(",");
 
-  const ids = Object.keys(assetAgg).map(a=>idsMap[a]).filter(Boolean).join(",");
   const pricesRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
   const prices = await pricesRes.json();
 
-  // Build table rows
+  // Table + totals
   let totalValue=0;
   let totalInvested=0;
 
   const tbody=document.getElementById("rows");
   tbody.innerHTML="";
+
+  // For charts
+  const pieLabels=[];
+  const pieValues=[];
+  const bars=[]; // {asset, invested, value}
 
   holdings.forEach(h=>{
     const asset=(h.asset||"").toLowerCase();
@@ -188,16 +208,32 @@ async function init(){
         <td>${money(current)}</td>
         <td><strong>${money(invested)}</strong></td>
         <td><strong>${money(value)}</strong></td>
-        <td>
-          <span class="tag ${pnlClass}">${pnl>=0?"+":""}${money(pnl).replace("$","$")}</span>
-        </td>
+        <td><span class="tag ${pnlClass}">${pnl>=0?"+":""}${money(pnl)}</span></td>
         <td class="${pnlTextClass}"><strong>${roi>=0?"+":""}${pct(roi)}</strong></td>
         <td>${h.notes || "-"}</td>
       </tr>
     `;
+
+    // aggregate chart data
+    const existing = bars.find(b => b.asset === asset);
+    if(existing){
+      existing.invested += invested;
+      existing.value += value;
+    }else{
+      bars.push({asset, invested, value});
+    }
   });
 
-  // Totals
+  // Allocation pie (aggregate by asset value)
+  const valueByAsset = {};
+  bars.forEach(b=>{
+    valueByAsset[b.asset] = (valueByAsset[b.asset]||0) + b.value;
+  });
+  Object.keys(valueByAsset).forEach(a=>{
+    pieLabels.push(a.toUpperCase());
+    pieValues.push(valueByAsset[a]);
+  });
+
   document.getElementById("total").innerHTML = money(totalValue);
   document.getElementById("invested").innerHTML = money(totalInvested);
 
@@ -211,28 +247,126 @@ async function init(){
   document.getElementById("roi").innerHTML = `ROI: <strong>${totalROI>=0?"+":""}${pct(totalROI)}</strong>`;
   document.getElementById("msg").innerHTML = "<span class='ok'>Portfolio loaded ✅</span>";
 
-  // Allocation cards
-  const alloc=document.getElementById("alloc");
-  alloc.innerHTML="";
+  // Draw charts
+  drawPie(pieLabels, pieValues);
+  drawBars(bars);
+}
 
-  Object.keys(assetAgg).forEach(asset=>{
-    const id=idsMap[asset];
-    const current=Number(prices?.[id]?.usd || 0);
-    const amount=Number(assetAgg[asset]||0);
-    const value=amount*current;
-    const percent = totalValue>0 ? (value/totalValue)*100 : 0;
+/* ---------------- PIE CHART ---------------- */
+function drawPie(labels, values){
+  const canvas=document.getElementById("pieChart");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    alloc.innerHTML += `
-      <div class="card">
-        <strong>${asset.toUpperCase()}</strong>
-        <div class="small">${percent.toFixed(2)}% allocation</div>
-        <div style="margin-top:8px;font-weight:1000">${money(value)}</div>
-        <div class="progress">
-          <div class="bar" style="width:${Math.min(100,percent)}%"></div>
-        </div>
+  const total=values.reduce((a,b)=>a+b,0);
+  if(total<=0){
+    ctx.fillStyle="#94a3b8";
+    ctx.font="16px system-ui";
+    ctx.fillText("No data", 20, 40);
+    document.getElementById("pieLegend").innerHTML="";
+    return;
+  }
+
+  const colors=["#22c55e","#38bdf8","#facc15","#f87171","#a78bfa","#fb7185"];
+  const cx=canvas.width/2;
+  const cy=canvas.height/2;
+  const r=Math.min(cx,cy)-10;
+
+  let start=0;
+
+  values.forEach((v,i)=>{
+    const slice=(v/total)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.arc(cx,cy,r,start,start+slice);
+    ctx.closePath();
+    ctx.fill();
+    start+=slice;
+  });
+
+  // center hole (donut style)
+  ctx.beginPath();
+  ctx.fillStyle="#020617";
+  ctx.arc(cx,cy,r*0.55,0,Math.PI*2);
+  ctx.fill();
+
+  // total label
+  ctx.fillStyle="#e5e7eb";
+  ctx.font="bold 14px system-ui";
+  ctx.textAlign="center";
+  ctx.fillText("Allocation", cx, cy-6);
+  ctx.font="bold 16px system-ui";
+  ctx.fillText("100%", cx, cy+16);
+
+  // legend
+  const legend=document.getElementById("pieLegend");
+  legend.innerHTML="";
+  labels.forEach((lab,i)=>{
+    const pct = ((values[i]/total)*100).toFixed(2);
+    legend.innerHTML += `
+      <div class="legendItem">
+        <span class="dot" style="background:${colors[i%colors.length]}"></span>
+        <strong>${lab}</strong> — ${pct}% (${money(values[i])})
       </div>
     `;
   });
+}
+
+/* ---------------- BAR CHART ---------------- */
+function drawBars(bars){
+  const canvas=document.getElementById("barChart");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!bars || bars.length===0){
+    ctx.fillStyle="#94a3b8";
+    ctx.font="16px system-ui";
+    ctx.fillText("No data", 20, 40);
+    return;
+  }
+
+  // setup
+  const padding=30;
+  const chartW=canvas.width - padding*2;
+  const chartH=canvas.height - padding*2;
+
+  const maxVal = Math.max(...bars.map(b=>Math.max(b.invested,b.value))) || 1;
+
+  // title guide
+  ctx.fillStyle="#94a3b8";
+  ctx.font="12px system-ui";
+  ctx.textAlign="left";
+  ctx.fillText("Invested", padding, 16);
+  ctx.fillStyle="#38bdf8";
+  ctx.fillText("Current", padding+70, 16);
+
+  const groupW = chartW / bars.length;
+  const barW = Math.max(10, groupW*0.25);
+
+  bars.forEach((b,i)=>{
+    const x0 = padding + i*groupW + groupW/2;
+
+    // invested bar
+    const invH = (b.invested/maxVal)*chartH;
+    ctx.fillStyle="#94a3b8";
+    ctx.fillRect(x0 - barW - 4, padding + (chartH - invH), barW, invH);
+
+    // value bar
+    const valH = (b.value/maxVal)*chartH;
+    ctx.fillStyle="#38bdf8";
+    ctx.fillRect(x0 + 4, padding + (chartH - valH), barW, valH);
+
+    // label
+    ctx.fillStyle="#e5e7eb";
+    ctx.font="12px system-ui";
+    ctx.textAlign="center";
+    ctx.fillText(b.asset.toUpperCase(), x0, canvas.height - 8);
+  });
+
+  // border
+  ctx.strokeStyle="#1e293b";
+  ctx.strokeRect(padding, padding, chartW, chartH);
 }
 </script>
 
