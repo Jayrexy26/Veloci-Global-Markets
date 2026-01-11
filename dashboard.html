@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Dashboard – Coinluxora</title>
+  <title>Coinluxora Admin Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,16 +15,17 @@
       color:#e5e7eb;
       padding:16px;
     }
+
     header{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      padding:12px 0;
+      padding:14px 0;
       border-bottom:1px solid #1e293b;
       margin-bottom:12px;
     }
+
     button{
-      background:#38bdf8;
       border:none;
       padding:10px 14px;
       border-radius:10px;
@@ -32,6 +33,20 @@
       cursor:pointer;
       color:#020617;
     }
+
+    .logout{
+      background:#38bdf8;
+    }
+
+    .credit{
+      background:#22c55e;
+      margin-right:8px;
+    }
+
+    .debit{
+      background:#f87171;
+    }
+
     .box{
       border:1px solid #1e293b;
       border-radius:12px;
@@ -39,20 +54,42 @@
       margin-bottom:12px;
       background:#020617;
     }
-    .error{color:#f87171}
+
     .ok{color:#22c55e}
+    .error{color:#f87171}
+
     table{
       width:100%;
       border-collapse:collapse;
       margin-top:10px;
     }
+
     th,td{
       border:1px solid #1e293b;
       padding:10px;
       font-size:13px;
       word-break:break-all;
     }
-    th{background:#0b1224}
+
+    th{
+      background:#0b1224;
+    }
+
+    input{
+      width:100%;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid #1e293b;
+      background:#020617;
+      color:#e5e7eb;
+      font-size:13px;
+    }
+
+    .small{
+      font-size:12px;
+      color:#94a3b8;
+      margin-top:6px;
+    }
   </style>
 </head>
 
@@ -60,16 +97,12 @@
 
 <header>
   <strong>Coinluxora Admin Dashboard</strong>
-  <button onclick="logout()">Logout</button>
+  <button class="logout" onclick="logout()">Logout</button>
 </header>
 
 <div class="box">
-  <strong>Debug Info</strong><br>
-  <div id="debug">Loading…</div>
-</div>
-
-<div class="box">
   <strong>Users</strong>
+  <div class="small">Credit or debit balances instantly</div>
   <div id="usersStatus" style="margin-top:8px;">Loading users…</div>
 
   <table>
@@ -77,7 +110,9 @@
       <tr>
         <th>Email</th>
         <th>Balance</th>
+        <th>Amount</th>
         <th>Notes</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="userRows"></tbody>
@@ -85,29 +120,20 @@
 </div>
 
 <script>
-  // ✅ Your REAL Supabase Project
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ✅ Protect dashboard
   checkSession();
 
   async function checkSession(){
     const { data } = await supabaseClient.auth.getSession();
-
-    document.getElementById("debug").innerHTML =
-      `<span class="ok">Connected to Supabase ✅</span><br>
-       URL: ${SUPABASE_URL}<br>
-       Session: ${data.session ? "✅ Active" : "❌ No session"}`;
-
     if(!data.session){
       window.location.href = "admin.html";
       return;
     }
-
     loadUsers();
   }
 
@@ -115,14 +141,10 @@
     const status = document.getElementById("usersStatus");
     const tbody = document.getElementById("userRows");
 
-    status.innerText = "Fetching users from Supabase…";
-
     const { data, error } = await supabaseClient
       .from("users")
-      .select("*");
-
-    console.log("USERS DATA:", data);
-    console.log("USERS ERROR:", error);
+      .select("*")
+      .order("created_at",{ascending:false});
 
     if(error){
       status.innerHTML = `<span class="error">Error: ${error.message}</span>`;
@@ -130,7 +152,7 @@
     }
 
     if(!data || data.length === 0){
-      status.innerHTML = `<span class="error">No users found in users table.</span>`;
+      status.innerHTML = `<span class="error">No users found.</span>`;
       return;
     }
 
@@ -139,13 +161,108 @@
 
     data.forEach(u=>{
       const tr = document.createElement("tr");
+
       tr.innerHTML = `
         <td>${u.email || ""}</td>
-        <td>${u.balance ?? 0}</td>
-        <td>${u.notes || ""}</td>
+        <td><strong>${Number(u.balance || 0).toFixed(2)}</strong></td>
+
+        <td>
+          <input type="number" step="0.01" placeholder="Enter amount"
+            id="amt-${u.id}">
+        </td>
+
+        <td>
+          <input placeholder="Notes"
+            id="note-${u.id}" value="${u.notes || ""}">
+        </td>
+
+        <td>
+          <button class="credit" onclick="credit('${u.id}')">Credit</button>
+          <button class="debit" onclick="debit('${u.id}')">Debit</button>
+        </td>
       `;
+
       tbody.appendChild(tr);
     });
+  }
+
+  async function credit(userId){
+    const amtInput = document.getElementById(`amt-${userId}`);
+    const noteInput = document.getElementById(`note-${userId}`);
+
+    const amt = Number(amtInput.value || 0);
+    const notes = noteInput.value;
+
+    if(amt <= 0){
+      alert("Enter a valid amount to credit");
+      return;
+    }
+
+    const { data: user, error: fetchErr } = await supabaseClient
+      .from("users")
+      .select("balance")
+      .eq("id", userId)
+      .single();
+
+    if(fetchErr){
+      alert(fetchErr.message);
+      return;
+    }
+
+    const newBalance = Number(user.balance || 0) + amt;
+
+    const { error } = await supabaseClient
+      .from("users")
+      .update({ balance: newBalance, notes })
+      .eq("id", userId);
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    alert("Balance credited ✅");
+    loadUsers();
+  }
+
+  async function debit(userId){
+    const amtInput = document.getElementById(`amt-${userId}`);
+    const noteInput = document.getElementById(`note-${userId}`);
+
+    const amt = Number(amtInput.value || 0);
+    const notes = noteInput.value;
+
+    if(amt <= 0){
+      alert("Enter a valid amount to debit");
+      return;
+    }
+
+    const { data: user, error: fetchErr } = await supabaseClient
+      .from("users")
+      .select("balance")
+      .eq("id", userId)
+      .single();
+
+    if(fetchErr){
+      alert(fetchErr.message);
+      return;
+    }
+
+    const currentBalance = Number(user.balance || 0);
+    const newBalance = Math.max(0, currentBalance - amt);
+
+    const { error } = await supabaseClient
+      .from("users")
+      .update({ balance: newBalance, notes })
+      .eq("id", userId);
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    alert("Balance debited ✅");
+    loadUsers();
   }
 
   async function logout(){
