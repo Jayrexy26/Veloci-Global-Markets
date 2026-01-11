@@ -1,166 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin – CoinLuxora</title>
+<title>Admin Login Debug</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
   background:#020617;
-  color:#e5e7eb;
+  color:white;
   font-family:system-ui;
   padding:20px;
 }
-h1{margin-bottom:10px}
-input{
+input,button{
   width:100%;
   padding:12px;
   margin-bottom:10px;
-  border-radius:10px;
-  border:1px solid #1e293b;
-  background:#020617;
-  color:#e5e7eb;
+  border-radius:8px;
 }
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:#38bdf8;
-  color:#020617;
-  font-weight:700;
-  cursor:pointer;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
-}
-th,td{
-  border:1px solid #1e293b;
-  padding:10px;
-  font-size:13px;
-}
+button{background:#38bdf8;font-weight:700}
 .hidden{display:none}
-.status{padding:4px 10px;border-radius:999px}
-.pending{color:#facc15}
-.approved{color:#22c55e}
-.rejected{color:#f87171}
-.approve{background:#22c55e}
-.reject{background:#f87171}
-a{color:#38bdf8}
-#error{color:#f87171;margin-top:10px}
 </style>
 </head>
 <body>
 
-<div id="login-box">
-  <h1>Admin Login</h1>
-  <input id="email" placeholder="Admin Email">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="adminLogin()">Login</button>
-  <div id="error"></div>
-</div>
+<h2>Admin Login (Debug)</h2>
 
-<div id="admin-panel" class="hidden">
-  <h1>Deposit Approvals</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Asset</th>
-        <th>Network</th>
-        <th>Amount</th>
-        <th>Tx Hash</th>
-        <th>Proof</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">LOGIN</button>
+
+<div id="panel" class="hidden">
+  <h2>ADMIN PANEL LOADED</h2>
 </div>
 
 <script>
-const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-
-const ADMIN_EMAIL = "admin@coinluxora.com";
-
 const supabase = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
+  "https://xdcscknfomlzwysczegc.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4"
 );
 
-async function adminLogin(){
-  document.getElementById("error").innerText = "Logging in…";
+async function login(){
+  alert("Login button clicked");
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { data, error } =
-    await supabase.auth.signInWithPassword({ email, password });
-
-  if(error){
-    document.getElementById("error").innerText = error.message;
-    return;
-  }
-
-  if(data.user.email !== ADMIN_EMAIL){
-    document.getElementById("error").innerText = "Not authorized";
-    return;
-  }
-
-  document.getElementById("login-box").classList.add("hidden");
-  document.getElementById("admin-panel").classList.remove("hidden");
-  loadDeposits();
-}
-
-async function loadDeposits(){
-  const { data, error } = await supabase
-    .from("deposit_confirmations")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  if(error){
-    alert("Failed to load deposits");
-    return;
-  }
-
-  const rows = document.getElementById("rows");
-  rows.innerHTML = "";
-
-  data.forEach(r=>{
-    rows.innerHTML += `
-      <tr>
-        <td>${r.asset}</td>
-        <td>${r.network}</td>
-        <td>${r.amount}</td>
-        <td>${r.tx_hash}</td>
-        <td>
-          <a target="_blank"
-          href="${SUPABASE_URL}/storage/v1/object/public/${r.proof_url}">
-          View</a>
-        </td>
-        <td class="status ${r.status}">${r.status}</td>
-        <td>
-          <button class="approve" onclick="updateStatus('${r.id}','approved')">Approve</button>
-          <button class="reject" onclick="updateStatus('${r.id}','rejected')">Reject</button>
-        </td>
-      </tr>`;
+  const result = await supabase.auth.signInWithPassword({
+    email,
+    password
   });
-}
 
-async function updateStatus(id,status){
-  await supabase
-    .from("deposit_confirmations")
-    .update({status})
-    .eq("id",id);
+  alert("Supabase response:\n" + JSON.stringify(result));
 
-  loadDeposits();
+  if(result.error){
+    alert("ERROR: " + result.error.message);
+    return;
+  }
+
+  const session = await supabase.auth.getSession();
+  alert("Session:\n" + JSON.stringify(session));
+
+  document.getElementById("panel").classList.remove("hidden");
 }
 </script>
 
