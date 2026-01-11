@@ -121,12 +121,13 @@
 <!-- DEPOSIT CONFIRMATIONS -->
 <div class="box">
   <strong>Deposit Confirmations</strong>
-  <div class="small">Approve or reject deposit proofs</div>
+  <div class="small">Approve deposit and balance auto-credits</div>
   <div id="depStatus" style="margin-top:8px;">Loading deposits…</div>
 
   <table>
     <thead>
       <tr>
+        <th>User Email</th>
         <th>Asset</th>
         <th>Network</th>
         <th>Amount</th>
@@ -175,7 +176,6 @@
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Protect admin dashboard
   checkSession();
 
   async function checkSession(){
@@ -285,7 +285,7 @@
     loadUsers();
   }
 
-  // ---------------- DEPOSITS ----------------
+  // ---------------- DEPOSITS (AUTO CREDIT) ----------------
   async function loadDeposits(){
     const status = document.getElementById("depStatus");
     const tbody = document.getElementById("depRows");
@@ -314,6 +314,7 @@
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
+        <td>${d.user_email || "-"}</td>
         <td>${d.asset}</td>
         <td>${d.network}</td>
         <td>${d.amount}</td>
@@ -321,7 +322,7 @@
         <td><a href="${proofLink}" target="_blank">View</a></td>
         <td><strong>${d.status || "pending"}</strong></td>
         <td>
-          <button class="approve" onclick="updateDeposit('${d.id}','approved')">Approve</button>
+          <button class="approve" onclick="approveAndCredit('${d.id}','${d.user_email}',${d.amount})">Approve</button>
           <button class="reject" onclick="updateDeposit('${d.id}','rejected')">Reject</button>
         </td>
       `;
@@ -338,6 +339,53 @@
     if(res.error){ alert("❌ " + res.error.message); return; }
 
     alert("✅ Deposit updated!");
+    loadDeposits();
+  }
+
+  async function approveAndCredit(depositId, userEmail, amount){
+    if(!userEmail || userEmail === "-"){
+      alert("❌ No user_email found for this deposit.");
+      return;
+    }
+
+    // 1) Fetch user by email
+    const { data: user, error: userErr } = await supabaseClient
+      .from("users")
+      .select("*")
+      .eq("email", userEmail)
+      .single();
+
+    if(userErr){
+      alert("❌ User not found: " + userErr.message);
+      return;
+    }
+
+    // 2) Update user balance
+    const newBalance = Number(user.balance || 0) + Number(amount || 0);
+
+    const { error: balErr } = await supabaseClient
+      .from("users")
+      .update({ balance: newBalance })
+      .eq("id", user.id);
+
+    if(balErr){
+      alert("❌ Balance update failed: " + balErr.message);
+      return;
+    }
+
+    // 3) Approve deposit
+    const { error: depErr } = await supabaseClient
+      .from("deposit_confirmations")
+      .update({ status: "approved" })
+      .eq("id", depositId);
+
+    if(depErr){
+      alert("❌ Deposit approve failed: " + depErr.message);
+      return;
+    }
+
+    alert("✅ Deposit approved + balance credited!");
+    loadUsers();
     loadDeposits();
   }
 
