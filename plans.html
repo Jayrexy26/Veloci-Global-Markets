@@ -11,23 +11,15 @@
 <style>
 :root{
   --bg:#050a18;
-  --card:rgba(255,255,255,.06);
-  --card2:rgba(255,255,255,.04);
   --border:rgba(255,255,255,.12);
   --text:#eaf0ff;
   --muted:rgba(234,240,255,.65);
-  --muted2:rgba(234,240,255,.40);
 
   --ok:#34d399;
   --err:#f87171;
   --warn:#facc15;
 
-  --blue:#5b6cff;
-  --purple:#7c4dff;
-  --green:#34d399;
-
   --pending:#9e6816;
-  --rejected:#783122;
   --forexGreen:#0bd07c;
 }
 
@@ -43,16 +35,19 @@ body{
   padding:16px;
   padding-bottom:34px;
 }
-
 .container{max-width:980px;margin:0 auto}
 
-/* ✅ Sticky Back Button */
-.stickyBack{
+/* ===========================
+   ✅ TOP FLOAT NAV (LEFT BACK + RIGHT MENU)
+   =========================== */
+.topFloatNav{
   position:sticky;
-  top:12px;
+  top:10px;
   z-index:9999;
   display:flex;
-  justify-content:flex-start;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
   margin-bottom:12px;
 }
 .backBtn{
@@ -67,8 +62,90 @@ body{
   box-shadow:0 20px 70px rgba(0,0,0,.55);
 }
 .backBtn:hover{background:rgba(255,255,255,.08)}
+.menuBtn{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+}
+.menuBtn:hover{background:rgba(255,255,255,.10)}
 
-/* Top bar */
+/* ===========================
+   ✅ SIDEBAR + OVERLAY (PREMIUM)
+   =========================== */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(6px);
+}
+.sidebar{
+  position:fixed; top:0; right:-320px;
+  width:290px; height:100vh;
+  background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  border-left:1px solid rgba(255,255,255,.12);
+  padding:16px;
+  transition:.28s ease;
+  z-index:1000;
+  box-shadow:0 20px 90px rgba(0,0,0,.75);
+}
+.sidebar.open{ right:0; }
+.overlay.show{ display:block; }
+
+.sideTop{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;
+}
+.brand{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{
+  border-radius:12px;
+  padding:8px 12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+}
+.userTag{
+  padding:12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  margin-bottom:14px;
+}
+.small{color:var(--muted);font-size:13px;margin-top:8px}
+.sideItem{
+  display:flex;gap:10px;align-items:center;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;margin-bottom:10px;
+  color:var(--text);
+  background:rgba(0,0,0,.22);
+  font-weight:1000;
+  text-decoration:none;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+.sideLogout{
+  width:100%;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  box-shadow:0 20px 70px rgba(239,68,68,.15);
+}
+
+/* ===========================
+   MAIN UI (same premium theme)
+   =========================== */
 .topBar{
   display:flex;
   justify-content:space-between;
@@ -101,7 +178,7 @@ body{
 }
 .gradBtn:active{transform:translateY(1px)}
 
-/* ✅ Stats */
+/* STATS */
 .statsGrid{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -133,7 +210,6 @@ body{
 .fillActive{background:linear-gradient(90deg, var(--forexGreen), rgba(34,197,94,.60))}
 .fillCompleted{background:linear-gradient(90deg, rgba(56,189,248,1), rgba(91,108,255,1))}
 
-/* Sections */
 .section{
   border:1px solid var(--border);
   border-radius:22px;
@@ -144,21 +220,12 @@ body{
   margin-bottom:14px;
 }
 .section h2{margin:0;font-size:26px;font-weight:1000}
-.small{color:var(--muted);font-size:13px;margin-top:8px}
-.ok{color:var(--ok);font-weight:1000}
-.err{color:var(--err);font-weight:1000}
-.warn{color:var(--warn);font-weight:1000}
 
-/* Plan grid */
 .grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:12px;
-  margin-top:14px;
+  display:grid;grid-template-columns:1fr;
+  gap:12px;margin-top:14px;
 }
-@media(min-width:860px){
-  .grid{grid-template-columns:repeat(3,1fr)}
-}
+@media(min-width:860px){ .grid{grid-template-columns:repeat(3,1fr)} }
 
 .planCard{
   border:1px solid rgba(255,255,255,.14);
@@ -177,11 +244,9 @@ body{
   pointer-events:none;
 }
 .planInner{position:relative;z-index:2}
-
 .planTitle{font-size:20px;font-weight:1000;letter-spacing:.2px}
 .planSub{margin-top:6px;color:rgba(255,255,255,.65);font-size:13px;font-weight:900}
 
-/* Chips */
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .chip{
   padding:8px 12px;border-radius:999px;
@@ -211,7 +276,47 @@ input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px rgba(99,102,2
 }
 .startBtn:active{transform:translateY(1px)}
 
-/* Summary */
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+.warn{color:var(--warn);font-weight:1000}
+
+/* Modal */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  display:none;align-items:center;justify-content:center;z-index:9999;
+}
+.modalBox{
+  width:95%;max-width:560px;border-radius:22px;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(12px);
+  padding:18px;
+}
+.modalTitle{margin:0 0 12px 0;font-size:20px;font-weight:1000}
+.modalRow{margin-bottom:10px;font-size:14px}
+.modalRow span{opacity:.65}
+.closeModalBtn{
+  width:100%;margin-top:10px;padding:14px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.28);
+  color:white;font-weight:1000;cursor:pointer;
+}
+.pdfBtn{
+  width:100%;margin-top:10px;padding:14px;border-radius:16px;border:none;
+  background:linear-gradient(90deg, #5b6cff, #34d399);
+  color:white;font-weight:1000;cursor:pointer;
+}
+
+.pill{
+  display:inline-block;padding:8px 12px;border-radius:999px;
+  font-weight:1000;font-size:12px;border:1px solid rgba(255,255,255,.14)
+}
+.pPending{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.38);color:#facc15}
+.pActive{background:rgba(11,208,124,.16);border-color:rgba(11,208,124,.38);color:var(--forexGreen)}
+.pCompleted{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.35);color:#38bdf8}
+.pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
+
 .summaryCard{
   margin-top:14px;border-radius:22px;padding:16px;
   border:1px solid rgba(255,255,255,.12);
@@ -235,58 +340,47 @@ input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px rgba(99,102,2
 }
 .actionBtn:hover{background:rgba(255,255,255,.10)}
 
-/* Status pill */
-.pill{
-  display:inline-block;padding:8px 12px;border-radius:999px;font-weight:1000;font-size:12px;
-  border:1px solid rgba(255,255,255,.14);
-}
-.pPending{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.38);color:#facc15}
-.pActive{background:rgba(11,208,124,.16);border-color:rgba(11,208,124,.38);color:var(--forexGreen)}
-.pCompleted{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.35);color:#38bdf8}
-.pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
-
-/* Modal */
-.modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.75);
-  display:none;align-items:center;justify-content:center;z-index:9999;
-}
-.modalBox{
-  width:95%;max-width:560px;border-radius:22px;
-  border:1px solid rgba(255,255,255,.16);
-  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  box-shadow:0 26px 90px rgba(0,0,0,.65);
-  backdrop-filter: blur(12px);
-  padding:18px;
-}
-.modalTitle{margin:0 0 12px 0;font-size:20px;font-weight:1000}
-.modalRow{margin-bottom:10px;font-size:14px}
-.modalRow span{opacity:.65}
-.closeBtn{
-  width:100%;margin-top:10px;padding:14px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.28);
-  color:white;font-weight:1000;cursor:pointer;
-}
-.pdfBtn{
-  width:100%;margin-top:10px;padding:14px;border-radius:16px;border:none;
-  background:linear-gradient(90deg, #5b6cff, #34d399);
-  color:white;font-weight:1000;cursor:pointer;
-}
-
 a{color:#9bdcff;text-decoration:none;font-weight:1000}
 a:hover{text-decoration:underline}
 </style>
 </head>
 
 <body>
-<div class="container">
 
-  <!-- ✅ STICKY BACK BTN TOP LEFT -->
-  <div class="stickyBack">
-    <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+<!-- OVERLAY + SIDEBAR -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sideTop">
+    <div class="brand">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
   </div>
 
-  <!-- TOP -->
+  <div class="userTag">
+    <div class="small">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
+
+  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem activeLink" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <!-- ✅ TOP LEFT BACK + TOP RIGHT MENU -->
+  <div class="topFloatNav">
+    <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+    <button class="menuBtn" onclick="openMenu()">☰</button>
+  </div>
+
+  <!-- TOP HEADER -->
   <div class="topBar">
     <div>
       <div class="title">Investment Plans</div>
@@ -334,7 +428,6 @@ a:hover{text-decoration:underline}
   <!-- ACTIVE -->
   <div class="section">
     <h2>My Active Plan</h2>
-    <!-- ✅ Removed "Active plan loaded ✅" message -->
     <div id="activePlan"></div>
   </div>
 
@@ -357,7 +450,7 @@ a:hover{text-decoration:underline}
     <div id="planModalBody"></div>
 
     <button class="pdfBtn" id="downloadPlanPdfBtn">Download Plan Receipt (PDF)</button>
-    <button class="closeBtn" onclick="closeModal()">Close</button>
+    <button class="closeModalBtn" onclick="closeModal()">Close</button>
   </div>
 </div>
 
@@ -379,6 +472,17 @@ const PLANS = [
 
 init();
 
+/* MENU */
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+/* NAV */
 function goDashboard(){ window.location.href="user-dashboard.html"; }
 function scrollToPlans(){ document.getElementById("plansSection").scrollIntoView({behavior:"smooth", block:"start"}); }
 function money(n){ return "$" + Number(n||0).toFixed(2); }
@@ -641,11 +745,17 @@ async function init(){
 
   currentUserEmail=userData.user.email;
   document.getElementById("topEmail").innerText=currentUserEmail;
+  document.getElementById("sideEmail").innerText=currentUserEmail;
 
   renderPlans();
   await loadPlansForStats();
   await loadActivePlan();
   initRealtimePlans();
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
