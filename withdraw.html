@@ -1,93 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Withdraw Funds</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coinluxora - Withdraw</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
-.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617}
-h2{margin:0 0 12px 0}
-input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
-button{width:100%;padding:12px;border:none;border-radius:10px;background:#38bdf8;color:#020617;font-weight:700}
-.ok{color:#22c55e}
-.err{color:#f87171}
+  body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px;padding-bottom:40px}
+  header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
+  button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
+  .backBtn{background:#0b1224;color:#e5e7eb;border:1px solid #1e293b}
+  .box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
+  h2{margin:0;font-size:18px}
+  .small{color:#94a3b8;font-size:12px;margin-top:8px;line-height:1.4}
+  .ok{color:#22c55e;font-weight:900}
+  .err{color:#f87171;font-weight:900}
+  input,select,textarea{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:10px;
+    border:1px solid #1e293b;
+    background:#020617;
+    color:#e5e7eb;
+    outline:none;
+    box-sizing:border-box;
+  }
+  textarea{min-height:88px;resize:vertical}
+  .btnGreen{width:100%;background:#22c55e;margin-top:12px}
 </style>
 </head>
+
 <body>
 
-<div class="box">
-  <h2>Withdraw Funds</h2>
+<header>
+  <button class="backBtn" onclick="goBack()">← Back</button>
+  <strong>Withdraw Funds</strong>
+  <button onclick="logout()">Logout</button>
+</header>
 
-  <select id="asset">
-    <option value="btc">BTC</option>
-    <option value="eth">ETH</option>
-    <option value="usdt">USDT</option>
+<div class="box">
+  <h2>Withdrawal Request</h2>
+  <div class="small">
+    Submit your withdrawal request. Status will be reviewed by admin.
+  </div>
+
+  <select id="method">
+    <option value="crypto">Crypto Withdrawal</option>
+    <option value="bank">Bank Transfer</option>
+    <option value="other">Other</option>
   </select>
 
+  <input id="amount" type="number" step="0.01" placeholder="Amount (USD)"/>
+
+  <input id="wallet" placeholder="Wallet address (required for crypto)"/>
+
   <select id="network">
+    <option value="">Select network (optional)</option>
     <option value="BTC">BTC</option>
     <option value="ERC20">ERC20</option>
     <option value="TRC20">TRC20</option>
   </select>
 
-  <input id="amount" type="number" step="0.01" placeholder="Enter amount">
-  <input id="wallet" placeholder="Enter destination wallet address">
+  <textarea id="note" placeholder="Extra note (optional)"></textarea>
 
-  <button onclick="submitWithdrawal()">Submit Withdrawal</button>
+  <button class="btnGreen" onclick="submitWithdrawal()">Submit Withdrawal</button>
 
-  <p id="msg"></p>
+  <div id="msg" class="small"></div>
 </div>
 
 <script>
-const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const EDGE_WITHDRAW_URL = `${SUPABASE_URL}/functions/v1/request_withdrawal`;
 
-const supabaseClient = supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function submitWithdrawal(){
-  const msg=document.getElementById("msg");
-  msg.innerHTML="Submitting…";
+  init();
 
-  const { data } = await supabaseClient.auth.getUser();
-  if(!data.user){
-    msg.innerHTML="<span class='err'>You must be logged in</span>";
-    return;
+  async function init(){
+    const { data } = await supabaseClient.auth.getUser();
+    if(!data.user){
+      document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
+    }
   }
 
-  const user_email=data.user.email;
-
-  const asset=document.getElementById("asset").value;
-  const network=document.getElementById("network").value;
-  const amount=Number(document.getElementById("amount").value || 0);
-  const wallet=document.getElementById("wallet").value.trim();
-
-  if(amount<=0 || wallet.length<6){
-    msg.innerHTML="<span class='err'>Fill all fields correctly</span>";
-    return;
+  function goBack(){
+    window.location.href = "user-dashboard.html";
   }
 
-  const res = await supabaseClient.from("withdrawals").insert([{
-    user_email,
-    asset,
-    network,
-    amount,
-    wallet_address: wallet,
-    status: "pending"
-  }]);
+  async function submitWithdrawal(){
+    const msg=document.getElementById("msg");
+    msg.innerHTML="Submitting...";
 
-  if(res.error){
-    msg.innerHTML="<span class='err'>"+res.error.message+"</span>";
-    return;
+    const method=document.getElementById("method").value;
+    const amount=Number(document.getElementById("amount").value||0);
+    const wallet=document.getElementById("wallet").value.trim();
+    const network=document.getElementById("network").value;
+    const note=document.getElementById("note").value.trim();
+
+    if(amount <= 0){
+      msg.innerHTML="<span class='err'>Enter a valid amount</span>";
+      return;
+    }
+
+    if(method === "crypto" && wallet.length < 10){
+      msg.innerHTML="<span class='err'>Wallet address is required for crypto</span>";
+      return;
+    }
+
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
+    if(!accessToken){
+      msg.innerHTML="<span class='err'>Session expired. Login again.</span>";
+      return;
+    }
+
+    const res = await fetch(EDGE_WITHDRAW_URL, {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":`Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        amount,
+        method,
+        wallet_address: wallet,
+        currency: "USD",
+        network,
+        note
+      })
+    });
+
+    const json = await res.json().catch(()=>null);
+
+    if(!res.ok){
+      msg.innerHTML="<span class='err'>"+(json?.error || json?.message || "Failed")+"</span>";
+      return;
+    }
+
+    msg.innerHTML="<span class='ok'>Withdrawal request submitted ✅</span>";
+
+    document.getElementById("amount").value="";
+    document.getElementById("wallet").value="";
+    document.getElementById("network").value="";
+    document.getElementById("note").value="";
   }
 
-  msg.innerHTML="<span class='ok'>Withdrawal request submitted ✅</span>";
-  document.getElementById("amount").value="";
-  document.getElementById("wallet").value="";
-}
+  async function logout(){
+    await supabaseClient.auth.signOut();
+    window.location.href="login.html";
+  }
 </script>
 
 </body>
