@@ -8,135 +8,115 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b0f19;
-      color: #fff;
+    body { margin:0; font-family:Arial,sans-serif; background:#0b0f19; color:#fff; }
+    .layout { display:flex; min-height:100vh; }
+
+    .sidebar{
+      width:240px; background:#0f172a; padding:18px; box-sizing:border-box;
+      border-right:1px solid rgba(255,255,255,0.08);
+    }
+    .brand{ font-size:20px; font-weight:800; margin-bottom:22px; letter-spacing:0.5px; }
+    .nav a{
+      display:block; padding:12px; margin:6px 0; border-radius:10px;
+      color:rgba(255,255,255,0.88); text-decoration:none; font-weight:600;
+      background:rgba(255,255,255,0.03);
+    }
+    .nav a:hover{ background:rgba(255,255,255,0.07); }
+    .nav a.active{
+      background:rgba(99,102,241,0.25);
+      border:1px solid rgba(99,102,241,0.35);
     }
 
-    .layout { display: flex; min-height: 100vh; }
+    .main{ flex:1; padding:20px; box-sizing:border-box; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 18px; border-radius:16px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+      margin-bottom:18px;
+    }
+    .topbar h2{ margin:0; font-size:18px; font-weight:800; }
 
-    .sidebar {
-      width: 240px;
-      background: #0f172a;
-      padding: 18px;
-      box-sizing: border-box;
-      border-right: 1px solid rgba(255,255,255,0.08);
+    .card{
+      max-width:900px; margin:0 auto 18px auto; padding:20px;
+      border-radius:18px; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
     }
 
-    .brand { font-size: 20px; font-weight: 800; margin-bottom: 22px; letter-spacing: 0.5px; }
+    .card h3{ margin:0 0 18px 0; font-size:22px; font-weight:900; }
 
-    .nav a {
-      display: block;
-      padding: 12px 12px;
-      margin: 6px 0;
-      border-radius: 10px;
-      color: rgba(255,255,255,0.88);
-      text-decoration: none;
-      font-weight: 600;
-      background: rgba(255,255,255,0.03);
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    label{ display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:rgba(255,255,255,0.88); }
+
+    input,select{
+      width:100%; padding:13px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.25); color:#fff; outline:none; box-sizing:border-box;
+    }
+    input::placeholder{ color:rgba(255,255,255,0.35); }
+
+    .full{ grid-column:1 / -1; }
+    button{
+      width:100%; padding:14px; border:0; border-radius:12px;
+      background:linear-gradient(90deg,#6366f1,#22c55e);
+      color:#fff; font-weight:900; cursor:pointer; margin-top:8px; font-size:15px;
+    }
+    button:disabled{ opacity:0.6; cursor:not-allowed; }
+
+    .msg{
+      margin-top:14px; padding:12px; border-radius:12px;
+      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08);
+      font-weight:700; font-size:14px; display:none; white-space:pre-wrap;
+    }
+    .msg.ok{ color:#4ade80; display:block; }
+    .msg.err{ color:#fb7185; display:block; }
+
+    /* History table */
+    .historyHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:12px;
+    }
+    .historyHead h4{ margin:0; font-size:16px; font-weight:900; }
+    .miniBtn{
+      width:auto; padding:10px 12px; border-radius:10px; font-size:13px;
+      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+    }
+    .miniBtn:hover{ background:rgba(255,255,255,0.12); }
+
+    table{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; }
+    th,td{
+      text-align:left; padding:12px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      font-size:13px;
+    }
+    th{ font-size:12px; color:rgba(255,255,255,0.75); font-weight:900; }
+    tr:hover td{ background:rgba(255,255,255,0.03); }
+
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      font-weight:900; font-size:12px; border:1px solid rgba(255,255,255,0.12);
+    }
+    .pending{ background:rgba(250,204,21,0.10); color:#fde047; border-color:rgba(250,204,21,0.25); }
+    .approved{ background:rgba(34,197,94,0.10); color:#4ade80; border-color:rgba(34,197,94,0.25); }
+    .rejected{ background:rgba(244,63,94,0.10); color:#fb7185; border-color:rgba(244,63,94,0.25); }
+
+    .empty{
+      padding:14px; border-radius:14px;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.08);
+      font-weight:800; opacity:0.85;
     }
 
-    .nav a:hover { background: rgba(255,255,255,0.07); }
-
-    .nav a.active {
-      background: rgba(99,102,241,0.25);
-      border: 1px solid rgba(99,102,241,0.35);
-    }
-
-    .main { flex: 1; padding: 20px; box-sizing: border-box; }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 18px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      margin-bottom: 18px;
-    }
-
-    .topbar h2 { margin: 0; font-size: 18px; font-weight: 800; }
-
-    .card {
-      max-width: 650px;
-      margin: 0 auto;
-      padding: 20px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    }
-
-    .card h3 { margin: 0 0 18px 0; font-size: 22px; font-weight: 900; }
-
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: rgba(255,255,255,0.88);
-    }
-
-    input, select {
-      width: 100%;
-      padding: 13px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.25);
-      color: #fff;
-      outline: none;
-      box-sizing: border-box;
-    }
-
-    input::placeholder { color: rgba(255,255,255,0.35); }
-
-    .full { grid-column: 1 / -1; }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(90deg, #6366f1, #22c55e);
-      color: #fff;
-      font-weight: 900;
-      cursor: pointer;
-      margin-top: 8px;
-      font-size: 15px;
-    }
-
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .msg {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 12px;
-      background: rgba(0,0,0,0.25);
-      border: 1px solid rgba(255,255,255,0.08);
-      font-weight: 700;
-      font-size: 14px;
-      display: none;
-      white-space: pre-wrap;
-    }
-
-    .msg.ok { color: #4ade80; display: block; }
-    .msg.err { color: #fb7185; display: block; }
-
-    @media (max-width: 900px) {
-      .sidebar { display: none; }
-      .grid { grid-template-columns: 1fr; }
-      .main { padding: 14px; }
+    @media (max-width: 900px){
+      .sidebar{ display:none; }
+      .grid{ grid-template-columns:1fr; }
+      .main{ padding:14px; }
+      th:nth-child(4), td:nth-child(4){ display:none; } /* hide wallet column on mobile */
     }
   </style>
 </head>
 
 <body>
-
 <div class="layout">
 
   <aside class="sidebar">
@@ -156,6 +136,7 @@
       <div id="userEmail" style="opacity:0.85;font-weight:800;"></div>
     </div>
 
+    <!-- ✅ Withdraw form -->
     <div class="card">
       <h3>Request Withdrawal</h3>
 
@@ -197,7 +178,16 @@
           <div id="msg" class="msg"></div>
         </div>
       </div>
+    </div>
 
+    <!-- ✅ Withdrawal History BELOW -->
+    <div class="card">
+      <div class="historyHead">
+        <h4>Withdrawal History</h4>
+        <button id="refreshHistoryBtn" class="miniBtn" type="button">Refresh</button>
+      </div>
+
+      <div id="historyContainer"></div>
     </div>
   </main>
 </div>
@@ -211,28 +201,108 @@
 
   const msg = document.getElementById("msg");
   const submitBtn = document.getElementById("submitBtn");
+  const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
   const userEmailDiv = document.getElementById("userEmail");
+  const historyContainer = document.getElementById("historyContainer");
 
-  // ✅ FIX: Always show the message when called
   function showMessage(text, ok=false) {
     msg.textContent = text;
     msg.className = "msg " + (ok ? "ok" : "err");
     msg.style.display = "block";
   }
 
+  function escapeHtml(str="") {
+    return str.replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function formatDate(iso){
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    } catch {
+      return iso;
+    }
+  }
+
+  function statusPill(status){
+    const s = (status || "pending").toLowerCase();
+    if (s === "approved") return `<span class="pill approved">APPROVED</span>`;
+    if (s === "rejected") return `<span class="pill rejected">REJECTED</span>`;
+    return `<span class="pill pending">PENDING</span>`;
+  }
+
   async function loadUser() {
     const { data } = await supabaseClient.auth.getUser();
     if (!data?.user) {
       window.location.href = "login.html";
-      return;
+      return null;
     }
     userEmailDiv.textContent = data.user.email || "";
+    return data.user;
   }
 
   document.getElementById("logoutBtn").addEventListener("click", async (e) => {
     e.preventDefault();
     await supabaseClient.auth.signOut();
     window.location.href = "login.html";
+  });
+
+  async function loadWithdrawalHistory(userEmail) {
+    historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
+
+    const { data, error } = await supabaseClient
+      .from("withdrawals")
+      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
+      .eq("user_email", userEmail)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      historyContainer.innerHTML = `<div class="empty">No withdrawal history yet.</div>`;
+      return;
+    }
+
+    const rows = data.map((w) => `
+      <tr>
+        <td>${escapeHtml(w.asset || "")}</td>
+        <td>${escapeHtml(String(w.amount || ""))}</td>
+        <td>${escapeHtml(w.network || "")}</td>
+        <td title="${escapeHtml(w.wallet_address || "")}">
+          ${escapeHtml((w.wallet_address || "").slice(0, 10))}${(w.wallet_address || "").length > 10 ? "..." : ""}
+        </td>
+        <td>${statusPill(w.status)}</td>
+        <td>${escapeHtml(formatDate(w.created_at))}</td>
+      </tr>
+    `).join("");
+
+    historyContainer.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Amount</th>
+            <th>Network</th>
+            <th>Wallet</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  refreshHistoryBtn.addEventListener("click", async () => {
+    const user = await supabaseClient.auth.getUser();
+    const email = user?.data?.user?.email;
+    if (email) await loadWithdrawalHistory(email);
   });
 
   submitBtn.addEventListener("click", async () => {
@@ -293,11 +363,15 @@
         return;
       }
 
-      // ✅ FIX: this WILL display now
-      showMessage("Withdrawal submitted successfully ✅", true);
+      showMessage("Withdrawal request submitted successfully ✅", true);
 
       document.getElementById("amount").value = "";
       document.getElementById("wallet_address").value = "";
+
+      // ✅ Refresh history immediately so user sees it below
+      const u = await supabaseClient.auth.getUser();
+      const email = u?.data?.user?.email;
+      if (email) await loadWithdrawalHistory(email);
 
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit Withdrawal";
@@ -310,7 +384,11 @@
     }
   });
 
-  loadUser();
+  // init
+  (async () => {
+    const user = await loadUser();
+    if (user?.email) await loadWithdrawalHistory(user.email);
+  })();
 </script>
 
 </body>
