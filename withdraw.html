@@ -1,243 +1,578 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Withdraw - Coinluxora</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Withdraw - Coinluxora</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-/* ---------- Base ---------- */
-body{margin:0;font-family:Arial,sans-serif;background:#0b0f19;color:#fff}
-.layout{display:flex;min-height:100vh}
-.sidebar{width:240px;background:#0f172a;padding:18px;border-right:1px solid rgba(255,255,255,.08)}
-.brand{font-size:20px;font-weight:800;margin-bottom:22px}
-.nav a{display:block;padding:12px;margin:6px 0;border-radius:10px;color:#fff;text-decoration:none;background:rgba(255,255,255,.05);font-weight:700}
-.nav a.active{background:rgba(99,102,241,.25)}
-.main{flex:1;padding:20px}
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:16px;border-radius:16px;background:rgba(255,255,255,.05);margin-bottom:18px}
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; background:#0b0f19; color:#fff; }
+    .layout { display:flex; min-height:100vh; }
 
-.card{max-width:1000px;margin:0 auto 18px;padding:20px;border-radius:18px;background:rgba(255,255,255,.05)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.full{grid-column:1/-1}
+    .sidebar{
+      width:240px; background:#0f172a; padding:18px; box-sizing:border-box;
+      border-right:1px solid rgba(255,255,255,0.08);
+    }
+    .brand{ font-size:20px; font-weight:800; margin-bottom:22px; letter-spacing:0.5px; }
+    .nav a{
+      display:block; padding:12px; margin:6px 0; border-radius:10px;
+      color:rgba(255,255,255,0.88); text-decoration:none; font-weight:600;
+      background:rgba(255,255,255,0.03);
+    }
+    .nav a:hover{ background:rgba(255,255,255,0.07); }
+    .nav a.active{
+      background:rgba(99,102,241,0.25);
+      border:1px solid rgba(99,102,241,0.35);
+    }
 
-input,select{width:100%;padding:13px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:#000;color:#fff}
-button{padding:12px;border-radius:12px;border:0;font-weight:900;cursor:pointer}
-.primary{width:100%;background:linear-gradient(90deg,#6366f1,#22c55e);color:#fff}
-.miniBtn{padding:8px 10px;font-size:12px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff}
-.dangerBtn{padding:8px 10px;font-size:12px;border-radius:8px;background:rgba(244,63,94,.2);color:#fb7185;border:1px solid rgba(244,63,94,.4)}
+    .main{ flex:1; padding:20px; box-sizing:border-box; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 18px; border-radius:16px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+      margin-bottom:18px;
+    }
+    .topbar h2{ margin:0; font-size:18px; font-weight:800; }
 
-.msg{margin-top:12px;padding:10px;border-radius:10px;display:none}
-.msg.ok{display:block;color:#4ade80}
-.msg.err{display:block;color:#fb7185}
+    .card{
+      max-width:980px; margin:0 auto 18px auto; padding:20px;
+      border-radius:18px; background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
 
-/* ---------- Table ---------- */
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px}
-th{opacity:.8}
-.pill{padding:5px 9px;border-radius:999px;font-weight:900;font-size:11px}
-.pending{color:#fde047;background:rgba(250,204,21,.15)}
-.approved{color:#4ade80;background:rgba(34,197,94,.15)}
-.rejected{color:#fb7185;background:rgba(244,63,94,.15)}
-.cancelled{color:#cbd5e1;background:rgba(148,163,184,.15)}
+    .card h3{ margin:0 0 18px 0; font-size:22px; font-weight:900; }
 
-/* ---------- Tabs ---------- */
-.tabs{display:flex;gap:8px;flex-wrap:wrap}
-.tab{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer;font-weight:800;font-size:12px}
-.tab.active{background:rgba(99,102,241,.35)}
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    label{ display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:rgba(255,255,255,0.88); }
 
-/* ---------- Modal ---------- */
-.modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.65);
-  display:none;align-items:center;justify-content:center;z-index:999
-}
-.modalBox{
-  width:95%;max-width:520px;
-  background:#0f172a;border-radius:18px;padding:20px;
-  box-shadow:0 20px 60px rgba(0,0,0,.6)
-}
-.modalBox h3{margin-top:0}
-.modalRow{margin-bottom:10px;font-size:14px}
-.modalRow span{opacity:.7}
-.closeBtn{margin-top:10px;width:100%;background:#1f2937;color:#fff}
+    input,select{
+      width:100%; padding:13px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.25); color:#fff; outline:none; box-sizing:border-box;
+    }
+    input::placeholder{ color:rgba(255,255,255,0.35); }
 
-/* ---------- Responsive ---------- */
-@media(max-width:900px){
-  .sidebar{display:none}
-  .grid{grid-template-columns:1fr}
-}
-</style>
+    .full{ grid-column:1 / -1; }
+    button{
+      padding:14px; border:0; border-radius:12px;
+      background:linear-gradient(90deg,#6366f1,#22c55e);
+      color:#fff; font-weight:900; cursor:pointer; font-size:15px;
+    }
+    button:disabled{ opacity:0.6; cursor:not-allowed; }
+
+    .msg{
+      margin-top:14px; padding:12px; border-radius:12px;
+      background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08);
+      font-weight:700; font-size:14px; display:none; white-space:pre-wrap;
+    }
+    .msg.ok{ color:#4ade80; display:block; }
+    .msg.err{ color:#fb7185; display:block; }
+
+    /* History header */
+    .historyHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    .historyHead h4{ margin:0; font-size:16px; font-weight:900; }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .tab{
+      padding:9px 12px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.05);
+      color:rgba(255,255,255,0.9);
+      user-select:none;
+    }
+    .tab.active{
+      border-color:rgba(99,102,241,0.55);
+      background:rgba(99,102,241,0.22);
+    }
+
+    /* History table */
+    table{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; }
+    th,td{
+      text-align:left; padding:12px 10px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      font-size:13px;
+      vertical-align:middle;
+    }
+    th{ font-size:12px; color:rgba(255,255,255,0.75); font-weight:900; }
+    tr:hover td{ background:rgba(255,255,255,0.03); }
+
+    .pill{
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      font-weight:900; font-size:12px; border:1px solid rgba(255,255,255,0.12);
+    }
+    .pending{ background:rgba(250,204,21,0.10); color:#fde047; border-color:rgba(250,204,21,0.25); }
+    .approved{ background:rgba(34,197,94,0.10); color:#4ade80; border-color:rgba(34,197,94,0.25); }
+    .rejected{ background:rgba(244,63,94,0.10); color:#fb7185; border-color:rgba(244,63,94,0.25); }
+    .cancelled{ background:rgba(148,163,184,0.10); color:#cbd5e1; border-color:rgba(148,163,184,0.25); }
+
+    .miniBtn{
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+    }
+    .miniBtn:hover{ background:rgba(255,255,255,0.12); }
+
+    .dangerBtn{
+      padding:9px 11px;
+      border-radius:10px;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      border:1px solid rgba(244,63,94,0.35);
+      background:rgba(244,63,94,0.12);
+      color:#fb7185;
+    }
+    .dangerBtn:hover{ background:rgba(244,63,94,0.18); }
+    .dangerBtn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+    .empty{
+      padding:14px; border-radius:14px;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.08);
+      font-weight:800; opacity:0.85;
+    }
+
+    .footerActions{
+      display:flex; justify-content:center; margin-top:14px;
+    }
+
+    @media (max-width: 900px){
+      .sidebar{ display:none; }
+      .grid{ grid-template-columns:1fr; }
+      .main{ padding:14px; }
+      th:nth-child(4), td:nth-child(4){ display:none; } /* hide wallet column */
+      th:nth-child(7), td:nth-child(7){ display:none; } /* hide method column */
+    }
+  </style>
 </head>
 
 <body>
 <div class="layout">
 
-<aside class="sidebar">
-  <div class="brand">COINLUXORA</div>
-  <div class="nav">
-    <a href="user_dashboard.html">Dashboard</a>
-    <a href="deposit.html">Deposit</a>
-    <a class="active" href="withdraw.html">Withdraw</a>
-    <a href="account.html">Account</a>
-  </div>
-</aside>
+  <aside class="sidebar">
+    <div class="brand">COINLUXORA</div>
+    <div class="nav">
+      <a href="user_dashboard.html">Dashboard</a>
+      <a href="deposit.html">Deposit</a>
+      <a class="active" href="withdraw.html">Withdraw</a>
+      <a href="account.html">Account</a>
+      <a href="#" id="logoutBtn">Logout</a>
+    </div>
+  </aside>
 
-<main class="main">
-<div class="topbar">
-  <h2>Withdrawals</h2>
-  <div id="userEmail"></div>
-</div>
+  <main class="main">
+    <div class="topbar">
+      <h2>Withdrawals</h2>
+      <div id="userEmail" style="opacity:0.85;font-weight:800;"></div>
+    </div>
 
-<!-- Withdraw form -->
-<div class="card">
-<h3>Request Withdrawal</h3>
-<div class="grid">
-  <div>
-    <label>Amount</label>
-    <input id="amount" type="number">
-  </div>
-  <div>
-    <label>Asset</label>
-    <select id="asset">
-      <option>USD</option><option>ETH</option><option>BTC</option><option>USDT</option>
-    </select>
-  </div>
-  <div class="full">
-    <label>Network</label>
-    <select id="network">
-      <option>TRC20</option><option>ERC20</option><option>BEP20</option>
-    </select>
-  </div>
-  <div class="full">
-    <label>Wallet Address</label>
-    <input id="wallet_address">
-  </div>
-  <div class="full">
-    <button class="primary" id="submitBtn">Submit Withdrawal</button>
-    <div id="msg" class="msg"></div>
-  </div>
-</div>
-</div>
+    <!-- ✅ Withdraw form -->
+    <div class="card">
+      <h3>Request Withdrawal</h3>
 
-<!-- History -->
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-  <h3>Withdrawal History</h3>
-  <div class="tabs" id="tabs">
-    <div class="tab active" data-status="all">All</div>
-    <div class="tab" data-status="pending">Pending</div>
-    <div class="tab" data-status="approved">Approved</div>
-    <div class="tab" data-status="rejected">Rejected</div>
-    <div class="tab" data-status="cancelled">Cancelled</div>
-  </div>
-</div>
+      <div class="grid">
+        <div>
+          <label>Amount</label>
+          <input type="number" id="amount" placeholder="Enter amount"/>
+        </div>
 
-<div id="history"></div>
-<button id="loadMore" class="miniBtn" style="display:none;margin-top:10px">Load more</button>
-</div>
-</main>
-</div>
+        <div>
+          <label>Asset</label>
+          <select id="asset">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="ETH">ETH</option>
+            <option value="BTC">BTC</option>
+            <option value="USDT">USDT</option>
+          </select>
+        </div>
 
-<!-- ---------- VIEW DETAILS MODAL ---------- -->
-<div class="modal" id="detailsModal">
-  <div class="modalBox">
-    <h3>Withdrawal Details</h3>
-    <div id="detailsBody"></div>
-    <button class="closeBtn" onclick="closeModal()">Close</button>
-  </div>
+        <div class="full">
+          <label>Network</label>
+          <select id="network">
+            <option value="TRC20">TRC20</option>
+            <option value="ERC20">ERC20</option>
+            <option value="BEP20">BEP20</option>
+            <option value="BTC">BTC</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label>Wallet Address</label>
+          <input type="text" id="wallet_address" placeholder="Enter your wallet address"/>
+        </div>
+
+        <div class="full">
+          <button id="submitBtn" type="button" style="width:100%;">Submit Withdrawal</button>
+          <div id="msg" class="msg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ History -->
+    <div class="card">
+      <div class="historyHead">
+        <h4>Withdrawal History</h4>
+
+        <!-- ✅ Tabs -->
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-status="all">All</div>
+          <div class="tab" data-status="pending">Pending</div>
+          <div class="tab" data-status="approved">Approved</div>
+          <div class="tab" data-status="rejected">Rejected</div>
+          <div class="tab" data-status="cancelled">Cancelled</div>
+        </div>
+
+        <button id="refreshHistoryBtn" class="miniBtn" type="button">Refresh</button>
+      </div>
+
+      <div id="historyContainer"></div>
+
+      <!-- ✅ Pagination -->
+      <div class="footerActions">
+        <button id="loadMoreBtn" class="miniBtn" type="button" style="display:none;">Load More</button>
+      </div>
+    </div>
+
+  </main>
 </div>
 
 <script>
-const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-const historyEl=document.getElementById("history");
-const loadMoreBtn=document.getElementById("loadMore");
-const modal=document.getElementById("detailsModal");
-const detailsBody=document.getElementById("detailsBody");
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let email=null,filter="all",limit=10,offset=0,cache=[];
+  const msg = document.getElementById("msg");
+  const submitBtn = document.getElementById("submitBtn");
+  const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
+  const userEmailDiv = document.getElementById("userEmail");
+  const historyContainer = document.getElementById("historyContainer");
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  const tabsEl = document.getElementById("tabs");
 
-function pill(s){
-  s=s||"pending";
-  return `<span class="pill ${s}">${s.toUpperCase()}</span>`;
-}
+  let currentUserEmail = null;
+  let currentFilter = "all";   // all | pending | approved | rejected | cancelled
+  let pageSize = 10;
+  let currentOffset = 0;
+  let historyCache = [];       // holds loaded records for pagination display
 
-function openModal(w){
-  detailsBody.innerHTML=`
-    <div class="modalRow"><span>ID:</span> ${w.id}</div>
-    <div class="modalRow"><span>Amount:</span> ${w.amount}</div>
-    <div class="modalRow"><span>Asset:</span> ${w.asset}</div>
-    <div class="modalRow"><span>Network:</span> ${w.network}</div>
-    <div class="modalRow"><span>Wallet:</span> ${w.wallet_address}</div>
-    <div class="modalRow"><span>Status:</span> ${pill(w.status)}</div>
-    <div class="modalRow"><span>Method:</span> ${w.method}</div>
-    <div class="modalRow"><span>Date:</span> ${new Date(w.created_at).toLocaleString()}</div>
-  `;
-  modal.style.display="flex";
-}
-function closeModal(){ modal.style.display="none"; }
+  function showMessage(text, ok=false) {
+    msg.textContent = text;
+    msg.className = "msg " + (ok ? "ok" : "err");
+    msg.style.display = "block";
+  }
 
-function render(){
-  if(cache.length===0){historyEl.innerHTML="No withdrawals";return;}
-  historyEl.innerHTML=`
-  <table>
-  <tr><th>Asset</th><th>Amount</th><th>Status</th><th>Action</th></tr>
-  ${cache.map(w=>`
-    <tr>
-      <td>${w.asset}</td>
-      <td>${w.amount}</td>
-      <td>${pill(w.status)}</td>
-      <td>
-        <button class="miniBtn" onclick='openModal(${JSON.stringify(w)})'>View</button>
-        ${w.status==="pending"
-          ? `<button class="dangerBtn" onclick="cancel('${w.id}')">Cancel</button>`
-          : ""}
-      </td>
-    </tr>
-  `).join("")}
-  </table>`;
-}
+  function escapeHtml(str="") {
+    return str.replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
 
-async function load(reset=false){
-  if(reset){offset=0;cache=[]}
-  let q=supabase.from("withdrawals").select("*").eq("user_email",email)
-    .order("created_at",{ascending:false})
-    .range(offset,offset+limit-1);
-  if(filter!=="all")q=q.eq("status",filter);
-  const {data}=await q;
-  if(data){cache=cache.concat(data);render()}
-  loadMoreBtn.style.display=data&&data.length===limit?"block":"none";
-  offset+=limit;
-}
+  function formatDate(iso){
+    try { return new Date(iso).toLocaleString(); }
+    catch { return iso; }
+  }
 
-async function cancel(id){
-  if(!confirm("Cancel withdrawal?"))return;
-  await supabase.from("withdrawals")
-    .update({status:"cancelled"})
-    .eq("id",id)
-    .eq("user_email",email);
-  load(true);
-}
+  function statusPill(status){
+    const s = (status || "pending").toLowerCase();
+    if (s === "approved") return `<span class="pill approved">APPROVED</span>`;
+    if (s === "rejected") return `<span class="pill rejected">REJECTED</span>`;
+    if (s === "cancelled") return `<span class="pill cancelled">CANCELLED</span>`;
+    return `<span class="pill pending">PENDING</span>`;
+  }
 
-document.getElementById("tabs").onclick=e=>{
-  if(!e.target.dataset.status)return;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  e.target.classList.add("active");
-  filter=e.target.dataset.status;
-  load(true);
-};
+  async function loadUser() {
+    const { data } = await supabaseClient.auth.getUser();
+    if (!data?.user) {
+      window.location.href = "login.html";
+      return null;
+    }
+    userEmailDiv.textContent = data.user.email || "";
+    currentUserEmail = data.user.email || "";
+    return data.user;
+  }
 
-loadMoreBtn.onclick=()=>load();
+  document.getElementById("logoutBtn").addEventListener("click", async (e) => {
+    e.preventDefault();
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  });
 
-(async()=>{
-  const u=await supabase.auth.getUser();
-  email=u.data.user.email;
-  document.getElementById("userEmail").textContent=email;
-  load(true);
-})();
+  function renderHistoryTable(records){
+    if (!records || records.length === 0) {
+      historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+      return;
+    }
+
+    const rows = records.map((w) => {
+      const walletShort = (w.wallet_address || "").slice(0, 10) + ((w.wallet_address || "").length > 10 ? "..." : "");
+      const status = (w.status || "pending").toLowerCase();
+      const canCancel = status === "pending";
+
+      return `
+        <tr>
+          <td>${escapeHtml(w.asset || "")}</td>
+          <td>${escapeHtml(String(w.amount || ""))}</td>
+          <td>${escapeHtml(w.network || "")}</td>
+          <td title="${escapeHtml(w.wallet_address || "")}">
+            ${escapeHtml(walletShort)}
+          </td>
+          <td>${statusPill(w.status)}</td>
+          <td>${escapeHtml(w.method || "")}</td>
+          <td>${escapeHtml(formatDate(w.created_at))}</td>
+          <td>
+            ${canCancel
+              ? `<button class="dangerBtn" data-cancel-id="${escapeHtml(w.id)}">Cancel</button>`
+              : `<span style="opacity:0.55;font-weight:900;">—</span>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    historyContainer.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Amount</th>
+            <th>Network</th>
+            <th>Wallet</th>
+            <th>Status</th>
+            <th>Method</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+
+    // ✅ attach cancel listeners
+    document.querySelectorAll("[data-cancel-id]").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const withdrawalId = e.currentTarget.getAttribute("data-cancel-id");
+        await cancelWithdrawal(withdrawalId, e.currentTarget);
+      });
+    });
+  }
+
+  async function fetchWithdrawals({ reset=false } = {}) {
+    if (!currentUserEmail) return;
+
+    if (reset) {
+      currentOffset = 0;
+      historyCache = [];
+      loadMoreBtn.style.display = "none";
+      historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
+    }
+
+    let query = supabaseClient
+      .from("withdrawals")
+      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
+      .eq("user_email", currentUserEmail)
+      .order("created_at", { ascending: false })
+      .range(currentOffset, currentOffset + pageSize - 1);
+
+    if (currentFilter !== "all") {
+      query = query.eq("status", currentFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      if (historyCache.length === 0) {
+        historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+      }
+      loadMoreBtn.style.display = "none";
+      return;
+    }
+
+    historyCache = historyCache.concat(data);
+    renderHistoryTable(historyCache);
+
+    // show/hide load more
+    if (data.length === pageSize) {
+      loadMoreBtn.style.display = "inline-block";
+      currentOffset += pageSize;
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  // ✅ Cancel logic (Front-end only)
+  // This updates withdrawal status -> "cancelled" ONLY if the record belongs to user_email and is pending.
+  async function cancelWithdrawal(withdrawalId, btnEl) {
+    try {
+      btnEl.disabled = true;
+      btnEl.textContent = "Cancelling...";
+
+      // Safety confirm
+      const ok = confirm("Cancel this pending withdrawal request?");
+      if (!ok) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      // Update in DB
+      const { error } = await supabaseClient
+        .from("withdrawals")
+        .update({ status: "cancelled" })
+        .eq("id", withdrawalId)
+        .eq("user_email", currentUserEmail)
+        .eq("status", "pending");
+
+      if (error) {
+        showMessage("Cancel failed: " + error.message);
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      showMessage("Withdrawal cancelled ✅", true);
+
+      // Refresh history in same filter
+      await fetchWithdrawals({ reset:true });
+
+    } catch (e) {
+      showMessage("Cancel error: " + (e?.message || String(e)));
+    }
+  }
+
+  // Tabs
+  tabsEl.addEventListener("click", async (e) => {
+    const tab = e.target.closest(".tab");
+    if (!tab) return;
+
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    currentFilter = tab.getAttribute("data-status") || "all";
+    await fetchWithdrawals({ reset:true });
+  });
+
+  refreshHistoryBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:true });
+  });
+
+  loadMoreBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:false });
+  });
+
+  // Submit withdrawal
+  submitBtn.addEventListener("click", async () => {
+    try {
+      showMessage("Submitting withdrawal request...");
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session;
+
+      if (!session) {
+        showMessage("You are not logged in. Please login again.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      const payload = {
+        amount: Number(document.getElementById("amount").value),
+        asset: document.getElementById("asset").value,
+        network: document.getElementById("network").value,
+        wallet_address: document.getElementById("wallet_address").value.trim(),
+        method: "crypto"
+      };
+
+      if (!payload.amount || payload.amount <= 0) {
+        showMessage("Enter a valid amount.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      if (!payload.wallet_address) {
+        showMessage("Wallet address is required.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data?.error) {
+        console.error("Withdraw error:", data);
+        showMessage(data?.details || data?.error || "Withdrawal failed.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      showMessage("Withdrawal request submitted successfully ✅", true);
+
+      document.getElementById("amount").value = "";
+      document.getElementById("wallet_address").value = "";
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Withdrawal";
+
+      // Refresh history back to top
+      await fetchWithdrawals({ reset:true });
+
+    } catch (err) {
+      console.error(err);
+      showMessage("Unexpected error occurred.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Withdrawal";
+    }
+  });
+
+  // init
+  (async () => {
+    const user = await loadUser();
+    if (user?.email) {
+      await fetchWithdrawals({ reset:true });
+    }
+  })();
 </script>
+
 </body>
 </html>
