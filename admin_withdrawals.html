@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Withdrawals - Coinluxora</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  body{margin:0;font-family:Arial,sans-serif;background:#0b0f19;color:#fff}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:16px;border-radius:16px;background:rgba(255,255,255,.05);margin-bottom:18px
+  }
+  .title{font-size:20px;font-weight:900}
+  .user{opacity:.85;font-weight:900}
+  .card{padding:18px;border-radius:18px;background:rgba(255,255,255,.05)}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer;font-weight:900;font-size:12px}
+  .tab.active{background:rgba(99,102,241,.35)}
+  .searchbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .searchbar input{
+    flex:1;min-width:220px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);
+    background:#000;color:#fff;box-sizing:border-box
+  }
+  button{padding:10px 12px;border-radius:10px;border:0;font-weight:900;cursor:pointer}
+  .miniBtn{background:rgba(255,255,255,.12);color:#fff}
+  .approveBtn{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.35);color:#4ade80}
+  .rejectBtn{background:rgba(244,63,94,.18);border:1px solid rgba(244,63,94,.35);color:#fb7185}
+  .pill{padding:5px 9px;border-radius:999px;font-weight:900;font-size:11px}
+  .pending{color:#fde047;background:rgba(250,204,21,.15)}
+  .approved{color:#4ade80;background:rgba(34,197,94,.15)}
+  .rejected{color:#fb7185;background:rgba(244,63,94,.15)}
+  .cancelled{color:#cbd5e1;background:rgba(148,163,184,.15)}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px;vertical-align:middle}
+  th{opacity:.8;text-align:left}
+  .msg{margin:12px 0;padding:10px;border-radius:12px;display:none;white-space:pre-wrap}
+  .msg.ok{display:block;color:#4ade80;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+  .msg.err{display:block;color:#fb7185;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2)}
+  .loadMore{margin-top:14px;display:none}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">Admin — Withdrawals</div>
+    <div>
+      <span class="user" id="adminEmail"></span>
+      <button id="logoutBtn" class="miniBtn">Logout</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-status="all">All</div>
+      <div class="tab" data-status="pending">Pending</div>
+      <div class="tab" data-status="approved">Approved</div>
+      <div class="tab" data-status="rejected">Rejected</div>
+      <div class="tab" data-status="cancelled">Cancelled</div>
+    </div>
+
+    <div class="searchbar">
+      <input id="search" placeholder="Search id / email / wallet / amount / asset...">
+      <button id="clearSearch" class="miniBtn">Clear</button>
+      <button id="refresh" class="miniBtn">Refresh</button>
+    </div>
+
+    <div id="msg" class="msg"></div>
+    <div id="tableWrap"></div>
+    <button id="loadMore" class="miniBtn loadMore">Load more</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const msgEl = document.getElementById("msg");
+  const tableWrap = document.getElementById("tableWrap");
+  const loadMoreBtn = document.getElementById("loadMore");
+  const adminEmailEl = document.getElementById("adminEmail");
+
+  let filter="all";
+  let searchTerm="";
+  let limit=20;
+  let offset=0;
+  let cache=[];
+
+  function showMsg(t, ok=false){
+    msgEl.textContent=t;
+    msgEl.className="msg " + (ok ? "ok":"err");
+    msgEl.style.display="block";
+    setTimeout(()=>{ msgEl.style.display="none"; }, 4500);
+  }
+
+  function pill(s){
+    s=(s||"pending").toLowerCase();
+    return `<span class="pill ${s}">${s.toUpperCase()}</span>`;
+  }
+
+  function escapeHtml(str=""){
+    return str.replace(/[&<>"']/g,(m)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+  }
+
+  function render(){
+    if(cache.length===0){
+      tableWrap.innerHTML = "<div style='padding:12px;font-weight:900;opacity:.85'>No withdrawals found.</div>";
+      return;
+    }
+
+    let rows = cache;
+
+    if(searchTerm.trim()){
+      const t = searchTerm.toLowerCase();
+      rows = rows.filter(w =>
+        String(w.id||"").toLowerCase().includes(t) ||
+        String(w.user_email||"").toLowerCase().includes(t) ||
+        String(w.wallet_address||"").toLowerCase().includes(t) ||
+        String(w.asset||"").toLowerCase().includes(t) ||
+        String(w.amount||"").toLowerCase().includes(t) ||
+        String(w.status||"").toLowerCase().includes(t)
+      );
+    }
+
+    tableWrap.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Asset</th>
+            <th>Amount</th>
+            <th>Network</th>
+            <th>Wallet</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Admin Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(w=>{
+            const status = String(w.status||"pending").toLowerCase();
+            const canAction = (status === "pending");
+            const walletShort = (w.wallet_address||"").slice(0,12) + ((w.wallet_address||"").length>12?"...":"");
+            return `
+              <tr>
+                <td>${escapeHtml(w.user_email||"")}</td>
+                <td>${escapeHtml(w.asset||"")}</td>
+                <td>${escapeHtml(String(w.amount||""))}</td>
+                <td>${escapeHtml(w.network||"")}</td>
+                <td title="${escapeHtml(w.wallet_address||"")}">${escapeHtml(walletShort)}</td>
+                <td>${pill(status)}</td>
+                <td>${escapeHtml(new Date(w.created_at).toLocaleString())}</td>
+                <td style="display:flex;gap:8px;flex-wrap:wrap">
+                  ${canAction
+                    ? `
+                      <button class="approveBtn" onclick="adminAction('${w.id}','approved')">Approve</button>
+                      <button class="rejectBtn" onclick="adminAction('${w.id}','rejected')">Reject</button>
+                    `
+                    : `<span style="opacity:.6;font-weight:900">—</span>`
+                  }
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function load(reset=false){
+    if(reset){ offset=0; cache=[]; loadMoreBtn.style.display="none"; }
+
+    let q = supabase
+      .from("withdrawals")
+      .select("id,user_email,asset,network,amount,wallet_address,status,created_at,method,admin_note")
+      .order("created_at",{ascending:false})
+      .range(offset, offset + limit - 1);
+
+    if(filter!=="all") q=q.eq("status",filter);
+
+    const { data, error } = await q;
+    if(error){
+      showMsg("Load error: " + error.message);
+      return;
+    }
+
+    cache = cache.concat(data || []);
+    render();
+
+    if(data && data.length === limit){
+      loadMoreBtn.style.display="inline-block";
+      offset += limit;
+    } else {
+      loadMoreBtn.style.display="none";
+    }
+  }
+
+  async function ensureAdmin(){
+    const { data } = await supabase.auth.getUser();
+    if(!data?.user){
+      window.location.href="login.html";
+      return false;
+    }
+
+    adminEmailEl.textContent = data.user.email || "";
+
+    // ✅ Check if logged-in user is in admin_users table
+    const { data: adminRow, error } = await supabase
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+
+    if(error || !adminRow){
+      alert("Access denied. You are not an admin.");
+      window.location.href="user_dashboard.html";
+      return false;
+    }
+
+    return true;
+  }
+
+  async function adminAction(id, status){
+    try{
+      const note = prompt(`Optional admin note for ${status.toUpperCase()}:`) || "";
+
+      const { error } = await supabase
+        .from("withdrawals")
+        .update({
+          status,
+          admin_note: note || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .eq("status", "pending"); // only update pending
+
+      if(error){
+        showMsg("Action failed: " + error.message);
+        return;
+      }
+
+      showMsg("Updated successfully ✅", true);
+      await load(true);
+
+    }catch(e){
+      showMsg("Action failed: " + (e?.message || String(e)));
+    }
+  }
+  window.adminAction = adminAction;
+
+  document.getElementById("tabs").onclick = (e)=>{
+    const tab = e.target.closest(".tab");
+    if(!tab) return;
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    filter = tab.dataset.status;
+    load(true);
+  };
+
+  document.getElementById("search").addEventListener("input",(e)=>{
+    searchTerm = e.target.value || "";
+    render();
+  });
+
+  document.getElementById("clearSearch").onclick=()=>{
+    document.getElementById("search").value="";
+    searchTerm="";
+    render();
+  };
+
+  document.getElementById("refresh").onclick=()=>load(true);
+  loadMoreBtn.onclick=()=>load(false);
+
+  document.getElementById("logoutBtn").onclick = async ()=>{
+    await supabase.auth.signOut();
+    window.location.href="login.html";
+  };
+
+  (async()=>{
+    const ok = await ensureAdmin();
+    if(ok) load(true);
+  })();
+</script>
+</body>
+</html>
