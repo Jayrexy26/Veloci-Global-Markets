@@ -139,7 +139,7 @@ body{
   box-shadow:0 16px 40px rgba(239,68,68,.22);
 }
 
-/* ✅ TradingView ticker tape floating box */
+/* ✅ TradingView ticker */
 .tickerFloat{
   margin-top:12px;
   border-radius:18px;
@@ -149,12 +149,42 @@ body{
   backdrop-filter: blur(12px);
   overflow:hidden;
 }
+.tickerHeader{
+  padding:10px 12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  color:rgba(234,240,255,.78);
+  font-weight:1000;
+  font-size:13px;
+}
+.tickerHint{color:rgba(234,240,255,.50);font-size:12px;font-weight:900}
 
-/* makes it look clean on dark */
-.tickerFloat iframe{
+/* fixed height so it ALWAYS shows */
+#tvTickerHost{
+  width:100%;
+  height:52px;
+  position:relative;
+}
+#tvTickerHost .tradingview-widget-container{
+  width:100%;
+  height:52px;
+}
+#tvTickerHost iframe{
   width:100% !important;
-  height:46px !important;
+  height:52px !important;
   display:block !important;
+}
+.tickerFallback{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:rgba(234,240,255,.70);
+  font-weight:1000;
+  font-size:12px;
 }
 
 /* ====== BALANCE PREMIUM CARD ====== */
@@ -228,7 +258,6 @@ body{
 .ok{color:var(--ok);font-weight:1000}
 .err{color:var(--err);font-weight:1000}
 
-/* GRID / CARD */
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
 .card{
   border:1px solid rgba(255,255,255,.12);
@@ -415,13 +444,16 @@ a:hover{text-decoration:underline}
     </div>
   </div>
 
-  <!-- ✅ Floating Moving Live Prices -->
+  <!-- ✅ Live Moving Prices (TradingView Ticker Tape) -->
   <div class="tickerFloat">
-    <!-- TradingView Widget BEGIN -->
-    <div class="tradingview-widget-container" style="width:100%">
-      <div class="tradingview-widget-container__widget"></div>
+    <div class="tickerHeader">
+      <div>Live Market Prices</div>
+      <div class="tickerHint">Powered by TradingView</div>
     </div>
-    <!-- TradingView Widget END -->
+
+    <div id="tvTickerHost">
+      <div id="tickerFallback" class="tickerFallback">Loading ticker…</div>
+    </div>
   </div>
 
   <!-- Balance premium -->
@@ -491,26 +523,6 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- TradingView Script (Ticker Tape) -->
-<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-{
-  "symbols": [
-    { "proName": "NASDAQ:META", "title": "META" },
-    { "proName": "NASDAQ:AMZN", "title": "AMZN" },
-    { "proName": "NASDAQ:HOOD", "title": "HOOD" },
-    { "proName": "NASDAQ:NFLX", "title": "NFLX" },
-    { "proName": "CRYPTOCAP:TOTAL3", "title": "TOTAL3" },
-    { "proName": "BINANCE:BTCUSDT", "title": "BTC" },
-    { "proName": "BINANCE:ETHUSDT", "title": "ETH" }
-  ],
-  "showSymbolLogo": true,
-  "isTransparent": true,
-  "displayMode": "adaptive",
-  "colorTheme": "dark",
-  "locale": "en"
-}
-</script>
-
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -522,7 +534,76 @@ let currentUserEmail="";
 let currentUserId="";
 let badgeChannel=null;
 
+/* ✅ Inject TradingView ticker dynamically (more reliable) */
+function initTradingViewTicker(){
+  const host = document.getElementById("tvTickerHost");
+  const fallback = document.getElementById("tickerFallback");
+
+  // clear any previous widget
+  host.innerHTML = `<div id="tickerFallback" class="tickerFallback">Loading ticker…</div>`;
+
+  // create widget container
+  const container = document.createElement("div");
+  container.className = "tradingview-widget-container";
+  container.style.width = "100%";
+  container.style.height = "52px";
+
+  const widgetDiv = document.createElement("div");
+  widgetDiv.className = "tradingview-widget-container__widget";
+  container.appendChild(widgetDiv);
+
+  host.appendChild(container);
+
+  // widget config
+  const config = {
+    symbols: [
+      { proName: "NASDAQ:META", title: "META" },
+      { proName: "NASDAQ:AMZN", title: "AMZN" },
+      { proName: "NASDAQ:HOOD", title: "HOOD" },
+      { proName: "NASDAQ:NFLX", title: "NFLX" },
+      { proName: "CRYPTOCAP:TOTAL3", title: "TOTAL3" },
+      { proName: "BINANCE:BTCUSDT", title: "BTC" },
+      { proName: "BINANCE:ETHUSDT", title: "ETH" }
+    ],
+    showSymbolLogo: true,
+    isTransparent: true,
+    displayMode: "adaptive",
+    colorTheme: "dark",
+    locale: "en"
+  };
+
+  // add script
+  const script = document.createElement("script");
+  script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+  script.async = true;
+  script.type = "text/javascript";
+  script.innerHTML = JSON.stringify(config);
+
+  script.onload = () => {
+    // hide fallback after a short delay
+    setTimeout(()=>{
+      const fb = document.getElementById("tickerFallback");
+      if(fb) fb.style.display="none";
+    }, 900);
+  };
+
+  script.onerror = () => {
+    host.innerHTML = `<div class="tickerFallback">Ticker failed to load. Check network / Ad-blocker.</div>`;
+  };
+
+  container.appendChild(script);
+
+  // safety fallback if blocked
+  setTimeout(()=>{
+    const iframe = host.querySelector("iframe");
+    if(!iframe){
+      host.innerHTML = `<div class="tickerFallback">Ticker blocked. Disable ad-blocker or allow TradingView.</div>`;
+    }
+  }, 4500);
+}
+
 init();
+initTradingViewTicker();
 
 /* NAV */
 function goHome(){ window.scrollTo({top:0,behavior:"smooth"}); }
