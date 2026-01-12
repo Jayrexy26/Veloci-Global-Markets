@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coinluxora Token Copier</title>
+  <title>Coinluxora User Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -13,144 +13,397 @@
       font-family: Arial, sans-serif;
       background:#0b1220;
       color:#fff;
-      padding: 18px 14px;
     }
-    .card{
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:14px 16px;
+      background:#0f172a;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      position:sticky;
+      top:0;
+      z-index:10;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      font-weight:900;
+      letter-spacing:.5px;
+      font-size:18px;
+    }
+
+    .dash-badges{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .badge-btn{
+      background:#101827;
+      color:#fff;
+      border:1px solid rgba(255,255,255,.08);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:700;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .08s ease;
+    }
+
+    .badge-btn:active{
+      transform: scale(.99);
+    }
+
+    .badge{
+      min-width:22px;
+      height:22px;
+      padding:0 7px;
+      border-radius:999px;
+      background:#ff3b30;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:12px;
+      font-weight:900;
+      line-height:1;
+    }
+
+    .badge.hidden{
+      display:none;
+    }
+
+    .container{
+      padding:18px 16px;
       max-width:900px;
       margin:auto;
+    }
+
+    .card{
       background:#0f172a;
       border:1px solid rgba(255,255,255,.06);
       border-radius:16px;
       padding:16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.18);
+      margin-bottom:14px;
+      box-shadow:0 10px 25px rgba(0,0,0,.18);
     }
+
+    .muted{
+      opacity:.75;
+      font-size:13px;
+    }
+
+    .uid-box{
+      margin-top:10px;
+      font-size:12px;
+      opacity:.95;
+      word-break:break-all;
+      background:#0b1020;
+      padding:10px;
+      border-radius:12px;
+      border:1px dashed rgba(255,255,255,.12);
+      line-height:1.4;
+    }
+
     .btn{
       background:#2563eb;
       border:none;
       color:#fff;
       padding:10px 14px;
       border-radius:12px;
-      font-weight:800;
+      font-weight:900;
       cursor:pointer;
-      margin-top:12px;
+      margin-top:10px;
     }
-    .btn:active{ transform: scale(.99); }
-    .box{
-      margin-top:12px;
-      background:#0b1020;
-      border:1px dashed rgba(255,255,255,.14);
-      padding:12px;
-      border-radius:12px;
-      font-size:12px;
-      word-break: break-all;
-      line-height: 1.4;
+
+    .btn:active{
+      transform:scale(.99);
     }
-    .muted{ opacity:.75; font-size:13px; margin-top:6px; }
+
     .toast{
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(20, 30, 55, 0.95);
-      border: 1px solid rgba(255,255,255,.10);
-      padding: 10px 12px;
-      border-radius: 14px;
-      font-weight: 800;
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      background:rgba(20,30,55,.95);
+      border:1px solid rgba(255,255,255,.10);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:900;
       display:none;
-      z-index: 999;
-      max-width: 92vw;
+      z-index:999;
+      max-width:92vw;
       text-align:center;
-      white-space: pre-wrap;
-      line-height: 1.35;
+      white-space:pre-wrap;
+      line-height:1.35;
+    }
+
+    code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="card">
-    <h2 style="margin:0;">Copy Access Token</h2>
-    <div class="muted">
-      This token is used to test Edge Functions. You can copy it directly without console.
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">Coinluxora</div>
+
+    <!-- BADGES -->
+    <div class="dash-badges">
+      <button class="badge-btn" id="btn-notifications" type="button">
+        Notifications <span class="badge hidden" id="badge-notifications">0</span>
+      </button>
+
+      <button class="badge-btn" id="btn-withdrawals" type="button">
+        Withdrawals <span class="badge hidden" id="badge-withdrawals">0</span>
+      </button>
+
+      <button class="badge-btn" id="btn-deposits" type="button">
+        Deposits <span class="badge hidden" id="badge-deposits">0</span>
+      </button>
     </div>
-
-    <div class="box" id="uidBox">Loading user...</div>
-    <div class="box" id="tokenBox">Loading access token...</div>
-
-    <button class="btn" id="copyBtn" type="button">Copy Token</button>
   </div>
 
+  <div class="container">
+
+    <div class="card">
+      <h2 style="margin:0 0 8px 0;">User Dashboard</h2>
+      <div class="muted">
+        ✅ Realtime Badges connected. Tap a badge button to clear it securely.
+      </div>
+
+      <div class="uid-box" id="uidBox">Loading user session...</div>
+
+      <button class="btn" id="btn-refresh" type="button">
+        Refresh Badges
+      </button>
+      <div class="muted" style="margin-top:8px;">
+        If you ever suspect connection issues, tap “Refresh Badges”.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Realtime Test</h3>
+      <div class="muted">
+        Keep this dashboard open. Then go to Supabase SQL editor and run:
+        <br/><br/>
+        <code style="display:block;white-space:pre-wrap;background:#0b1020;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.06);">
+update public.user_badges
+set badge_value = badge_value + 1,
+    updated_at = now()
+where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
+  and badge_key = 'notifications';
+        </code>
+        <br/>
+        Badge should update instantly without refresh.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
 <script>
-  // =========================
-  // SUPABASE CONFIG
-  // =========================
+  // ======================================================
+  // SUPABASE CONFIG (YOUR VALUES)
+  // ======================================================
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const uidBox = document.getElementById("uidBox");
-  const tokenBox = document.getElementById("tokenBox");
-  const copyBtn = document.getElementById("copyBtn");
+  // Badge keys shown in UI
+  const BADGE_KEYS = ["notifications", "withdrawals", "deposits"];
 
+  let currentUser = null;
+  let badgeChannel = null;
+
+  // ======================================================
+  // TOAST
+  // ======================================================
   const toastEl = document.getElementById("toast");
   let toastTimer = null;
 
-  function toast(msg){
+  function toast(msg) {
     toastEl.textContent = msg;
     toastEl.style.display = "block";
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.style.display = "none", 2500);
+    toastTimer = setTimeout(() => {
+      toastEl.style.display = "none";
+    }, 3500);
   }
 
-  let accessToken = "";
+  // ======================================================
+  // UI: SET BADGE
+  // ======================================================
+  function setBadge(key, value) {
+    const el = document.getElementById(`badge-${key}`);
+    if (!el) return;
 
-  async function init() {
-    // Get user
-    const { data: userData, error: userErr } = await supabaseClient.auth.getUser();
+    const v = parseInt(value || 0, 10);
+    el.textContent = v;
 
-    if (userErr || !userData?.user) {
-      uidBox.innerHTML = "❌ No logged-in user detected.\nLogin first.";
-      tokenBox.innerHTML = "No token found.";
-      copyBtn.disabled = true;
-      toast("Login first");
+    if (v <= 0) el.classList.add("hidden");
+    else el.classList.remove("hidden");
+  }
+
+  // ======================================================
+  // LOAD BADGES ONCE
+  // ======================================================
+  async function loadBadgesOnce(userId) {
+    BADGE_KEYS.forEach(k => setBadge(k, 0));
+
+    const { data, error } = await supabaseClient
+      .from("user_badges")
+      .select("badge_key, badge_value")
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Badge load error:", error);
+      toast("Failed to load badges:\n" + error.message);
       return;
     }
 
-    uidBox.innerHTML = "✅ Logged in UID:\n" + userData.user.id;
-
-    // Get session token
-    const { data: sessData, error: sessErr } = await supabaseClient.auth.getSession();
-
-    if (sessErr || !sessData?.session?.access_token) {
-      tokenBox.innerHTML = "❌ No access token found.\nTry logout/login again.";
-      copyBtn.disabled = true;
-      toast("Token missing");
-      return;
-    }
-
-    accessToken = sessData.session.access_token;
-
-    tokenBox.innerHTML =
-      "✅ Access Token (JWT):\n\n" +
-      accessToken +
-      "\n\nCopy this token into Edge Function test Authorization header:\nBearer <token>";
+    (data || []).forEach(row => {
+      if (BADGE_KEYS.includes(row.badge_key)) {
+        setBadge(row.badge_key, row.badge_value);
+      }
+    });
   }
 
-  copyBtn.addEventListener("click", async () => {
-    if (!accessToken) return;
+  // ======================================================
+  // REALTIME SUBSCRIBE
+  // ======================================================
+  function subscribeToBadgeChanges(userId) {
+    if (badgeChannel) {
+      supabaseClient.removeChannel(badgeChannel);
+      badgeChannel = null;
+    }
+
+    badgeChannel = supabaseClient
+      .channel("realtime-user-badges")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_badges",
+          filter: `user_id=eq.${userId}`
+        },
+        payload => {
+          const row = payload.new;
+          if (!row) return;
+
+          if (BADGE_KEYS.includes(row.badge_key)) {
+            setBadge(row.badge_key, row.badge_value);
+          }
+        }
+      )
+      .subscribe(status => {
+        console.log("Badge realtime status:", status);
+        if (status === "SUBSCRIBED") toast("Realtime connected ✅");
+      });
+  }
+
+  // ======================================================
+  // CLEAR BADGE VIA EDGE FUNCTION
+  // ======================================================
+  async function clearBadge(badge_key) {
     try {
-      await navigator.clipboard.writeText(accessToken);
-      toast("✅ Token copied to clipboard!");
-    } catch (e) {
-      // fallback if clipboard blocked
-      toast("Clipboard blocked.\nLong-press the token to copy manually.");
+      // Get fresh access token
+      const { data: sessionData, error: sessErr } = await supabaseClient.auth.getSession();
+      if (sessErr) {
+        toast("Session error:\n" + sessErr.message);
+        return;
+      }
+
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        toast("No access token.\nPlease login again.");
+        return;
+      }
+
+      // Call Edge Function
+      const res = await fetch(EDGE_CLEAR_BADGE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ badge_key })
+      });
+
+      let json = null;
+      try { json = await res.json(); } catch(e) {}
+
+      if (!res.ok) {
+        const msg = json?.error || json?.details || json?.message || ("HTTP " + res.status);
+        console.error("clear_badge failed:", msg, json);
+        toast("Clear failed:\n" + msg);
+        return;
+      }
+
+      toast(`Cleared ${badge_key} ✅`);
+      // No need to manually setBadge; realtime updates it
+    } catch (err) {
+      console.error(err);
+      toast("Error:\n" + String(err));
     }
+  }
+
+  // ======================================================
+  // INIT
+  // ======================================================
+  async function initBadges() {
+    const uidBox = document.getElementById("uidBox");
+
+    const { data, error } = await supabaseClient.auth.getUser();
+
+    if (error || !data?.user) {
+      uidBox.innerHTML =
+        "❌ No logged-in user detected.<br><br>" +
+        "Please login first before opening this dashboard page.";
+      toast("Please login");
+      return;
+    }
+
+    currentUser = data.user;
+
+    uidBox.innerHTML =
+      "✅ Logged in User UID:<br>" +
+      `<b>${currentUser.id}</b>` +
+      "<br><br><span class='muted'>Tap badges to clear via Edge Function.</span>";
+
+    await loadBadgesOnce(currentUser.id);
+    subscribeToBadgeChanges(currentUser.id);
+  }
+
+  // ======================================================
+  // BUTTON HANDLERS
+  // ======================================================
+  document.getElementById("btn-notifications").addEventListener("click", () => clearBadge("notifications"));
+  document.getElementById("btn-withdrawals").addEventListener("click", () => clearBadge("withdrawals"));
+  document.getElementById("btn-deposits").addEventListener("click", () => clearBadge("deposits"));
+
+  document.getElementById("btn-refresh").addEventListener("click", async () => {
+    if (!currentUser?.id) return;
+    toast("Refreshing badges...");
+    await loadBadgesOnce(currentUser.id);
   });
 
-  window.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("DOMContentLoaded", initBadges);
 </script>
 
 </body>
