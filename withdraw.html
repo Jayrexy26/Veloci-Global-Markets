@@ -37,7 +37,7 @@
     .topbar h2{ margin:0; font-size:18px; font-weight:800; }
 
     .card{
-      max-width:900px; margin:0 auto 18px auto; padding:20px;
+      max-width:980px; margin:0 auto 18px auto; padding:20px;
       border-radius:18px; background:rgba(255,255,255,0.04);
       border:1px solid rgba(255,255,255,0.08);
       box-shadow:0 10px 30px rgba(0,0,0,0.35);
@@ -57,9 +57,9 @@
 
     .full{ grid-column:1 / -1; }
     button{
-      width:100%; padding:14px; border:0; border-radius:12px;
+      padding:14px; border:0; border-radius:12px;
       background:linear-gradient(90deg,#6366f1,#22c55e);
-      color:#fff; font-weight:900; cursor:pointer; margin-top:8px; font-size:15px;
+      color:#fff; font-weight:900; cursor:pointer; font-size:15px;
     }
     button:disabled{ opacity:0.6; cursor:not-allowed; }
 
@@ -71,23 +71,41 @@
     .msg.ok{ color:#4ade80; display:block; }
     .msg.err{ color:#fb7185; display:block; }
 
-    /* History table */
+    /* History header */
     .historyHead{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom:12px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
     }
     .historyHead h4{ margin:0; font-size:16px; font-weight:900; }
-    .miniBtn{
-      width:auto; padding:10px 12px; border-radius:10px; font-size:13px;
-      background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
-    }
-    .miniBtn:hover{ background:rgba(255,255,255,0.12); }
 
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .tab{
+      padding:9px 12px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.05);
+      color:rgba(255,255,255,0.9);
+      user-select:none;
+    }
+    .tab.active{
+      border-color:rgba(99,102,241,0.55);
+      background:rgba(99,102,241,0.22);
+    }
+
+    /* History table */
     table{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; }
     th,td{
       text-align:left; padding:12px 10px;
       border-bottom:1px solid rgba(255,255,255,0.06);
       font-size:13px;
+      vertical-align:middle;
     }
     th{ font-size:12px; color:rgba(255,255,255,0.75); font-weight:900; }
     tr:hover td{ background:rgba(255,255,255,0.03); }
@@ -99,6 +117,32 @@
     .pending{ background:rgba(250,204,21,0.10); color:#fde047; border-color:rgba(250,204,21,0.25); }
     .approved{ background:rgba(34,197,94,0.10); color:#4ade80; border-color:rgba(34,197,94,0.25); }
     .rejected{ background:rgba(244,63,94,0.10); color:#fb7185; border-color:rgba(244,63,94,0.25); }
+    .cancelled{ background:rgba(148,163,184,0.10); color:#cbd5e1; border-color:rgba(148,163,184,0.25); }
+
+    .miniBtn{
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.08);
+      color:#fff;
+    }
+    .miniBtn:hover{ background:rgba(255,255,255,0.12); }
+
+    .dangerBtn{
+      padding:9px 11px;
+      border-radius:10px;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      border:1px solid rgba(244,63,94,0.35);
+      background:rgba(244,63,94,0.12);
+      color:#fb7185;
+    }
+    .dangerBtn:hover{ background:rgba(244,63,94,0.18); }
+    .dangerBtn:disabled{ opacity:0.55; cursor:not-allowed; }
 
     .empty{
       padding:14px; border-radius:14px;
@@ -107,11 +151,16 @@
       font-weight:800; opacity:0.85;
     }
 
+    .footerActions{
+      display:flex; justify-content:center; margin-top:14px;
+    }
+
     @media (max-width: 900px){
       .sidebar{ display:none; }
       .grid{ grid-template-columns:1fr; }
       .main{ padding:14px; }
-      th:nth-child(4), td:nth-child(4){ display:none; } /* hide wallet column on mobile */
+      th:nth-child(4), td:nth-child(4){ display:none; } /* hide wallet column */
+      th:nth-child(7), td:nth-child(7){ display:none; } /* hide method column */
     }
   </style>
 </head>
@@ -174,21 +223,37 @@
         </div>
 
         <div class="full">
-          <button id="submitBtn" type="button">Submit Withdrawal</button>
+          <button id="submitBtn" type="button" style="width:100%;">Submit Withdrawal</button>
           <div id="msg" class="msg"></div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ Withdrawal History BELOW -->
+    <!-- ✅ History -->
     <div class="card">
       <div class="historyHead">
         <h4>Withdrawal History</h4>
+
+        <!-- ✅ Tabs -->
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-status="all">All</div>
+          <div class="tab" data-status="pending">Pending</div>
+          <div class="tab" data-status="approved">Approved</div>
+          <div class="tab" data-status="rejected">Rejected</div>
+          <div class="tab" data-status="cancelled">Cancelled</div>
+        </div>
+
         <button id="refreshHistoryBtn" class="miniBtn" type="button">Refresh</button>
       </div>
 
       <div id="historyContainer"></div>
+
+      <!-- ✅ Pagination -->
+      <div class="footerActions">
+        <button id="loadMoreBtn" class="miniBtn" type="button" style="display:none;">Load More</button>
+      </div>
     </div>
+
   </main>
 </div>
 
@@ -204,6 +269,14 @@
   const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
   const userEmailDiv = document.getElementById("userEmail");
   const historyContainer = document.getElementById("historyContainer");
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  const tabsEl = document.getElementById("tabs");
+
+  let currentUserEmail = null;
+  let currentFilter = "all";   // all | pending | approved | rejected | cancelled
+  let pageSize = 10;
+  let currentOffset = 0;
+  let historyCache = [];       // holds loaded records for pagination display
 
   function showMessage(text, ok=false) {
     msg.textContent = text;
@@ -218,18 +291,15 @@
   }
 
   function formatDate(iso){
-    try {
-      const d = new Date(iso);
-      return d.toLocaleString();
-    } catch {
-      return iso;
-    }
+    try { return new Date(iso).toLocaleString(); }
+    catch { return iso; }
   }
 
   function statusPill(status){
     const s = (status || "pending").toLowerCase();
     if (s === "approved") return `<span class="pill approved">APPROVED</span>`;
     if (s === "rejected") return `<span class="pill rejected">REJECTED</span>`;
+    if (s === "cancelled") return `<span class="pill cancelled">CANCELLED</span>`;
     return `<span class="pill pending">PENDING</span>`;
   }
 
@@ -240,6 +310,7 @@
       return null;
     }
     userEmailDiv.textContent = data.user.email || "";
+    currentUserEmail = data.user.email || "";
     return data.user;
   }
 
@@ -249,38 +320,37 @@
     window.location.href = "login.html";
   });
 
-  async function loadWithdrawalHistory(userEmail) {
-    historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
-
-    const { data, error } = await supabaseClient
-      .from("withdrawals")
-      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
-      .eq("user_email", userEmail)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (error) {
-      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+  function renderHistoryTable(records){
+    if (!records || records.length === 0) {
+      historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
       return;
     }
 
-    if (!data || data.length === 0) {
-      historyContainer.innerHTML = `<div class="empty">No withdrawal history yet.</div>`;
-      return;
-    }
+    const rows = records.map((w) => {
+      const walletShort = (w.wallet_address || "").slice(0, 10) + ((w.wallet_address || "").length > 10 ? "..." : "");
+      const status = (w.status || "pending").toLowerCase();
+      const canCancel = status === "pending";
 
-    const rows = data.map((w) => `
-      <tr>
-        <td>${escapeHtml(w.asset || "")}</td>
-        <td>${escapeHtml(String(w.amount || ""))}</td>
-        <td>${escapeHtml(w.network || "")}</td>
-        <td title="${escapeHtml(w.wallet_address || "")}">
-          ${escapeHtml((w.wallet_address || "").slice(0, 10))}${(w.wallet_address || "").length > 10 ? "..." : ""}
-        </td>
-        <td>${statusPill(w.status)}</td>
-        <td>${escapeHtml(formatDate(w.created_at))}</td>
-      </tr>
-    `).join("");
+      return `
+        <tr>
+          <td>${escapeHtml(w.asset || "")}</td>
+          <td>${escapeHtml(String(w.amount || ""))}</td>
+          <td>${escapeHtml(w.network || "")}</td>
+          <td title="${escapeHtml(w.wallet_address || "")}">
+            ${escapeHtml(walletShort)}
+          </td>
+          <td>${statusPill(w.status)}</td>
+          <td>${escapeHtml(w.method || "")}</td>
+          <td>${escapeHtml(formatDate(w.created_at))}</td>
+          <td>
+            ${canCancel
+              ? `<button class="dangerBtn" data-cancel-id="${escapeHtml(w.id)}">Cancel</button>`
+              : `<span style="opacity:0.55;font-weight:900;">—</span>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join("");
 
     historyContainer.innerHTML = `
       <table>
@@ -291,20 +361,133 @@
             <th>Network</th>
             <th>Wallet</th>
             <th>Status</th>
+            <th>Method</th>
             <th>Date</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
     `;
+
+    // ✅ attach cancel listeners
+    document.querySelectorAll("[data-cancel-id]").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const withdrawalId = e.currentTarget.getAttribute("data-cancel-id");
+        await cancelWithdrawal(withdrawalId, e.currentTarget);
+      });
+    });
   }
 
-  refreshHistoryBtn.addEventListener("click", async () => {
-    const user = await supabaseClient.auth.getUser();
-    const email = user?.data?.user?.email;
-    if (email) await loadWithdrawalHistory(email);
+  async function fetchWithdrawals({ reset=false } = {}) {
+    if (!currentUserEmail) return;
+
+    if (reset) {
+      currentOffset = 0;
+      historyCache = [];
+      loadMoreBtn.style.display = "none";
+      historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
+    }
+
+    let query = supabaseClient
+      .from("withdrawals")
+      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
+      .eq("user_email", currentUserEmail)
+      .order("created_at", { ascending: false })
+      .range(currentOffset, currentOffset + pageSize - 1);
+
+    if (currentFilter !== "all") {
+      query = query.eq("status", currentFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      if (historyCache.length === 0) {
+        historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+      }
+      loadMoreBtn.style.display = "none";
+      return;
+    }
+
+    historyCache = historyCache.concat(data);
+    renderHistoryTable(historyCache);
+
+    // show/hide load more
+    if (data.length === pageSize) {
+      loadMoreBtn.style.display = "inline-block";
+      currentOffset += pageSize;
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  // ✅ Cancel logic (Front-end only)
+  // This updates withdrawal status -> "cancelled" ONLY if the record belongs to user_email and is pending.
+  async function cancelWithdrawal(withdrawalId, btnEl) {
+    try {
+      btnEl.disabled = true;
+      btnEl.textContent = "Cancelling...";
+
+      // Safety confirm
+      const ok = confirm("Cancel this pending withdrawal request?");
+      if (!ok) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      // Update in DB
+      const { error } = await supabaseClient
+        .from("withdrawals")
+        .update({ status: "cancelled" })
+        .eq("id", withdrawalId)
+        .eq("user_email", currentUserEmail)
+        .eq("status", "pending");
+
+      if (error) {
+        showMessage("Cancel failed: " + error.message);
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      showMessage("Withdrawal cancelled ✅", true);
+
+      // Refresh history in same filter
+      await fetchWithdrawals({ reset:true });
+
+    } catch (e) {
+      showMessage("Cancel error: " + (e?.message || String(e)));
+    }
+  }
+
+  // Tabs
+  tabsEl.addEventListener("click", async (e) => {
+    const tab = e.target.closest(".tab");
+    if (!tab) return;
+
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    currentFilter = tab.getAttribute("data-status") || "all";
+    await fetchWithdrawals({ reset:true });
   });
 
+  refreshHistoryBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:true });
+  });
+
+  loadMoreBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:false });
+  });
+
+  // Submit withdrawal
   submitBtn.addEventListener("click", async () => {
     try {
       showMessage("Submitting withdrawal request...");
@@ -368,13 +551,11 @@
       document.getElementById("amount").value = "";
       document.getElementById("wallet_address").value = "";
 
-      // ✅ Refresh history immediately so user sees it below
-      const u = await supabaseClient.auth.getUser();
-      const email = u?.data?.user?.email;
-      if (email) await loadWithdrawalHistory(email);
-
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit Withdrawal";
+
+      // Refresh history back to top
+      await fetchWithdrawals({ reset:true });
 
     } catch (err) {
       console.error(err);
@@ -387,7 +568,9 @@
   // init
   (async () => {
     const user = await loadUser();
-    if (user?.email) await loadWithdrawalHistory(user.email);
+    if (user?.email) {
+      await fetchWithdrawals({ reset:true });
+    }
   })();
 </script>
 
