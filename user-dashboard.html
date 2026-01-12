@@ -230,7 +230,9 @@ a:hover{text-decoration:underline}
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
+const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const BUCKET_NAME="proofs";
@@ -244,19 +246,18 @@ init();
 
 /* NAV */
 function goHome(){ window.scrollTo({top:0,behavior:"smooth"}); }
+function goPlans(){ window.location.href="plans.html"; }
 
-// Updated: Deposit/Withdraw/Support now clear their badge via Edge Function
 function goDepositAndClear(){
-  clearBadge("deposits");  // maps to Deposit badge
+  clearBadge("deposits");
   document.getElementById("depositSection").scrollIntoView({behavior:"smooth"});
 }
 function goWithdrawAndClear(){
-  clearBadge("withdrawals"); // maps to Withdraw badge
+  clearBadge("withdrawals");
   window.location.href="withdraw.html";
 }
-function goPlans(){ window.location.href="plans.html"; }
 function goSupportAndClear(){
-  clearBadge("notifications"); // maps to Support badge
+  clearBadge("notifications");
   window.location.href="support.html";
 }
 
@@ -304,11 +305,10 @@ function setBadgeFromKey(badge_key, badge_value){
   }
 }
 
-/* ✅ Load badges from user_badges table (initial load) */
+/* ✅ Load badges once from user_badges */
 async function loadRealtimeBadgesOnce(){
   if(!currentUserId) return;
 
-  // reset
   setBadge("badgeDeposit", 0);
   setBadge("badgeWithdraw", 0);
   setBadge("badgeSupport", 0);
@@ -328,7 +328,7 @@ async function loadRealtimeBadgesOnce(){
   });
 }
 
-/* ✅ Subscribe realtime to user_badges updates */
+/* ✅ Realtime subscription */
 function subscribeToRealtimeBadges(){
   if(!currentUserId) return;
 
@@ -357,9 +357,7 @@ function subscribeToRealtimeBadges(){
 /* ✅ Clear badge via Edge Function */
 async function clearBadge(badge_key){
   try{
-    const { data: sessionData, error: sessErr } = await supabaseClient.auth.getSession();
-    if(sessErr) return;
-
+    const { data: sessionData } = await supabaseClient.auth.getSession();
     const accessToken = sessionData?.session?.access_token;
     if(!accessToken) return;
 
@@ -372,7 +370,6 @@ async function clearBadge(badge_key){
       },
       body: JSON.stringify({ badge_key })
     });
-    // Realtime will update automatically.
   }catch(e){
     console.log("clearBadge error:", e);
   }
@@ -397,7 +394,7 @@ async function init(){
   renderDepositAddress();
   fetchPrices();
 
-  // ✅ NEW: realtime badge system
+  // ✅ NEW: realtime badges
   await loadRealtimeBadgesOnce();
   subscribeToRealtimeBadges();
 }
@@ -492,6 +489,10 @@ async function fetchPrices(){
   }
 }
 
+/* ✅ UPDATED: submitDeposit now uses Edge Function submit_deposit
+   - Upload proof to storage
+   - Call edge function to insert + increment deposits badge
+*/
 async function submitDeposit(){
   const msg=document.getElementById("depMsg");
   msg.innerHTML="Submitting…";
@@ -507,6 +508,7 @@ async function submitDeposit(){
     return;
   }
 
+  // 1) Upload file to storage
   const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
   const upload = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath,file);
 
@@ -517,15 +519,36 @@ async function submitDeposit(){
 
   const proof_url = `${BUCKET_NAME}/${filePath}`;
 
-  const res = await supabaseClient.from("deposit_confirmations").insert([{
-    user_email: currentUserEmail,
-    asset, network, amount, tx_hash,
-    proof_url,
-    status: "pending"
-  }]);
+  // 2) Get access token
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
 
-  if(res.error){
-    msg.innerHTML="<span class='err'>"+res.error.message+"</span>";
+  if(!accessToken){
+    msg.innerHTML="<span class='err'>Session expired. Login again.</span>";
+    return;
+  }
+
+  // 3) Call Edge Function submit_deposit
+  const res = await fetch(EDGE_SUBMIT_DEPOSIT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+      "apikey": SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({
+      asset,
+      network,
+      amount,
+      tx_hash,
+      proof_url
+    })
+  });
+
+  const json = await res.json().catch(()=>null);
+
+  if(!res.ok){
+    msg.innerHTML="<span class='err'>"+(json?.error || "Failed")+"</span>";
     return;
   }
 
@@ -534,9 +557,7 @@ async function submitDeposit(){
   document.getElementById("confTx").value="";
   document.getElementById("confProof").value="";
 
-  // ✅ After deposit proof submitted: raise deposits badge + refresh display
-  // If you want automatic increment, we can do it using trigger/edge function later.
-  await loadRealtimeBadgesOnce();
+  // Badge increments realtime automatically ✅
 }
 
 async function logout(){
