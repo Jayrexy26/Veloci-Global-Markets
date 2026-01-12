@@ -16,11 +16,13 @@
   --border:rgba(255,255,255,.12);
   --text:#eaf0ff;
   --muted:rgba(234,240,255,.65);
+  --ok:#34d399;
+  --err:#f87171;
 }
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background:
     radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
     radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
@@ -29,7 +31,111 @@ body{
   padding:16px;
   padding-bottom:34px;
 }
+.container{max-width:860px;margin:0 auto}
 
+/* ✅ TOP FLOAT NAV (sticky back left + menu right) */
+.topFloatNav{
+  position:sticky;
+  top:10px;
+  z-index:9999;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+.backBtn{
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  backdrop-filter: blur(12px);
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+}
+.backBtn:hover{background:rgba(255,255,255,.08)}
+.menuBtn{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+}
+.menuBtn:hover{background:rgba(255,255,255,.10)}
+
+/* ✅ SIDEBAR + OVERLAY */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(6px);
+}
+.sidebar{
+  position:fixed; top:0; right:-320px;
+  width:290px; height:100vh;
+  background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  border-left:1px solid rgba(255,255,255,.12);
+  padding:16px;
+  transition:.28s ease;
+  z-index:1000;
+  box-shadow:0 20px 90px rgba(0,0,0,.75);
+}
+.sidebar.open{ right:0; }
+.overlay.show{ display:block; }
+
+.sideTop{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;
+}
+.brand{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{
+  border-radius:12px;
+  padding:8px 12px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+}
+.userTag{
+  padding:12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  margin-bottom:14px;
+}
+.sideSmall{color:var(--muted);font-size:13px;margin-top:0}
+.sideItem{
+  display:flex;gap:10px;align-items:center;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;margin-bottom:10px;
+  color:var(--text);
+  background:rgba(0,0,0,.22);
+  font-weight:1000;
+  text-decoration:none;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+.sideLogout{
+  width:100%;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  box-shadow:0 20px 70px rgba(239,68,68,.15);
+}
+
+/* Existing topBar */
 .topBar{
   display:flex;
   justify-content:space-between;
@@ -45,8 +151,6 @@ body{
 .topBar .title{font-weight:1000;letter-spacing:.2px}
 .topBar .email{font-weight:900;color:rgba(255,255,255,.8);font-size:13px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.container{max-width:860px;margin:0 auto}
-
 /* ✅ STATS */
 .statsGrid{
   display:grid;
@@ -57,8 +161,6 @@ body{
 @media(min-width:720px){
   .statsGrid{grid-template-columns:repeat(4,1fr)}
 }
-
-/* base stat card */
 .statCard{
   border:1px solid rgba(255,255,255,.14);
   border-radius:18px;
@@ -69,29 +171,24 @@ body{
   position:relative;
   overflow:hidden;
 }
-
-/* ✅ NEW: colored stat variants */
 .statCard.approved{
   border-color: rgba(34,197,94,.30);
   background:
     radial-gradient(700px 220px at 20% 0%, rgba(34,197,94,.22), transparent 55%),
     linear-gradient(180deg, rgba(34,197,94,.16), rgba(0,0,0,.18));
 }
-
 .statCard.pending{
   border-color: rgba(158,104,22,.38);
   background:
     radial-gradient(700px 220px at 20% 0%, rgba(158,104,22,.25), transparent 55%),
     linear-gradient(180deg, rgba(158,104,22,.17), rgba(0,0,0,.20));
 }
-
 .statCard.rejected{
   border-color: rgba(120,49,34,.42);
   background:
     radial-gradient(700px 220px at 20% 0%, rgba(120,49,34,.25), transparent 55%),
     linear-gradient(180deg, rgba(120,49,34,.18), rgba(0,0,0,.22));
 }
-
 .statLabel{color:rgba(255,255,255,.75);font-size:12px;font-weight:1000}
 .statValue{margin-top:8px;font-size:22px;font-weight:1000;letter-spacing:.2px}
 .statHint{margin-top:6px;color:rgba(255,255,255,.52);font-size:12px}
@@ -233,14 +330,45 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
   color:white;font-weight:1000;cursor:pointer;
 }
 
-.ok{color:#34d399;font-weight:1000}
-.err{color:#f87171;font-weight:1000}
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
 </style>
 </head>
 
 <body>
 
+<!-- ✅ OVERLAY + SIDEBAR MENU -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="sideTop">
+    <div class="brand">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
+  </div>
+
+  <div class="userTag">
+    <div class="sideSmall">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
+
+  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem activeLink" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
 <div class="container">
+
+  <!-- ✅ STICKY TOP NAV -->
+  <div class="topFloatNav">
+    <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+    <button class="menuBtn" onclick="openMenu()">☰</button>
+  </div>
 
   <div class="topBar">
     <div class="title">Deposits</div>
@@ -425,6 +553,15 @@ let cache=[];
 let searchTerm="";
 let currentDetails=null;
 
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
 function goDashboard(){ window.location.href="user-dashboard.html"; }
 function setMsg(html){ document.getElementById("msg").innerHTML = html; }
 function showDepMsg(html){ document.getElementById("depMsg").innerHTML = html; }
@@ -465,7 +602,7 @@ function renderDepositAddress(){
   document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
 }
 
-/* ✅ Copy Address (no alert, green button + text change) */
+/* ✅ Copy Address (green button + text change) */
 let copyResetTimer = null;
 async function copyAddress(){
   const addr=document.getElementById("depAddress").innerText.trim();
@@ -720,7 +857,6 @@ document.getElementById("tabs").onclick=(e)=>{
   filter=chip.dataset.status;
   loadHistory(true);
 };
-
 document.getElementById("searchInput").addEventListener("input",(e)=>{
   searchTerm=e.target.value||"";
   renderRows();
@@ -741,7 +877,9 @@ document.getElementById("loadMore").onclick=()=>loadHistory(false);
     return;
   }
   currentUserEmail=userData.user.email;
+
   document.getElementById("topEmail").innerText=currentUserEmail;
+  document.getElementById("sideEmail").innerText=currentUserEmail;
 
   await clearDepositBadge();
   await loadDepositAddresses();
@@ -749,6 +887,11 @@ document.getElementById("loadMore").onclick=()=>loadHistory(false);
   await loadHistory(true);
   initRealtime();
 })();
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
+}
 </script>
 
 </body>
