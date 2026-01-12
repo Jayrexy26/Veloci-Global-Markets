@@ -123,10 +123,10 @@ a:hover{text-decoration:underline}
   <a class="sideItem" href="plans.html">💼 Investment Plans</a>
   <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
 
-  <!-- ✅ Deposit (history moved into deposit.html) -->
+  <!-- ✅ Deposit is now a separate page -->
   <a class="sideItem" href="deposit.html">💳 Deposit</a>
 
-  <!-- ✅ Withdraw page already includes history -->
+  <!-- ✅ Withdraw is separate page (contains history below) -->
   <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
 
   <div style="height:12px"></div>
@@ -161,53 +161,6 @@ a:hover{text-decoration:underline}
   <div class="grid" id="prices"><div class="card">Loading…</div></div>
 </div>
 
-<div class="box" id="depositSection">
-  <h2>Deposit</h2>
-  <div class="small">Select asset/network to see wallet address</div>
-
-  <select id="depAsset" onchange="renderDepositAddress()">
-    <option value="btc">BTC</option>
-    <option value="eth">ETH</option>
-    <option value="usdt">USDT</option>
-  </select>
-
-  <select id="depNetwork" onchange="renderDepositAddress()">
-    <option value="BTC">BTC</option>
-    <option value="ERC20">ERC20</option>
-    <option value="TRC20">TRC20</option>
-  </select>
-
-  <div class="card">
-    <div class="small">Deposit Address</div>
-    <div id="depAddress" style="margin-top:8px;font-weight:1000;">--</div>
-    <button style="margin-top:10px;width:100%;background:#22c55e" onclick="copyAddress()">Copy Address</button>
-  </div>
-</div>
-
-<div class="box">
-  <h2>Submit Deposit Proof</h2>
-  <div class="small">After depositing, submit confirmation</div>
-
-  <select id="confAsset">
-    <option value="btc">BTC</option>
-    <option value="eth">ETH</option>
-    <option value="usdt">USDT</option>
-  </select>
-
-  <select id="confNetwork">
-    <option value="BTC">BTC</option>
-    <option value="ERC20">ERC20</option>
-    <option value="TRC20">TRC20</option>
-  </select>
-
-  <input id="confAmount" type="number" step="0.01" placeholder="Amount deposited"/>
-  <input id="confTx" placeholder="Transaction hash"/>
-  <input id="confProof" type="file" accept="image/*,.pdf"/>
-
-  <button style="width:100%;background:#22c55e" onclick="submitDeposit()">Submit Deposit</button>
-  <div id="depMsg" class="small"></div>
-</div>
-
 <!-- BOTTOM NAV -->
 <div class="bottomNav">
   <div class="navItem navActive" onclick="goHome()"><span>🏠</span>Home</div>
@@ -235,14 +188,11 @@ const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-const BUCKET_NAME="proofs";
 
 let currentUserEmail="";
 let currentUserId="";
-let depositAddresses=[];
 let badgeChannel=null;
 
 init();
@@ -375,8 +325,6 @@ async function init(){
 
   await loadBalance();
   await loadActivePlan();
-  await loadDepositAddresses();
-  renderDepositAddress();
   fetchPrices();
 
   await loadRealtimeBadgesOnce();
@@ -438,27 +386,6 @@ async function loadActivePlan(){
   `;
 }
 
-async function loadDepositAddresses(){
-  const { data } = await supabaseClient.from("deposit_addresses").select("asset,network,address");
-  depositAddresses = data || [];
-}
-
-function renderDepositAddress(){
-  const asset=document.getElementById("depAsset").value.toLowerCase();
-  const network=document.getElementById("depNetwork").value.toUpperCase();
-  const found=depositAddresses.find(d =>
-    (d.asset||"").toLowerCase()===asset &&
-    (d.network||"").toUpperCase()===network
-  );
-  document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
-}
-
-function copyAddress(){
-  const addr=document.getElementById("depAddress").innerText;
-  navigator.clipboard.writeText(addr);
-  alert("Copied ✅");
-}
-
 async function fetchPrices(){
   try{
     const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
@@ -471,60 +398,6 @@ async function fetchPrices(){
   }catch{
     document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
   }
-}
-
-async function submitDeposit(){
-  const msg=document.getElementById("depMsg");
-  msg.innerHTML="Submitting…";
-
-  const asset=document.getElementById("confAsset").value;
-  const network=document.getElementById("confNetwork").value;
-  const amount=Number(document.getElementById("confAmount").value||0);
-  const tx_hash=document.getElementById("confTx").value.trim();
-  const file=document.getElementById("confProof").files[0];
-
-  if(amount<=0 || tx_hash.length<5 || !file){
-    msg.innerHTML="<span class='err'>Fill all fields + upload proof</span>";
-    return;
-  }
-
-  const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
-  const upload = await supabaseClient.storage.from("proofs").upload(filePath,file);
-
-  if(upload.error){
-    msg.innerHTML="<span class='err'>Upload failed: "+upload.error.message+"</span>";
-    return;
-  }
-
-  const proof_url = `proofs/${filePath}`;
-
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const accessToken = sessionData?.session?.access_token;
-  if(!accessToken){
-    msg.innerHTML="<span class='err'>Session expired. Login again.</span>";
-    return;
-  }
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/submit_deposit`, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization":`Bearer ${accessToken}`,
-      "apikey":SUPABASE_ANON_KEY
-    },
-    body: JSON.stringify({ asset, network, amount, tx_hash, proof_url })
-  });
-
-  const json = await res.json().catch(()=>null);
-  if(!res.ok){
-    msg.innerHTML = "<span class='err'>Error: "+(json?.error || JSON.stringify(json) || "Unknown")+"</span>";
-    return;
-  }
-
-  msg.innerHTML="<span class='ok'>Deposit submitted ✅</span>";
-  document.getElementById("confAmount").value="";
-  document.getElementById("confTx").value="";
-  document.getElementById("confProof").value="";
 }
 
 async function logout(){
