@@ -3,129 +3,627 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>My Portfolio</title>
+<title>Coinluxora User Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
-button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
-.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:16px}
-h2{margin:0;font-size:18px}
-.big{font-size:30px;font-weight:1000;margin-top:10px}
-.small{color:#94a3b8;font-size:12px;margin-top:6px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
-.card{border:1px solid #1e293b;border-radius:12px;padding:12px}
-.ok{color:#22c55e}
-.err{color:#f87171}
-.neutral{color:#38bdf8}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-word}
-th{background:#0b1224}
-.progress{height:8px;border-radius:999px;background:#1e293b;margin-top:8px;overflow:hidden}
-.bar{height:8px;background:#22c55e}
-.barLoss{height:8px;background:#f87171}
-.tag{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;margin-top:8px}
-.tagProfit{background:#22c55e;color:#020617}
-.tagLoss{background:#f87171;color:#020617}
-.tagFlat{background:#38bdf8;color:#020617}
+:root{
+  --bg:#050a18;
+  --card:rgba(255,255,255,.06);
+  --card2:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.65);
+  --muted2:rgba(234,240,255,.42);
 
-.chartWrap{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
-.chartCard{flex:1;min-width:260px;border:1px solid #1e293b;border-radius:12px;padding:12px}
-canvas{width:100%;max-width:100%;height:260px;border-radius:12px;background:#020617}
-.legend{margin-top:10px}
-.legendItem{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
-.dot{width:12px;height:12px;border-radius:999px;display:inline-block}
+  --blue:#5b6cff;
+  --blue2:#38bdf8;
+  --purple:#7c4dff;
+  --green:#34d399;
+
+  --ok:#22c55e;
+  --err:#f87171;
+
+  --pending:#9e6816;
+  --rejected:#783122;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:
+    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  padding:16px;
+  padding-bottom:96px;
+}
+
+.container{max-width:920px;margin:0 auto}
+
+/* ====== TOP BAR ====== */
+.topRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.brand{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
+  color:white;
+  font-weight:1000;
+  letter-spacing:.6px;
+  box-shadow:0 18px 50px rgba(109,87,255,.25);
+  min-width:140px;
+}
+.brandIcon{
+  width:34px;height:34px;border-radius:12px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+
+.headerActions{display:flex;gap:10px;align-items:center}
+.iconBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.18);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  backdrop-filter: blur(10px);
+}
+.iconBtn:hover{background:rgba(255,255,255,.08)}
+.iconBtn.primary{
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(124,77,255,1));
+  border:none;
+}
+
+/* ====== HELLO CARD ====== */
+.helloCard{
+  border-radius:18px;
+  padding:14px 14px;
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
+  color:white;
+  box-shadow:0 18px 50px rgba(109,87,255,.22);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.helloLeft{display:flex;align-items:center;gap:12px}
+.helloLogo{
+  width:46px;height:46px;border-radius:16px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.miniChip{
+  font-size:12px;font-weight:1000;
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex;gap:6px;align-items:center;
+}
+.helloTitle{font-weight:1000;font-size:18px}
+.helloSub{font-size:12px;font-weight:900;opacity:.92}
+
+.helloRight{display:flex;align-items:center;gap:10px}
+.idChip{
+  padding:8px 12px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  font-weight:1000;font-size:12px;
+}
+.logoutBtn{
+  width:46px;height:46px;border-radius:999px;border:none;
+  cursor:pointer;
+  background:rgba(239,68,68,0.95);
+  color:#fff;
+  font-weight:1000;
+  box-shadow:0 16px 40px rgba(239,68,68,.22);
+}
+
+/* ✅ TradingView ticker tape floating box */
+.tickerFloat{
+  margin-top:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow:0 22px 70px rgba(0,0,0,.48);
+  backdrop-filter: blur(12px);
+  overflow:hidden;
+}
+
+/* makes it look clean on dark */
+.tickerFloat iframe{
+  width:100% !important;
+  height:46px !important;
+  display:block !important;
+}
+
+/* ====== BALANCE PREMIUM CARD ====== */
+.balanceCard{
+  margin-top:14px;
+  border-radius:22px;
+  overflow:hidden;
+  position:relative;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,0.22), transparent 55%),
+    linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+  color:white;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.25);
+  padding:16px;
+}
+.bTitle{font-size:13px;font-weight:1000;opacity:.85}
+.bValue{
+  font-size:34px;
+  font-weight:1000;
+  letter-spacing:.4px;
+  margin-top:8px;
+}
+.bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+
+/* ====== ACTION BUTTONS ====== */
+.actionGrid{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.action{
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  padding:12px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+.action:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+.aIcon{
+  width:48px;height:48px;border-radius:999px;
+  display:grid;place-items:center;
+  font-size:20px;
+  font-weight:1000;color:#fff;
+}
+.aSend{background:linear-gradient(180deg,#6d57ff,#7c4dff)}
+.aReceive{background:linear-gradient(180deg,#18c07b,#11b981)}
+.aPlans{background:linear-gradient(180deg,#f59e0b,#f97316)}
+.aSupport{background:linear-gradient(180deg,#38bdf8,#5b6cff)}
+.aText{font-weight:1000;font-size:13px}
+
+/* ====== GLASS BOX ====== */
+.box{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  margin-top:14px;
+}
+.box h2{margin:0;font-size:20px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:8px}
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+
+/* GRID / CARD */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+@media(max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .actionGrid{grid-template-columns:repeat(2,1fr)}
+}
+
+/* PLAN PILL */
+.pill{
+  padding:6px 10px;border-radius:999px;
+  font-weight:1000;font-size:12px;display:inline-block;
+  border:1px solid rgba(255,255,255,.12);
+}
+.pending{background:rgba(158,104,22,.20);border-color:rgba(158,104,22,.45);color:#ffd6a1}
+.active{background:rgba(56,189,248,.18);border-color:rgba(56,189,248,.35);color:#a7ecff}
+.completed{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35);color:#86efac}
+.rejected{background:rgba(120,49,34,.22);border-color:rgba(120,49,34,.45);color:#ffb7aa}
+
+/* LINKS */
+a{color:#9bdcff;text-decoration:none;font-weight:1000}
+a:hover{text-decoration:underline}
+
+/* ===== SIDEBAR ===== */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(4px);
+}
+.sidebar{
+  position:fixed; top:0; left:-290px;
+  width:270px; height:100vh;
+  background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  border-right:1px solid rgba(255,255,255,.12);
+  padding:16px;
+  transition:.28s ease;
+  z-index:1000;
+  box-shadow:0 20px 80px rgba(0,0,0,.6);
+}
+.sidebar.open{ left:0; }
+.overlay.show{ display:block; }
+
+.brandRow{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.brandSide{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--text);
+  border-radius:12px;padding:8px 12px;
+  font-weight:1000;
+}
+.userTag{
+  padding:12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  margin-bottom:12px;
+}
+.sideItem{
+  display:flex;gap:10px;align-items:center;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;margin-bottom:10px;
+  color:var(--text);
+  background:rgba(0,0,0,.22);
+  font-weight:1000;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+.sideLogout{
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  color:#020617;border:none;width:100%;
+  padding:14px;border-radius:16px;font-weight:1000;cursor:pointer
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottomNav{
+  position:fixed;left:0;right:0;bottom:0;
+  height:76px;
+  background:rgba(2,6,23,.78);
+  border-top:1px solid rgba(255,255,255,.12);
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:1200;padding:8px 10px;
+  backdrop-filter: blur(12px);
+}
+.navItem{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:rgba(234,240,255,.55);
+  font-size:12px;font-weight:1000;
+  padding:10px 0;border-radius:16px;cursor:pointer;
+  position:relative;
+  transition: background .15s ease, color .15s ease;
+}
+.navItem span{font-size:18px;margin-bottom:4px}
+.navActive{color:#9bdcff;background:rgba(56,189,248,0.10)}
+
+/* BADGE */
+.badge{
+  position:absolute;
+  top:6px;
+  right:22%;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  border-radius:999px;
+  background:#f87171;
+  color:#020617;
+  font-weight:1000;
+  font-size:11px;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.18);
+}
 </style>
 </head>
 
 <body>
 
-<header>
-  <strong>My Portfolio</strong>
-  <button onclick="goDashboard()">Dashboard</button>
-</header>
+<!-- OVERLAY + SIDEBAR -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-<div class="box">
-  <h2>Total Portfolio</h2>
-  <div id="total" class="big">--</div>
-  <div id="email" class="small">Loading…</div>
+<div id="sidebar" class="sidebar">
+  <div class="brandRow">
+    <div class="brandSide">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
+  </div>
 
-  <div class="grid">
-    <div class="card">
-      <div class="small">Total Invested</div>
-      <div id="invested" style="font-size:20px;font-weight:1000;margin-top:6px;">--</div>
+  <div class="userTag">
+    <div class="small">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
+
+  <a class="sideItem activeLink" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <!-- Premium top -->
+  <div class="topRow">
+    <div class="brand">
+      <div class="brandIcon">📣</div>
+      COIN
     </div>
-    <div class="card">
-      <div class="small">Total Profit / Loss</div>
-      <div id="pnl" style="font-size:20px;font-weight:1000;margin-top:6px;">--</div>
-      <div id="roi" class="small"></div>
+
+    <div class="headerActions">
+      <button class="iconBtn primary" title="Status">○</button>
+      <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
     </div>
+  </div>
+
+  <!-- Premium Hello Banner -->
+  <div class="helloCard">
+    <div class="helloLeft">
+      <div class="helloLogo">📶</div>
+
+      <div>
+        <div class="chips">
+          <div class="miniChip">🟢 active</div>
+          <div class="miniChip">🇳🇬 NG</div>
+        </div>
+        <div class="helloTitle">Hello! 🌙</div>
+        <div class="helloSub" id="email">Loading…</div>
+      </div>
+    </div>
+
+    <div class="helloRight">
+      <div class="idChip" id="userIdChip">ID:</div>
+      <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+    </div>
+  </div>
+
+  <!-- ✅ Floating Moving Live Prices -->
+  <div class="tickerFloat">
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container" style="width:100%">
+      <div class="tradingview-widget-container__widget"></div>
+    </div>
+    <!-- TradingView Widget END -->
+  </div>
+
+  <!-- Balance premium -->
+  <div class="balanceCard">
+    <div class="bTitle">Total Portfolio Value</div>
+    <div class="bValue" id="balance">--</div>
+    <div class="bHint">
+      <div class="dot"></div>
+      <div>Your trading account balance</div>
+    </div>
+
+    <!-- Action grid -->
+    <div class="actionGrid">
+      <div class="action" onclick="goWithdrawAndClear()">
+        <div class="aIcon aSend">✈️</div>
+        <div class="aText">Send</div>
+      </div>
+      <div class="action" onclick="goDepositAndClear()">
+        <div class="aIcon aReceive">⬇️</div>
+        <div class="aText">Receive</div>
+      </div>
+      <div class="action" onclick="goPlans()">
+        <div class="aIcon aPlans">📈</div>
+        <div class="aText">Plans</div>
+      </div>
+      <div class="action" onclick="goSupportAndClear()">
+        <div class="aIcon aSupport">💬</div>
+        <div class="aText">Support</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active plan -->
+  <div class="box">
+    <h2>Active Investment Plan</h2>
+    <div id="planMsg" class="small">Loading…</div>
+    <div id="planBox"></div>
+  </div>
+
+  <!-- Prices -->
+  <div class="box">
+    <h2>Live Crypto Prices</h2>
+    <div class="grid" id="prices"><div class="card">Loading…</div></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottomNav">
+  <div class="navItem navActive" onclick="goHome()"><span>🏠</span>Home</div>
+
+  <div class="navItem" onclick="goDepositAndClear()">
+    <div id="badgeDeposit" class="badge">0</div>
+    <span>💳</span>Deposit
+  </div>
+
+  <div class="navItem" onclick="goWithdrawAndClear()">
+    <div id="badgeWithdraw" class="badge">0</div>
+    <span>➡</span>Withdraw
+  </div>
+
+  <div class="navItem" onclick="goPlans()"><span>💼</span>Plans</div>
+
+  <div class="navItem" onclick="goSupportAndClear()">
+    <div id="badgeSupport" class="badge">0</div>
+    <span>🧑‍💻</span>Support
   </div>
 </div>
 
-<div class="box">
-  <h2>Charts</h2>
-
-  <div class="chartWrap">
-    <div class="chartCard">
-      <strong>Allocation (Pie)</strong>
-      <div class="small">Shows percentage distribution per asset</div>
-      <canvas id="pieChart" width="400" height="260"></canvas>
-      <div id="pieLegend" class="legend"></div>
-    </div>
-
-    <div class="chartCard">
-      <strong>Performance (Growth)</strong>
-      <div class="small">Compares invested vs current value</div>
-      <canvas id="barChart" width="400" height="260"></canvas>
-      <div class="small">Bars: Invested vs Current Value</div>
-    </div>
-  </div>
-</div>
-
-<div class="box">
-  <h2>Holdings (P&L)</h2>
-  <div id="msg" class="small">Loading…</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Asset</th>
-        <th>Amount</th>
-        <th>Buy Price</th>
-        <th>Current Price</th>
-        <th>Invested</th>
-        <th>Value</th>
-        <th>P/L</th>
-        <th>ROI</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
-</div>
+<!-- TradingView Script (Ticker Tape) -->
+<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+{
+  "symbols": [
+    { "proName": "NASDAQ:META", "title": "META" },
+    { "proName": "NASDAQ:AMZN", "title": "AMZN" },
+    { "proName": "NASDAQ:HOOD", "title": "HOOD" },
+    { "proName": "NASDAQ:NFLX", "title": "NFLX" },
+    { "proName": "CRYPTOCAP:TOTAL3", "title": "TOTAL3" },
+    { "proName": "BINANCE:BTCUSDT", "title": "BTC" },
+    { "proName": "BINANCE:ETHUSDT", "title": "ETH" }
+  ],
+  "showSymbolLogo": true,
+  "isTransparent": true,
+  "displayMode": "adaptive",
+  "colorTheme": "dark",
+  "locale": "en"
+}
+</script>
 
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+
+const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-function goDashboard(){ window.location.href="user-dashboard.html"; }
-
-let userEmail="";
-
-function money(n){
-  const v = Number(n||0);
-  return "$" + v.toFixed(2);
-}
-function pct(n){
-  const v = Number(n||0);
-  return v.toFixed(2) + "%";
-}
+let currentUserEmail="";
+let currentUserId="";
+let badgeChannel=null;
 
 init();
+
+/* NAV */
+function goHome(){ window.scrollTo({top:0,behavior:"smooth"}); }
+function goPlans(){ window.location.href="plans.html"; }
+function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
+function goWithdrawAndClear(){ clearBadge("withdrawals"); window.location.href="withdraw.html"; }
+function goSupportAndClear(){ clearBadge("notifications"); window.location.href="support.html"; }
+
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+function setBadge(id, count){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0){
+    el.style.display="none";
+  }else{
+    el.style.display="flex";
+    el.innerText = n > 99 ? "99+" : String(n);
+  }
+}
+
+function setBadgeFromKey(badge_key, badge_value){
+  if(badge_key === "deposits"){
+    setBadge("badgeDeposit", badge_value);
+  } else if(badge_key === "withdrawals"){
+    setBadge("badgeWithdraw", badge_value);
+  } else if(badge_key === "notifications"){
+    setBadge("badgeSupport", badge_value);
+  }
+}
+
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
+
+  setBadge("badgeDeposit", 0);
+  setBadge("badgeWithdraw", 0);
+  setBadge("badgeSupport", 0);
+
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
+
+  if(error){
+    console.log("Badge load error:", error.message);
+    return;
+  }
+
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+}
+
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
+    }, payload => {
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
+    })
+    .subscribe(status => console.log("Badge realtime status:", status));
+}
+
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
+
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){
+    console.log("clearBadge error:", e);
+  }
+}
 
 async function init(){
   const { data:userData } = await supabaseClient.auth.getUser();
@@ -134,239 +632,106 @@ async function init(){
     return;
   }
 
-  userEmail = userData.user.email;
-  document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${userEmail}</span>`;
+  currentUserEmail=userData.user.email;
+  currentUserId=userData.user.id;
 
-  const { data:holdings, error } = await supabaseClient
-    .from("portfolios")
+  document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${currentUserEmail}</span>`;
+  document.getElementById("sideEmail").innerText=currentUserEmail;
+  document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+
+  await loadBalance();
+  await loadActivePlan();
+  fetchPrices();
+
+  await loadRealtimeBadgesOnce();
+  subscribeToRealtimeBadges();
+}
+
+async function loadBalance(){
+  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+  const bal = Number(data?.balance || 0).toFixed(2);
+  document.getElementById("balance").innerHTML = "$" + bal;
+}
+
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span class="pill ${s}">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
+}
+
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
     .select("*")
-    .eq("user_email", userEmail)
-    .order("created_at",{ascending:false});
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
 
   if(error){
-    document.getElementById("msg").innerHTML="<span class='err'>"+error.message+"</span>";
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
     return;
   }
 
-  if(!holdings || holdings.length===0){
-    document.getElementById("total").innerHTML="$0.00";
-    document.getElementById("invested").innerHTML="$0.00";
-    document.getElementById("pnl").innerHTML="$0.00";
-    document.getElementById("roi").innerHTML="";
-    document.getElementById("msg").innerHTML="<span class='err'>No holdings yet. Admin must add holdings in Portfolio Manager.</span>";
-    document.getElementById("rows").innerHTML="";
-    drawPie([],[]);
-    drawBars([]);
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a href="plans.html">Investment Plans</a> to start.</div>`;
     return;
   }
 
-  const idsMap = { btc:"bitcoin", eth:"ethereum", usdt:"tether" };
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
 
-  // Fetch prices (for assets present)
-  const uniqueAssets = [...new Set(holdings.map(h => (h.asset||"").toLowerCase()))];
-  const ids = uniqueAssets.map(a => idsMap[a]).filter(Boolean).join(",");
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
 
-  const pricesRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`);
-  const prices = await pricesRes.json();
-
-  // Table + totals
-  let totalValue=0;
-  let totalInvested=0;
-
-  const tbody=document.getElementById("rows");
-  tbody.innerHTML="";
-
-  // For charts
-  const pieLabels=[];
-  const pieValues=[];
-  const bars=[]; // {asset, invested, value}
-
-  holdings.forEach(h=>{
-    const asset=(h.asset||"").toLowerCase();
-    const amount=Number(h.amount||0);
-    const buy=Number(h.buy_price||0);
-
-    const id=idsMap[asset];
-    const current=Number(prices?.[id]?.usd || 0);
-
-    const invested=amount*buy;
-    const value=amount*current;
-    const pnl=value-invested;
-    const roi = invested>0 ? (pnl/invested)*100 : 0;
-
-    totalValue += value;
-    totalInvested += invested;
-
-    const pnlClass = pnl>0 ? "tagProfit" : (pnl<0 ? "tagLoss" : "tagFlat");
-    const pnlTextClass = pnl>0 ? "ok" : (pnl<0 ? "err" : "neutral");
-
-    tbody.innerHTML += `
-      <tr>
-        <td><strong>${asset.toUpperCase()}</strong></td>
-        <td>${amount}</td>
-        <td>${money(buy)}</td>
-        <td>${money(current)}</td>
-        <td><strong>${money(invested)}</strong></td>
-        <td><strong>${money(value)}</strong></td>
-        <td><span class="tag ${pnlClass}">${pnl>=0?"+":""}${money(pnl)}</span></td>
-        <td class="${pnlTextClass}"><strong>${roi>=0?"+":""}${pct(roi)}</strong></td>
-        <td>${h.notes || "-"}</td>
-      </tr>
-    `;
-
-    // aggregate chart data
-    const existing = bars.find(b => b.asset === asset);
-    if(existing){
-      existing.invested += invested;
-      existing.value += value;
-    }else{
-      bars.push({asset, invested, value});
-    }
-  });
-
-  // Allocation pie (aggregate by asset value)
-  const valueByAsset = {};
-  bars.forEach(b=>{
-    valueByAsset[b.asset] = (valueByAsset[b.asset]||0) + b.value;
-  });
-  Object.keys(valueByAsset).forEach(a=>{
-    pieLabels.push(a.toUpperCase());
-    pieValues.push(valueByAsset[a]);
-  });
-
-  document.getElementById("total").innerHTML = money(totalValue);
-  document.getElementById("invested").innerHTML = money(totalInvested);
-
-  const totalPnL = totalValue-totalInvested;
-  const totalROI = totalInvested>0 ? (totalPnL/totalInvested)*100 : 0;
-
-  const pnlElem=document.getElementById("pnl");
-  pnlElem.innerHTML = (totalPnL>=0?"+":"") + money(totalPnL);
-  pnlElem.className = totalPnL>0 ? "ok" : (totalPnL<0 ? "err" : "neutral");
-
-  document.getElementById("roi").innerHTML = `ROI: <strong>${totalROI>=0?"+":""}${pct(totalROI)}</strong>`;
-  document.getElementById("msg").innerHTML = "<span class='ok'>Portfolio loaded ✅</span>";
-
-  // Draw charts
-  drawPie(pieLabels, pieValues);
-  drawBars(bars);
+  planMsg.innerHTML="<span class='ok'>Plan details loaded ✅</span>";
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
+    </div>
+  `;
 }
 
-/* ---------------- PIE CHART ---------------- */
-function drawPie(labels, values){
-  const canvas=document.getElementById("pieChart");
-  const ctx=canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const total=values.reduce((a,b)=>a+b,0);
-  if(total<=0){
-    ctx.fillStyle="#94a3b8";
-    ctx.font="16px system-ui";
-    ctx.fillText("No data", 20, 40);
-    document.getElementById("pieLegend").innerHTML="";
-    return;
-  }
-
-  const colors=["#22c55e","#38bdf8","#facc15","#f87171","#a78bfa","#fb7185"];
-  const cx=canvas.width/2;
-  const cy=canvas.height/2;
-  const r=Math.min(cx,cy)-10;
-
-  let start=0;
-
-  values.forEach((v,i)=>{
-    const slice=(v/total)*Math.PI*2;
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.fillStyle=colors[i%colors.length];
-    ctx.arc(cx,cy,r,start,start+slice);
-    ctx.closePath();
-    ctx.fill();
-    start+=slice;
-  });
-
-  // center hole (donut style)
-  ctx.beginPath();
-  ctx.fillStyle="#020617";
-  ctx.arc(cx,cy,r*0.55,0,Math.PI*2);
-  ctx.fill();
-
-  // total label
-  ctx.fillStyle="#e5e7eb";
-  ctx.font="bold 14px system-ui";
-  ctx.textAlign="center";
-  ctx.fillText("Allocation", cx, cy-6);
-  ctx.font="bold 16px system-ui";
-  ctx.fillText("100%", cx, cy+16);
-
-  // legend
-  const legend=document.getElementById("pieLegend");
-  legend.innerHTML="";
-  labels.forEach((lab,i)=>{
-    const pct = ((values[i]/total)*100).toFixed(2);
-    legend.innerHTML += `
-      <div class="legendItem">
-        <span class="dot" style="background:${colors[i%colors.length]}"></span>
-        <strong>${lab}</strong> — ${pct}% (${money(values[i])})
-      </div>
+async function fetchPrices(){
+  try{
+    const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
+    const data=await res.json();
+    document.getElementById("prices").innerHTML=`
+      <div class="card"><strong>BTC</strong><div class="small" style="margin-top:8px">$${data.bitcoin.usd}</div></div>
+      <div class="card"><strong>ETH</strong><div class="small" style="margin-top:8px">$${data.ethereum.usd}</div></div>
+      <div class="card"><strong>USDT</strong><div class="small" style="margin-top:8px">$${data.tether.usd}</div></div>
     `;
-  });
+  }catch{
+    document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
+  }
 }
 
-/* ---------------- BAR CHART ---------------- */
-function drawBars(bars){
-  const canvas=document.getElementById("barChart");
-  const ctx=canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  if(!bars || bars.length===0){
-    ctx.fillStyle="#94a3b8";
-    ctx.font="16px system-ui";
-    ctx.fillText("No data", 20, 40);
-    return;
-  }
-
-  // setup
-  const padding=30;
-  const chartW=canvas.width - padding*2;
-  const chartH=canvas.height - padding*2;
-
-  const maxVal = Math.max(...bars.map(b=>Math.max(b.invested,b.value))) || 1;
-
-  // title guide
-  ctx.fillStyle="#94a3b8";
-  ctx.font="12px system-ui";
-  ctx.textAlign="left";
-  ctx.fillText("Invested", padding, 16);
-  ctx.fillStyle="#38bdf8";
-  ctx.fillText("Current", padding+70, 16);
-
-  const groupW = chartW / bars.length;
-  const barW = Math.max(10, groupW*0.25);
-
-  bars.forEach((b,i)=>{
-    const x0 = padding + i*groupW + groupW/2;
-
-    // invested bar
-    const invH = (b.invested/maxVal)*chartH;
-    ctx.fillStyle="#94a3b8";
-    ctx.fillRect(x0 - barW - 4, padding + (chartH - invH), barW, invH);
-
-    // value bar
-    const valH = (b.value/maxVal)*chartH;
-    ctx.fillStyle="#38bdf8";
-    ctx.fillRect(x0 + 4, padding + (chartH - valH), barW, valH);
-
-    // label
-    ctx.fillStyle="#e5e7eb";
-    ctx.font="12px system-ui";
-    ctx.textAlign="center";
-    ctx.fillText(b.asset.toUpperCase(), x0, canvas.height - 8);
-  });
-
-  // border
-  ctx.strokeStyle="#1e293b";
-  ctx.strokeRect(padding, padding, chartW, chartH);
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
