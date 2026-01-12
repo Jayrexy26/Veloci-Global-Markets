@@ -3,58 +3,189 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Deposit - Coinluxora</title>
+<title>Coinluxora User Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px;padding-bottom:32px}
+body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px;padding-bottom:92px}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
 button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
+.menuBtn{background:#0b1224;color:#e5e7eb;border:1px solid #1e293b}
+
 .box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
-.card{border:1px solid #1e293b;border-radius:12px;padding:10px;background:#0b1224}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{border:1px solid #1e293b;border-radius:12px;padding:10px}
+h2{margin:0;font-size:18px}
 .small{color:#94a3b8;font-size:12px;margin-top:6px}
 .ok{color:#22c55e}
 .err{color:#f87171}
 input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
+
 a{color:#38bdf8;text-decoration:none;font-weight:1000}
 a:hover{text-decoration:underline}
 
-/* history */
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.tab{padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer;font-weight:1000;font-size:12px}
-.tab.active{background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.4)}
-.searchBar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.searchBar input{flex:1;min-width:210px}
-.miniBtn{background:#0b1224;color:#e5e7eb;border:1px solid #1e293b}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px}
-th{opacity:.8;text-align:left}
 .pill{padding:6px 10px;border-radius:999px;font-weight:1000;font-size:12px;display:inline-block}
 .pending{background:#facc15;color:#020617}
-.approved{background:#22c55e;color:#020617}
+.active{background:#38bdf8;color:#020617}
+.completed{background:#22c55e;color:#020617}
 .rejected{background:#f87171;color:#020617}
 
-/* modal */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:999}
-.modalBox{width:95%;max-width:560px;background:#0b1224;border-radius:16px;padding:16px;border:1px solid #1e293b}
-.modalRow{margin-bottom:10px;font-size:14px}
-.modalRow span{opacity:.7}
-.closeBtn{margin-top:10px;width:100%;background:#1f2937;color:#fff}
+/* SIDEBAR */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(4px);
+}
+.sidebar{
+  position:fixed; top:0; left:-290px;
+  width:270px; height:100vh;
+  background:#020617;
+  border-right:1px solid #1e293b;
+  padding:16px;
+  transition:.28s ease;
+  z-index:1000;
+  box-shadow:0 20px 80px rgba(0,0,0,.6);
+}
+.sidebar.open{ left:0; }
+.overlay.show{ display:block; }
+
+.brandRow{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.brand{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{background:#0b1224;border:1px solid #1e293b;color:#e5e7eb;border-radius:10px;padding:8px 12px;}
+.userTag{padding:10px;border-radius:12px;border:1px solid #1e293b;background:#0b1224;margin-bottom:12px;}
+.sideItem{
+  display:flex;gap:10px;align-items:center;
+  padding:12px;border:1px solid #1e293b;border-radius:12px;margin-bottom:10px;
+  color:#e5e7eb;background:#0b1224;
+}
+.sideItem:hover{background:#0f1a33}
+.activeLink{border:1px solid #38bdf8;background:rgba(56,189,248,0.12);}
+.sideLogout{background:#f87171;color:#020617;border:none;width:100%;padding:12px;border-radius:12px;font-weight:1000}
+
+/* BOTTOM NAV */
+.bottomNav{
+  position:fixed;left:0;right:0;bottom:0;
+  height:74px;background:#020617;
+  border-top:1px solid #1e293b;
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:1200;padding:6px 10px;
+}
+.navItem{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:#94a3b8;font-size:12px;font-weight:1000;
+  padding:10px 0;border-radius:14px;cursor:pointer;
+  position:relative;
+}
+.navItem span{font-size:18px;margin-bottom:4px}
+.navActive{color:#38bdf8;background:rgba(56,189,248,0.10)}
+
+/* BADGE */
+.badge{
+  position:absolute;
+  top:6px;
+  right:22%;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  border-radius:999px;
+  background:#f87171;
+  color:#020617;
+  font-weight:1000;
+  font-size:11px;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
 </style>
 </head>
 
 <body>
 
+<!-- OVERLAY + SIDEBAR -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+<div id="sidebar" class="sidebar">
+  <div class="brandRow">
+    <div class="brand">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
+  </div>
+
+  <div class="userTag">
+    <div class="small">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
+
+  <a class="sideItem activeLink" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+
+  <!-- ✅ Deposit (history moved into deposit.html) -->
+  <a class="sideItem" href="deposit.html">💳 Deposit</a>
+
+  <!-- ✅ Withdraw page already includes history -->
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
 <header>
-  <button class="miniBtn" onclick="window.location.href='user-dashboard.html'">← Back</button>
-  <strong>Deposit</strong>
-  <button class="miniBtn" onclick="logout()">Logout</button>
+  <button class="menuBtn" onclick="openMenu()">☰</button>
+  <strong>User Dashboard</strong>
+  <button onclick="logout()">Logout</button>
 </header>
 
 <div class="box">
-  <h2 style="margin:0">Submit Deposit Proof</h2>
+  <h2>Welcome</h2>
+  <div id="email" class="small">Loading…</div>
+</div>
+
+<div class="box">
+  <h2>Balance</h2>
+  <div id="balance" style="font-size:26px;font-weight:1000;margin-top:8px;">--</div>
+  <div class="small">Your trading account balance</div>
+</div>
+
+<div class="box">
+  <h2>Active Investment Plan</h2>
+  <div id="planMsg" class="small">Loading…</div>
+  <div id="planBox"></div>
+</div>
+
+<div class="box">
+  <h2>Live Crypto Prices</h2>
+  <div class="grid" id="prices"><div class="card">Loading…</div></div>
+</div>
+
+<div class="box" id="depositSection">
+  <h2>Deposit</h2>
+  <div class="small">Select asset/network to see wallet address</div>
+
+  <select id="depAsset" onchange="renderDepositAddress()">
+    <option value="btc">BTC</option>
+    <option value="eth">ETH</option>
+    <option value="usdt">USDT</option>
+  </select>
+
+  <select id="depNetwork" onchange="renderDepositAddress()">
+    <option value="BTC">BTC</option>
+    <option value="ERC20">ERC20</option>
+    <option value="TRC20">TRC20</option>
+  </select>
+
+  <div class="card">
+    <div class="small">Deposit Address</div>
+    <div id="depAddress" style="margin-top:8px;font-weight:1000;">--</div>
+    <button style="margin-top:10px;width:100%;background:#22c55e" onclick="copyAddress()">Copy Address</button>
+  </div>
+</div>
+
+<div class="box">
+  <h2>Submit Deposit Proof</h2>
   <div class="small">After depositing, submit confirmation</div>
 
   <select id="confAsset">
@@ -77,33 +208,25 @@ th{opacity:.8;text-align:left}
   <div id="depMsg" class="small"></div>
 </div>
 
-<div class="box">
-  <h2 style="margin:0">Deposit History</h2>
+<!-- BOTTOM NAV -->
+<div class="bottomNav">
+  <div class="navItem navActive" onclick="goHome()"><span>🏠</span>Home</div>
 
-  <div class="tabs" id="tabs">
-    <div class="tab active" data-status="all">All</div>
-    <div class="tab" data-status="pending">Pending</div>
-    <div class="tab" data-status="approved">Approved</div>
-    <div class="tab" data-status="rejected">Rejected</div>
+  <div class="navItem" onclick="goDepositAndClear()">
+    <div id="badgeDeposit" class="badge">0</div>
+    <span>💳</span>Deposit
   </div>
 
-  <div class="searchBar">
-    <input id="searchInput" placeholder="Search tx hash / amount / asset...">
-    <button id="clearSearch" class="miniBtn">Clear</button>
-    <button id="refreshBtn" class="miniBtn">Refresh</button>
+  <div class="navItem" onclick="goWithdrawAndClear()">
+    <div id="badgeWithdraw" class="badge">0</div>
+    <span>➡</span>Withdraw
   </div>
 
-  <div id="history"></div>
-  <button id="loadMore" class="miniBtn" style="display:none;margin-top:12px">Load more</button>
-</div>
+  <div class="navItem" onclick="goPlans()"><span>💼</span>Plans</div>
 
-<!-- modal -->
-<div class="modal" id="detailsModal">
-  <div class="modalBox">
-    <h3 style="margin-top:0">Deposit Details</h3>
-    <div id="detailsBody"></div>
-    <button id="downloadPdfBtn" class="miniBtn" style="width:100%;margin-top:6px">Download Receipt (PDF)</button>
-    <button class="closeBtn" onclick="closeModal()">Close</button>
+  <div class="navItem" onclick="goSupportAndClear()">
+    <div id="badgeSupport" class="badge">0</div>
+    <span>🧑‍💻</span>Support
   </div>
 </div>
 
@@ -111,178 +234,249 @@ th{opacity:.8;text-align:left}
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const BUCKET_NAME="proofs";
+const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const BUCKET_NAME="proofs";
+
 let currentUserEmail="";
-let filter="all", limit=10, offset=0, cache=[];
-let searchTerm="";
-let currentDetails=null;
+let currentUserId="";
+let depositAddresses=[];
+let badgeChannel=null;
 
-const msg=document.getElementById("depMsg");
-const historyEl=document.getElementById("history");
-const loadMoreBtn=document.getElementById("loadMore");
+init();
 
-const modal=document.getElementById("detailsModal");
-const detailsBody=document.getElementById("detailsBody");
-const downloadPdfBtn=document.getElementById("downloadPdfBtn");
+/* NAV */
+function goHome(){ window.scrollTo({top:0,behavior:"smooth"}); }
+function goPlans(){ window.location.href="plans.html"; }
+function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposit.html"; }
+function goWithdrawAndClear(){ clearBadge("withdrawals"); window.location.href="withdraw.html"; }
+function goSupportAndClear(){ clearBadge("notifications"); window.location.href="support.html"; }
 
-function showMsg(t, ok=false){
-  msg.innerHTML = ok ? `<span class="ok">${t}</span>` : `<span class="err">${t}</span>`;
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
 }
 
-function pillStatus(status){
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
   const s=(status||"pending").toLowerCase();
-  return `<span class="pill ${s}">${s.toUpperCase()}</span>`;
+  return `<span class="pill ${s}">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
 }
 
-function openModal(dep){
-  currentDetails = dep;
-  detailsBody.innerHTML = `
-    <div class="modalRow"><span>ID:</span> ${dep.id}</div>
-    <div class="modalRow"><span>Asset:</span> ${dep.asset}</div>
-    <div class="modalRow"><span>Network:</span> ${dep.network}</div>
-    <div class="modalRow"><span>Amount:</span> ${dep.amount}</div>
-    <div class="modalRow"><span>Tx Hash:</span> ${dep.tx_hash}</div>
-    <div class="modalRow"><span>Status:</span> ${pillStatus(dep.status)}</div>
-    <div class="modalRow"><span>Date:</span> ${new Date(dep.created_at).toLocaleString()}</div>
-    ${dep.admin_note ? `<div class="modalRow"><span>Admin Note:</span> ${dep.admin_note}</div>` : ""}
-  `;
-  modal.style.display="flex";
-}
-
-function closeModal(){ modal.style.display="none"; }
-window.openModal=openModal;
-window.closeModal=closeModal;
-
-downloadPdfBtn.addEventListener("click", () => {
-  if(!currentDetails) return;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("Coinluxora Deposit Receipt", 14, 18);
-
-  doc.setFontSize(11);
-  const lines = [
-    `Receipt ID: ${currentDetails.id}`,
-    `User: ${currentUserEmail}`,
-    `Asset: ${currentDetails.asset}`,
-    `Network: ${currentDetails.network}`,
-    `Amount: ${currentDetails.amount}`,
-    `Tx Hash: ${currentDetails.tx_hash}`,
-    `Status: ${currentDetails.status}`,
-    `Date: ${new Date(currentDetails.created_at).toLocaleString()}`,
-    currentDetails.admin_note ? `Admin Note: ${currentDetails.admin_note}` : ""
-  ].filter(Boolean);
-
-  let y=30;
-  lines.forEach(line => { doc.text(line, 14, y); y+=8; });
-
-  doc.text("Thank you for using Coinluxora.", 14, y+10);
-  doc.save(`coinluxora-deposit-${currentDetails.id}.pdf`);
-});
-
-function render(){
-  let rows = cache;
-
-  if(searchTerm.trim()){
-    const t = searchTerm.toLowerCase();
-    rows = rows.filter(d =>
-      String(d.tx_hash||"").toLowerCase().includes(t) ||
-      String(d.amount||"").toLowerCase().includes(t) ||
-      String(d.asset||"").toLowerCase().includes(t) ||
-      String(d.status||"").toLowerCase().includes(t)
-    );
+function setBadge(id, count){
+  const el=document.getElementById(id);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0){
+    el.style.display="none";
+  }else{
+    el.style.display="flex";
+    el.innerText = n > 99 ? "99+" : String(n);
   }
-
-  if(rows.length === 0){
-    historyEl.innerHTML = "<div class='small'>No deposits found.</div>";
-    return;
-  }
-
-  historyEl.innerHTML = `
-    <table>
-      <tr>
-        <th>Asset</th><th>Amount</th><th>Status</th><th>Date</th><th>Action</th>
-      </tr>
-      ${rows.map(d=>`
-        <tr>
-          <td>${d.asset}</td>
-          <td>${d.amount}</td>
-          <td>${pillStatus(d.status)}</td>
-          <td>${new Date(d.created_at).toLocaleString()}</td>
-          <td><button class="miniBtn" onclick='openModal(${JSON.stringify(d)})'>View</button></td>
-        </tr>
-      `).join("")}
-    </table>
-  `;
 }
 
-async function loadHistory(reset=false){
-  if(reset){ offset=0; cache=[]; }
+function setBadgeFromKey(badge_key, badge_value){
+  if(badge_key === "deposits"){
+    setBadge("badgeDeposit", badge_value);
+  } else if(badge_key === "withdrawals"){
+    setBadge("badgeWithdraw", badge_value);
+  } else if(badge_key === "notifications"){
+    setBadge("badgeSupport", badge_value);
+  }
+}
 
-  let q = supabaseClient
-    .from("deposits")
-    .select("id,user_email,asset,network,amount,tx_hash,status,proof_url,created_at,admin_note")
-    .eq("user_email", currentUserEmail)
-    .order("created_at",{ascending:false})
-    .range(offset, offset + limit - 1);
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
 
-  if(filter !== "all") q = q.eq("status", filter);
+  setBadge("badgeDeposit", 0);
+  setBadge("badgeWithdraw", 0);
+  setBadge("badgeSupport", 0);
 
-  const { data, error } = await q;
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
 
   if(error){
-    historyEl.innerHTML = "<div class='err'>Failed to load deposit history</div>";
+    console.log("Badge load error:", error.message);
     return;
   }
 
-  cache = cache.concat(data || []);
-  render();
-
-  loadMoreBtn.style.display = (data && data.length === limit) ? "inline-block" : "none";
-  offset += limit;
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
 }
 
-// realtime update
-function initRealtime(){
-  supabaseClient.channel("realtime-deposits")
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
     .on("postgres_changes", {
-      event:"UPDATE",
-      schema:"public",
-      table:"deposits",
-      filter:`user_email=eq.${currentUserEmail}`
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
     }, payload => {
-      loadHistory(true);
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
     })
-    .subscribe();
+    .subscribe(status => console.log("Badge realtime status:", status));
 }
 
-document.getElementById("tabs").onclick = (e)=>{
-  const tab = e.target.closest(".tab");
-  if(!tab) return;
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  tab.classList.add("active");
-  filter = tab.dataset.status;
-  loadHistory(true);
-};
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
 
-document.getElementById("searchInput").addEventListener("input",(e)=>{
-  searchTerm = e.target.value || "";
-  render();
-});
-document.getElementById("clearSearch").onclick=()=>{
-  document.getElementById("searchInput").value="";
-  searchTerm="";
-  render();
-};
-document.getElementById("refreshBtn").onclick=()=>loadHistory(true);
-loadMoreBtn.onclick=()=>loadHistory(false);
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){
+    console.log("clearBadge error:", e);
+  }
+}
+
+async function init(){
+  const { data:userData } = await supabaseClient.auth.getUser();
+  if(!userData.user){
+    document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
+    return;
+  }
+
+  currentUserEmail=userData.user.email;
+  currentUserId=userData.user.id;
+
+  document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${currentUserEmail}</span>`;
+  document.getElementById("sideEmail").innerText=currentUserEmail;
+
+  await loadBalance();
+  await loadActivePlan();
+  await loadDepositAddresses();
+  renderDepositAddress();
+  fetchPrices();
+
+  await loadRealtimeBadgesOnce();
+  subscribeToRealtimeBadges();
+}
+
+async function loadBalance(){
+  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+  document.getElementById("balance").innerHTML = Number(data?.balance || 0).toFixed(2);
+}
+
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  if(error){
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
+    return;
+  }
+
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a href="plans.html">Investment Plans</a> to start.</div>`;
+    return;
+  }
+
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
+
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
+
+  planMsg.innerHTML="<span class='ok'>Plan details loaded ✅</span>";
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
+    </div>
+  `;
+}
+
+async function loadDepositAddresses(){
+  const { data } = await supabaseClient.from("deposit_addresses").select("asset,network,address");
+  depositAddresses = data || [];
+}
+
+function renderDepositAddress(){
+  const asset=document.getElementById("depAsset").value.toLowerCase();
+  const network=document.getElementById("depNetwork").value.toUpperCase();
+  const found=depositAddresses.find(d =>
+    (d.asset||"").toLowerCase()===asset &&
+    (d.network||"").toUpperCase()===network
+  );
+  document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
+}
+
+function copyAddress(){
+  const addr=document.getElementById("depAddress").innerText;
+  navigator.clipboard.writeText(addr);
+  alert("Copied ✅");
+}
+
+async function fetchPrices(){
+  try{
+    const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
+    const data=await res.json();
+    document.getElementById("prices").innerHTML=`
+      <div class="card"><strong>BTC</strong><br>$${data.bitcoin.usd}</div>
+      <div class="card"><strong>ETH</strong><br>$${data.ethereum.usd}</div>
+      <div class="card"><strong>USDT</strong><br>$${data.tether.usd}</div>
+    `;
+  }catch{
+    document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
+  }
+}
 
 async function submitDeposit(){
-  showMsg("Submitting...");
+  const msg=document.getElementById("depMsg");
+  msg.innerHTML="Submitting…";
+
   const asset=document.getElementById("confAsset").value;
   const network=document.getElementById("confNetwork").value;
   const amount=Number(document.getElementById("confAmount").value||0);
@@ -290,28 +484,28 @@ async function submitDeposit(){
   const file=document.getElementById("confProof").files[0];
 
   if(amount<=0 || tx_hash.length<5 || !file){
-    showMsg("Fill all fields + upload proof", false);
+    msg.innerHTML="<span class='err'>Fill all fields + upload proof</span>";
     return;
   }
 
   const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
-  const upload = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath,file);
+  const upload = await supabaseClient.storage.from("proofs").upload(filePath,file);
 
   if(upload.error){
-    showMsg("Upload failed: " + upload.error.message, false);
+    msg.innerHTML="<span class='err'>Upload failed: "+upload.error.message+"</span>";
     return;
   }
 
-  const proof_url = `${BUCKET_NAME}/${filePath}`;
+  const proof_url = `proofs/${filePath}`;
 
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const accessToken = sessionData?.session?.access_token;
   if(!accessToken){
-    showMsg("Session expired. Login again.", false);
+    msg.innerHTML="<span class='err'>Session expired. Login again.</span>";
     return;
   }
 
-  const res = await fetch(EDGE_SUBMIT_DEPOSIT_URL, {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/submit_deposit`, {
     method:"POST",
     headers:{
       "Content-Type":"application/json",
@@ -323,35 +517,20 @@ async function submitDeposit(){
 
   const json = await res.json().catch(()=>null);
   if(!res.ok){
-    showMsg("Error: " + (json?.error || JSON.stringify(json) || "Unknown"), false);
+    msg.innerHTML = "<span class='err'>Error: "+(json?.error || JSON.stringify(json) || "Unknown")+"</span>";
     return;
   }
 
-  showMsg("Deposit submitted ✅", true);
-
+  msg.innerHTML="<span class='ok'>Deposit submitted ✅</span>";
   document.getElementById("confAmount").value="";
   document.getElementById("confTx").value="";
   document.getElementById("confProof").value="";
-
-  loadHistory(true);
 }
 
 async function logout(){
   await supabaseClient.auth.signOut();
   window.location.href="login.html";
 }
-
-(async()=>{
-  const { data:userData } = await supabaseClient.auth.getUser();
-  if(!userData.user){
-    document.body.innerHTML="<h2 style='color:white'>Login required</h2>";
-    return;
-  }
-  currentUserEmail = userData.user.email;
-
-  await loadHistory(true);
-  initRealtime();
-})();
 </script>
 
 </body>
