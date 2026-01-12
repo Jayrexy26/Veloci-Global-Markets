@@ -8,30 +8,239 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px;padding-bottom:92px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
-button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
-.menuBtn{background:#0b1224;color:#e5e7eb;border:1px solid #1e293b}
+:root{
+  --bg:#050a18;
+  --card:rgba(255,255,255,.06);
+  --card2:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.65);
+  --muted2:rgba(234,240,255,.42);
 
-.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.card{border:1px solid #1e293b;border-radius:12px;padding:10px}
-h2{margin:0;font-size:18px}
-.small{color:#94a3b8;font-size:12px;margin-top:6px}
-.ok{color:#22c55e}
-.err{color:#f87171}
-input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
+  --blue:#5b6cff;
+  --blue2:#38bdf8;
+  --purple:#7c4dff;
+  --green:#34d399;
 
-a{color:#38bdf8;text-decoration:none;font-weight:1000}
+  --ok:#22c55e;
+  --err:#f87171;
+
+  --pending:#9e6816;
+  --rejected:#783122;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:
+    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  padding:16px;
+  padding-bottom:96px;
+}
+
+.container{max-width:920px;margin:0 auto}
+
+/* ====== TOP BAR ====== */
+.topRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.brand{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
+  color:white;
+  font-weight:1000;
+  letter-spacing:.6px;
+  box-shadow:0 18px 50px rgba(109,87,255,.25);
+  min-width:140px;
+}
+.brandIcon{
+  width:34px;height:34px;border-radius:12px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+
+.headerActions{display:flex;gap:10px;align-items:center}
+.iconBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.18);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  backdrop-filter: blur(10px);
+}
+.iconBtn:hover{background:rgba(255,255,255,.08)}
+.iconBtn.primary{
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(124,77,255,1));
+  border:none;
+}
+
+/* ====== HELLO CARD (premium banner) ====== */
+.helloCard{
+  border-radius:18px;
+  padding:14px 14px;
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
+  color:white;
+  box-shadow:0 18px 50px rgba(109,87,255,.22);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.helloLeft{display:flex;align-items:center;gap:12px}
+.helloLogo{
+  width:46px;height:46px;border-radius:16px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.miniChip{
+  font-size:12px;font-weight:1000;
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex;gap:6px;align-items:center;
+}
+.helloTitle{font-weight:1000;font-size:18px}
+.helloSub{font-size:12px;font-weight:900;opacity:.92}
+
+.helloRight{display:flex;align-items:center;gap:10px}
+.idChip{
+  padding:8px 12px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  font-weight:1000;font-size:12px;
+}
+.logoutBtn{
+  width:46px;height:46px;border-radius:999px;border:none;
+  cursor:pointer;
+  background:rgba(239,68,68,0.95);
+  color:#fff;
+  font-weight:1000;
+  box-shadow:0 16px 40px rgba(239,68,68,.22);
+}
+
+/* ====== GLASS BOX ====== */
+.box{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  margin-top:14px;
+}
+.box h2{margin:0;font-size:20px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:8px}
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+
+/* ====== BALANCE PREMIUM CARD ====== */
+.balanceCard{
+  margin-top:14px;
+  border-radius:22px;
+  overflow:hidden;
+  position:relative;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,0.22), transparent 55%),
+    linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+  color:white;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.25);
+  padding:16px;
+}
+.bTitle{font-size:13px;font-weight:1000;opacity:.85}
+.bValue{
+  font-size:34px;
+  font-weight:1000;
+  letter-spacing:.4px;
+  margin-top:8px;
+}
+.bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+
+/* ====== ACTION BUTTONS ====== */
+.actionGrid{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.action{
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  padding:12px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+.action:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+.aIcon{
+  width:48px;height:48px;border-radius:999px;
+  display:grid;place-items:center;
+  font-size:20px;
+  font-weight:1000;color:#fff;
+}
+.aSend{background:linear-gradient(180deg,#6d57ff,#7c4dff)}
+.aReceive{background:linear-gradient(180deg,#18c07b,#11b981)}
+.aPlans{background:linear-gradient(180deg,#f59e0b,#f97316)}
+.aSupport{background:linear-gradient(180deg,#38bdf8,#5b6cff)}
+.aText{font-weight:1000;font-size:13px}
+
+/* ====== GRID / CARDS ====== */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+@media(max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .actionGrid{grid-template-columns:repeat(2,1fr)}
+}
+.card strong{font-weight:1000}
+
+/* PLAN PILL */
+.pill{
+  padding:6px 10px;border-radius:999px;
+  font-weight:1000;font-size:12px;display:inline-block;
+  border:1px solid rgba(255,255,255,.12);
+}
+.pending{background:rgba(158,104,22,.20);border-color:rgba(158,104,22,.45);color:#ffd6a1}
+.active{background:rgba(56,189,248,.18);border-color:rgba(56,189,248,.35);color:#a7ecff}
+.completed{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35);color:#86efac}
+.rejected{background:rgba(120,49,34,.22);border-color:rgba(120,49,34,.45);color:#ffb7aa}
+
+/* LINKS */
+a{color:#9bdcff;text-decoration:none;font-weight:1000}
 a:hover{text-decoration:underline}
 
-.pill{padding:6px 10px;border-radius:999px;font-weight:1000;font-size:12px;display:inline-block}
-.pending{background:#facc15;color:#020617}
-.active{background:#38bdf8;color:#020617}
-.completed{background:#22c55e;color:#020617}
-.rejected{background:#f87171;color:#020617}
-
-/* SIDEBAR */
+/* ===== SIDEBAR ===== */
 .overlay{
   position:fixed; inset:0;
   background:rgba(0,0,0,.65);
@@ -41,8 +250,8 @@ a:hover{text-decoration:underline}
 .sidebar{
   position:fixed; top:0; left:-290px;
   width:270px; height:100vh;
-  background:#020617;
-  border-right:1px solid #1e293b;
+  background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  border-right:1px solid rgba(255,255,255,.12);
   padding:16px;
   transition:.28s ease;
   z-index:1000;
@@ -52,35 +261,58 @@ a:hover{text-decoration:underline}
 .overlay.show{ display:block; }
 
 .brandRow{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.brand{font-weight:1000;font-size:18px;letter-spacing:.6px;}
-.closeBtn{background:#0b1224;border:1px solid #1e293b;color:#e5e7eb;border-radius:10px;padding:8px 12px;}
-.userTag{padding:10px;border-radius:12px;border:1px solid #1e293b;background:#0b1224;margin-bottom:12px;}
+.brandSide{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.14);
+  color:var(--text);
+  border-radius:12px;padding:8px 12px;
+  font-weight:1000;
+}
+.userTag{
+  padding:12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  margin-bottom:12px;
+}
 .sideItem{
   display:flex;gap:10px;align-items:center;
-  padding:12px;border:1px solid #1e293b;border-radius:12px;margin-bottom:10px;
-  color:#e5e7eb;background:#0b1224;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;margin-bottom:10px;
+  color:var(--text);
+  background:rgba(0,0,0,.22);
+  font-weight:1000;
 }
-.sideItem:hover{background:#0f1a33}
-.activeLink{border:1px solid #38bdf8;background:rgba(56,189,248,0.12);}
-.sideLogout{background:#f87171;color:#020617;border:none;width:100%;padding:12px;border-radius:12px;font-weight:1000}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+.sideLogout{
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  color:#020617;border:none;width:100%;
+  padding:14px;border-radius:16px;font-weight:1000;cursor:pointer
+}
 
-/* BOTTOM NAV */
+/* ===== BOTTOM NAV ===== */
 .bottomNav{
   position:fixed;left:0;right:0;bottom:0;
-  height:74px;background:#020617;
-  border-top:1px solid #1e293b;
+  height:76px;
+  background:rgba(2,6,23,.78);
+  border-top:1px solid rgba(255,255,255,.12);
   display:flex;justify-content:space-around;align-items:center;
-  z-index:1200;padding:6px 10px;
+  z-index:1200;padding:8px 10px;
+  backdrop-filter: blur(12px);
 }
 .navItem{
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  color:#94a3b8;font-size:12px;font-weight:1000;
-  padding:10px 0;border-radius:14px;cursor:pointer;
+  color:rgba(234,240,255,.55);
+  font-size:12px;font-weight:1000;
+  padding:10px 0;border-radius:16px;cursor:pointer;
   position:relative;
+  transition: background .15s ease, color .15s ease;
 }
 .navItem span{font-size:18px;margin-bottom:4px}
-.navActive{color:#38bdf8;background:rgba(56,189,248,0.10)}
+.navActive{color:#9bdcff;background:rgba(56,189,248,0.10)}
 
 /* BADGE */
 .badge{
@@ -98,6 +330,7 @@ a:hover{text-decoration:underline}
   display:none;
   align-items:center;
   justify-content:center;
+  border:1px solid rgba(255,255,255,.18);
 }
 </style>
 </head>
@@ -109,7 +342,7 @@ a:hover{text-decoration:underline}
 
 <div id="sidebar" class="sidebar">
   <div class="brandRow">
-    <div class="brand">COINLUXORA</div>
+    <div class="brandSide">COINLUXORA</div>
     <button class="closeBtn" onclick="closeMenu()">✕</button>
   </div>
 
@@ -122,49 +355,98 @@ a:hover{text-decoration:underline}
   <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
   <a class="sideItem" href="plans.html">💼 Investment Plans</a>
   <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
-
-  <!-- ✅ FIXED: Deposit link now points to deposits.html -->
   <a class="sideItem" href="deposits.html">💳 Deposit</a>
-
   <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
 
   <div style="height:12px"></div>
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
-<header>
-  <button class="menuBtn" onclick="openMenu()">☰</button>
-  <strong>User Dashboard</strong>
-  <button onclick="logout()">Logout</button>
-</header>
+<div class="container">
 
-<div class="box">
-  <h2>Welcome</h2>
-  <div id="email" class="small">Loading…</div>
-</div>
+  <!-- Premium top -->
+  <div class="topRow">
+    <div class="brand">
+      <div class="brandIcon">📣</div>
+      COIN
+    </div>
 
-<div class="box">
-  <h2>Balance</h2>
-  <div id="balance" style="font-size:26px;font-weight:1000;margin-top:8px;">--</div>
-  <div class="small">Your trading account balance</div>
-</div>
+    <div class="headerActions">
+      <button class="iconBtn primary" title="Status">○</button>
+      <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
+    </div>
+  </div>
 
-<div class="box">
-  <h2>Active Investment Plan</h2>
-  <div id="planMsg" class="small">Loading…</div>
-  <div id="planBox"></div>
-</div>
+  <!-- Premium Hello Banner -->
+  <div class="helloCard">
+    <div class="helloLeft">
+      <div class="helloLogo">📶</div>
 
-<div class="box">
-  <h2>Live Crypto Prices</h2>
-  <div class="grid" id="prices"><div class="card">Loading…</div></div>
+      <div>
+        <div class="chips">
+          <div class="miniChip">🟢 active</div>
+          <div class="miniChip">🇳🇬 NG</div>
+        </div>
+        <div class="helloTitle">Hello! 🌙</div>
+        <div class="helloSub" id="email">Loading…</div>
+      </div>
+    </div>
+
+    <div class="helloRight">
+      <div class="idChip" id="userIdChip">ID:</div>
+      <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+    </div>
+  </div>
+
+  <!--i.<!-- Balance premium -->
+  <div class="balanceCard">
+    <div class="bTitle">Total Portfolio Value</div>
+    <div class="bValue" id="balance">--</div>
+    <div class="bHint">
+      <div class="dot"></div>
+      <div>Your trading account balance</div>
+    </div>
+
+    <!-- Action grid -->
+    <div class="actionGrid">
+      <div class="action" onclick="goWithdrawAndClear()">
+        <div class="aIcon aSend">✈️</div>
+        <div class="aText">Send</div>
+      </div>
+      <div class="action" onclick="goDepositAndClear()">
+        <div class="aIcon aReceive">⬇️</div>
+        <div class="aText">Receive</div>
+      </div>
+      <div class="action" onclick="goPlans()">
+        <div class="aIcon aPlans">📈</div>
+        <div class="aText">Plans</div>
+      </div>
+      <div class="action" onclick="goSupportAndClear()">
+        <div class="aIcon aSupport">💬</div>
+        <div class="aText">Support</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active plan -->
+  <div class="box">
+    <h2>Active Investment Plan</h2>
+    <div id="planMsg" class="small">Loading…</div>
+    <div id="planBox"></div>
+  </div>
+
+  <!-- Prices -->
+  <div class="box">
+    <h2>Live Crypto Prices</h2>
+    <div class="grid" id="prices"><div class="card">Loading…</div></div>
+  </div>
+
 </div>
 
 <!-- BOTTOM NAV -->
 <div class="bottomNav">
   <div class="navItem navActive" onclick="goHome()"><span>🏠</span>Home</div>
 
-  <!-- ✅ FIXED: deposit now points to deposits.html -->
   <div class="navItem" onclick="goDepositAndClear()">
     <div id="badgeDeposit" class="badge">0</div>
     <span>💳</span>Deposit
@@ -188,7 +470,6 @@ const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
@@ -200,10 +481,7 @@ init();
 /* NAV */
 function goHome(){ window.scrollTo({top:0,behavior:"smooth"}); }
 function goPlans(){ window.location.href="plans.html"; }
-
-/* ✅ FIXED */
 function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
-
 function goWithdrawAndClear(){ clearBadge("withdrawals"); window.location.href="withdraw.html"; }
 function goSupportAndClear(){ clearBadge("notifications"); window.location.href="support.html"; }
 
@@ -313,6 +591,7 @@ async function init(){
 
   document.getElementById("email").innerHTML=`Logged in as: <span class="ok">${currentUserEmail}</span>`;
   document.getElementById("sideEmail").innerText=currentUserEmail;
+  document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
   await loadBalance();
   await loadActivePlan();
@@ -324,7 +603,8 @@ async function init(){
 
 async function loadBalance(){
   const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-  document.getElementById("balance").innerHTML = Number(data?.balance || 0).toFixed(2);
+  const bal = Number(data?.balance || 0).toFixed(2);
+  document.getElementById("balance").innerHTML = "$" + bal;
 }
 
 function money(n){ return "$" + Number(n||0).toFixed(2); }
@@ -394,9 +674,9 @@ async function fetchPrices(){
     const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
     const data=await res.json();
     document.getElementById("prices").innerHTML=`
-      <div class="card"><strong>BTC</strong><br>$${data.bitcoin.usd}</div>
-      <div class="card"><strong>ETH</strong><br>$${data.ethereum.usd}</div>
-      <div class="card"><strong>USDT</strong><br>$${data.tether.usd}</div>
+      <div class="card"><strong>BTC</strong><div class="small" style="margin-top:8px">$${data.bitcoin.usd}</div></div>
+      <div class="card"><strong>ETH</strong><div class="small" style="margin-top:8px">$${data.ethereum.usd}</div></div>
+      <div class="card"><strong>USDT</strong><div class="small" style="margin-top:8px">$${data.tether.usd}</div></div>
     `;
   }catch{
     document.getElementById("prices").innerHTML="<div class='card err'>Failed to load prices</div>";
