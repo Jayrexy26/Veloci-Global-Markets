@@ -131,6 +131,13 @@ input:focus,select:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px 
 }
 .addr{font-weight:1000;margin-top:8px;word-break:break-all;font-size:14px}
 
+/* ✅ Copy button green effect */
+.copyGreen{
+  background: linear-gradient(90deg, rgba(34,197,94,1), rgba(16,185,129,1)) !important;
+  border-color: rgba(34,197,94,.60) !important;
+  box-shadow: 0 14px 40px rgba(34,197,94,.18) !important;
+}
+
 /* Chips */
 .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .chip{
@@ -267,7 +274,9 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 
         <div class="btnRow">
           <button class="btn" onclick="goDashboard()">← Dashboard</button>
-          <button class="btn rightBtn" onclick="copyAddress()">Copy Address</button>
+
+          <!-- ✅ Copy button now has an ID so we can animate it -->
+          <button class="btn rightBtn" id="copyBtn" onclick="copyAddress()">Copy Address</button>
         </div>
       </div>
     </div>
@@ -427,10 +436,52 @@ function renderDepositAddress(){
   );
   document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
 }
-function copyAddress(){
-  const addr=document.getElementById("depAddress").innerText;
-  navigator.clipboard.writeText(addr);
-  alert("Copied ✅");
+
+/* ✅ Copy Address (no alert, green button + text change) */
+let copyResetTimer = null;
+async function copyAddress(){
+  const addr=document.getElementById("depAddress").innerText.trim();
+  const copyBtn = document.getElementById("copyBtn");
+
+  if(!addr || addr==="Loading…" || addr==="No address configured"){
+    if(copyBtn){
+      const oldText = copyBtn.innerText;
+      copyBtn.innerText = "No Address";
+      copyBtn.classList.add("copyGreen");
+      clearTimeout(copyResetTimer);
+      copyResetTimer=setTimeout(()=>{
+        copyBtn.innerText = oldText;
+        copyBtn.classList.remove("copyGreen");
+      }, 1400);
+    }
+    return;
+  }
+
+  // Clipboard
+  try{
+    await navigator.clipboard.writeText(addr);
+  }catch(e){
+    // fallback
+    const temp=document.createElement("textarea");
+    temp.value=addr;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    temp.remove();
+  }
+
+  // ✅ Green feedback
+  if(copyBtn){
+    const oldText = copyBtn.innerText;
+    copyBtn.innerText = "Copied ✔️";
+    copyBtn.classList.add("copyGreen");
+
+    clearTimeout(copyResetTimer);
+    copyResetTimer=setTimeout(()=>{
+      copyBtn.innerText = oldText;
+      copyBtn.classList.remove("copyGreen");
+    }, 2000);
+  }
 }
 
 /* Clear badge */
@@ -598,7 +649,7 @@ function openModal(dep){
     <div class="modalRow"><span>Status:</span> ${statusPill(dep.status)}</div>
     <div class="modalRow"><span>Date:</span> ${new Date(dep.created_at).toLocaleString()}</div>
     ${dep.admin_note ? `<div class="modalRow"><span>Admin Note:</span> ${dep.admin_note}</div>` : ""}
-    ${proofLink ? `<div class="modalRow"><span>Proof:</span> <a href="${proofLink}" target="_blank">Open proof</a></div>` : ""}
+    ${proofLink ? `<div class="modalRow"><span>Proof:</span> <a href="${proofLink}" target="_blank" style="color:#9bdcff;font-weight:1000">Open proof</a></div>` : ""}
   `;
   document.getElementById("detailsModal").style.display="flex";
 }
