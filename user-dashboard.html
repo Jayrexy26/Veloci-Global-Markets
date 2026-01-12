@@ -8,128 +8,77 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body{
-      margin:0;
-      font-family: Arial, sans-serif;
-      background:#0b1220;
-      color:#fff;
-    }
+    body{ margin:0; font-family: Arial, sans-serif; background:#0b1220; color:#fff; }
 
     .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:14px 16px;
-      background:#0f172a;
+      display:flex; justify-content:space-between; align-items:center;
+      padding:14px 16px; background:#0f172a;
       border-bottom:1px solid rgba(255,255,255,.06);
-      position:sticky;
-      top:0;
-      z-index:10;
-      gap: 12px;
-      flex-wrap: wrap;
+      position:sticky; top:0; z-index:10;
+      gap: 12px; flex-wrap: wrap;
     }
 
-    .brand{
-      font-weight:900;
-      letter-spacing:.5px;
-      font-size: 18px;
-    }
+    .brand{ font-weight:900; letter-spacing:.5px; font-size: 18px; }
 
-    .dash-badges{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
+    .dash-badges{ display:flex; gap:10px; flex-wrap:wrap; }
 
     .badge-btn{
-      background:#101827;
-      color:#fff;
+      background:#101827; color:#fff;
       border:1px solid rgba(255,255,255,.08);
-      padding:10px 12px;
-      border-radius:12px;
-      font-weight:600;
-      display:flex;
-      gap:8px;
-      align-items:center;
-      cursor:pointer;
+      padding:10px 12px; border-radius:12px;
+      font-weight:600; display:flex; gap:8px;
+      align-items:center; cursor:pointer;
       user-select: none;
     }
 
     .badge{
-      min-width: 22px;
-      height: 22px;
-      padding: 0 7px;
-      border-radius: 999px;
-      background: #ff3b30;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size: 12px;
-      font-weight: 800;
-      line-height: 1;
+      min-width: 22px; height: 22px; padding: 0 7px;
+      border-radius: 999px; background: #ff3b30;
+      display:flex; align-items:center; justify-content:center;
+      font-size: 12px; font-weight: 800; line-height: 1;
     }
 
-    .badge.hidden{
-      display:none;
-    }
+    .badge.hidden{ display:none; }
 
-    .container{
-      padding:18px 16px;
-      max-width:900px;
-      margin:auto;
-    }
+    .container{ padding:18px 16px; max-width:900px; margin:auto; }
 
     .card{
-      background:#0f172a;
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:16px;
-      padding:16px;
-      margin-bottom:14px;
+      background:#0f172a; border:1px solid rgba(255,255,255,.06);
+      border-radius:16px; padding:16px; margin-bottom:14px;
       box-shadow: 0 10px 25px rgba(0,0,0,.18);
     }
 
-    .muted{
-      opacity:.7;
-      font-size:13px;
-    }
+    .muted{ opacity:.7; font-size:13px; }
 
     .uid-box{
-      margin-top:10px;
-      font-size:12px;
-      opacity:.9;
-      word-break:break-all;
-      background:#0b1020;
-      padding:10px;
-      border-radius:12px;
+      margin-top:10px; font-size:12px; opacity:.9; word-break:break-all;
+      background:#0b1020; padding:10px; border-radius:12px;
       border:1px dashed rgba(255,255,255,.12);
     }
 
-    .btn{
-      background:#2563eb;
-      border:none;
-      color:#fff;
-      padding:10px 14px;
-      border-radius:12px;
-      font-weight:700;
-      cursor:pointer;
-      margin-top:10px;
-    }
-
-    .btn:active{ transform: scale(.99); }
-
-    code{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    .toast{
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 30, 55, 0.95);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 700;
+      display:none;
+      z-index: 999;
+      max-width: 92vw;
+      text-align:center;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- TOP BAR -->
   <div class="topbar">
     <div class="brand">Coinluxora</div>
 
-    <!-- BADGES -->
     <div class="dash-badges">
       <button class="badge-btn" id="btn-notifications" type="button">
         Notifications <span class="badge hidden" id="badge-notifications">0</span>
@@ -146,53 +95,47 @@
   </div>
 
   <div class="container">
-
     <div class="card">
       <h2 style="margin:0 0 8px 0;">User Dashboard</h2>
-      <div class="muted">
-        ✅ Realtime Badges are now connected to Supabase Realtime.
-      </div>
+      <div class="muted">✅ Realtime Badges connected. Tap a badge button to clear it.</div>
 
       <div class="uid-box" id="uidBox">Loading user session...</div>
     </div>
-
-    <div class="card">
-      <h3 style="margin-top:0;">Realtime Test</h3>
-      <div class="muted">
-        Keep this dashboard open. Then go to Supabase SQL editor and run:
-        <br/><br/>
-        <code style="display:block;white-space:pre-wrap;background:#0b1020;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.06);">
-update public.user_badges
-set badge_value = badge_value + 1,
-    updated_at = now()
-where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
-  and badge_key = 'notifications';
-        </code>
-        <br/>
-        If Realtime is working, the red notification badge number will increase instantly.
-      </div>
-    </div>
-
   </div>
+
+  <div class="toast" id="toast"></div>
 
 <script>
   // =========================
-  // SUPABASE CONFIG (YOUR VALUES)
+  // SUPABASE CONFIG
   // =========================
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-  // Init client
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Badge keys shown in UI
   const BADGE_KEYS = ["notifications", "withdrawals", "deposits"];
 
   let currentUser = null;
   let badgeChannel = null;
 
   // =========================
-  // UI FUNCTIONS
+  // TOAST
+  // =========================
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastEl.style.display = "none";
+    }, 2500);
+  }
+
+  // =========================
+  // UI
   // =========================
   function setBadge(key, value) {
     const el = document.getElementById(`badge-${key}`);
@@ -206,7 +149,6 @@ where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
   }
 
   async function loadBadgesOnce(userId) {
-    // default values
     BADGE_KEYS.forEach(k => setBadge(k, 0));
 
     const { data, error } = await supabaseClient
@@ -216,6 +158,7 @@ where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
 
     if (error) {
       console.error("Badge load error:", error);
+      toast("Failed to load badges");
       return;
     }
 
@@ -257,6 +200,50 @@ where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
   }
 
   // =========================
+  // EDGE FUNCTION: CLEAR BADGE
+  // =========================
+  async function clearBadge(badge_key) {
+    if (!currentUser?.id) {
+      toast("No user session");
+      return;
+    }
+
+    try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        toast("No access token. Login again.");
+        return;
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/clear_badge`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+          "apikey": SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({ badge_key })
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error("clear_badge error:", json);
+        toast("Failed to clear badge");
+        return;
+      }
+
+      toast(`Cleared ${badge_key} ✅`);
+      // Realtime will update automatically, no need to force setBadge
+    } catch (err) {
+      console.error(err);
+      toast("Error clearing badge");
+    }
+  }
+
+  // =========================
   // INIT
   // =========================
   async function initBadges() {
@@ -268,7 +255,7 @@ where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
       uidBox.innerHTML =
         "❌ No logged-in user detected.<br><br>" +
         "Please login first before opening this dashboard page.";
-      console.warn("No user session:", error);
+      toast("Please login");
       return;
     }
 
@@ -277,24 +264,16 @@ where user_id = 'bd215840-d2cb-4d41-b7f2-cd5c9e6ce592'
     uidBox.innerHTML =
       "✅ Logged in User UID:<br>" +
       `<b>${currentUser.id}</b>` +
-      "<br><br><span class='muted'>Badges will update in realtime.</span>";
+      "<br><br><span class='muted'>Tap a badge button to clear it securely via Edge Function.</span>";
 
     await loadBadgesOnce(currentUser.id);
     subscribeToBadgeChanges(currentUser.id);
   }
 
-  // Button actions (optional)
-  document.getElementById("btn-notifications").addEventListener("click", () => {
-    alert("Notifications clicked (later we will open notifications page).");
-  });
-
-  document.getElementById("btn-withdrawals").addEventListener("click", () => {
-    alert("Withdrawals clicked (later we will open withdrawals page).");
-  });
-
-  document.getElementById("btn-deposits").addEventListener("click", () => {
-    alert("Deposits clicked (later we will open deposits page).");
-  });
+  // Click handlers
+  document.getElementById("btn-notifications").addEventListener("click", () => clearBadge("notifications"));
+  document.getElementById("btn-withdrawals").addEventListener("click", () => clearBadge("withdrawals"));
+  document.getElementById("btn-deposits").addEventListener("click", () => clearBadge("deposits"));
 
   window.addEventListener("DOMContentLoaded", initBadges);
 </script>
