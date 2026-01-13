@@ -5,11 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Coinluxora User Dashboard</title>
 
-<!-- Pinned to a stable version to avoid breaking changes -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-/* Your original CSS – unchanged for brevity, but it's all here */
 :root{
   --bg:#050a18;
   --stroke:rgba(255,255,255,.12);
@@ -39,10 +37,78 @@ body{
   background: var(--bg);
 }
 
-/* ... (all your other CSS styles remain exactly the same – omitted here for space) ... */
+/* ===== UPPER ECHELON BACKGROUND ===== */
+.bgFlow{
+  position:fixed; inset:0; z-index:-4;
+  background:
+    radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
+    radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.20), transparent 55%),
+    radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
+    linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+}
+.blob{
+  position:fixed;
+  width:520px;height:520px;border-radius:999px;
+  filter: blur(72px);
+  opacity:.60;
+  z-index:-3;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
+.blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
+.blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
+.blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
+@keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
 
-/* Make sure spinner is visible during load */
-.spinner {
+.shimmer{
+  position:fixed; inset:-30px; z-index:-2;
+  opacity:.28;
+  background:
+    radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
+    radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
+    linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
+  animation: shimmerMove 6s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes shimmerMove{from{transform:translateY(0px) translateX(0px)}to{transform:translateY(42px) translateX(22px)}}
+
+.container{max-width:920px;margin:0 auto}
+
+/* ===== Loading Gate ===== */
+#authGate{
+  position:fixed; inset:0; z-index:99999;
+  display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+    var(--bg);
+}
+.gateCard{
+  width:min(520px,92vw);
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  border-radius:22px;
+  padding:18px;
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(14px);
+  text-align:center;
+}
+.gateLogo{
+  width:62px;height:62px;border-radius:18px;
+  margin:0 auto 10px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(124,77,255,1));
+  box-shadow:0 18px 50px rgba(109,87,255,.28);
+  font-size:28px;font-weight:1000;
+}
+.gateTxt{font-weight:1000}
+.gateSub{margin-top:6px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px}
+.spinner{
   width:46px;height:46px;margin:14px auto 0;
   border-radius:999px;
   border:3px solid rgba(255,255,255,.18);
@@ -50,6 +116,507 @@ body{
   animation:spin 1s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== TOP BAR ===== */
+.topRow{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:14px;
+}
+.brand{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
+  color:white;font-weight:1000;letter-spacing:.6px;
+  box-shadow:0 18px 50px rgba(109,87,255,.25);
+  min-width:140px;
+}
+.brandIcon{
+  width:34px;height:34px;border-radius:12px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.headerActions{display:flex;gap:10px;align-items:center}
+
+/* ✅ Avatar */
+.avatarBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(124,77,255,.32);
+  display:grid;place-items:center;
+  position:relative;overflow:hidden;
+}
+.avatarBtn:hover{filter:brightness(1.05)}
+.avatarFallback{font-size:18px;line-height:1;z-index:2;}
+.avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
+
+.iconBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.18);
+  color:white;font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  backdrop-filter: blur(10px);
+}
+.iconBtn:hover{background:rgba(255,255,255,.08)}
+
+/* ===== HELLO CARD ===== */
+.helloCard{
+  border-radius:20px;
+  padding:16px 16px;
+  overflow:hidden;
+  background:
+    radial-gradient(800px 220px at 20% 20%, rgba(255,255,255,.18), transparent 60%),
+    linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
+  color:white;
+  box-shadow:0 22px 70px rgba(109,87,255,.22);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.helloLeft{display:flex;align-items:center;gap:12px;}
+.helloLogo{
+  width:48px;height:48px;border-radius:18px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.miniChip{
+  font-size:12px;font-weight:1000;
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex;gap:6px;align-items:center;
+}
+.helloTitle{font-weight:1000;font-size:18px}
+.helloSub{font-size:12px;font-weight:900;opacity:.92}
+.helloRight{
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+}
+.helloRightTop{display:flex;align-items:center;gap:10px}
+.idChip{
+  padding:8px 12px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  font-weight:1000;font-size:12px;
+}
+.logoutBtn{
+  width:46px;height:46px;border-radius:999px;border:none;
+  cursor:pointer;
+  background:rgba(239,68,68,0.95);
+  color:#fff;
+  font-weight:1000;
+  box-shadow:0 16px 40px rgba(239,68,68,.22);
+}
+.datetimeChip{
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.20);
+  font-weight:1000;font-size:12px;
+  color:#fff;
+  white-space:nowrap;
+}
+
+/* ===== BOX ===== */
+.box{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;
+  padding:16px;
+  background:
+    radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
+    radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  margin-top:14px;
+}
+.box h2{margin:0;font-size:20px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:8px}
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+.card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+
+.balanceCard{
+  margin-top:14px;
+  border-radius:24px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,.24), transparent 55%),
+    linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+  color:white;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.25);
+  padding:16px;
+}
+.bTitle{font-size:13px;font-weight:1000;opacity:.85}
+.bValue{font-size:34px;font-weight:1000;margin-top:8px}
+.bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+.actionGrid{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.action{
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  padding:12px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  transition:.18s ease;
+}
+.action:hover{transform: translateY(-2px);background:rgba(255,255,255,.10)}
+.aIcon{
+  width:48px;height:48px;border-radius:999px;
+  display:grid;place-items:center;
+  font-size:20px;
+  font-weight:1000;color:#fff;
+}
+.aSend{background:linear-gradient(180deg,#6d57ff,#7c4dff)}
+.aReceive{background:linear-gradient(180deg,#18c07b,#11b981)}
+.aPlans{background:linear-gradient(180deg,#f59e0b,#f97316)}
+.aSupport{background:linear-gradient(180deg,#38bdf8,#5b6cff)}
+.aText{font-weight:1000;font-size:13px}
+
+/* ===== converters ===== */
+.convGrid{margin-top:14px;display:grid;gap:12px}
+.convRow{display:flex;gap:10px;flex-wrap:wrap}
+.inp{
+  flex:1;min-width:140px;
+  height:50px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  color:var(--text);
+  padding:10px 12px;
+  font-weight:1000;
+  outline:none;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.swapBtn{
+  width:54px;height:50px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.swapBtn:hover{filter:brightness(1.05)}
+.convBtn{
+  width:100%;
+  height:54px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 18px 55px rgba(91,108,255,.18);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.convBtn:hover{filter:brightness(1.05)}
+.rateLine{
+  margin-top:10px;
+  font-size:12px;
+  color:rgba(234,240,255,.75);
+  font-weight:900;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.rateDot{
+  width:10px;height:10px;border-radius:999px;
+  background:rgba(52,211,153,1);
+  box-shadow:0 0 18px rgba(52,211,153,.55);
+}
+
+/* ===== searchable dropdown unlimited ===== */
+.ddWrap{flex:1;min-width:220px;position:relative}
+.ddBtn{
+  width:100%;
+  height:50px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  color:rgba(234,240,255,.95);
+  padding:10px 12px;
+  font-weight:1000;
+  outline:none;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.ddLeft{display:flex;align-items:center;gap:10px;min-width:0}
+.ddIcon{
+  width:34px;height:34px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  display:grid;place-items:center;
+  font-size:14px;
+}
+.ddName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ddPanel{
+  position:absolute; top:56px; left:0; right:0;
+  z-index:100;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(2,6,23,.94);
+  box-shadow:0 26px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(16px);
+  overflow:hidden;
+  display:none;
+}
+.ddPanel.show{display:block;}
+.ddSearch{
+  width:100%;
+  height:46px;
+  border:none; outline:none;
+  padding:0 12px;
+  font-weight:1000;
+  color:#fff;
+  background:rgba(0,0,0,.20);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.ddList{max-height:320px;overflow:auto;}
+.ddItem{
+  padding:12px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  color:rgba(234,240,255,.86);
+  font-weight:900;
+}
+.ddItem:hover{background:rgba(255,255,255,.06)}
+.ddItem small{color:rgba(234,240,255,.55);font-weight:900}
+
+/* ===== order book ===== */
+.orderWrap{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.obCol{
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  padding:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.obTitle{
+  font-weight:1000;
+  color:rgba(234,240,255,.85);
+  font-size:13px;
+  margin-bottom:10px;
+  display:flex;
+  justify-content:space-between;
+}
+.obList{
+  display:grid;
+  gap:8px;
+  max-height:260px;
+  overflow:auto;
+  padding-right:6px;
+}
+.obItem{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-weight:900;
+  font-size:12px;
+  color:rgba(234,240,255,.78);
+}
+@media(max-width:520px){.orderWrap{grid-template-columns:1fr}}
+
+/* ===== mini chart ===== */
+.chartWrap{
+  margin-top:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  overflow:hidden;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.chartHead{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  font-weight:1000;
+  color:rgba(234,240,255,.78);
+  font-size:13px;
+}
+.chartFrame{width:100%;height:340px;border:0;display:block}
+
+/* ===== SIDEBAR ===== */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(4px);
+}
+.overlay.show{display:block;}
+.sidebar{
+  position:fixed; top:0; left:-315px;
+  width:292px; height:100vh;
+  padding:16px;
+  z-index:1000;
+  transition: .28s ease;
+  border-right:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+    linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+  box-shadow:0 26px 90px rgba(0,0,0,.60);
+  backdrop-filter: blur(16px);
+}
+.sidebar.open{ left:0; }
+.sideTop{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:12px;
+}
+.sideBrand{
+  display:flex;align-items:center;gap:10px;
+  font-weight:1000;font-size:16px;letter-spacing:.9px;
+  color:#fff;
+  padding:10px 12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
+  box-shadow:0 16px 50px rgba(109,87,255,.18);
+  min-width:170px;
+}
+.sideBrandIcon{
+  width:30px;height:30px;border-radius:12px;
+  display:grid;place-items:center;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.20);
+}
+.closeBtn{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.14);
+  color:rgba(234,240,255,.95);
+  border-radius:14px;
+  width:44px;height:44px;
+  cursor:pointer;
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.closeBtn:hover{background:rgba(255,255,255,.08)}
+
+/* ===== NEW: Touch/Scroll Auto Highlight ===== */
+.box,
+.balanceCard,
+.card,
+.action,
+.obCol,
+.chartWrap,
+.sideItem,
+.userTag{
+  position:relative;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, filter .18s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.isActiveBox{
+  border-color: rgba(56,189,248,.58) !important;
+  box-shadow: 0 26px 110px rgba(56,189,248,.12), 0 26px 90px rgba(0,0,0,.55) !important;
+  transform: translateY(-1px) scale(1.01);
+}
+.isActiveBox::after{
+  content:"";
+  position:absolute; inset:0;
+  border-radius: inherit;
+  pointer-events:none;
+  background:
+    radial-gradient(700px 220px at 24% 10%, rgba(56,189,248,.16), transparent 60%),
+    radial-gradient(700px 220px at 88% 25%, rgba(255,77,166,.10), transparent 62%);
+  opacity:.95;
+}
+.isActiveBox:focus-within{
+  border-color: rgba(56,189,248,.60) !important;
+}
+
+/* ===== DOCK ===== */
+.dock{
+  position:fixed;
+  left:0; right:0; bottom:14px;
+  z-index:2000;
+  pointer-events:none;
+}
+.dockInner{
+  pointer-events:auto;
+  max-width:980px;
+  margin:0 auto;
+  padding:0 14px;
+}
+.dockBar{
+  height:76px;
+  border-radius:28px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 20px 70px rgba(0,0,0,.45);
+  backdrop-filter: blur(14px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  gap:10px;
+}
+.dockItem{
+  flex:1;
+  min-width:70px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border-radius:18px;
+  padding:10px 0;
+  color:rgba(234,240,255,.55);
+  font-size:12px;
+  font-weight:1000;
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+}
+.dockItem .ico{font-size:18px;opacity:.95}
+.dockItem:hover{background:rgba(255,255,255,.06)}
+.dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
+.dockHome{
+  width:78px;height:78px;border-radius:26px;
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
+  box-shadow:0 22px 55px rgba(109,87,255,.30);
+  display:grid;place-items:center;
+  margin-top:-32px;
+  border:1px solid rgba(255,255,255,.16);
+  cursor:pointer;user-select:none;
+  flex:0 0 auto;
+  pointer-events:auto;
+}
+.dockHome span{font-size:28px;color:white}
+.dockHome:hover{filter:brightness(1.05)}
 </style>
 </head>
 <body>
@@ -72,127 +639,342 @@ body{
 </div>
 
 <div class="container">
-  <!-- Your full UI structure here – Top bar, Hello card, Balance, etc. -->
-  <!-- ... (keep all your original HTML content from topRow to dock) ... -->
-  <!-- Note: Your last message had truncated balanceCard – assuming it's complete in your file -->
+
+  <!-- Top bar -->
+  <div class="topRow">
+    <div class="brand">
+      <div class="brandIcon">CL</div>
+      Coinluxora
+    </div>
+    <div class="headerActions">
+      <button class="iconBtn" id="menuBtn">☰</button>
+      <button class="avatarBtn" id="avatarBtn" title="Profile">
+        <span class="avatarFallback" id="avatarFallback">👤</span>
+        <img id="avatarImgBtn" class="avatarImgBtn" alt="avatar"/>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hello -->
+  <div class="helloCard box">
+    <div class="helloLeft">
+      <div class="helloLogo">👋</div>
+      <div>
+        <div class="chips">
+          <div class="miniChip" id="dateChip">📅 --</div>
+          <div class="miniChip" id="countryChip">🌍 --</div>
+        </div>
+        <div class="helloTitle" id="greetTxt">Hello</div>
+        <div class="helloSub" id="helloSub">Welcome back</div>
+      </div>
+    </div>
+    <div class="helloRight">
+      <div class="helloRightTop">
+        <div class="idChip" id="userEmailChip">user@email.com</div>
+        <button class="logoutBtn" id="logoutBtn" title="Logout">⎋</button>
+      </div>
+      <div class="datetimeChip" id="dtChip">--</div>
+    </div>
+  </div>
+
+  <!-- Balance -->
+  <div class="balanceCard">
+    <div class="bTitle">Portfolio Value</div>
+    <div class="bValue" id="portfolioVal">$0.00</div>
+    <div class="bHint"><span class="dot"></span><span id="portfolioHint">Live valuation</span></div>
+
+    <div class="actionGrid">
+      <div class="action"><div class="aIcon aSend">↑</div><div class="aText">Send</div></div>
+      <div class="action"><div class="aIcon aReceive">↓</div><div class="aText">Receive</div></div>
+      <div class="action"><div class="aIcon aPlans">★</div><div class="aText">Plans</div></div>
+      <div class="action"><div class="aIcon aSupport">?</div><div class="aText">Support</div></div>
+    </div>
+  </div>
+
+  <!-- Example boxes -->
+  <div class="box">
+    <h2>Converters</h2>
+    <div class="small">Tap any box and it will auto-highlight. Also highlights while scrolling.</div>
+    <div class="card" style="margin-top:12px">Your converter UI continues here…</div>
+  </div>
+
+  <div class="box">
+    <h2>Order Book</h2>
+    <div class="orderWrap">
+      <div class="obCol">
+        <div class="obTitle">Bids <span>Qty</span></div>
+        <div class="obList" id="bidList"></div>
+      </div>
+      <div class="obCol">
+        <div class="obTitle">Asks <span>Qty</span></div>
+        <div class="obList" id="askList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chartWrap">
+    <div class="chartHead">
+      <span>Mini Chart</span>
+      <span class="ok">Live</span>
+    </div>
+    <iframe class="chartFrame" src="about:blank"></iframe>
+  </div>
+
 </div>
 
-<!-- Sidebar and Dock – unchanged -->
+<!-- Sidebar -->
+<div class="overlay" id="overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sideTop">
+    <div class="sideBrand"><div class="sideBrandIcon">CL</div>Coinluxora</div>
+    <button class="closeBtn" id="closeSide">✕</button>
+  </div>
+
+  <div class="userTag">
+    <div class="userTagLeft">
+      <div class="t1">Logged in as</div>
+      <div class="t2" id="sideEmail">user@email.com</div>
+    </div>
+    <div class="sideAvatar" id="sideAvatar">
+      <span id="sideAvatarFallback">👤</span>
+      <img id="sideAvatarImg" alt="avatar"/>
+    </div>
+  </div>
+
+  <div class="menuGroupTitle">Menu</div>
+  <a class="sideItem activeLink" href="#"><div class="i">🏠</div><div><div>Dashboard</div><small>Overview</small></div></a>
+  <a class="sideItem" href="#"><div class="i">💳</div><div><div>Transactions</div><small>History</small></div></a>
+  <a class="sideItem" href="#"><div class="i">📈</div><div><div>Markets</div><small>Prices</small></div></a>
+  <a class="sideItem" href="#"><div class="i">⚙️</div><div><div>Settings</div><small>Preferences</small></div></a>
+
+  <button class="sideLogout" id="sideLogout">Logout</button>
+</div>
+
+<!-- Dock -->
+<div class="dock">
+  <div class="dockInner">
+    <div class="dockBar">
+      <div class="dockItem dockActive"><div class="ico">🏠</div>Home</div>
+      <div class="dockItem"><div class="ico">📊</div>Stats</div>
+      <div class="dockHome"><span>＋</span></div>
+      <div class="dockItem"><div class="ico">💬</div>Chat</div>
+      <div class="dockItem"><div class="ico">👤</div>Profile</div>
+    </div>
+  </div>
+</div>
 
 <script>
-// ================================================
-//   RELIABLE SUPABASE AUTH GUARD (BYPASS HANGS)
-//   Works around known mobile/inactivity freeze in supabase-js ~2025-2026
-// ================================================
+/* =========================================================
+   ✅ ONE-BLOCK SUPABASE AUTH + EMAIL VERIFICATION GUARD
+   (required on every Coinluxora page)
+   + ✅ Anti-stuck AUTH GATE fix added
+========================================================= */
+const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_ANON = "YOUR_ANON_KEY";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const SUPABASE_URL  = "https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+(async function authGuard(){
+  const AUTH_MAX_WAIT = 9000; // 9s max
+  let authTimeout = setTimeout(()=>{ location.replace('login.html'); }, AUTH_MAX_WAIT);
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false
+  // If you forgot to set Supabase keys, don't freeze UI
+  if(SUPABASE_URL.includes('YOUR_PROJECT') || SUPABASE_ANON.includes('YOUR_ANON_KEY')){
+    clearTimeout(authTimeout);
+    setTimeout(()=>{ const g=document.getElementById('authGate'); if(g) g.style.display='none'; }, 800);
+    initDashboard({ email: 'demo@coinluxora.com' });
+    return;
   }
-});
 
-const LOADING_TIMEOUT_MS = 7000; // shorter – we detect hangs faster
-
-(async function authGuard() {
-  const gate = document.getElementById("authGate");
-  const gateTxt = document.querySelector(".gateTxt");
-  const gateSub = document.querySelector(".gateSub");
-
-  // Ultimate safety timeout
-  const timeoutId = setTimeout(() => {
-    gateTxt.textContent = "Taking too long...";
-    gateSub.textContent = "Redirecting to login";
-    setTimeout(() => location.replace("/login.html"), 1800);
-  }, LOADING_TIMEOUT_MS);
-
-  try {
-    // Step 1: Try fast localStorage bypass (most reliable on mobile)
-    let session = null;
-    const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
-    const stored = localStorage.getItem(storageKey);
-
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed?.access_token) {
-          session = parsed;
-        }
-      } catch {}
-    }
-
-    // If we have a token locally → quick validate with timeout
-    if (session?.access_token) {
-      const controller = new AbortController();
-      const abortTimer = setTimeout(() => controller.abort(), 4000);
-
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        clearTimeout(abortTimer);
-
-        if (!error && user && user.email_confirmed_at) {
-          clearTimeout(timeoutId);
-          gate.style.display = "none";
-          setTimeout(() => initDashboard(user), 120);
-          return;
-        }
-      } catch (e) {
-        // Hang or error → fallback
-        console.warn("getUser failed → fallback");
-      }
-    }
-
-    // Step 2: Normal path as fallback (with extra timeout layer)
-    const { data: { session: freshSession }, error: sessErr } = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("getSession timeout")), 5000))
-    ]);
-
-    if (sessErr || !freshSession?.user) throw new Error("no session");
-
-    const user = freshSession.user;
-    if (!user.email_confirmed_at) {
-      clearTimeout(timeoutId);
-      location.replace("/verify-email.html");
+  try{
+    // 1) getSession FIRST (prevents login flash)
+    const { data: sessData } = await supabase.auth.getSession();
+    const session = sessData?.session;
+    if(!session){
+      clearTimeout(authTimeout);
+      location.replace("login.html");
       return;
     }
 
-    // Success
-    clearTimeout(timeoutId);
-    gate.style.display = "none";
-    setTimeout(() => initDashboard(user), 120);
+    // 2) getUser (authoritative)
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user;
+    if(!user){
+      clearTimeout(authTimeout);
+      location.replace("login.html");
+      return;
+    }
 
-  } catch (err) {
-    console.error("Auth guard error:", err.message || err);
-    clearTimeout(timeoutId);
+    // 3) email verification check
+    const verified = !!(user.email_confirmed_at || user.confirmed_at);
+    if(!verified){
+      clearTimeout(authTimeout);
+      location.replace("verify-email.html");
+      return;
+    }
 
-    gateTxt.textContent = "Session issue";
-    gateSub.textContent = "Please sign in again";
-    setTimeout(() => location.replace("/login.html"), 2500);
+    // 4) passed → unlock UI
+    clearTimeout(authTimeout);
+    document.getElementById("authGate").style.display = "none";
+    initDashboard(user);
+  }catch(e){
+    clearTimeout(authTimeout);
+    location.replace("login.html");
   }
 })();
 
-// Your original initDashboard, setupAutoHighlight, loadCountry, fillOB functions remain unchanged
-// ... paste them here exactly as in your original code ...
-
+/* =========================================================
+   UI init
+========================================================= */
 function initDashboard(user){
-  // Your code...
+  // email chips
+  const email = user?.email || "user@email.com";
+  document.getElementById("userEmailChip").textContent = email;
+  document.getElementById("sideEmail").textContent = email;
+
+  // greeting
+  const hr = new Date().getHours();
+  const g = hr < 12 ? "Good Morning 🌞" : (hr < 18 ? "Good Afternoon ☀️" : "Good Evening 🌙");
+  document.getElementById("greetTxt").textContent = g;
+
+  // date + time
+  setInterval(()=>{
+    const d = new Date();
+    const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const mons = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const hh = d.getHours();
+    const ampm = hh >= 12 ? "PM" : "AM";
+    const h12 = ((hh + 11) % 12) + 1;
+    const pad = n => String(n).padStart(2,"0");
+    const txt = `${days[d.getDay()]}, ${pad(d.getDate())} ${mons[d.getMonth()]} ${d.getFullYear()} | ${pad(h12)}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${ampm}`;
+    document.getElementById("dtChip").textContent = txt;
+    document.getElementById("dateChip").textContent = "📅 " + days[d.getDay()];
+  }, 1000);
+
+  // country chip (best-effort)
+  loadCountry();
+
+  // sidebar open/close
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("overlay");
+  const openSide = ()=>{ sidebar.classList.add("open"); overlay.classList.add("show"); };
+  const closeSide = ()=>{ sidebar.classList.remove("open"); overlay.classList.remove("show"); };
+  document.getElementById("menuBtn").onclick = openSide;
+  document.getElementById("closeSide").onclick = closeSide;
+  overlay.onclick = closeSide;
+
+  // logout
+  const doLogout = async ()=>{
+    await supabase.auth.signOut();
+    location.replace("login.html");
+  };
+  document.getElementById("logoutBtn").onclick = doLogout;
+  document.getElementById("sideLogout").onclick = doLogout;
+
+  // dummy order book
+  fillOB();
+
+  // ✅ Auto highlight behavior
+  setupAutoHighlight();
 }
 
+/* =========================================================
+   ✅ Touch/Scroll Auto Highlight:
+   - highlights any .box/.balanceCard/.card/.action/.obCol/.chartWrap/.sideItem/.userTag
+   - as you scroll: the most centered box gets highlighted
+========================================================= */
 function setupAutoHighlight(){
-  // Your code...
+  const targets = Array.from(document.querySelectorAll(".box,.balanceCard,.card,.action,.obCol,.chartWrap,.sideItem,.userTag"));
+
+  let lastActive = null;
+  const activate = (el)=>{
+    if(!el) return;
+    if(lastActive && lastActive !== el) lastActive.classList.remove("isActiveBox");
+    el.classList.add("isActiveBox");
+    lastActive = el;
+  };
+
+  // 1) tap/click highlight
+  targets.forEach(el=>{
+    ["pointerdown","touchstart","mousedown"].forEach(evt=>{
+      el.addEventListener(evt, ()=>{
+        activate(el);
+        // remove after a moment for "tap flash" feel
+        clearTimeout(el.__hlTimer);
+        el.__hlTimer = setTimeout(()=>{ el.classList.remove("isActiveBox"); }, 1600);
+      }, {passive:true});
+    });
+  });
+
+  // 2) scroll highlight (centered item)
+  const io = new IntersectionObserver((entries)=>{
+    // pick entry closest to center
+    const visible = entries.filter(e=>e.isIntersecting);
+    if(!visible.length) return;
+    const centerY = window.innerHeight / 2;
+    visible.sort((a,b)=>{
+      const ay = Math.abs((a.boundingClientRect.top + a.boundingClientRect.bottom)/2 - centerY);
+      const by = Math.abs((b.boundingClientRect.top + b.boundingClientRect.bottom)/2 - centerY);
+      return ay - by;
+    });
+    activate(visible[0].target);
+  }, {
+    root:null,
+    threshold:[0.25,0.35,0.45,0.55,0.65,0.75],
+    rootMargin:"-20% 0px -30% 0px"
+  });
+
+  targets.forEach(el=>io.observe(el));
+
+  // initial
+  setTimeout(()=>{
+    const first = targets.find(t=>{
+      const r=t.getBoundingClientRect();
+      return r.bottom>0 && r.top < window.innerHeight;
+    });
+    if(first) activate(first);
+  }, 700);
 }
 
+/* =========================================================
+   Helpers
+========================================================= */
 async function loadCountry(){
-  // Your code...
+  const chip = document.getElementById("countryChip");
+  try{
+    const res = await fetch("https://ipapi.co/json/");
+    if(!res.ok) throw new Error("ip fail");
+    const j = await res.json();
+    const code = (j?.country_code || "").toUpperCase();
+    const flag = code ? code.replace(/./g, c=>String.fromCodePoint(127397 + c.charCodeAt())) : "🌍";
+    chip.textContent = code ? `${flag} ${code}` : "🌍 --";
+  }catch(e){
+    chip.textContent = "🌍 --";
+  }
 }
 
 function fillOB(){
-  // Your code...
+  const bids = document.getElementById("bidList");
+  const asks = document.getElementById("askList");
+  if(!bids || !asks) return;
+
+  bids.innerHTML = "";
+  asks.innerHTML = "";
+  for(let i=0;i<18;i++){
+    const p1 = (68000 - i*12).toFixed(2);
+    const q1 = (Math.random()*0.75).toFixed(4);
+    const p2 = (68000 + i*12).toFixed(2);
+    const q2 = (Math.random()*0.75).toFixed(4);
+
+    const b = document.createElement("div");
+    b.className="obItem";
+    b.innerHTML = `<span style="color:#34d399">$${p1}</span><span>${q1}</span>`;
+    bids.appendChild(b);
+
+    const a = document.createElement("div");
+    a.className="obItem";
+    a.innerHTML = `<span style="color:#f87171">$${p2}</span><span>${q2}</span>`;
+    asks.appendChild(a);
+  }
 }
 </script>
 </body>
