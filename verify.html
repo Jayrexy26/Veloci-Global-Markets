@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify Email - Coinluxora</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      font-family:system-ui;
+      background:#020617;
+      color:#e5e7eb;
+    }
+    .box{
+      max-width:520px;
+      width:100%;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.06);
+      border-radius:18px;
+      padding:22px;
+      box-shadow:0 25px 80px rgba(0,0,0,.50);
+      backdrop-filter: blur(12px);
+    }
+    h2{margin:0 0 8px 0}
+    .muted{color:#94a3b8}
+    .ok{color:#22c55e;font-weight:900}
+    .err{color:#f87171;font-weight:900}
+    .btn{
+      margin-top:16px;
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:900;
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      color:white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h2>Verify your email</h2>
+    <p class="muted">
+      We’ve sent a verification link to your email.
+      Open your inbox and click the link to activate your account.
+    </p>
+
+    <p id="msg" class="muted">Waiting for verification…</p>
+
+    <button class="btn" onclick="goLogin()">Go to Login</button>
+  </div>
+
+<script>
+  const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+  const msg=document.getElementById("msg");
+
+  // When Supabase returns from email link, it may auto-create a session
+  init();
+
+  async function init(){
+    // try check session
+    const { data } = await supabaseClient.auth.getSession();
+
+    if(data.session){
+      // VERIFIED ✅
+      msg.innerHTML = "<span class='ok'>Email verified ✅ Redirecting to dashboard…</span>";
+      setTimeout(()=> window.location.href="user-dashboard.html", 1200);
+      return;
+    }
+
+    msg.innerHTML = "<span class='muted'>Still not verified yet. After clicking the link, refresh this page.</span>";
+  }
+
+  function goLogin(){
+    window.location.href="login.html";
+  }
+</script>
+
+</body>
+</html>
