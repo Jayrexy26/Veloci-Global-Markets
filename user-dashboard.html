@@ -764,62 +764,103 @@ body{
 </div>
 
 <script>
-/* =========================================================
-   ✅ ONE-BLOCK SUPABASE AUTH + EMAIL VERIFICATION GUARD
-   (required on every Coinluxora page)
-========================================================= */
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
-const SUPABASE_ANON = "YOUR_ANON_KEY";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ================================================
+//           HARDENED SUPABASE AUTH GUARD (2025)
+// ================================================
 
-(async function authGuard(){
-  try{
-    // 1) getSession FIRST (prevents login flash)
-    const { data: sessData } = await supabase.auth.getSession();
-    const session = sessData?.session;
-    if(!session){
-      location.replace("login.html");
+const SUPABASE_URL   = "https://YOUR_PROJECT_ID.supabase.co";           // ← CHANGE THIS
+const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";      // ← CHANGE THIS (anon key!)
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
+
+const LOADING_TIMEOUT_MS = 12000; // 12 seconds maximum wait
+
+(async function authGuard() {
+  const gate = document.getElementById("authGate");
+  const gateTxt = document.querySelector(".gateTxt");
+  const gateSub = document.querySelector(".gateSub");
+
+  // Safety timeout - prevents infinite loading
+  const timeoutId = setTimeout(() => {
+    if (gateTxt) gateTxt.textContent = "Connection timeout";
+    if (gateSub) gateSub.textContent = "Please check internet or try again later";
+    setTimeout(() => location.replace("/login.html"), 2400);
+  }, LOADING_TIMEOUT_MS);
+
+  try {
+    // 1. Fast path: session check
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!session) {
+      clearTimeout(timeoutId);
+      location.replace("/login.html");
       return;
     }
 
-    // 2) getUser (authoritative)
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user;
-    if(!user){
-      location.replace("login.html");
+    // 2. Authoritative user check
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!user) {
+      clearTimeout(timeoutId);
+      location.replace("/login.html");
       return;
     }
 
-    // 3) email verification check
-    const verified = !!(user.email_confirmed_at || user.confirmed_at);
-    if(!verified){
-      location.replace("verify-email.html");
+    // 3. Email confirmation check
+    if (!user.email_confirmed_at) {
+      clearTimeout(timeoutId);
+      location.replace("/verify-email.html");
       return;
     }
 
-    // 4) passed → unlock UI
-    document.getElementById("authGate").style.display = "none";
-    initDashboard(user);
-  }catch(e){
-    location.replace("login.html");
+    // Success path
+    clearTimeout(timeoutId);
+    gate.style.display = "none";
+
+    // Small delay for smoother transition
+    setTimeout(() => {
+      initDashboard(user);
+    }, 180);
+
+  } catch (err) {
+    console.error("Auth failed:", err.message || err);
+
+    clearTimeout(timeoutId);
+
+    let msg = "Authentication error";
+    if (err.message?.includes("Failed to fetch")) {
+      msg = "Cannot reach server";
+    } else if (err.message?.includes("invalid")) {
+      msg = "Invalid credentials";
+    }
+
+    if (gateTxt) gateTxt.textContent = msg;
+    if (gateSub) gateSub.textContent = "Redirecting to login...";
+
+    setTimeout(() => {
+      location.replace("/login.html");
+    }, 2800);
   }
 })();
 
 /* =========================================================
-   UI init
+   UI init (unchanged)
 ========================================================= */
 function initDashboard(user){
-  // email chips
   const email = user?.email || "user@email.com";
   document.getElementById("userEmailChip").textContent = email;
   document.getElementById("sideEmail").textContent = email;
 
-  // greeting
   const hr = new Date().getHours();
   const g = hr < 12 ? "Good Morning 🌞" : (hr < 18 ? "Good Afternoon ☀️" : "Good Evening 🌙");
   document.getElementById("greetTxt").textContent = g;
 
-  // date + time
   setInterval(()=>{
     const d = new Date();
     const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -833,10 +874,8 @@ function initDashboard(user){
     document.getElementById("dateChip").textContent = "📅 " + days[d.getDay()];
   }, 1000);
 
-  // country chip (best-effort)
   loadCountry();
 
-  // sidebar open/close
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("overlay");
   const openSide = ()=>{ sidebar.classList.add("open"); overlay.classList.add("show"); };
@@ -845,25 +884,19 @@ function initDashboard(user){
   document.getElementById("closeSide").onclick = closeSide;
   overlay.onclick = closeSide;
 
-  // logout
   const doLogout = async ()=>{
     await supabase.auth.signOut();
-    location.replace("login.html");
+    location.replace("/login.html");
   };
   document.getElementById("logoutBtn").onclick = doLogout;
   document.getElementById("sideLogout").onclick = doLogout;
 
-  // dummy order book
   fillOB();
-
-  // ✅ Auto highlight behavior
   setupAutoHighlight();
 }
 
 /* =========================================================
-   ✅ Touch/Scroll Auto Highlight:
-   - highlights any .box/.balanceCard/.card/.action/.obCol/.chartWrap/.sideItem/.userTag
-   - as you scroll: the most centered box gets highlighted
+   Touch/Scroll Auto Highlight (unchanged)
 ========================================================= */
 function setupAutoHighlight(){
   const targets = Array.from(document.querySelectorAll(".box,.balanceCard,.card,.action,.obCol,.chartWrap,.sideItem,.userTag"));
@@ -876,21 +909,17 @@ function setupAutoHighlight(){
     lastActive = el;
   };
 
-  // 1) tap/click highlight
   targets.forEach(el=>{
     ["pointerdown","touchstart","mousedown"].forEach(evt=>{
       el.addEventListener(evt, ()=>{
         activate(el);
-        // remove after a moment for "tap flash" feel
         clearTimeout(el.__hlTimer);
         el.__hlTimer = setTimeout(()=>{ el.classList.remove("isActiveBox"); }, 1600);
       }, {passive:true});
     });
   });
 
-  // 2) scroll highlight (centered item)
   const io = new IntersectionObserver((entries)=>{
-    // pick entry closest to center
     const visible = entries.filter(e=>e.isIntersecting);
     if(!visible.length) return;
     const centerY = window.innerHeight / 2;
@@ -902,13 +931,12 @@ function setupAutoHighlight(){
     activate(visible[0].target);
   }, {
     root:null,
-    threshold:[0.25,0.35,0.45,0.55,0.65,0.75],
+    threshold:[0.3, 0.5, 0.7],
     rootMargin:"-20% 0px -30% 0px"
   });
 
   targets.forEach(el=>io.observe(el));
 
-  // initial
   setTimeout(()=>{
     const first = targets.find(t=>{
       const r=t.getBoundingClientRect();
@@ -919,7 +947,7 @@ function setupAutoHighlight(){
 }
 
 /* =========================================================
-   Helpers
+   Helpers (unchanged)
 ========================================================= */
 async function loadCountry(){
   const chip = document.getElementById("countryChip");
