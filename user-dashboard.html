@@ -180,8 +180,14 @@ body{
 .helloTitle{font-weight:1000;font-size:18px}
 .helloSub{font-size:12px;font-weight:900;opacity:.92}
 
-/* ✅ KEEP RIGHT SIDE EXACTLY AS BEFORE */
-.helloRight{display:flex;align-items:center;gap:10px}
+/* ✅ Right side stays as before */
+.helloRight{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+.helloRightTop{display:flex;align-items:center;gap:10px}
 .idChip{
   padding:8px 12px;border-radius:999px;
   background:rgba(255,255,255,.18);
@@ -195,6 +201,14 @@ body{
   color:#fff;
   font-weight:1000;
   box-shadow:0 16px 40px rgba(239,68,68,.22);
+}
+/* ✅ time display below */
+.timeChip{
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.20);
+  font-weight:1000;font-size:12px;
+  color:#fff;
 }
 
 /* ===== Ticker + Cards ===== */
@@ -295,7 +309,7 @@ body{
 }
 
 /* =========================================================
-   ✅ PREMIUM SIDEBAR (same style as profile.html)
+   ✅ PREMIUM SIDEBAR
    ========================================================= */
 .overlay{
   position:fixed; inset:0;
@@ -353,6 +367,7 @@ body{
 }
 .closeBtn:hover{background:rgba(255,255,255,.08)}
 
+/* ✅ user tag now has avatar at far right */
 .userTag{
   padding:12px 12px;
   border-radius:18px;
@@ -360,9 +375,31 @@ body{
   background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
   box-shadow:0 18px 55px rgba(0,0,0,.35);
   margin:10px 0 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
 }
+.userTagLeft{min-width:0}
 .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
-.userTag .t2{margin-top:6px;font-weight:1000}
+.userTag .t2{margin-top:6px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;}
+
+.sideAvatar{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  display:grid;place-items:center;
+  position:relative;overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  flex:0 0 auto;
+}
+.sideAvatar span{font-size:18px}
+.sideAvatar img{
+  position:absolute; inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  display:none;
+}
 
 .menuGroupTitle{
   margin:10px 0 8px;
@@ -437,8 +474,6 @@ body{
 }
 .navItem span{font-size:18px;margin-bottom:4px}
 .navActive{color:#9bdcff;background:rgba(56,189,248,0.10)}
-
-/* BADGE */
 .badge{
   position:absolute;
   top:6px;
@@ -482,67 +517,54 @@ body{
     <button class="closeBtn" onclick="closeMenu()">✕</button>
   </div>
 
+  <!-- ✅ user tag + avatar right -->
   <div class="userTag">
-    <div class="t1">Logged in as</div>
-    <div id="sideName" class="t2">---</div>
+    <div class="userTagLeft">
+      <div class="t1">Logged in as</div>
+      <div id="sideName" class="t2">---</div>
+    </div>
+
+    <div class="sideAvatar" title="Profile photo">
+      <span id="sideAvatarFallback">👤</span>
+      <img id="sideAvatarImg" alt="Avatar"/>
+    </div>
   </div>
 
   <div class="menuGroupTitle">Navigation</div>
 
   <a class="sideItem activeLink" href="user-dashboard.html">
     <div class="i">🏠</div>
-    <div>
-      Dashboard
-      <small>Main overview</small>
-    </div>
+    <div>Dashboard<small>Main overview</small></div>
   </a>
 
   <a class="sideItem" href="portfolio.html">
     <div class="i">📊</div>
-    <div>
-      Portfolio
-      <small>Your assets</small>
-    </div>
+    <div>Portfolio<small>Your assets</small></div>
   </a>
 
   <a class="sideItem" href="deposits.html">
     <div class="i">💳</div>
-    <div>
-      Deposit
-      <small>Fund your account</small>
-    </div>
+    <div>Deposit<small>Fund your account</small></div>
   </a>
 
   <a class="sideItem" href="withdraw.html">
     <div class="i">➡</div>
-    <div>
-      Withdraw Funds
-      <small>Request payout</small>
-    </div>
+    <div>Withdraw Funds<small>Request payout</small></div>
   </a>
 
   <a class="sideItem" href="support.html">
     <div class="i">🧑‍💻</div>
-    <div>
-      Support / Contact
-      <small>Tickets & help</small>
-    </div>
+    <div>Support / Contact<small>Tickets & help</small></div>
   </a>
 
   <a class="sideItem" href="plans.html">
     <div class="i">💼</div>
-    <div>
-      Investment Plans
-      <small>Start investing</small>
-    </div>
+    <div>Investment Plans<small>Start investing</small></div>
   </a>
 
   <a class="sideItem" href="profile.html">
     <div class="i">👤</div>
-    <div>
-      Profile / Settings
-      <small>Account security</small>
-    </div>
+    <div>Profile / Settings<small>Account security</small></div>
   </a>
 
   <button class="sideLogout" onclick="logout()">Logout</button>
@@ -579,10 +601,14 @@ body{
       </div>
     </div>
 
-    <!-- ✅ RESTORED -->
     <div class="helloRight">
-      <div class="idChip" id="userIdChip">ID:</div>
-      <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+      <div class="helloRightTop">
+        <div class="idChip" id="userIdChip">ID:</div>
+        <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+      </div>
+
+      <!-- ✅ time display here -->
+      <div class="timeChip" id="timeNow">--:--</div>
     </div>
   </div>
 
@@ -667,19 +693,11 @@ let badgeChannel=null;
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const session = sessionData?.session;
-
-    if(!session){
-      window.location.replace("login.html");
-      return;
-    }
+    if(!session){ window.location.replace("login.html"); return; }
 
     const { data, error } = await supabaseClient.auth.getUser();
     const user = data?.user;
-
-    if(error || !user){
-      window.location.replace("login.html");
-      return;
-    }
+    if(error || !user){ window.location.replace("login.html"); return; }
 
     if(!user.email_confirmed_at){
       await supabaseClient.auth.signOut();
@@ -717,28 +735,36 @@ function hideGate(){
   if(g) g.style.display="none";
 }
 
-/* ✅ Greeting based on time */
+/* ✅ Greeting */
 function setGreeting(){
   const h = new Date().getHours();
   let text = "Greetings";
   let emoji = "✨";
-
-  if(h >= 5 && h < 12){
-    text = "Good Morning";
-    emoji = "🌞";
-  }else if(h >= 12 && h < 17){
-    text = "Good Afternoon";
-    emoji = "☀️";
-  }else{
-    text = "Good Evening";
-    emoji = "🌙";
-  }
+  if(h >= 5 && h < 12){ text="Good Morning"; emoji="🌞"; }
+  else if(h >= 12 && h < 17){ text="Good Afternoon"; emoji="☀️"; }
+  else { text="Good Evening"; emoji="🌙"; }
 
   const el = document.getElementById("greetingTitle");
   if(el) el.textContent = `${text} ${emoji}`;
 }
 
-/* ✅ Avatar into circle button */
+/* ✅ Live time display */
+function startClock(){
+  const el = document.getElementById("timeNow");
+  if(!el) return;
+
+  const tick = ()=>{
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,"0");
+    const mm = String(now.getMinutes()).padStart(2,"0");
+    const ss = String(now.getSeconds()).padStart(2,"0");
+    el.textContent = `${hh}:${mm}:${ss}`;
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ✅ Avatar circle on top button */
 function setTopAvatar(avatarUrl){
   const fallback = document.getElementById("avatarFallback");
   const img = document.getElementById("avatarImgBtn");
@@ -755,20 +781,33 @@ function setTopAvatar(avatarUrl){
   }
 }
 
+/* ✅ Sidebar avatar (far right) */
+function setSideAvatar(avatarUrl){
+  const fb = document.getElementById("sideAvatarFallback");
+  const img = document.getElementById("sideAvatarImg");
+  if(!fb || !img) return;
+
+  if(avatarUrl){
+    img.src = avatarUrl + "?t=" + Date.now();
+    img.style.display = "block";
+    fb.style.display = "none";
+  }else{
+    img.removeAttribute("src");
+    img.style.display = "none";
+    fb.style.display = "block";
+  }
+}
+
 /* ✅ Name in dashboard + sidebar */
 function setNameEverywhere(fullName){
   const nice = (fullName && fullName.trim()) ? fullName.trim() : "User";
-
-  // dashboard shows only name
   const hello = document.getElementById("helloName");
   if(hello) hello.innerHTML = `<span class="ok">${nice}</span>`;
-
-  // sidebar shows Logged in as name
   const side  = document.getElementById("sideName");
   if(side) side.textContent = nice;
 }
 
-/* ✅ Load name + avatar from DB (fallback to metadata) */
+/* ✅ Load name + avatar */
 async function loadDashboardIdentity(){
   try{
     let fullName = "";
@@ -785,39 +824,32 @@ async function loadDashboardIdentity(){
       avatarUrl = row.avatar_url || "";
     }
 
-    const u = window.COINLUXORA_USER;
-    const md = u?.user_metadata || {};
+    const md = (window.COINLUXORA_USER?.user_metadata || {});
     if(!fullName) fullName = md.full_name || "User";
     if(!avatarUrl) avatarUrl = md.avatar_url || "";
 
     setNameEverywhere(fullName);
     setTopAvatar(avatarUrl);
+    setSideAvatar(avatarUrl);
   }catch(e){
     setNameEverywhere("User");
     setTopAvatar("");
+    setSideAvatar("");
   }
 }
 
+/* BADGES */
 function setBadge(id, count){
   const el=document.getElementById(id);
   if(!el) return;
   const n=Number(count||0);
-  if(n<=0){
-    el.style.display="none";
-  }else{
-    el.style.display="flex";
-    el.innerText = n > 99 ? "99+" : String(n);
-  }
+  if(n<=0){ el.style.display="none"; }
+  else{ el.style.display="flex"; el.innerText = n > 99 ? "99+" : String(n); }
 }
-
 function setBadgeFromKey(badge_key, badge_value){
-  if(badge_key === "deposits"){
-    setBadge("badgeDeposit", badge_value);
-  } else if(badge_key === "withdrawals"){
-    setBadge("badgeWithdraw", badge_value);
-  }
+  if(badge_key === "deposits") setBadge("badgeDeposit", badge_value);
+  else if(badge_key === "withdrawals") setBadge("badgeWithdraw", badge_value);
 }
-
 async function loadRealtimeBadgesOnce(){
   if(!currentUserId) return;
   setBadge("badgeDeposit", 0);
@@ -828,21 +860,15 @@ async function loadRealtimeBadgesOnce(){
     .select("badge_key, badge_value")
     .eq("user_id", currentUserId);
 
-  if(error){
-    console.log("Badge load error:", error.message);
-    return;
-  }
-
+  if(error){ console.log("Badge load error:", error.message); return; }
   (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
 }
-
 function subscribeToRealtimeBadges(){
   if(!currentUserId) return;
   if(badgeChannel){
     supabaseClient.removeChannel(badgeChannel);
     badgeChannel=null;
   }
-
   badgeChannel = supabaseClient
     .channel("realtime-user-badges-dashboard")
     .on("postgres_changes", {
@@ -857,7 +883,6 @@ function subscribeToRealtimeBadges(){
     })
     .subscribe();
 }
-
 async function clearBadge(badge_key){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -882,9 +907,9 @@ function initWithUser(user){
   currentUserEmail=user.email;
   currentUserId=user.id;
 
-  setGreeting(); // ✅ greeting based on time
+  setGreeting();
+  startClock();
 
-  // ✅ ID remains exactly as before
   document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
   hideGate();
@@ -898,12 +923,12 @@ function initWithUser(user){
   subscribeToRealtimeBadges();
 }
 
+/* DATA LOADING */
 async function loadBalance(){
   const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
   const bal = Number(data?.balance || 0).toFixed(2);
   document.getElementById("balance").innerHTML = "$" + bal;
 }
-
 function money(n){ return "$" + Number(n||0).toFixed(2); }
 function pill(status){
   const s=(status||"pending").toLowerCase();
@@ -915,7 +940,6 @@ function daysBetween(date1, date2){
   const diff=(d2 - d1) / (1000*60*60*24);
   return Math.max(0, Math.ceil(diff));
 }
-
 async function loadActivePlan(){
   const planMsg=document.getElementById("planMsg");
   const planBox=document.getElementById("planBox");
@@ -965,7 +989,6 @@ async function loadActivePlan(){
     </div>
   `;
 }
-
 async function fetchPrices(){
   try{
     const res=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd");
@@ -980,6 +1003,7 @@ async function fetchPrices(){
   }
 }
 
+/* LOGOUT */
 async function logout(){
   await supabaseClient.auth.signOut();
   window.location.replace("login.html");
