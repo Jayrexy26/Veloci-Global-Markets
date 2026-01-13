@@ -76,12 +76,7 @@ body{
 }
 @keyframes shimmerMove{from{transform:translateY(0px) translateX(0px)}to{transform:translateY(42px) translateX(22px)}}
 
-/* ✅ FIX: add padding-top so sticky menu doesn't overlap content */
-.container{
-  max-width:920px;
-  margin:0 auto;
-  padding-top:86px; /* <-- prevents topRow overlap */
-}
+.container{max-width:920px;margin:0 auto}
 
 /* ===== Loading Gate ===== */
 #authGate{
@@ -126,19 +121,6 @@ body{
 .topRow{
   display:flex; align-items:center; justify-content:space-between;
   gap:12px; margin-bottom:14px;
-
-  /* ✅ STICKY MENU FIX */
-  position:sticky;
-  top:16px;
-  z-index:5000;
-
-  /* keep the same look while sticky */
-  padding:10px 10px;
-  border-radius:22px;
-  background:rgba(2,6,23,.55);
-  border:1px solid rgba(255,255,255,.10);
-  backdrop-filter: blur(14px);
-  box-shadow:0 18px 55px rgba(0,0,0,.35);
 }
 .brand{
   display:flex;align-items:center;gap:12px;
@@ -878,6 +860,7 @@ body{
     <div id="planBox"></div>
   </div>
 
+  <!-- ✅ TOP 10 MAJOR CRYPTO (ADDED BELOW ACTIVE PLAN) -->
   <div class="box">
     <h2>Top 10 Major Cryptos</h2>
     <div class="small">Live market prices (auto refresh every 20 seconds).</div>
@@ -885,6 +868,7 @@ body{
     <div id="top10List" class="crypto10Grid"></div>
   </div>
 
+  <!-- ✅ ADDED: TOP 10 FOREX PAIRS -->
   <div class="box">
     <h2>Top 10 Forex Pairs</h2>
     <div class="small">Live prices (auto refresh every 30 seconds).</div>
@@ -892,6 +876,7 @@ body{
     <div id="fxList" class="crypto10Grid"></div>
   </div>
 
+  <!-- ✅ ADDED: TOP STOCKS -->
   <div class="box">
     <h2>Top Stocks</h2>
     <div class="small">Live prices (auto refresh every 30 seconds).</div>
@@ -899,6 +884,7 @@ body{
     <div id="stocksList" class="crypto10Grid"></div>
   </div>
 
+  <!-- ✅ ADDED: TOP 10 FUTURES -->
   <div class="box">
     <h2>Top 10 Futures</h2>
     <div class="small">Live prices (auto refresh every 30 seconds).</div>
@@ -906,6 +892,7 @@ body{
     <div id="futuresList" class="crypto10Grid"></div>
   </div>
 
+  <!-- ✅ ADDED: TOP 10 INDICES -->
   <div class="box">
     <h2>Top 10 Indices</h2>
     <div class="small">Live prices (auto refresh every 30 seconds).</div>
@@ -913,6 +900,7 @@ body{
     <div id="indicesList" class="crypto10Grid"></div>
   </div>
 
+  <!-- ✅ Crypto Converter -->
   <div class="box">
     <h2>Crypto Converter</h2>
     <div class="small">Search & convert from ALL coins to ALL fiat currencies.</div>
@@ -941,6 +929,7 @@ body{
     </div>
   </div>
 
+  <!-- ✅ Fiat Converter -->
   <div class="box">
     <h2>Fiat Currency Converter</h2>
     <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
@@ -965,6 +954,7 @@ body{
     </div>
   </div>
 
+  <!-- ✅ Order Book -->
   <div class="box">
     <h2>Live Crypto Order Book</h2>
     <div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
@@ -991,6 +981,7 @@ body{
       </div>
     </div>
 
+    <!-- ✅ Mini chart -->
     <div class="chartWrap">
       <div class="chartHead">
         <span>Mini Candlestick Chart</span>
@@ -1002,6 +993,7 @@ body{
 
 </div>
 
+<!-- DOCK -->
 <div class="dock">
   <div class="dockInner">
     <div class="dockBar">
@@ -1116,6 +1108,7 @@ const INDEX_SYMBOLS = [
 let marketTimer=null;
 
 function parseCSVLine(line){
+  // split CSV respecting commas in quotes
   const out=[];
   let cur="", inQ=false;
   for(let i=0;i<line.length;i++){
@@ -1129,6 +1122,7 @@ function parseCSVLine(line){
 }
 
 async function fetchStooqQuote(symbol){
+  // Stooq expects lowercase
   const s=String(symbol||"").toLowerCase();
   const url = `https://stooq.com/q/l/?s=${encodeURIComponent(s)}&f=sd2t2ohlcv&h&e=csv`;
   const res = await fetch(url);
@@ -1138,21 +1132,31 @@ async function fetchStooqQuote(symbol){
   const hdr=parseCSVLine(lines[0]);
   const row=parseCSVLine(lines[1]);
 
+  // map
   const m={};
   hdr.forEach((k,idx)=>m[k]=row[idx]);
 
+  // if "N/A"
   if(!m.Close || m.Close==="N/A") throw new Error("na");
 
   const close=Number(m.Close||0);
   const open=Number(m.Open||0);
   const chg = open ? ((close-open)/open)*100 : 0;
 
-  return { close, open, chg };
+  return {
+    close,
+    open,
+    chg
+  };
 }
 
 function logoForMarket(type, sym){
+  // Stock logos via Clearbit (works well for big tickers)
+  // Only for STOCKS; others use emoji.
   if(type==="stock"){
     const t = sym.replace(".US","").replace(".us","");
+    // best effort (not perfect but safe)
+    // use "logo.clearbit.com" with common domains for top companies:
     const domainMap={
       AAPL:"apple.com", MSFT:"microsoft.com", NVDA:"nvidia.com", AMZN:"amazon.com",
       GOOGL:"abc.xyz", META:"meta.com", TSLA:"tesla.com", V:"visa.com",
@@ -1176,7 +1180,10 @@ function buildMarketRow(type, title, symbol, price, chg){
   if(type==="future") leftIcon="🧾";
   if(type==="index") leftIcon="📌";
 
-  const logoHTML = (type==="stock") ? logoForMarket(type, symbol) : "";
+  // Use same crypto UI row
+  const logoHTML = (type==="stock")
+    ? logoForMarket(type, symbol)
+    : "";
 
   return `
     <div class="cryptoRow">
@@ -1209,10 +1216,16 @@ async function loadMarketList(type, items, msgId, listId){
 
     for(const it of items){
       try{
-        const stooqSym = (type==="fx") ? `${it.sym}` : it.sym;
+        // stooq symbol for fx pairs (format: eurusd)
+        // for our fx list we send raw EURUSD -> eurusd
+        const stooqSym = (type==="fx")
+          ? `${it.sym}` // eurusd style
+          : it.sym;
+
         const q = await fetchStooqQuote(stooqSym);
         results.push({ ...it, close:q.close, chg:q.chg });
       }catch{
+        // show row as unavailable
         results.push({ ...it, close:null, chg:0, fail:true });
       }
     }
@@ -1300,6 +1313,7 @@ function startTop10AutoRefresh(){
   top10Timer=setInterval(loadTop10MajorCryptos, 20000);
 }
 
+/* ===== auth ===== */
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -1322,6 +1336,7 @@ function startTop10AutoRefresh(){
   }
 })();
 
+/* NAV */
 function goPlans(){ window.location.href="plans.html"; }
 function goProfile(){ window.location.href="profile.html"; }
 function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
@@ -1333,6 +1348,7 @@ function openMenu(){ document.getElementById("sidebar").classList.add("open"); d
 function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
 function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
 
+/* greeting */
 function setGreeting(){
   const h = new Date().getHours();
   let text="Greetings", emoji="✨";
@@ -1362,6 +1378,7 @@ function startClock(){
   tick(); setInterval(tick,1000);
 }
 
+/* avatar */
 function setTopAvatar(avatarUrl){
   const fallback=document.getElementById("avatarFallback");
   const img=document.getElementById("avatarImgBtn");
@@ -1392,6 +1409,7 @@ function setNameEverywhere(fullName){
   document.getElementById("sideName").textContent=nice;
 }
 
+/* ========= COUNTRY CHIP (FULL FIX + FULL NAME) ========= */
 function isoToFlag(iso){
   if(!iso || iso.length!==2) return "";
   const code=iso.toUpperCase();
@@ -1534,6 +1552,7 @@ async function resolveCountryISO(countryNameFromDB){
   return "";
 }
 
+/* identity */
 async function loadDashboardIdentity(){
   try{
     let fullName="", avatarUrl="", countryName="";
@@ -1566,21 +1585,552 @@ async function loadDashboardIdentity(){
   }
 }
 
+/* helpers */
 function nfmt(n, dp=2){
   return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp});
 }
 
-/* ========= dropdown + lists left untouched ========= */
-/* (rest of your JS continues same as your file...) */
+/* ==============================
+   ✅ SEARCHABLE DROPDOWN (ALL ITEMS)
+   - Search by name/symbol/code
+   - No slicing / no limited list
+   ============================== */
+function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
+  const root=document.getElementById(elId);
+  root.innerHTML = `
+    <button class="ddBtn" type="button">
+      <div class="ddLeft">
+        <div class="ddIcon">◈</div>
+        <div class="ddName">Select</div>
+      </div>
+      <div>▾</div>
+    </button>
+
+    <div class="ddPanel">
+      <input class="ddSearch" placeholder="Search..." />
+      <div class="ddList"></div>
+    </div>
+  `;
+
+  const btn=root.querySelector(".ddBtn");
+  const panel=root.querySelector(".ddPanel");
+  const list=root.querySelector(".ddList");
+  const search=root.querySelector(".ddSearch");
+  const nameEl=root.querySelector(".ddName");
+
+  let renderItems = items;
+
+  function render(filter=""){
+    const q=filter.trim().toLowerCase();
+    if(!q){
+      renderItems = items;
+    }else{
+      renderItems = items.filter(x => getSearch(x).includes(q));
+    }
+
+    // render only "visible window" chunk for performance but keep ALL scrolling
+    const MAX = Math.min(renderItems.length, 600);
+    const slice = renderItems.slice(0, MAX);
+
+    list.innerHTML = slice.map(x => {
+      const lab=getLabel(x);
+      return `<div class="ddItem" data-id="${encodeURIComponent(JSON.stringify(x))}">
+        <span>${lab}</span>
+        <small>tap</small>
+      </div>`;
+    }).join("") || `<div class="ddItem"><span>No results</span></div>`;
+
+    if(renderItems.length > MAX){
+      const remain = renderItems.length - MAX;
+      list.innerHTML += `<div class="ddItem" style="opacity:.7"><span>Scroll/search to narrow results (${remain} more)…</span></div>`;
+    }
+  }
+
+  function setSelected(obj){
+    nameEl.textContent = getLabel(obj);
+    onPick(obj);
+  }
+
+  if(initial) setSelected(initial);
+  render("");
+
+  btn.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    panel.classList.toggle("show");
+    if(panel.classList.contains("show")){
+      search.value="";
+      render("");
+      setTimeout(()=>search.focus(),40);
+    }
+  });
+
+  search.addEventListener("input",()=>render(search.value));
+
+  list.addEventListener("click",(e)=>{
+    const item=e.target.closest(".ddItem");
+    if(!item) return;
+    const raw=item.getAttribute("data-id");
+    if(!raw) return;
+    try{
+      const obj=JSON.parse(decodeURIComponent(raw));
+      setSelected(obj);
+      panel.classList.remove("show");
+    }catch{}
+  });
+
+  document.addEventListener("click",(e)=>{
+    if(!root.contains(e.target)) panel.classList.remove("show");
+  });
+}
+
+/* ==============================
+   ✅ Load ALL COINS + ALL FIATS
+   ============================== */
+const FAVORITES = [
+  { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
+  { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
+  { id:"tether", label:"Tether (USDT)", icon:"₮", symbol:"usdt" },
+  { id:"binancecoin", label:"BNB (BNB)", icon:"◎", symbol:"bnb" },
+  { id:"solana", label:"Solana (SOL)", icon:"⟠", symbol:"sol" },
+  { id:"ripple", label:"XRP (XRP)", icon:"✕", symbol:"xrp" }
+];
+
+async function loadCoinGeckoLists(){
+  // load fiats
+  try{
+    const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
+    const fiats = await fiatRes.json();
+    FIATS = (fiats || []).map(x => String(x).toUpperCase());
+  }catch{
+    FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
+  }
+
+  // load all coins (name + symbol)
+  try{
+    const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
+    const coins = await coinRes.json();
+
+    // build map for favorites first
+    const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
+    const list = [];
+    for(const c of (coins||[])){
+      if(!c?.id || !c?.name) continue;
+      if(favMap.has(c.id)) continue;
+      const sym = (c.symbol||"").toLowerCase();
+      list.push({ id:c.id, label:`${c.name}${sym?` (${sym.toUpperCase()})`:""}`, icon:"◈", symbol:sym });
+    }
+
+    ALL_COINS = [...FAVORITES, ...list];
+  }catch{
+    ALL_COINS = [...FAVORITES];
+  }
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  // mount dropdowns with full search
+  mountDropdown(
+    "ddCryptoA",
+    ALL_COINS,
+    x=>x.label,
+    x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(),
+    x=>{ selectedCryptoA=x; },
+    selectedCryptoA
+  );
+
+  mountDropdown(
+    "ddCryptoB",
+    FIAT_ITEMS,
+    x=>x.label,
+    x=>(`${x.label} ${x.id}`).toLowerCase(),
+    x=>{ selectedCryptoB=x; },
+    selectedCryptoB
+  );
+
+  mountDropdown(
+    "ddFiatA",
+    FIAT_ITEMS,
+    x=>x.label,
+    x=>(`${x.label} ${x.id}`).toLowerCase(),
+    x=>{ selectedFiatA=x; },
+    selectedFiatA
+  );
+
+  mountDropdown(
+    "ddFiatB",
+    FIAT_ITEMS,
+    x=>x.label,
+    x=>(`${x.label} ${x.id}`).toLowerCase(),
+    x=>{ selectedFiatB=x; },
+    selectedFiatB
+  );
+
+  await loadFxRates();
+}
+
+/* FX rates */
+async function loadFxRates(){
+  try{
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    const data = await res.json();
+    if(data?.result !== "success") throw new Error("fx fail");
+    FX_RATES = data.rates || {};
+  }catch{
+    FX_RATES = null;
+  }
+}
+
+/* swap crypto direction */
+function swapCrypto(){
+  cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
+
+  const tmp = selectedCryptoA;
+  selectedCryptoA = selectedCryptoB;
+  selectedCryptoB = tmp;
+
+  // rebuild dropdowns
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  if(cryptoDirection === "crypto_to_fiat"){
+    if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){
+      selectedCryptoA = FAVORITES[0];
+    }
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length>4) selectedCryptoB = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+
+    mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+
+  }else{
+    // fiat -> crypto
+    selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
+
+    mountDropdown("ddCryptoA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }
+
+  document.getElementById("cryptoRate").textContent="Rate: --";
+  document.getElementById("cryptoResult").textContent="--";
+  document.getElementById("cryptoReverse").textContent="--";
+}
+
+/* crypto convert */
+async function convertCrypto(){
+  const amt = Number(document.getElementById("cryptoAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+    return;
+  }
+
+  try{
+    if(cryptoDirection === "crypto_to_fiat"){
+      const coinId = selectedCryptoA?.id || "bitcoin";
+      const fiat   = String(selectedCryptoB?.id || "USD").toLowerCase();
+
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+
+      const result = rate * amt;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoA.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${nfmt(result,2)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${fiat.toUpperCase()} ≈ ${(1/rate).toFixed(10)} ${selectedCryptoA.symbol?.toUpperCase()||coinId}`;
+
+    }else{
+      const fiat = String(selectedCryptoA?.id || "USD").toLowerCase();
+      const coinId = selectedCryptoB?.id || "bitcoin";
+
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+
+      const cryptoAmount = amt / rate;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoB.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${cryptoAmount.toFixed(10)} ${selectedCryptoB.symbol?.toUpperCase()||coinId}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${selectedCryptoB.symbol?.toUpperCase()||coinId} ≈ ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+    }
+  }catch(e){
+    document.getElementById("cryptoRate").textContent="Rate: unavailable (network)";
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+  }
+}
+
+/* swap fiat */
+function swapFiat(){
+  const tmp = selectedFiatA;
+  selectedFiatA = selectedFiatB;
+  selectedFiatB = tmp;
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+  mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
+  mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
+
+  document.getElementById("fiatRate").textContent="Rate: --";
+  document.getElementById("fiatResult").textContent="--";
+}
+
+/* fiat convert */
+async function convertFiat(){
+  const amt = Number(document.getElementById("fiatAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("fiatResult").textContent="--";
+    return;
+  }
+
+  const from = String(selectedFiatA?.id || "USD").toUpperCase();
+  const to   = String(selectedFiatB?.id || "NGN").toUpperCase();
+
+  try{
+    if(!FX_RATES) await loadFxRates();
+    if(!FX_RATES) throw new Error("fx missing");
+
+    const fromRate = Number(FX_RATES[from] || 0);
+    const toRate   = Number(FX_RATES[to] || 0);
+    if(!fromRate || !toRate) throw new Error("rate missing");
+
+    const usdAmount = amt / fromRate;
+    const result = usdAmount * toRate;
+    const rate = toRate / fromRate;
+
+    document.getElementById("fiatRate").textContent = `Rate: 1 ${from} = ${nfmt(rate,6)} ${to}`;
+    document.getElementById("fiatResult").textContent = `${nfmt(result,2)} ${to}`;
+  }catch(e){
+    document.getElementById("fiatRate").textContent="Rate: unavailable (network)";
+    document.getElementById("fiatResult").textContent="--";
+  }
+}
+
+/* ========== ORDER BOOK FIXED WITH FALLBACKS ========== */
+function parsePairForProviders(pair){
+  // pair example BTCUSDT
+  const base=pair.replace("USDT","").replace("USD",""); // BTC
+  return {
+    binance: pair,
+    okx: `${base}-USDT`,
+    bybit: `${base}USDT`
+  };
+}
+
+async function tryBinanceOrderBook(symbol){
+  const res = await fetch(`https://api.binance.com/api/v3/depth?symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  if(!data?.asks || !data?.bids) throw new Error("binance invalid");
+  return { asks:data.asks, bids:data.bids, source:"Binance" };
+}
+
+async function tryOKXOrderBook(instId){
+  const res = await fetch(`https://www.okx.com/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=20`);
+  const data = await res.json();
+  const book = data?.data?.[0];
+  if(!book?.asks || !book?.bids) throw new Error("okx invalid");
+  return { asks:book.asks, bids:book.bids, source:"OKX" };
+}
+
+async function tryBybitOrderBook(symbol){
+  const res = await fetch(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  const book = data?.result;
+  if(!book?.a || !book?.b) throw new Error("bybit invalid");
+  return { asks:book.a, bids:book.b, source:"Bybit" };
+}
+
+async function loadOrderBook(force=false){
+  const pair=document.getElementById("obPair").value;
+  const asksEl=document.getElementById("asks");
+  const bidsEl=document.getElementById("bids");
+  const meta=parsePairForProviders(pair);
+
+  if(force){
+    asksEl.innerHTML="<div class='obItem'>Loading…</div>";
+    bidsEl.innerHTML="<div class='obItem'>Loading…</div>";
+  }
+
+  try{
+    let book=null;
+
+    // try Binance → OKX → Bybit
+    try{ book = await tryBinanceOrderBook(meta.binance); }
+    catch(e1){
+      try{ book = await tryOKXOrderBook(meta.okx); }
+      catch(e2){
+        book = await tryBybitOrderBook(meta.bybit);
+      }
+    }
+
+    const asks=(book.asks||[]).slice(0,20);
+    const bids=(book.bids||[]).slice(0,20);
+
+    // normalize OKX/Bybit shapes
+    const aNorm = asks.map(x => [x[0], x[1]]);
+    const bNorm = bids.map(x => [x[0], x[1]]);
+
+    asksEl.innerHTML=aNorm.map(a=>`<div class="obItem"><span>${Number(a[0]).toLocaleString()}</span><span>${Number(a[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No asks</div>";
+    bidsEl.innerHTML=bNorm.map(b=>`<div class="obItem"><span>${Number(b[0]).toLocaleString()}</span><span>${Number(b[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No bids</div>";
+
+  }catch(e){
+    asksEl.innerHTML="<div class='obItem'>Order book blocked / unavailable</div>";
+    bidsEl.innerHTML="<div class='obItem'>Try changing pair</div>";
+  }
+}
+
+/* auto refresh every 3s */
+function startOrderAutoRefresh(){
+  if(orderTimer) clearInterval(orderTimer);
+  orderTimer=setInterval(()=>loadOrderBook(false), 3000);
+}
+
+/* mini candlestick widget */
+function loadChart(){
+  const pair=document.getElementById("obPair").value;
+  const base=pair.replace("USDT","").toUpperCase();
+  const tvSymbol = `BINANCE:${base}USDT`;
+  document.getElementById("chartPair").textContent = `${base}/USDT`;
+  const frame=document.getElementById("tvChart");
+  frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(tvSymbol)}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=rgba(0,0,0,0)&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1`;
+}
+document.getElementById("obPair").addEventListener("change",()=>{
+  loadOrderBook(true);
+  loadChart();
+});
 
 /* balance / plan */
 async function loadBalance(){
   const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
 
+  /* ✅ FIXED: comma thousands formatting ($1,000.00) */
   const balNum = Number(data?.balance || 0);
   const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
 
   document.getElementById("balance").innerHTML = "$" + bal;
+}
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
+}
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  if(error){
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
+    return;
+  }
+
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a style="color:#9bdcff;font-weight:1000" href="plans.html">Investment Plans</a> to start.</div>`;
+    return;
+  }
+
+  planMsg.innerHTML="";
+
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
+
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
+
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
+    </div>
+  `;
+}
+
+/* badges */
+function setBadge(elId, count){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0) el.style.display="none";
+  else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
+}
+function setBadgeFromKey(key,val){
+  if(key==="deposits") setBadge("badgeDepositDock", val);
+  else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
+}
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
+  setBadge("badgeDepositDock", 0);
+  setBadge("badgeWithdrawDock", 0);
+
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
+
+  if(error) return;
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+}
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
+    }, payload => {
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
+    })
+    .subscribe();
+}
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
+
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){}
 }
 
 /* logout */
@@ -1606,9 +2156,11 @@ function initWithUser(user){
   loadRealtimeBadgesOnce();
   subscribeToRealtimeBadges();
 
+  // ✅ top 10 cryptos (added)
   loadTop10MajorCryptos();
   startTop10AutoRefresh();
 
+  // ✅ NEW: markets
   loadAllMarkets();
   startMarketAutoRefresh();
 
