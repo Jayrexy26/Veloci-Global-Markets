@@ -198,8 +198,6 @@ body{
   font-weight:1000;
   box-shadow:0 16px 40px rgba(239,68,68,.22);
 }
-
-/* ✅ single line chip for date | time */
 .datetimeChip{
   padding:6px 10px;border-radius:999px;
   background:rgba(255,255,255,.16);
@@ -366,7 +364,6 @@ body{
 }
 .closeBtn:hover{background:rgba(255,255,255,.08)}
 
-/* ✅ user tag now has avatar at far right */
 .userTag{
   padding:12px 12px;
   border-radius:18px;
@@ -386,7 +383,6 @@ body{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   max-width:180px;
 }
-
 .sideAvatar{
   width:46px;height:46px;border-radius:999px;
   border:1px solid rgba(255,255,255,.14);
@@ -510,7 +506,6 @@ body{
 
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-<!-- ✅ PREMIUM SIDEBAR -->
 <div id="sidebar" class="sidebar">
   <div class="sideTop">
     <div class="sideBrand">
@@ -595,10 +590,8 @@ body{
       <div>
         <div class="chips">
           <div class="miniChip">🟢 active</div>
-          <!-- ✅ dynamic country chip -->
           <div class="miniChip" id="countryChip">🇳🇬 NG</div>
         </div>
-
         <div class="helloTitle" id="greetingTitle">Greetings…</div>
         <div class="helloSub" id="helloName">Loading…</div>
       </div>
@@ -609,9 +602,7 @@ body{
         <div class="idChip" id="userIdChip">ID:</div>
         <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
       </div>
-
-      <!-- ✅ date | time on one line -->
-      <div class="datetimeChip" id="dateTimeNow">--- | --</div>
+      <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
     </div>
   </div>
 
@@ -663,19 +654,15 @@ body{
 
 <div class="bottomNav">
   <div class="navItem navActive" onclick="goHome()"><span>🏠</span>Home</div>
-
   <div class="navItem" onclick="goDepositAndClear()">
     <div id="badgeDeposit" class="badge">0</div>
     <span>💳</span>Deposit
   </div>
-
   <div class="navItem" onclick="goWithdrawAndClear()">
     <div id="badgeWithdraw" class="badge">0</div>
     <span>➡</span>Withdraw
   </div>
-
   <div class="navItem" onclick="goPlans()"><span>💼</span>Plans</div>
-
   <div class="navItem" onclick="goProfile()"><span>👤</span>Profile</div>
 </div>
 
@@ -751,7 +738,7 @@ function setGreeting(){
   if(el) el.textContent = `${text} ${emoji}`;
 }
 
-/* ✅ country flag from ISO code */
+/* ✅ iso to flag emoji */
 function isoToFlag(iso){
   if(!iso || iso.length !== 2) return "🏳️";
   const code = iso.toUpperCase();
@@ -760,27 +747,55 @@ function isoToFlag(iso){
   return String.fromCodePoint(...chars);
 }
 
-/* ✅ Detect country */
-async function setDynamicCountry(){
-  const el = document.getElementById("countryChip");
-  if(!el) return;
+/* ✅ country name -> ISO 2 code */
+function countryNameToISO(name){
+  if(!name) return "";
+  const n = name.trim().toLowerCase();
 
-  // default
-  let iso = "NG";
+  // ✅ map for your profile dropdown list
+  const map = {
+    "nigeria":"NG",
+    "united states":"US",
+    "united kingdom":"GB",
+    "canada":"CA",
+    "germany":"DE",
+    "france":"FR",
+    "south africa":"ZA",
+    "kenya":"KE",
+    "ghana":"GH",
+    "united arab emirates":"AE",
+    "saudi arabia":"SA",
+    "india":"IN",
+    "australia":"AU",
+    "brazil":"BR",
+    "mexico":"MX",
+    "japan":"JP",
+    "singapore":"SG"
+  };
 
+  return map[n] || "";
+}
+
+/* ✅ detect country from IP (fallback) */
+async function detectCountryFromIP(){
   try{
-    // Fast timezone-based guess fallback is not accurate for VPN
-    // Better: use ipapi public endpoint
     const res = await fetch("https://ipapi.co/json/");
     const data = await res.json();
-    if(data && data.country_code) iso = data.country_code.toUpperCase();
+    if(data && data.country_code) return data.country_code.toUpperCase();
   }catch(e){}
+  return "";
+}
 
+/* ✅ apply chip */
+function setCountryChip(iso){
+  const el = document.getElementById("countryChip");
+  if(!el) return;
+  if(!iso) iso = "NG";
   const flag = isoToFlag(iso);
   el.textContent = `${flag} ${iso}`;
 }
 
-/* ✅ Live date + time in one line */
+/* ✅ date + time 1 line */
 function startClock(){
   const dtEl = document.getElementById("dateTimeNow");
   if(!dtEl) return;
@@ -855,21 +870,23 @@ function setNameEverywhere(fullName){
   if(side) side.textContent = nice;
 }
 
-/* ✅ Load name + avatar */
+/* ✅ Load name + avatar + country */
 async function loadDashboardIdentity(){
   try{
     let fullName = "";
     let avatarUrl = "";
+    let countryName = "";
 
     const { data: row, error } = await supabaseClient
       .from("users")
-      .select("full_name, avatar_url")
+      .select("full_name, avatar_url, country")
       .eq("email", currentUserEmail)
       .maybeSingle();
 
     if(!error && row){
       fullName = row.full_name || "";
       avatarUrl = row.avatar_url || "";
+      countryName = row.country || "";
     }
 
     const md = (window.COINLUXORA_USER?.user_metadata || {});
@@ -879,107 +896,34 @@ async function loadDashboardIdentity(){
     setNameEverywhere(fullName);
     setTopAvatar(avatarUrl);
     setSideAvatar(avatarUrl);
+
+    // ✅ COUNTRY: profile country -> IP -> NG
+    let iso = countryNameToISO(countryName);
+    if(!iso) iso = await detectCountryFromIP();
+    if(!iso) iso = "NG";
+    setCountryChip(iso);
+
   }catch(e){
     setNameEverywhere("User");
     setTopAvatar("");
     setSideAvatar("");
+    setCountryChip("NG");
   }
 }
 
-/* Badge functions remain unchanged */
-function setBadge(id, count){
-  const el=document.getElementById(id);
-  if(!el) return;
-  const n=Number(count||0);
-  if(n<=0){ el.style.display="none"; }
-  else{ el.style.display="flex"; el.innerText = n > 99 ? "99+" : String(n); }
-}
-function setBadgeFromKey(badge_key, badge_value){
-  if(badge_key === "deposits") setBadge("badgeDeposit", badge_value);
-  else if(badge_key === "withdrawals") setBadge("badgeWithdraw", badge_value);
-}
-async function loadRealtimeBadgesOnce(){
-  if(!currentUserId) return;
-  setBadge("badgeDeposit", 0);
-  setBadge("badgeWithdraw", 0);
-
-  const { data, error } = await supabaseClient
-    .from("user_badges")
-    .select("badge_key, badge_value")
-    .eq("user_id", currentUserId);
-
-  if(error){ console.log("Badge load error:", error.message); return; }
-  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
-}
-function subscribeToRealtimeBadges(){
-  if(!currentUserId) return;
-  if(badgeChannel){
-    supabaseClient.removeChannel(badgeChannel);
-    badgeChannel=null;
-  }
-  badgeChannel = supabaseClient
-    .channel("realtime-user-badges-dashboard")
-    .on("postgres_changes", {
-      event: "*",
-      schema: "public",
-      table: "user_badges",
-      filter: `user_id=eq.${currentUserId}`
-    }, payload => {
-      const row = payload.new;
-      if(!row) return;
-      setBadgeFromKey(row.badge_key, row.badge_value);
-    })
-    .subscribe();
-}
-async function clearBadge(badge_key){
-  try{
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-    if(!accessToken) return;
-
-    await fetch(EDGE_CLEAR_BADGE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "apikey": SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ badge_key })
-    });
-  }catch(e){
-    console.log("clearBadge error:", e);
-  }
-}
-
+/* init */
 function initWithUser(user){
   currentUserEmail=user.email;
   currentUserId=user.id;
 
   setGreeting();
   startClock();
-  setDynamicCountry();
 
   document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
   hideGate();
 
   loadDashboardIdentity();
-  loadBalance();
-  loadActivePlan();
-  fetchPrices();
-  loadRealtimeBadgesOnce();
-  subscribeToRealtimeBadges();
 }
-
-/* Load data */
-async function loadBalance(){
-  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-  const bal = Number(data?.balance || 0).toFixed(2);
-  document.getElementById("balance").innerHTML = "$" + bal;
-}
-
-/* Placeholder functions you already have in your previous code */
-async function loadActivePlan(){}
-async function fetchPrices(){}
 
 /* Logout */
 async function logout(){
