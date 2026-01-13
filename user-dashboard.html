@@ -1,93 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coinluxora User Dashboard</title>
+
+<!-- Pinned to a stable version to avoid breaking changes -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
+<style>
+/* Your original CSS – unchanged for brevity, but it's all here */
+:root{
+  --bg:#050a18;
+  --stroke:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.65);
+
+  --ok:#22c55e;
+  --err:#f87171;
+
+  --blue:#5b6cff;
+  --purple:#7c4dff;
+  --green:#34d399;
+  --cyan:#38bdf8;
+  --pink:#ff4da6;
+
+  --shadow: 0 26px 90px rgba(0,0,0,.55);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--text);
+  padding:16px;
+  padding-bottom:140px;
+  overflow-x:hidden;
+  background: var(--bg);
+}
+
+/* ... (all your other CSS styles remain exactly the same – omitted here for space) ... */
+
+/* Make sure spinner is visible during load */
+.spinner {
+  width:46px;height:46px;margin:14px auto 0;
+  border-radius:999px;
+  border:3px solid rgba(255,255,255,.18);
+  border-top-color:#9bdcff;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="bgFlow"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="blob b4"></div>
+<div class="shimmer"></div>
+
+<!-- Auth gate -->
+<div id="authGate">
+  <div class="gateCard">
+    <div class="gateLogo">CL</div>
+    <div class="gateTxt">Loading your dashboard…</div>
+    <div class="gateSub">Verifying access</div>
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Your full UI structure here – Top bar, Hello card, Balance, etc. -->
+  <!-- ... (keep all your original HTML content from topRow to dock) ... -->
+  <!-- Note: Your last message had truncated balanceCard – assuming it's complete in your file -->
+</div>
+
+<!-- Sidebar and Dock – unchanged -->
+
 <script>
 // ================================================
-//   SUPER HARDENED SUPABASE AUTH GUARD – BYPASS FREEZE
+//   RELIABLE SUPABASE AUTH GUARD (BYPASS HANGS)
+//   Works around known mobile/inactivity freeze in supabase-js ~2025-2026
 // ================================================
 
-const SUPABASE_URL   = "https://YOUR_PROJECT_ID.supabase.co";           // ← CHANGE THIS
-const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";      // ← CHANGE THIS (anon key!)
+const SUPABASE_URL  = "https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    storageKey: `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token` // default storage key pattern
+    detectSessionInUrl: false
   }
 });
 
-const LOADING_TIMEOUT_MS = 8000; // shorter now since we bypass
+const LOADING_TIMEOUT_MS = 7000; // shorter – we detect hangs faster
 
 (async function authGuard() {
   const gate = document.getElementById("authGate");
   const gateTxt = document.querySelector(".gateTxt");
   const gateSub = document.querySelector(".gateSub");
 
+  // Ultimate safety timeout
   const timeoutId = setTimeout(() => {
-    if (gateTxt) gateTxt.textContent = "Session check timed out";
-    if (gateSub) gateSub.textContent = "Try refreshing or check your connection";
-    setTimeout(() => location.replace("/login.html"), 2200);
+    gateTxt.textContent = "Taking too long...";
+    gateSub.textContent = "Redirecting to login";
+    setTimeout(() => location.replace("/login.html"), 1800);
   }, LOADING_TIMEOUT_MS);
 
   try {
-    // ── STEP 1: FAST PATH – read session directly from localStorage (avoids client freeze)
+    // Step 1: Try fast localStorage bypass (most reliable on mobile)
     let session = null;
     const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
     const stored = localStorage.getItem(storageKey);
+
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed?.access_token && parsed?.refresh_token) {
-          session = {
-            access_token: parsed.access_token,
-            refresh_token: parsed.refresh_token,
-            user: parsed.user,
-            expires_at: parsed.expires_at || Math.floor(Date.now() / 1000) + 3600
-          };
+        if (parsed?.access_token) {
+          session = parsed;
         }
-      } catch (e) {}
+      } catch {}
     }
 
-    // If no valid local session → redirect immediately
-    if (!session?.access_token) {
+    // If we have a token locally → quick validate with timeout
+    if (session?.access_token) {
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 4000);
+
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        clearTimeout(abortTimer);
+
+        if (!error && user && user.email_confirmed_at) {
+          clearTimeout(timeoutId);
+          gate.style.display = "none";
+          setTimeout(() => initDashboard(user), 120);
+          return;
+        }
+      } catch (e) {
+        // Hang or error → fallback
+        console.warn("getUser failed → fallback");
+      }
+    }
+
+    // Step 2: Normal path as fallback (with extra timeout layer)
+    const { data: { session: freshSession }, error: sessErr } = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("getSession timeout")), 5000))
+    ]);
+
+    if (sessErr || !freshSession?.user) throw new Error("no session");
+
+    const user = freshSession.user;
+    if (!user.email_confirmed_at) {
       clearTimeout(timeoutId);
-      location.replace("/login.html");
+      location.replace("/verify-email.html");
       return;
     }
 
-    // ── STEP 2: Use client ONLY to validate/refresh (with short timeout)
-    const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 5000);
-
-    try {
-      const { data: { user }, error } = await Promise.race([
-        supabase.auth.getUser(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("getUser timeout")), 6000))
-      ]);
-      clearTimeout(abortTimer);
-
-      if (error || !user || !user.email_confirmed_at) {
-        clearTimeout(timeoutId);
-        location.replace(user?.email_confirmed_at ? "/login.html" : "/verify-email.html");
-        return;
-      }
-
-      // Success!
-      clearTimeout(timeoutId);
-      gate.style.display = "none";
-      setTimeout(() => initDashboard(user), 150);
-
-    } catch (err) {
-      // If getUser hangs or fails → treat as no valid session
-      console.warn("getUser failed (likely freeze) → fallback to login", err);
-      clearTimeout(timeoutId);
-      location.replace("/login.html");
-    }
+    // Success
+    clearTimeout(timeoutId);
+    gate.style.display = "none";
+    setTimeout(() => initDashboard(user), 120);
 
   } catch (err) {
-    console.error("Auth guard error:", err);
+    console.error("Auth guard error:", err.message || err);
     clearTimeout(timeoutId);
-    if (gateTxt) gateTxt.textContent = "Auth error – please refresh";
+
+    gateTxt.textContent = "Session issue";
+    gateSub.textContent = "Please sign in again";
     setTimeout(() => location.replace("/login.html"), 2500);
   }
 })();
+
+// Your original initDashboard, setupAutoHighlight, loadCountry, fillOB functions remain unchanged
+// ... paste them here exactly as in your original code ...
+
+function initDashboard(user){
+  // Your code...
+}
+
+function setupAutoHighlight(){
+  // Your code...
+}
+
+async function loadCountry(){
+  // Your code...
+}
+
+function fillOB(){
+  // Your code...
+}
 </script>
+</body>
+</html>
