@@ -118,16 +118,14 @@ body{
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ============================================================
-   ✅ iOS PREMIUM STICKY MENU (SHRINK + SLIDE)
+   ✅ STICKY MENU POLISH (FIX OVERLAP + PREMIUM SCROLL)
+   - ONLY affects topRow wrapper
    ============================================================ */
 .stickyMenu{
   position:sticky;
   top:12px;
   z-index:3000;
-  margin-bottom:10px;
-  transform: translateY(0px) scale(1);
-  transform-origin: top center;
-  transition: transform .22s cubic-bezier(.2,.9,.2,1), margin-bottom .22s ease;
+  margin-bottom:10px;     /* ✅ creates space between menu and hello card */
 }
 .stickyMenu::before{
   content:"";
@@ -142,21 +140,17 @@ body{
   z-index:-1;
   pointer-events:none;
   opacity:0;
-  transform: translateY(-8px);
-  transition: opacity .22s ease, transform .22s ease;
+  transform: translateY(-6px);
+  transition: .18s ease;
 }
+
+/* becomes visible once user scrolls a bit */
 .stickyMenu.isStuck::before{
   opacity:1;
   transform: translateY(0);
 }
 
-/* ✅ shrink + slide like iOS */
-.stickyMenu.isStuck{
-  transform: translateY(-4px) scale(.965);
-  margin-bottom:12px;
-}
-
-/* tighten row when stuck */
+/* tighten the menu a little when stuck */
 .stickyMenu.isStuck .topRow{
   margin-bottom:8px;
 }
@@ -1051,14 +1045,14 @@ body{
 
 <script>
 /* ============================================================
-   ✅ iOS STICKY MENU ANIMATION
+   ✅ STICKY MENU POLISH SCRIPT
+   - adds blur background only after scroll
    ============================================================ */
 (function(){
   const sticky = document.getElementById("stickyMenu");
   if(!sticky) return;
-
   const onScroll = ()=>{
-    if(window.scrollY > 16) sticky.classList.add("isStuck");
+    if(window.scrollY > 14) sticky.classList.add("isStuck");
     else sticky.classList.remove("isStuck");
   };
   onScroll();
@@ -1784,29 +1778,385 @@ async function loadCoinGeckoLists(){
   await loadFxRates();
 }
 
+async function loadFxRates(){
+  try{
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    const data = await res.json();
+    if(data?.result !== "success") throw new Error("fx fail");
+    FX_RATES = data.rates || {};
+  }catch{
+    FX_RATES = null;
+  }
+}
+
 function swapCrypto(){
   cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
+
   const tmp = selectedCryptoA;
   selectedCryptoA = selectedCryptoB;
   selectedCryptoB = tmp;
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  if(cryptoDirection === "crypto_to_fiat"){
+    if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){
+      selectedCryptoA = FAVORITES[0];
+    }
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length>4) selectedCryptoB = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+
+    mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+
+  }else{
+    selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
+
+    mountDropdown("ddCryptoA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }
+
+  document.getElementById("cryptoRate").textContent="Rate: --";
+  document.getElementById("cryptoResult").textContent="--";
+  document.getElementById("cryptoReverse").textContent="--";
+}
+
+async function convertCrypto(){
+  const amt = Number(document.getElementById("cryptoAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+    return;
+  }
+
+  try{
+    if(cryptoDirection === "crypto_to_fiat"){
+      const coinId = selectedCryptoA?.id || "bitcoin";
+      const fiat   = String(selectedCryptoB?.id || "USD").toLowerCase();
+
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+
+      const result = rate * amt;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoA.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${nfmt(result,2)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${fiat.toUpperCase()} ≈ ${(1/rate).toFixed(10)} ${selectedCryptoA.symbol?.toUpperCase()||coinId}`;
+
+    }else{
+      const fiat = String(selectedCryptoA?.id || "USD").toLowerCase();
+      const coinId = selectedCryptoB?.id || "bitcoin";
+
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+
+      const cryptoAmount = amt / rate;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoB.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${cryptoAmount.toFixed(10)} ${selectedCryptoB.symbol?.toUpperCase()||coinId}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${selectedCryptoB.symbol?.toUpperCase()||coinId} ≈ ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+    }
+  }catch(e){
+    document.getElementById("cryptoRate").textContent="Rate: unavailable (network)";
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+  }
 }
 
 function swapFiat(){
   const tmp = selectedFiatA;
   selectedFiatA = selectedFiatB;
   selectedFiatB = tmp;
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+  mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
+  mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
+
+  document.getElementById("fiatRate").textContent="Rate: --";
+  document.getElementById("fiatResult").textContent="--";
 }
 
-/* ============ init ============ */
+async function convertFiat(){
+  const amt = Number(document.getElementById("fiatAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("fiatResult").textContent="--";
+    return;
+  }
+
+  const from = String(selectedFiatA?.id || "USD").toUpperCase();
+  const to   = String(selectedFiatB?.id || "NGN").toUpperCase();
+
+  try{
+    if(!FX_RATES) await loadFxRates();
+    if(!FX_RATES) throw new Error("fx missing");
+
+    const fromRate = Number(FX_RATES[from] || 0);
+    const toRate   = Number(FX_RATES[to] || 0);
+    if(!fromRate || !toRate) throw new Error("rate missing");
+
+    const usdAmount = amt / fromRate;
+    const result = usdAmount * toRate;
+    const rate = toRate / fromRate;
+
+    document.getElementById("fiatRate").textContent = `Rate: 1 ${from} = ${nfmt(rate,6)} ${to}`;
+    document.getElementById("fiatResult").textContent = `${nfmt(result,2)} ${to}`;
+  }catch(e){
+    document.getElementById("fiatRate").textContent="Rate: unavailable (network)";
+    document.getElementById("fiatResult").textContent="--";
+  }
+}
+
+function parsePairForProviders(pair){
+  const base=pair.replace("USDT","").replace("USD","");
+  return {
+    binance: pair,
+    okx: `${base}-USDT`,
+    bybit: `${base}USDT`
+  };
+}
+
+async function tryBinanceOrderBook(symbol){
+  const res = await fetch(`https://api.binance.com/api/v3/depth?symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  if(!data?.asks || !data?.bids) throw new Error("binance invalid");
+  return { asks:data.asks, bids:data.bids, source:"Binance" };
+}
+
+async function tryOKXOrderBook(instId){
+  const res = await fetch(`https://www.okx.com/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=20`);
+  const data = await res.json();
+  const book = data?.data?.[0];
+  if(!book?.asks || !book?.bids) throw new Error("okx invalid");
+  return { asks:book.asks, bids:book.bids, source:"OKX" };
+}
+
+async function tryBybitOrderBook(symbol){
+  const res = await fetch(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  const book = data?.result;
+  if(!book?.a || !book?.b) throw new Error("bybit invalid");
+  return { asks:book.a, bids:book.b, source:"Bybit" };
+}
+
+async function loadOrderBook(force=false){
+  const pair=document.getElementById("obPair").value;
+  const asksEl=document.getElementById("asks");
+  const bidsEl=document.getElementById("bids");
+  const meta=parsePairForProviders(pair);
+
+  if(force){
+    asksEl.innerHTML="<div class='obItem'>Loading…</div>";
+    bidsEl.innerHTML="<div class='obItem'>Loading…</div>";
+  }
+
+  try{
+    let book=null;
+
+    try{ book = await tryBinanceOrderBook(meta.binance); }
+    catch(e1){
+      try{ book = await tryOKXOrderBook(meta.okx); }
+      catch(e2){
+        book = await tryBybitOrderBook(meta.bybit);
+      }
+    }
+
+    const asks=(book.asks||[]).slice(0,20);
+    const bids=(book.bids||[]).slice(0,20);
+
+    const aNorm = asks.map(x => [x[0], x[1]]);
+    const bNorm = bids.map(x => [x[0], x[1]]);
+
+    asksEl.innerHTML=aNorm.map(a=>`<div class="obItem"><span>${Number(a[0]).toLocaleString()}</span><span>${Number(a[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No asks</div>";
+    bidsEl.innerHTML=bNorm.map(b=>`<div class="obItem"><span>${Number(b[0]).toLocaleString()}</span><span>${Number(b[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No bids</div>";
+
+  }catch(e){
+    asksEl.innerHTML="<div class='obItem'>Order book blocked / unavailable</div>";
+    bidsEl.innerHTML="<div class='obItem'>Try changing pair</div>";
+  }
+}
+
+function startOrderAutoRefresh(){
+  if(orderTimer) clearInterval(orderTimer);
+  orderTimer=setInterval(()=>loadOrderBook(false), 3000);
+}
+
+function loadChart(){
+  const pair=document.getElementById("obPair").value;
+  const base=pair.replace("USDT","").toUpperCase();
+  const tvSymbol = `BINANCE:${base}USDT`;
+  document.getElementById("chartPair").textContent = `${base}/USDT`;
+  const frame=document.getElementById("tvChart");
+  frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(tvSymbol)}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=rgba(0,0,0,0)&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1`;
+}
+document.getElementById("obPair").addEventListener("change",()=>{
+  loadOrderBook(true);
+  loadChart();
+});
+
+async function loadBalance(){
+  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+  const balNum = Number(data?.balance || 0);
+  const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+  document.getElementById("balance").innerHTML = "$" + bal;
+}
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
+}
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  if(error){
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
+    return;
+  }
+
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a style="color:#9bdcff;font-weight:1000" href="plans.html">Investment Plans</a> to start.</div>`;
+    return;
+  }
+
+  planMsg.innerHTML="";
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
+
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
+
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
+    </div>
+  `;
+}
+
+function setBadge(elId, count){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0) el.style.display="none";
+  else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
+}
+function setBadgeFromKey(key,val){
+  if(key==="deposits") setBadge("badgeDepositDock", val);
+  else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
+}
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
+  setBadge("badgeDepositDock", 0);
+  setBadge("badgeWithdrawDock", 0);
+
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
+
+  if(error) return;
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+}
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
+    }, payload => {
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
+    })
+    .subscribe();
+}
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
+
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){}
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.replace("login.html");
+}
+
 function initWithUser(user){
-  hideGate();
+  currentUserEmail=user.email;
+  currentUserId=user.id;
+
   setGreeting();
   startClock();
-  loadCoinGeckoLists();
+  document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+
+  hideGate();
+  loadDashboardIdentity();
+
+  loadBalance();
+  loadActivePlan();
+  loadRealtimeBadgesOnce();
+  subscribeToRealtimeBadges();
+
   loadTop10MajorCryptos();
   startTop10AutoRefresh();
+
   loadAllMarkets();
   startMarketAutoRefresh();
+
+  loadCoinGeckoLists().then(async ()=>{
+    await loadOrderBook(true);
+    loadChart();
+    startOrderAutoRefresh();
+  });
 }
 </script>
 
