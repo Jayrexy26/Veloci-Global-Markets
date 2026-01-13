@@ -1,92 +1,568 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sign Up - Coinluxora</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account - Coinluxora</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
-.box{max-width:500px;margin:40px auto;border:1px solid #1e293b;border-radius:14px;padding:18px;background:#020617}
-h2{margin:0 0 14px 0}
-input{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
-button{width:100%;padding:12px;border:none;border-radius:10px;background:#38bdf8;color:#020617;font-weight:800;cursor:pointer}
-a{color:#38bdf8;text-decoration:none;font-weight:800}
-.small{color:#94a3b8;font-size:13px;margin-top:10px}
-.ok{color:#22c55e}
-.err{color:#f87171}
-</style>
+  <style>
+    :root{
+      --bg1:#020617;
+      --bg2:#050b1f;
+      --card: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.10);
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --brand:#3b82f6;
+      --brand2:#6366f1;
+      --ok:#22c55e;
+      --err:#f87171;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      min-height:100vh;
+      padding:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(900px 420px at 20% 10%, rgba(59,130,246,.18), transparent 60%),
+        radial-gradient(700px 380px at 85% 30%, rgba(99,102,241,.15), transparent 55%),
+        radial-gradient(600px 280px at 30% 90%, rgba(34,197,94,.08), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+    }
+
+    .wrap{
+      width:100%;
+      max-width:520px;
+    }
+
+    .card{
+      position:relative;
+      border-radius: var(--radius);
+      padding:20px;
+      background: var(--card);
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(300px 120px at 20% 0%, rgba(59,130,246,.22), transparent 65%),
+        radial-gradient(260px 140px at 100% 30%, rgba(99,102,241,.20), transparent 60%);
+      filter: blur(10px);
+      z-index:0;
+    }
+
+    .inner{position:relative; z-index:2;}
+
+    .logo{
+      width:44px;height:44px;
+      margin:4px auto 12px auto;
+      border-radius:14px;
+      display:grid;place-items:center;
+      background: rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    .logo svg{width:26px;height:26px}
+
+    h1{
+      font-size:28px;
+      letter-spacing:-0.5px;
+      margin:0;
+      text-align:center;
+      background: linear-gradient(90deg, #60a5fa, #818cf8);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      font-weight:900;
+    }
+
+    .sub{
+      margin:8px 0 18px 0;
+      text-align:center;
+      color: var(--muted);
+      font-size:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    @media (min-width:520px){
+      .grid.two{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    .field label{
+      display:block;
+      font-size:13px;
+      color:#cbd5e1;
+      margin:0 0 6px 2px;
+      font-weight:700;
+    }
+
+    .inputWrap{
+      position:relative;
+    }
+
+    .inputWrap input, .inputWrap select{
+      width:100%;
+      padding:13px 44px 13px 44px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      outline:none;
+      color:var(--text);
+      background: rgba(2,6,23,0.55);
+      transition: all .18s ease;
+      font-size:15px;
+    }
+
+    .inputWrap select{
+      appearance:none;
+      padding-right:44px;
+    }
+
+    .inputWrap input:focus, .inputWrap select:focus{
+      border-color: rgba(96,165,250,.55);
+      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+    }
+
+    .ico{
+      position:absolute;
+      left:12px;
+      top:50%;
+      transform:translateY(-50%);
+      opacity:.9;
+      width:20px;height:20px;
+      color:#cbd5e1;
+      pointer-events:none;
+    }
+
+    .rightBtn{
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-50%);
+      border:none;
+      cursor:pointer;
+      height:34px;
+      width:34px;
+      border-radius:10px;
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.10);
+      display:grid;
+      place-items:center;
+      color:#e2e8f0;
+      transition: .15s ease;
+    }
+    .rightBtn:hover{transform:translateY(-50%) scale(1.03);}
+
+    .hint{
+      margin:6px 2px 0 2px;
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    .strength{
+      margin-top:8px;
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .bar{
+      flex:1;
+      height:7px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background: linear-gradient(90deg, #60a5fa, #818cf8);
+      transition: width .2s ease;
+    }
+    .strengthText{
+      font-size:12px;
+      color: var(--muted);
+      min-width:84px;
+      text-align:right;
+      font-weight:700;
+    }
+
+    .btn{
+      margin-top:14px;
+      width:100%;
+      padding:13px 14px;
+      border:none;
+      cursor:pointer;
+      border-radius:14px;
+      font-weight:900;
+      font-size:15px;
+      color:#fff;
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      box-shadow: 0 18px 40px rgba(37,99,235,.25);
+      transition: transform .15s ease, filter .15s ease;
+    }
+    .btn:hover{transform: translateY(-1px); filter:brightness(1.02);}
+    .btn:active{transform: translateY(0px);}
+
+    .msg{
+      margin:12px 0 0 0;
+      font-size:13px;
+      color: var(--muted);
+      min-height:18px;
+      text-align:center;
+    }
+    .msg .ok{color:var(--ok); font-weight:800}
+    .msg .err{color:var(--err); font-weight:800}
+
+    .foot{
+      margin-top:14px;
+      text-align:center;
+      color: var(--muted);
+      font-size:14px;
+    }
+    .foot a{
+      color:#60a5fa;
+      font-weight:900;
+      text-decoration:none;
+    }
+    .foot a:hover{text-decoration:underline;}
+
+    /* small extras */
+    .tinyRow{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-top:2px;
+      font-size:12px;
+      color:var(--muted);
+    }
+  </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <div class="card">
+      <div class="inner">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 2c3.9 0 7 3.1 7 7 0 3.3-2.3 6.1-5.4 6.8l1.5 3.2c.3.6 0 1.4-.7 1.7-.6.3-1.4 0-1.7-.7L11 18.7H8.6c-1 0-1.8-.8-1.8-1.8V16c-1.8-1.3-3-3.4-3-5.9 0-3.9 3.1-7 7-7Z" stroke="white" stroke-width="1.6" opacity=".95"/>
+            <path d="M10.4 12.2 8.9 10.7c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4l2.3 2.3c.4.4 1 .4 1.4 0l5.3-5.3c.4-.4.4-1 0-1.4-.4-.4-1-.4-1.4 0l-4.7 4.7Z" fill="white" opacity=".95"/>
+          </svg>
+        </div>
 
-<div class="box">
-  <h2>Create Account</h2>
+        <h1>Create Account</h1>
+        <div class="sub">Join CoinLuxora today</div>
 
-  <input id="email" type="email" placeholder="Email address"/>
-  <input id="password" type="password" placeholder="Password (min 6 characters)"/>
+        <div class="grid two">
+          <div class="field">
+            <label>Full Name *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 12Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M4.2 20.2c.9-3.7 4-6.2 7.8-6.2s6.9 2.5 7.8 6.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <input id="fullname" type="text" placeholder="Enter your full name" autocomplete="name"/>
+            </div>
+          </div>
 
-  <button onclick="signup()">Sign Up</button>
+          <div class="field">
+            <label>Phone Number *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M9 6h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                <path d="M12 18h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+              </svg>
+              <input id="phone" type="tel" placeholder="Enter your phone number" autocomplete="tel"/>
+            </div>
+          </div>
+        </div>
 
-  <p id="msg" class="small"></p>
+        <div class="grid">
+          <div class="field">
+            <label>Email Address *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6h16v12H4V6Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="m4 7 8 6 8-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <input id="email" type="email" placeholder="Enter your email address" autocomplete="email"/>
+            </div>
+          </div>
+        </div>
 
-  <p class="small">
-    Already have an account?
-    <a href="login.html">Login</a>
-  </p>
-</div>
+        <div class="grid">
+          <div class="field">
+            <label>Country *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M12 22s7-5.2 7-12A7 7 0 0 0 5 10c0 6.8 7 12 7 12Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M12 13.2a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+
+              <select id="country">
+                <option value="">Select your country</option>
+                <option>Nigeria</option>
+                <option>United States</option>
+                <option>United Kingdom</option>
+                <option>Canada</option>
+                <option>Germany</option>
+                <option>France</option>
+                <option>Italy</option>
+                <option>Spain</option>
+                <option>Netherlands</option>
+                <option>South Africa</option>
+                <option>Kenya</option>
+                <option>Ghana</option>
+                <option>UAE</option>
+                <option>Saudi Arabia</option>
+                <option>Qatar</option>
+                <option>India</option>
+                <option>Pakistan</option>
+                <option>Bangladesh</option>
+                <option>China</option>
+                <option>Japan</option>
+                <option>Singapore</option>
+                <option>Australia</option>
+                <option>New Zealand</option>
+                <option>Brazil</option>
+                <option>Mexico</option>
+              </select>
+
+              <button class="rightBtn" type="button" aria-label="Dropdown">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="m7 10 5 5 5-5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div class="hint">Your country helps us personalize currency & region settings.</div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Password *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M6 10h12v10H6V10Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M12 14v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+              <input id="password" type="password" placeholder="Enter your password" autocomplete="new-password" />
+              <button class="rightBtn" type="button" onclick="togglePassword('password', this)" aria-label="Toggle password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="white" stroke-width="1.8"/>
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="white" stroke-width="1.8"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="tinyRow">
+              <span id="pwHint">Password must be at least 8 characters long</span>
+              <span id="pwCount">0/8</span>
+            </div>
+
+            <div class="strength" aria-hidden="true">
+              <div class="bar"><div class="fill" id="pwFill"></div></div>
+              <div class="strengthText" id="pwStrength">Weak</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Confirm Password *</label>
+            <div class="inputWrap">
+              <svg class="ico" viewBox="0 0 24 24" fill="none">
+                <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="currentColor" stroke-width="1.6"/>
+                <path d="M6 10h12v10H6V10Z" stroke="currentColor" stroke-width="1.6"/>
+                <path d="m10.2 15 1.4 1.4 2.8-2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <input id="confirmPassword" type="password" placeholder="Confirm your password" autocomplete="new-password" />
+              <button class="rightBtn" type="button" onclick="togglePassword('confirmPassword', this)" aria-label="Toggle confirm password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="white" stroke-width="1.8"/>
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="white" stroke-width="1.8"/>
+                </svg>
+              </button>
+            </div>
+            <div class="hint" id="matchHint">Make sure passwords match.</div>
+          </div>
+        </div>
+
+        <button class="btn" onclick="signup()">Create Account</button>
+
+        <p id="msg" class="msg"></p>
+
+        <div class="foot">
+          Already have an account?
+          <a href="login.html">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
-const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  // Supabase
+  const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-// If already logged in → go dashboard
-checkSession();
-async function checkSession(){
-  const { data } = await supabaseClient.auth.getSession();
-  if(data.session){
-    window.location.href="user-dashboard.html";
-  }
-}
-
-async function signup(){
-  const msg=document.getElementById("msg");
-  msg.innerHTML="Creating account…";
-
-  const email=document.getElementById("email").value.trim();
-  const password=document.getElementById("password").value;
-
-  if(!email || password.length<6){
-    msg.innerHTML="<span class='err'>Enter valid email + password (min 6 chars)</span>";
-    return;
+  // redirect if logged in
+  checkSession();
+  async function checkSession(){
+    const { data } = await supabaseClient.auth.getSession();
+    if(data.session){
+      window.location.href="user-dashboard.html";
+    }
   }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
+  // UI helpers
+  const passwordEl = document.getElementById("password");
+  const confirmEl  = document.getElementById("confirmPassword");
+  const pwFill     = document.getElementById("pwFill");
+  const pwStrength = document.getElementById("pwStrength");
+  const pwCount    = document.getElementById("pwCount");
+  const matchHint  = document.getElementById("matchHint");
 
-  if(error){
-    msg.innerHTML="<span class='err'>"+error.message+"</span>";
-    return;
+  passwordEl.addEventListener("input", updateStrength);
+  confirmEl.addEventListener("input", checkMatch);
+
+  function togglePassword(id, btn){
+    const el = document.getElementById(id);
+    el.type = el.type === "password" ? "text" : "password";
   }
 
-  // Insert user into users table (balance = 0)
-  await supabaseClient.from("users").insert([{
-    email,
-    balance: 0,
-    notes: "new user"
-  }]);
+  function updateStrength(){
+    const p = passwordEl.value || "";
+    pwCount.textContent = `${Math.min(p.length, 8)}/8`;
 
-  msg.innerHTML="<span class='ok'>Account created ✅ Redirecting…</span>";
+    let score = 0;
+    if(p.length >= 8) score++;
+    if(/[A-Z]/.test(p)) score++;
+    if(/[0-9]/.test(p)) score++;
+    if(/[^A-Za-z0-9]/.test(p)) score++;
 
-  setTimeout(()=>{
-    window.location.href="user-dashboard.html";
-  }, 1500);
-}
+    const pct = (score/4)*100;
+    pwFill.style.width = pct + "%";
+
+    let label = "Weak";
+    if(score >= 3) label = "Strong";
+    else if(score === 2) label = "Medium";
+
+    pwStrength.textContent = label;
+    checkMatch();
+  }
+
+  function checkMatch(){
+    const p1 = passwordEl.value;
+    const p2 = confirmEl.value;
+
+    if(!p2){
+      matchHint.textContent = "Make sure passwords match.";
+      matchHint.style.color = "#94a3b8";
+      return;
+    }
+
+    if(p1 === p2){
+      matchHint.textContent = "Passwords match ✅";
+      matchHint.style.color = "#22c55e";
+    }else{
+      matchHint.textContent = "Passwords do not match ❌";
+      matchHint.style.color = "#f87171";
+    }
+  }
+
+  function setMsg(type, text){
+    const msg=document.getElementById("msg");
+    if(type === "ok") msg.innerHTML = `<span class="ok">${text}</span>`;
+    else if(type === "err") msg.innerHTML = `<span class="err">${text}</span>`;
+    else msg.textContent = text;
+  }
+
+  async function signup(){
+    setMsg("", "Creating account…");
+
+    const full_name = document.getElementById("fullname").value.trim();
+    const phone     = document.getElementById("phone").value.trim();
+    const email     = document.getElementById("email").value.trim();
+    const country   = document.getElementById("country").value.trim();
+    const password  = document.getElementById("password").value;
+    const confirm   = document.getElementById("confirmPassword").value;
+
+    if(!full_name || !phone || !email || !country || !password || !confirm){
+      setMsg("err","Please complete all required fields.");
+      return;
+    }
+
+    if(password.length < 8){
+      setMsg("err","Password must be at least 8 characters.");
+      return;
+    }
+
+    if(password !== confirm){
+      setMsg("err","Passwords do not match.");
+      return;
+    }
+
+    // Create auth user
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+
+    if(error){
+      setMsg("err", error.message);
+      return;
+    }
+
+    // On some configs, user can be null until email verification
+    const userId = data?.user?.id || null;
+
+    // Insert into users table (upsert prevents duplicates)
+    const { error: insertErr } = await supabaseClient
+      .from("users")
+      .upsert([{
+        id: userId,                 // if your users table id matches auth.uid()
+        email: email,
+        full_name: full_name,
+        phone: phone,
+        country: country,
+        balance: 0,
+        notes: "new user"
+      }], { onConflict: "email" });
+
+    if(insertErr){
+      // not fatal, but show it
+      setMsg("err", "Account created, but profile save failed: " + insertErr.message);
+      setTimeout(()=> window.location.href="login.html", 1600);
+      return;
+    }
+
+    setMsg("ok","Account created ✅ Redirecting…");
+    setTimeout(()=> window.location.href="user-dashboard.html", 1500);
+  }
 </script>
 
 </body>
