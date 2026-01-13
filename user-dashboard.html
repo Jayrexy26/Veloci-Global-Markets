@@ -682,6 +682,73 @@ body{
   justify-content:center;
   border:1px solid rgba(255,255,255,.18);
 }
+
+/* ============================================================
+   ✅ TOP 10 CRYPTO LIST (ADDED)
+   ============================================================ */
+.crypto10Grid{
+  margin-top:12px;
+  display:grid;
+  gap:10px;
+}
+.cryptoRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.cryptoLeft{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.cryptoLogo{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  flex:0 0 auto;
+}
+.cryptoLogo img{width:100%;height:100%;object-fit:cover;display:block;}
+.cryptoName{
+  font-weight:1000;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cryptoSym{
+  display:block;
+  font-size:12px;
+  font-weight:1000;
+  color:rgba(234,240,255,.55);
+  margin-top:2px;
+}
+.cryptoRight{
+  text-align:right;
+  flex:0 0 auto;
+}
+.cryptoPrice{
+  font-weight:1000;
+  font-size:14px;
+}
+.cryptoChg{
+  margin-top:4px;
+  font-weight:1000;
+  font-size:12px;
+  color:rgba(234,240,255,.65);
+}
+.cryptoChg.up{color:rgba(34,197,94,1)}
+.cryptoChg.down{color:rgba(248,113,113,1)}
 </style>
 </head>
 
@@ -791,6 +858,14 @@ body{
     <h2>Active Investment Plan</h2>
     <div id="planMsg" class="small">Loading…</div>
     <div id="planBox"></div>
+  </div>
+
+  <!-- ✅ TOP 10 MAJOR CRYPTO (ADDED BELOW ACTIVE PLAN) -->
+  <div class="box">
+    <h2>Top 10 Major Cryptos</h2>
+    <div class="small">Live market prices (auto refresh every 20 seconds).</div>
+    <div id="top10Msg" class="small">Loading…</div>
+    <div id="top10List" class="crypto10Grid"></div>
   </div>
 
   <!-- ✅ Crypto Converter -->
@@ -924,6 +999,81 @@ let selectedFiatA={ id:"USD", label:"USD", icon:"$" };
 let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
 let orderTimer=null;
+
+/* ============================================================
+   ✅ TOP 10 MAJOR CRYPTO (ADDED)
+   ============================================================ */
+const TOP10_IDS = [
+  "bitcoin",
+  "ethereum",
+  "tether",
+  "binancecoin",
+  "solana",
+  "ripple",
+  "usd-coin",
+  "dogecoin",
+  "cardano",
+  "tron"
+];
+let top10Timer=null;
+
+function fmtMoneySmart(n){
+  const num=Number(n||0);
+  if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
+  if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
+  return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
+}
+
+async function loadTop10MajorCryptos(){
+  const msg=document.getElementById("top10Msg");
+  const list=document.getElementById("top10List");
+  if(!msg || !list) return;
+
+  try{
+    msg.textContent="Loading…";
+
+    const url =
+      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(TOP10_IDS.join(","))}&order=market_cap_desc&per_page=10&page=1&sparkline=false`;
+    const res=await fetch(url);
+    const data=await res.json();
+
+    if(!Array.isArray(data) || data.length===0) throw new Error("No data");
+
+    msg.textContent="";
+
+    list.innerHTML = data.map(c=>{
+      const chg=Number(c.price_change_percentage_24h||0);
+      const chgClass = chg>=0 ? "up" : "down";
+      const sign = chg>=0 ? "+" : "";
+      return `
+        <div class="cryptoRow">
+          <div class="cryptoLeft">
+            <div class="cryptoLogo">
+              <img src="${c.image}" alt="${c.symbol}"/>
+            </div>
+            <div style="min-width:0">
+              <div class="cryptoName">${c.name}</div>
+              <span class="cryptoSym">${String(c.symbol||"").toUpperCase()}</span>
+            </div>
+          </div>
+
+          <div class="cryptoRight">
+            <div class="cryptoPrice">${fmtMoneySmart(c.current_price)}</div>
+            <div class="cryptoChg ${chgClass}">${sign}${chg.toFixed(2)}% (24h)</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }catch(e){
+    msg.innerHTML = "<span class='err'>Unable to load live crypto prices (network blocked).</span>";
+    list.innerHTML = "";
+  }
+}
+
+function startTop10AutoRefresh(){
+  if(top10Timer) clearInterval(top10Timer);
+  top10Timer=setInterval(loadTop10MajorCryptos, 20000);
+}
 
 /* ===== auth ===== */
 (async function authGuard(){
@@ -1763,6 +1913,10 @@ function initWithUser(user){
   loadActivePlan();
   loadRealtimeBadgesOnce();
   subscribeToRealtimeBadges();
+
+  // ✅ top 10 cryptos (added)
+  loadTop10MajorCryptos();
+  startTop10AutoRefresh();
 
   loadCoinGeckoLists().then(async ()=>{
     await loadOrderBook(true);
