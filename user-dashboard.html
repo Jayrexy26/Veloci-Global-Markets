@@ -1021,42 +1021,72 @@ function setNameEverywhere(fullName){
   document.getElementById("sideName").textContent=nice;
 }
 
-/* ========= COUNTRY CHIP FIX (NEW) ========= */
+/* ========= COUNTRY CHIP (FULL FIX + FULL NAME) ========= */
 function isoToFlag(iso){
   if(!iso || iso.length!==2) return "";
   const code=iso.toUpperCase();
   const A=0x1F1E6;
   return String.fromCodePoint(...[...code].map(c=>A + c.charCodeAt(0)-65));
 }
-function setCountryChip(iso){
+function setCountryChip(iso, fullName=""){
   const el=document.getElementById("countryChip");
   if(!el) return;
+
   if(!iso || iso.length!==2){
     el.style.display="none";
     el.textContent="";
     return;
   }
+
   const flag=isoToFlag(iso);
   if(!flag){
     el.style.display="none";
     el.textContent="";
     return;
   }
-  el.textContent=`${flag} ${iso.toUpperCase()}`;
+
+  const cleanName = (fullName || "").trim();
+  el.textContent = cleanName
+    ? `${flag} ${iso.toUpperCase()} · ${cleanName}`
+    : `${flag} ${iso.toUpperCase()}`;
+
   el.style.display="inline-flex";
 }
 function normalizeCountryText(v){
   if(!v) return "";
   return String(v)
-    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"")   /* strip emoji flags */
+    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"")
     .replace(/[^\w\s-]/g," ")
     .trim()
     .toLowerCase();
 }
+function isoToCountryName(iso){
+  if(!iso) return "";
+  const c = iso.toUpperCase();
+  const map = {
+    NG:"Nigeria",
+    US:"United States",
+    GB:"United Kingdom",
+    CA:"Canada",
+    DE:"Germany",
+    FR:"France",
+    ZA:"South Africa",
+    KE:"Kenya",
+    GH:"Ghana",
+    AE:"United Arab Emirates",
+    SA:"Saudi Arabia",
+    IN:"India",
+    AU:"Australia",
+    BR:"Brazil",
+    MX:"Mexico",
+    JP:"Japan",
+    SG:"Singapore"
+  };
+  return map[c] || "";
+}
 function countryNameToISO(name){
   if(!name) return "";
   const raw = String(name).trim();
-  // if user already stored ISO in DB: "NG" "US"
   if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
 
   const n=normalizeCountryText(raw);
@@ -1099,10 +1129,7 @@ function countryNameToISO(name){
     "singapore":"SG"
   };
 
-  // direct hit
   if(map[n]) return map[n];
-
-  // fuzzy: if it includes any key
   for(const key of Object.keys(map)){
     if(n.includes(key)) return map[key];
   }
@@ -1118,22 +1145,19 @@ async function detectCountryFromIP(){
 }
 function detectCountryFromLocale(){
   try{
-    const loc = (navigator.language || "").toUpperCase(); // e.g. en-NG
+    const loc = (navigator.language || "").toUpperCase();
     const parts = loc.split("-");
     if(parts.length>=2 && /^[A-Z]{2}$/.test(parts[1])) return parts[1];
   }catch{}
   return "";
 }
 async function resolveCountryISO(countryNameFromDB){
-  // 1) DB country field
   let iso = countryNameToISO(countryNameFromDB);
   if(iso) return iso;
 
-  // 2) IP lookup
   iso = await detectCountryFromIP();
   if(iso) return iso;
 
-  // 3) browser locale fallback
   iso = detectCountryFromLocale();
   if(iso) return iso;
 
@@ -1163,7 +1187,8 @@ async function loadDashboardIdentity(){
     setSideAvatar(avatarUrl);
 
     const iso = await resolveCountryISO(countryName);
-    setCountryChip(iso);
+    const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+    setCountryChip(iso, niceName);
   }catch(e){
     setNameEverywhere("User");
     setTopAvatar("");
@@ -1215,6 +1240,7 @@ function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
       renderItems = items.filter(x => getSearch(x).includes(q));
     }
 
+    // render only "visible window" chunk for performance but keep ALL scrolling
     const MAX = Math.min(renderItems.length, 600);
     const slice = renderItems.slice(0, MAX);
 
@@ -1282,6 +1308,7 @@ const FAVORITES = [
 ];
 
 async function loadCoinGeckoLists(){
+  // load fiats
   try{
     const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
     const fiats = await fiatRes.json();
@@ -1290,10 +1317,12 @@ async function loadCoinGeckoLists(){
     FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
   }
 
+  // load all coins (name + symbol)
   try{
     const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
     const coins = await coinRes.json();
 
+    // build map for favorites first
     const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
     const list = [];
     for(const c of (coins||[])){
@@ -1310,6 +1339,7 @@ async function loadCoinGeckoLists(){
 
   const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
 
+  // mount dropdowns with full search
   mountDropdown(
     "ddCryptoA",
     ALL_COINS,
@@ -1369,6 +1399,7 @@ function swapCrypto(){
   selectedCryptoA = selectedCryptoB;
   selectedCryptoB = tmp;
 
+  // rebuild dropdowns
   const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
 
   if(cryptoDirection === "crypto_to_fiat"){
@@ -1381,6 +1412,7 @@ function swapCrypto(){
     mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
 
   }else{
+    // fiat -> crypto
     selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
     if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
 
@@ -1487,7 +1519,8 @@ async function convertFiat(){
 
 /* ========== ORDER BOOK FIXED WITH FALLBACKS ========== */
 function parsePairForProviders(pair){
-  const base=pair.replace("USDT","").replace("USD","");
+  // pair example BTCUSDT
+  const base=pair.replace("USDT","").replace("USD",""); // BTC
   return {
     binance: pair,
     okx: `${base}-USDT`,
@@ -1532,6 +1565,7 @@ async function loadOrderBook(force=false){
   try{
     let book=null;
 
+    // try Binance → OKX → Bybit
     try{ book = await tryBinanceOrderBook(meta.binance); }
     catch(e1){
       try{ book = await tryOKXOrderBook(meta.okx); }
@@ -1543,6 +1577,7 @@ async function loadOrderBook(force=false){
     const asks=(book.asks||[]).slice(0,20);
     const bids=(book.bids||[]).slice(0,20);
 
+    // normalize OKX/Bybit shapes
     const aNorm = asks.map(x => [x[0], x[1]]);
     const bNorm = bids.map(x => [x[0], x[1]]);
 
@@ -1555,11 +1590,13 @@ async function loadOrderBook(force=false){
   }
 }
 
+/* auto refresh every 3s */
 function startOrderAutoRefresh(){
   if(orderTimer) clearInterval(orderTimer);
   orderTimer=setInterval(()=>loadOrderBook(false), 3000);
 }
 
+/* mini candlestick widget */
 function loadChart(){
   const pair=document.getElementById("obPair").value;
   const base=pair.replace("USDT","").toUpperCase();
