@@ -3,849 +3,753 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Coinluxora User Dashboard</title>
+<title>User Profile - Coinluxora</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-:root{
-  --bg:#050a18;
-  --stroke:rgba(255,255,255,.12);
-  --text:#eaf0ff;
-  --muted:rgba(234,240,255,.65);
+  :root{
+    --bg:#050a18;
+    --text:#eaf0ff;
+    --muted: rgba(234,240,255,.65);
+    --ok:#22c55e;
+    --err:#f87171;
 
-  --ok:#22c55e;
-  --err:#f87171;
+    --stroke: rgba(255,255,255,0.12);
+    --shadow: 0 26px 90px rgba(0,0,0,.55);
 
-  --blue:#5b6cff;
-  --purple:#7c4dff;
-  --green:#34d399;
-  --cyan:#38bdf8;
-  --pink:#ff4da6;
+    --blue:#5b6cff;
+    --purple:#7c4dff;
+    --green:#34d399;
+  }
+  *{box-sizing:border-box}
 
-  --shadow: 0 26px 90px rgba(0,0,0,.55);
-}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    padding-bottom:110px;
+    background: var(--bg);
+    overflow-x:hidden;
+  }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  color:var(--text);
-  padding:16px;
-  padding-bottom:140px;
-  overflow-x:hidden;
-  background: var(--bg);
-}
+  /* ===== FLOWING PREMIUM BACKGROUND ===== */
+  .bgFlow{
+    position:fixed; inset:0; z-index:-3;
+    background:
+      radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.28), transparent 55%),
+      radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.18), transparent 55%),
+      radial-gradient(900px 520px at 40% 90%, rgba(124,77,255,.20), transparent 60%),
+      linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  }
+  .blob{
+    position:fixed;
+    width:520px;height:520px;border-radius:999px;
+    filter: blur(70px);
+    opacity:.55;
+    z-index:-2;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+  .blob.b1{ background: rgba(91,108,255,.75); left:-140px; top:-140px; animation: drift1 14s ease-in-out infinite; }
+  .blob.b2{ background: rgba(124,77,255,.70); right:-190px; top:10%; animation: drift2 16s ease-in-out infinite; }
+  .blob.b3{ background: rgba(52,211,153,.55); left:15%; bottom:-220px; animation: drift3 18s ease-in-out infinite; }
+  @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(220px,120px) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-240px,160px) scale(1.12)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(180px,-170px) scale(1.06)}100%{transform:translate(0,0) scale(1)}}
+  .shimmer{
+    position:fixed; inset:0; z-index:-1;
+    opacity:.25;
+    background:
+      radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.08), transparent 60%),
+      radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.06), transparent 60%);
+    animation: shimmerMove 10s ease-in-out infinite alternate;
+    pointer-events:none;
+  }
+  @keyframes shimmerMove{from{transform:translateY(0px)}to{transform:translateY(30px)}}
 
-/* ===== UPPER ECHELON BACKGROUND ===== */
-.bgFlow{
-  position:fixed; inset:0; z-index:-4;
-  background:
-    radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
-    radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.20), transparent 55%),
-    radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
-    linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
-}
-.blob{
-  position:fixed;
-  width:520px;height:520px;border-radius:999px;
-  filter: blur(72px);
-  opacity:.60;
-  z-index:-3;
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-.blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
-.blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
-.blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
-.blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
-@keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
-@keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
-@keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
-@keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
+  /* ===== TOP BAR ===== */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    padding:12px 14px;
+    background:rgba(2,6,23,0.55);
+    backdrop-filter: blur(14px);
+    border-bottom:1px solid rgba(255,255,255,0.10);
+  }
+  .toprow{
+    max-width:980px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
+    color:#fff;border-radius:16px;padding:12px 14px;
+    font-weight:1000;letter-spacing:.6px;min-width:140px;
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 18px 50px rgba(109,87,255,.18);
+    cursor:pointer;user-select:none;
+  }
+  .brand span{font-size:18px}
+  .circleBtn{
+    width:44px;height:44px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.18);
+    display:grid;place-items:center;
+    box-shadow:0 16px 40px rgba(0,0,0,.35);
+    cursor:pointer;
+    color:rgba(234,240,255,.85);
+  }
+  .circleBtn:hover{background:rgba(255,255,255,.08)}
+  .circleBtn svg{width:22px;height:22px}
 
-.shimmer{
-  position:fixed; inset:-30px; z-index:-2;
-  opacity:.28;
-  background:
-    radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
-    radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
-    linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
-  animation: shimmerMove 6s ease-in-out infinite alternate;
-  pointer-events:none;
-}
-@keyframes shimmerMove{from{transform:translateY(0px) translateX(0px)}to{transform:translateY(42px) translateX(22px)}}
+  /* =========================================================
+     ✅ PREMIUM MENU (UPGRADED SIDEBAR)
+     ========================================================= */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.65);
+    display:none; z-index:999;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.show{display:block;}
 
-.container{max-width:920px;margin:0 auto}
+  .sidebar{
+    position:fixed; top:0; left:-315px;
+    width:292px; height:100vh;
+    padding:16px;
+    z-index:1000;
+    transition: .28s ease;
+    border-right:1px solid rgba(255,255,255,.10);
+    background:
+      radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+      radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+      linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+    box-shadow:0 26px 90px rgba(0,0,0,.60);
+    backdrop-filter: blur(16px);
+  }
+  .sidebar.open{ left:0; }
 
-/* ===== Loading Gate ===== */
-#authGate{
-  position:fixed; inset:0; z-index:99999;
-  display:flex; align-items:center; justify-content:center;
-  background:
-    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
-    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
-    var(--bg);
-}
-.gateCard{
-  width:min(520px,92vw);
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.25);
-  border-radius:22px;
-  padding:18px;
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
-  backdrop-filter: blur(14px);
-  text-align:center;
-}
-.gateLogo{
-  width:62px;height:62px;border-radius:18px;
-  margin:0 auto 10px;
-  display:grid;place-items:center;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(124,77,255,1));
-  box-shadow:0 18px 50px rgba(109,87,255,.28);
-  font-size:28px;font-weight:1000;
-}
-.gateTxt{font-weight:1000}
-.gateSub{margin-top:6px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px}
-.spinner{
-  width:46px;height:46px;margin:14px auto 0;
-  border-radius:999px;
-  border:3px solid rgba(255,255,255,.18);
-  border-top-color:#9bdcff;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+  .sideTop{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;margin-bottom:12px;
+  }
+  .sideBrand{
+    display:flex;align-items:center;gap:10px;
+    font-weight:1000;font-size:16px;letter-spacing:.9px;
+    color:#fff;
+    padding:10px 12px;border-radius:16px;
+    border:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
+    box-shadow:0 16px 50px rgba(109,87,255,.18);
+    min-width:170px;
+  }
+  .sideBrandIcon{
+    width:30px;height:30px;border-radius:12px;
+    display:grid;place-items:center;
+    background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.20);
+  }
+  .closeBtn{
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.14);
+    color:rgba(234,240,255,.95);
+    border-radius:14px;
+    width:44px;height:44px;
+    cursor:pointer;
+    display:grid;place-items:center;
+    font-weight:1000;
+  }
+  .closeBtn:hover{background:rgba(255,255,255,.08)}
 
-/* ===== TOP BAR ===== */
-.topRow{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:12px; margin-bottom:14px;
-}
-.brand{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 14px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
-  color:white;font-weight:1000;letter-spacing:.6px;
-  box-shadow:0 18px 50px rgba(109,87,255,.25);
-  min-width:140px;
-}
-.brandIcon{
-  width:34px;height:34px;border-radius:12px;
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.22);
-  display:grid;place-items:center;
-  font-weight:1000;
-}
-.headerActions{display:flex;gap:10px;align-items:center}
-.avatarBtn{
-  width:46px;height:46px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
-  cursor:pointer;
-  box-shadow:0 16px 40px rgba(124,77,255,.32);
-  display:grid;place-items:center;
-  position:relative;overflow:hidden;
-}
-.avatarBtn:hover{filter:brightness(1.05)}
-.avatarFallback{font-size:18px;line-height:1;z-index:2;}
-.avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
+  .userTag{
+    padding:12px 12px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    box-shadow:0 18px 55px rgba(0,0,0,.35);
+    margin:10px 0 14px;
+  }
+  .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
+  .userTag .t2{margin-top:6px;font-weight:1000}
 
-.iconBtn{
-  width:46px;height:46px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.18);
-  color:white;font-weight:1000;
-  cursor:pointer;
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-  backdrop-filter: blur(10px);
-}
-.iconBtn:hover{background:rgba(255,255,255,.08)}
+  .menuGroupTitle{
+    margin:10px 0 8px;
+    font-size:12px;font-weight:1000;
+    color:rgba(234,240,255,.50);
+    letter-spacing:.8px;
+    text-transform:uppercase;
+  }
 
-/* ===== HELLO CARD ===== */
-.helloCard{
-  border-radius:20px;
-  padding:16px 16px;
-  overflow:hidden;
-  background:
-    radial-gradient(800px 220px at 20% 20%, rgba(255,255,255,.18), transparent 60%),
-    linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
-  color:white;
-  box-shadow:0 22px 70px rgba(109,87,255,.22);
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-}
-.helloLeft{display:flex;align-items:center;gap:12px;}
-.helloLogo{
-  width:48px;height:48px;border-radius:18px;
-  background:rgba(255,255,255,.20);
-  border:1px solid rgba(255,255,255,.22);
-  display:grid;place-items:center;
-  font-weight:1000;
-}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.miniChip{
-  font-size:12px;font-weight:1000;
-  padding:6px 10px;border-radius:999px;
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.22);
-  display:flex;gap:6px;align-items:center;
-}
-.helloTitle{font-weight:1000;font-size:18px}
-.helloSub{font-size:12px;font-weight:900;opacity:.92}
-.helloRight{
-  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
-}
-.helloRightTop{display:flex;align-items:center;gap:10px}
-.idChip{
-  padding:8px 12px;border-radius:999px;
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.22);
-  font-weight:1000;font-size:12px;
-}
-.logoutBtn{
-  width:46px;height:46px;border-radius:999px;border:none;
-  cursor:pointer;
-  background:rgba(239,68,68,0.95);
-  color:#fff;font-weight:1000;
-  box-shadow:0 16px 40px rgba(239,68,68,.22);
-}
-.datetimeChip{
-  padding:6px 10px;border-radius:999px;
-  background:rgba(255,255,255,.16);
-  border:1px solid rgba(255,255,255,.20);
-  font-weight:1000;font-size:12px;
-  color:#fff;
-  white-space:nowrap;
-}
+  .sideItem{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 12px;
+    border-radius:18px;
+    color:rgba(234,240,255,.82);
+    text-decoration:none;
+    font-weight:1000;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(0,0,0,.22);
+    box-shadow:0 16px 40px rgba(0,0,0,.35);
+    margin-bottom:10px;
+    position:relative;
+    overflow:hidden;
+  }
+  .sideItem:hover{background:rgba(255,255,255,.08)}
+  .sideItem .i{
+    width:42px;height:42px;border-radius:16px;
+    display:grid;place-items:center;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);
+    font-size:18px;
+  }
+  .sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
 
-/* ===== BOX ===== */
-.box{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:24px;
-  padding:16px;
-  background:
-    radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
-    radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
-  backdrop-filter: blur(12px);
-  margin-top:14px;
-}
-.box h2{margin:0;font-size:20px;font-weight:1000}
-.small{color:var(--muted);font-size:13px;margin-top:8px}
-.ok{color:var(--ok);font-weight:1000}
-.err{color:var(--err);font-weight:1000}
-.card{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:18px;
-  padding:12px;
-  background:rgba(0,0,0,.22);
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-}
-.balanceCard{
-  margin-top:14px;
-  border-radius:24px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.10);
-  background:
-    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
-    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,.24), transparent 55%),
-    linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
-  color:white;
-  box-shadow: 0 26px 60px rgba(0,0,0,0.25);
-  padding:16px;
-}
-.bTitle{font-size:13px;font-weight:1000;opacity:.85}
-.bValue{font-size:34px;font-weight:1000;margin-top:8px}
-.bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
-.dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+  .activeLink{
+    border:1px solid rgba(56,189,248,.55);
+    background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
+    color:#cfefff;
+  }
+  .activeLink::after{
+    content:"";
+    position:absolute; inset:0;
+    background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
+    pointer-events:none;
+  }
 
-/* ✅ TOP 10 LIST */
-.top10Grid{
-  margin-top:12px;
-  display:grid;
-  grid-template-columns:repeat(2, 1fr);
-  gap:12px;
-}
-@media(max-width:620px){ .top10Grid{grid-template-columns:1fr} }
-.topCoin{
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.22);
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-  padding:12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-.tcL{display:flex;align-items:center;gap:10px;min-width:0}
-.tcLogo{
-  width:38px;height:38px;border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
-  object-fit:cover;
-}
-.tcName{font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tcSym{color:rgba(234,240,255,.55);font-weight:900;font-size:12px;margin-top:2px}
-.tcR{text-align:right}
-.tcPrice{font-weight:1000}
-.tcChg{font-weight:1000;font-size:12px;margin-top:2px}
-.pos{color:#34d399}
-.neg{color:#f87171}
+  .sideLogout{
+    margin-top:10px;
+    background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+    color:#020617;border:none;width:100%;
+    padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
+    box-shadow:0 18px 55px rgba(239,68,68,.18);
+  }
+  .sideLogout:hover{filter:brightness(1.03)}
 
-/* ✅ TRADINGVIEW ORDERBOOK EMBED */
-.tvOBWrap{
-  margin-top:12px;
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  overflow:hidden;
-  background:rgba(0,0,0,.22);
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-}
-.tvOBHead{
-  padding:12px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-bottom:1px solid rgba(255,255,255,.10);
-}
-.tvOBHead strong{font-weight:1000}
-.tvOBHead select{
-  height:40px;border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.20);
-  color:var(--text);
-  font-weight:1000;
-  padding:0 10px;
-  outline:none;
-}
-.tvFrame{width:100%;height:520px;border:0;display:block}
+  /* ===== CONTENT ===== */
+  .wrap{max-width:980px;margin:0 auto;padding:14px;}
+  .pageTitle{font-size:30px;font-weight:1000;margin:12px 0 14px;}
+  .card{
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+    border-radius:22px;
+    box-shadow:var(--shadow);
+    padding:16px;
+    backdrop-filter: blur(12px);
+  }
 
-/* ===== SIDEBAR ===== */
-.overlay{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.65);
-  display:none; z-index:999;
-  backdrop-filter: blur(4px);
-}
-.overlay.show{display:block;}
-.sidebar{
-  position:fixed; top:0; left:-315px;
-  width:292px; height:100vh;
-  padding:16px;
-  z-index:1000;
-  transition: .28s ease;
-  border-right:1px solid rgba(255,255,255,.10);
-  background:
-    radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
-    radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
-    linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
-  box-shadow:0 26px 90px rgba(0,0,0,.60);
-  backdrop-filter: blur(16px);
-}
-.sidebar.open{ left:0; }
-.sideTop{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:10px;margin-bottom:12px;
-}
-.sideBrand{
-  display:flex;align-items:center;gap:10px;
-  font-weight:1000;font-size:16px;letter-spacing:.9px;
-  color:#fff;
-  padding:10px 12px;border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
-  box-shadow:0 16px 50px rgba(109,87,255,.18);
-  min-width:170px;
-}
-.sideBrandIcon{
-  width:30px;height:30px;border-radius:12px;
-  display:grid;place-items:center;
-  background:rgba(255,255,255,.16);
-  border:1px solid rgba(255,255,255,.20);
-}
-.closeBtn{
-  background:rgba(0,0,0,.22);
-  border:1px solid rgba(255,255,255,.14);
-  color:rgba(234,240,255,.95);
-  border-radius:14px;
-  width:44px;height:44px;
-  cursor:pointer;
-  display:grid;place-items:center;
-  font-weight:1000;
-}
-.closeBtn:hover{background:rgba(255,255,255,.08)}
-.userTag{
-  padding:12px 12px;
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.10);
-  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  box-shadow:0 18px 55px rgba(0,0,0,.35);
-  margin:10px 0 14px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-}
-.userTagLeft{min-width:0}
-.userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
-.userTag .t2{
-  margin-top:6px;font-weight:1000;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:180px;
-}
-.sideAvatar{
-  width:46px;height:46px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.25);
-  display:grid;place-items:center;
-  position:relative;overflow:hidden;
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-  flex:0 0 auto;
-}
-.sideAvatar span{font-size:18px}
-.sideAvatar img{
-  position:absolute; inset:0;
-  width:100%;height:100%;
-  object-fit:cover;
-  display:none;
-}
-.menuGroupTitle{
-  margin:10px 0 8px;
-  font-size:12px;font-weight:1000;
-  color:rgba(234,240,255,.50);
-  letter-spacing:.8px;
-  text-transform:uppercase;
-}
-.sideItem{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 12px;border-radius:18px;
-  color:rgba(234,240,255,.82);
-  text-decoration:none;
-  font-weight:1000;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(0,0,0,.22);
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-  margin-bottom:10px;
-  position:relative;overflow:hidden;
-}
-.sideItem:hover{background:rgba(255,255,255,.08)}
-.sideItem .i{
-  width:42px;height:42px;border-radius:16px;
-  display:grid;place-items:center;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
-  font-size:18px;
-}
-.sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
-.activeLink{
-  border:1px solid rgba(56,189,248,.55);
-  background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
-  color:#cfefff;
-}
-.activeLink::after{
-  content:"";
-  position:absolute; inset:0;
-  background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
-  pointer-events:none;
-}
-.sideLogout{
-  margin-top:10px;
-  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
-  color:#020617;border:none;width:100%;
-  padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
-  box-shadow:0 18px 55px rgba(239,68,68,.18);
-}
-.sideLogout:hover{filter:brightness(1.03)}
+  /* ===== Avatar ===== */
+  .profileHead{text-align:center;padding:14px 0 6px;}
+  .avatarWrap{
+    width:128px;height:128px;margin:0 auto 12px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(0,0,0,.24);
+    display:grid;place-items:center;
+    position:relative;overflow:hidden;
+    box-shadow:0 18px 55px rgba(0,0,0,.35);
+  }
+  .avatarEmoji{font-size:64px;opacity:.95}
+  .avatarImg{width:100%;height:100%;object-fit:cover;display:none;}
+  .avatarEdit{
+    position:absolute;right:10px;bottom:10px;
+    width:46px;height:46px;border-radius:16px;
+    border:1px solid rgba(255,255,255,.12);
+    background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+    display:grid;place-items:center;cursor:pointer;
+    box-shadow:0 18px 55px rgba(91,108,255,.24);
+  }
+  .avatarEdit:hover{filter:brightness(1.05)}
+  .avatarEdit svg{width:20px;height:20px}
+  #avatarInput{display:none}
 
-/* ===== DOCK ===== */
-.dock{
-  position:fixed;
-  left:0; right:0; bottom:14px;
-  z-index:2000;
-  pointer-events:none;
-}
-.dockInner{pointer-events:auto;max-width:980px;margin:0 auto;padding:0 14px;}
-.dockBar{
-  height:76px;border-radius:28px;
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.14);
-  box-shadow:0 20px 70px rgba(0,0,0,.45);
-  backdrop-filter: blur(14px);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 12px;gap:10px;
-}
-.dockItem{
-  flex:1;min-width:70px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:6px;border-radius:18px;padding:10px 0;
-  color:rgba(234,240,255,.55);
-  font-size:12px;font-weight:1000;cursor:pointer;user-select:none;
-  position:relative;
-}
-.dockItem .ico{font-size:18px;opacity:.95}
-.dockItem:hover{background:rgba(255,255,255,.06)}
-.dockHome{
-  width:78px;height:78px;border-radius:26px;
-  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
-  box-shadow:0 22px 55px rgba(109,87,255,.30);
-  display:grid;place-items:center;
-  margin-top:-32px;
-  border:1px solid rgba(255,255,255,.16);
-  cursor:pointer;user-select:none;
-  flex:0 0 auto;pointer-events:auto;
-}
-.dockHome span{font-size:28px;color:white}
-.dockHome:hover{filter:brightness(1.05)}
+  .bigName{font-size:26px;font-weight:1000;color:rgba(234,240,255,.75);margin:0;}
+  .bigEmail{margin:6px 0 0 0;color:rgba(234,240,255,.55);font-size:15px;font-weight:900;}
+
+  .field{margin-top:16px;}
+  .label{font-size:16px;font-weight:1000;color:rgba(234,240,255,.65);margin:0 0 10px;}
+  .row{display:flex;gap:10px;align-items:center;}
+  .input, select{
+    flex:1;height:48px;border:1px solid rgba(255,255,255,.12);
+    border-radius:14px;padding:10px 12px;font-size:15px;
+    outline:none;background:rgba(0,0,0,.22);color:var(--text);
+    box-shadow:0 16px 40px rgba(0,0,0,.35);
+  }
+  .input:disabled, select:disabled{background:rgba(0,0,0,.18);opacity:.9;}
+  .miniBtn{
+    width:48px;height:48px;border:none;border-radius:14px;
+    background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+    color:#fff;cursor:pointer;display:grid;place-items:center;
+    box-shadow:0 18px 55px rgba(91,108,255,.22);
+    border:1px solid rgba(255,255,255,.12);
+    font-weight:1000;
+  }
+
+  .pwWrap{position:relative; flex:1;}
+  .pwWrap .input{padding-right:52px;}
+  .eyeBtn{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    border:none;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:12px;width:38px;height:38px;
+    cursor:pointer;display:grid;place-items:center;
+    color:rgba(234,240,255,.85);
+  }
+  .note{margin-top:8px;color:rgba(234,240,255,.55);font-size:13px;font-weight:900;}
+
+  .saveBtn{
+    margin-top:18px;width:100%;height:56px;border:none;border-radius:16px;
+    background:linear-gradient(180deg, rgba(52,211,153,1), rgba(17,185,129,1));
+    color:#062015;cursor:pointer;font-weight:1000;font-size:17px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    box-shadow:0 18px 55px rgba(34,197,94,.18);
+  }
+
+  .msg{margin-top:12px;min-height:18px;text-align:center;font-size:14px;font-weight:900;}
+  .ok{color:var(--ok);font-weight:1000}
+  .err{color:var(--err);font-weight:1000}
+
+  .sectionTitle{font-size:24px;font-weight:1000;color:rgba(234,240,255,.70);margin:0 0 10px;}
+  .blueBtn{
+    margin-top:18px;width:100%;height:58px;border:none;border-radius:16px;
+    background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+    color:white;cursor:pointer;font-weight:1000;font-size:17px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    box-shadow:0 18px 55px rgba(91,108,255,.22);
+  }
+
+  .tips{margin-top:18px;border-top:1px solid rgba(255,255,255,.10);padding-top:14px;}
+  .tipsTitle{font-weight:1000;color:rgba(234,240,255,.65);font-size:16px;margin:0 0 10px;}
+  ul{margin:0;padding-left:18px;color:rgba(234,240,255,.55);line-height:1.7;font-weight:900;font-size:13px}
+
+  /* =========================================================
+     ✅ ADVANCED BOTTOM NAV
+     ========================================================= */
+  .dock{
+    position:fixed;
+    left:0; right:0; bottom:14px;
+    z-index:2000;
+    pointer-events:none;
+  }
+  .dockInner{pointer-events:auto;max-width:980px;margin:0 auto;padding:0 14px;}
+  .dockBar{
+    height:76px;border-radius:28px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:0 20px 70px rgba(0,0,0,.45);
+    backdrop-filter: blur(14px);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;gap:10px;
+  }
+  .dockItem{
+    flex:1;min-width:70px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;border-radius:18px;padding:10px 0;
+    color:rgba(234,240,255,.55);
+    font-size:12px;font-weight:1000;cursor:pointer;user-select:none;
+  }
+  .dockItem .ico{font-size:18px;opacity:.95}
+  .dockItem:hover{background:rgba(255,255,255,.06)}
+  .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
+  .dockHome{
+    width:78px;height:78px;border-radius:26px;
+    background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
+    box-shadow:0 22px 55px rgba(109,87,255,.30);
+    display:grid;place-items:center;
+    margin-top:-32px;
+    border:1px solid rgba(255,255,255,.16);
+    cursor:pointer;user-select:none;
+  }
+  .dockHome span{font-size:28px;color:white}
+  .dockHome:hover{filter:brightness(1.05)}
+
+  /* ✅ Withdraw icon green + telegram style */
+  .withdrawGreen{ color: var(--green) !important; }
 </style>
 </head>
 
 <body>
+
 <div class="bgFlow"></div>
 <div class="blob b1"></div>
 <div class="blob b2"></div>
 <div class="blob b3"></div>
-<div class="blob b4"></div>
 <div class="shimmer"></div>
-
-<!-- Loading -->
-<div id="authGate">
-  <div class="gateCard">
-    <div class="gateLogo">📣</div>
-    <div class="gateTxt">Coinluxora</div>
-    <div class="gateSub">Securing your session…</div>
-    <div class="spinner"></div>
-  </div>
-</div>
 
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-<!-- Sidebar -->
+<!-- ✅ PREMIUM SIDEBAR -->
 <div id="sidebar" class="sidebar">
   <div class="sideTop">
-    <div class="sideBrand"><div class="sideBrandIcon">◈</div>COINLUXORA</div>
+    <div class="sideBrand">
+      <div class="sideBrandIcon">◈</div>
+      COINLUXORA
+    </div>
     <button class="closeBtn" onclick="closeMenu()">✕</button>
   </div>
 
   <div class="userTag">
-    <div class="userTagLeft">
-      <div class="t1">Logged in as</div>
-      <div id="sideName" class="t2">---</div>
-    </div>
-    <div class="sideAvatar" title="Profile photo">
-      <span id="sideAvatarFallback">👤</span>
-      <img id="sideAvatarImg" alt="Avatar"/>
-    </div>
+    <div class="t1">Logged in as</div>
+    <div id="sideEmail" class="t2">---</div>
   </div>
 
   <div class="menuGroupTitle">Navigation</div>
 
-  <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-  <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
-  <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
-  <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
-  <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-  <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
-  <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
+  <a class="sideItem" href="user-dashboard.html">
+    <div class="i">🏠</div>
+    <div>Dashboard <small>Main overview</small></div>
+  </a>
+
+  <a class="sideItem" href="deposits.html">
+    <div class="i">💳</div>
+    <div>Deposit <small>Fund your account</small></div>
+  </a>
+
+  <!-- ✅ Withdraw icon changed to telegram style -->
+  <a class="sideItem" href="withdraw.html">
+    <div class="i">✈️</div>
+    <div>Withdraw <small>Request payout</small></div>
+  </a>
+
+  <a class="sideItem" href="support.html">
+    <div class="i">🧑‍💻</div>
+    <div>Support <small>Contact & tickets</small></div>
+  </a>
+
+  <a class="sideItem" href="plans.html">
+    <div class="i">💼</div>
+    <div>Investment Plans <small>Start investing</small></div>
+  </a>
+
+  <a class="sideItem activeLink" href="profile.html">
+    <div class="i">👤</div>
+    <div>Profile / Settings <small>Account security</small></div>
+  </a>
 
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
-<div class="container">
-  <div class="topRow">
-    <div class="brand"><div class="brandIcon">📣</div>COIN</div>
-    <div class="headerActions">
-      <button class="avatarBtn" onclick="goProfile()" title="Profile">
-        <span id="avatarFallback" class="avatarFallback">👤</span>
-        <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
-      </button>
-      <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
-    </div>
+<div class="topbar">
+  <div class="toprow">
+    <div class="brand" onclick="goDashboard()"><span>COIN</span></div>
+    <button class="circleBtn" title="Menu" onclick="openMenu()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
+</div>
 
-  <div class="helloCard">
-    <div class="helloLeft">
-      <div class="helloLogo">📶</div>
-      <div>
-        <div class="chips">
-          <div class="miniChip">🟢 active</div>
-          <div class="miniChip" id="countryChip" style="display:none"></div>
+<div class="wrap">
+  <div class="pageTitle">User Profile</div>
+
+  <div class="card">
+    <div class="profileHead">
+      <div class="avatarWrap">
+        <div id="avatarEmoji" class="avatarEmoji">👤</div>
+        <img id="avatarImg" class="avatarImg" alt="Avatar"/>
+        <label class="avatarEdit" for="avatarInput" title="Upload photo">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </label>
+        <input id="avatarInput" type="file" accept="image/*"/>
+      </div>
+
+      <p class="bigName" id="bigName">Loading...</p>
+      <p class="bigEmail" id="bigEmail">Loading...</p>
+    </div>
+
+    <div class="field">
+      <div class="label">Name:</div>
+      <div class="row">
+        <input id="name" class="input" type="text" disabled />
+        <button class="miniBtn" onclick="toggleEdit('name')">✎</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">Email:</div>
+      <div class="row">
+        <input id="email" class="input" type="email" disabled />
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">PIN:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="pin" class="input" type="password" disabled placeholder="****"/>
+          <button class="eyeBtn" onclick="toggleEye('pin')" title="Show PIN">👁</button>
         </div>
-        <div class="helloTitle" id="greetingTitle">Greetings…</div>
-        <div class="helloSub" id="helloName">Loading…</div>
+        <button class="miniBtn" onclick="toggleEdit('pin')">✎</button>
       </div>
+      <div class="note">PIN is required for withdrawals and security approvals.</div>
     </div>
 
-    <div class="helloRight">
-      <div class="helloRightTop">
-        <div class="idChip" id="userIdChip">ID:</div>
-        <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
-      </div>
-      <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
-    </div>
-  </div>
-
-  <div class="balanceCard">
-    <div class="bTitle">Total Portfolio Value</div>
-    <div class="bValue" id="balance">--</div>
-    <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
-  </div>
-
-  <div class="box">
-    <h2>Top 10 Major Cryptos</h2>
-    <div class="small">Live prices refresh every 20 seconds.</div>
-    <div id="top10" class="top10Grid"><div class="card">Loading…</div></div>
-  </div>
-
-  <div class="box">
-    <h2>Order Book</h2>
-    <div class="small">Exchange-style order book (embedded).</div>
-
-    <div class="tvOBWrap">
-      <div class="tvOBHead">
-        <strong>Live Order Book</strong>
-        <select id="tvPair" onchange="loadTVOrderBook()">
-          <option value="BINANCE:BTCUSDT">BTC/USDT</option>
-          <option value="BINANCE:ETHUSDT">ETH/USDT</option>
-          <option value="BINANCE:SOLUSDT">SOL/USDT</option>
-          <option value="BINANCE:XRPUSDT">XRP/USDT</option>
-          <option value="BINANCE:BNBUSDT">BNB/USDT</option>
-          <option value="BINANCE:DOGEUSDT">DOGE/USDT</option>
+    <div class="field">
+      <div class="label">Country:</div>
+      <div class="row">
+        <select id="country" class="input" disabled>
+          <option value="">Select Country</option>
+          <option>Nigeria</option><option>United States</option><option>United Kingdom</option><option>Canada</option>
+          <option>Germany</option><option>France</option><option>South Africa</option><option>Kenya</option>
+          <option>Ghana</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>India</option>
+          <option>Australia</option><option>Brazil</option><option>Mexico</option><option>Japan</option><option>Singapore</option>
         </select>
+        <button class="miniBtn" onclick="toggleEdit('country')">✎</button>
       </div>
-      <iframe id="tvOrderBookFrame" class="tvFrame"></iframe>
+    </div>
+
+    <div class="field">
+      <div class="label">Phone:</div>
+      <div class="row">
+        <input id="phone" class="input" type="tel" disabled placeholder=""/>
+        <button class="miniBtn" onclick="toggleEdit('phone')">✎</button>
+      </div>
+    </div>
+
+    <button class="saveBtn" onclick="saveProfile()">💾 Save Profile Changes</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <div style="height:18px"></div>
+
+  <div class="card">
+    <div class="sectionTitle">Change Password</div>
+
+    <div class="field">
+      <div class="label">New Password:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="newPassword" class="input" type="password" placeholder="">
+          <button class="eyeBtn" onclick="toggleEye('newPassword')">👁</button>
+        </div>
+      </div>
+      <div class="note">Password must be at least 8 characters long</div>
+    </div>
+
+    <div class="field">
+      <div class="label">Confirm New Password:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="confirmNewPassword" class="input" type="password" placeholder="">
+          <button class="eyeBtn" onclick="toggleEye('confirmNewPassword')">👁</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="blueBtn" onclick="changePassword()">🔒 Change Password</button>
+
+    <div class="tips">
+      <div class="tipsTitle">Security Tips</div>
+      <ul>
+        <li>Use a strong password with letters, numbers, and symbols</li>
+        <li>Never share your password or PIN with anyone</li>
+        <li>Change your password regularly</li>
+        <li>Use different passwords for different accounts</li>
+      </ul>
     </div>
   </div>
 </div>
 
+<!-- ✅ ADVANCED BOTTOM NAV -->
 <div class="dock">
   <div class="dockInner">
     <div class="dockBar">
-      <div class="dockItem" onclick="goDepositAndClear()"><div class="ico">💳</div><div>Deposit</div></div>
-      <div class="dockItem" onclick="goWithdrawAndClear()"><div class="ico">➡</div><div>Withdraw</div></div>
+      <div class="dockItem" onclick="goDeposit()"><div class="ico">💳</div><div>Deposit</div></div>
+
+      <!-- ✅ Withdraw now telegram style + GREEN -->
+      <div class="dockItem" onclick="goWithdraw()">
+        <div class="ico withdrawGreen">✈️</div>
+        <div>Withdraw</div>
+      </div>
+
       <div class="dockHome" onclick="goDashboard()"><span>🏠</span></div>
+
       <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
-      <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
+      <div class="dockItem dockActive" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
     </div>
   </div>
 </div>
 
 <script>
 /* ============================================================
-   ✅ COINLUXORA AUTH GUARD (SESSION FIRST) - NO GLITCH
+   ✅ COINLUXORA AUTH GUARD (LOGIN + EMAIL VERIFIED REQUIRED)
    ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let currentUserEmail="";
-let currentUserId="";
+let currentUser = null;
 
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
-    const session = sessionData?.session;
-    if(!session){
+    if(!sessionData?.session){
       window.location.replace("login.html");
       return;
     }
-
     const { data, error } = await supabaseClient.auth.getUser();
     const user = data?.user;
     if(error || !user){
       window.location.replace("login.html");
       return;
     }
-
     if(!user.email_confirmed_at){
       await supabaseClient.auth.signOut();
       window.location.replace("verify.html?status=unverified");
       return;
     }
-
-    window.COINLUXORA_USER=user;
-    initWithUser(user);
-
+    currentUser = user;
+    document.getElementById("sideEmail").innerText = user.email;
+    await loadProfile();
   }catch(e){
     window.location.replace("login.html");
   }
 })();
 
 /* MENU */
-function openMenu(){ document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
-function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
-function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
 
 /* NAV */
+function goDashboard(){ window.location.href="user-dashboard.html"; }
+function goDeposit(){ window.location.href="deposits.html"; }
+function goWithdraw(){ window.location.href="withdraw.html"; }
 function goPlans(){ window.location.href="plans.html"; }
 function goProfile(){ window.location.href="profile.html"; }
-function goDepositAndClear(){ window.location.href="deposits.html"; }
-function goWithdrawAndClear(){ window.location.href="withdraw.html"; }
-function goDashboard(){ window.scrollTo({top:0,behavior:"smooth"}); }
 
-/* greeting */
-function setGreeting(){
-  const h = new Date().getHours();
-  let text="Greetings", emoji="✨";
-  if(h>=5 && h<12){ text="Good Morning"; emoji="🌞"; }
-  else if(h>=12 && h<17){ text="Good Afternoon"; emoji="☀️"; }
-  else { text="Good Evening"; emoji="🌙"; }
-  document.getElementById("greetingTitle").textContent = `${text} ${emoji}`;
+/* helpers */
+function toggleEdit(id){
+  const el = document.getElementById(id);
+  el.disabled = !el.disabled;
+  if(!el.disabled) el.focus();
 }
-function startClock(){
-  const dtEl=document.getElementById("dateTimeNow");
-  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const tick=()=>{
-    const now=new Date();
-    const dayName=days[now.getDay()];
-    const day=String(now.getDate()).padStart(2,"0");
-    const mon=months[now.getMonth()];
-    const yr=now.getFullYear();
-    let hh=now.getHours();
-    const ampm=hh>=12?"PM":"AM";
-    hh=hh%12; hh=hh?hh:12;
-    const hhs=String(hh).padStart(2,"0");
-    const mm=String(now.getMinutes()).padStart(2,"0");
-    const ss=String(now.getSeconds()).padStart(2,"0");
-    dtEl.textContent=`${dayName}, ${day} ${mon} ${yr} | ${hhs}:${mm}:${ss} ${ampm}`;
-  };
-  tick(); setInterval(tick,1000);
+function toggleEye(id){
+  const el = document.getElementById(id);
+  el.type = (el.type === "password") ? "text" : "password";
+}
+function setMsg(type, text){
+  const el = document.getElementById("msg");
+  if(type==="ok") el.innerHTML = `<span class="ok">${text}</span>`;
+  else if(type==="err") el.innerHTML = `<span class="err">${text}</span>`;
+  else el.textContent = text;
 }
 
-/* avatar */
-function setTopAvatar(avatarUrl){
-  const fallback=document.getElementById("avatarFallback");
-  const img=document.getElementById("avatarImgBtn");
+/* Load profile */
+async function loadProfile(){
+  if(!currentUser) return;
+
+  let dbRow = null;
+  const { data, error } = await supabaseClient
+    .from("users")
+    .select("full_name, phone, country, pin, avatar_url")
+    .eq("email", currentUser.email)
+    .maybeSingle();
+  if(!error && data) dbRow = data;
+
+  const md = currentUser.user_metadata || {};
+  const full_name = (dbRow?.full_name || md.full_name || "User");
+  const phone     = (dbRow?.phone || md.phone || "");
+  const country   = (dbRow?.country || md.country || "");
+  const pin       = (dbRow?.pin || md.pin || "");
+  const avatarUrl = (dbRow?.avatar_url || md.avatar_url || "");
+
+  document.getElementById("bigName").textContent = full_name;
+  document.getElementById("bigEmail").textContent = currentUser.email;
+
+  document.getElementById("name").value = full_name;
+  document.getElementById("email").value = currentUser.email;
+  document.getElementById("phone").value = phone;
+  document.getElementById("country").value = country;
+  document.getElementById("pin").value = pin ? pin : "****";
+
   if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
+    document.getElementById("avatarEmoji").style.display="none";
+    const img=document.getElementById("avatarImg");
+    img.src = avatarUrl + "?t=" + Date.now();
     img.style.display="block";
-    fallback.style.display="none";
-  }else{
-    img.style.display="none";
-    fallback.style.display="block";
-  }
-}
-function setSideAvatar(avatarUrl){
-  const fb=document.getElementById("sideAvatarFallback");
-  const img=document.getElementById("sideAvatarImg");
-  if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
-    img.style.display="block";
-    fb.style.display="none";
-  }else{
-    img.style.display="none";
-    fb.style.display="block";
-  }
-}
-function setNameEverywhere(fullName){
-  const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
-  document.getElementById("helloName").innerHTML=`<span class="ok">${nice}</span>`;
-  document.getElementById("sideName").textContent=nice;
-}
-
-/* flag */
-function isoToFlag(iso){
-  if(!iso || iso.length!==2) return "";
-  const code=iso.toUpperCase();
-  const A=0x1F1E6;
-  return String.fromCodePoint(...[...code].map(c=>A + c.charCodeAt(0)-65));
-}
-function setCountryChip(iso){
-  const el=document.getElementById("countryChip");
-  if(!iso){ el.style.display="none"; el.textContent=""; return; }
-  const flag=isoToFlag(iso);
-  if(!flag){ el.style.display="none"; el.textContent=""; return; }
-  el.textContent=`${flag} ${iso}`;
-  el.style.display="inline-flex";
-}
-async function detectCountryFromIP(){
-  try{
-    const res=await fetch("https://ipapi.co/json/");
-    const data=await res.json();
-    if(data?.country_code) return data.country_code.toUpperCase();
-  }catch(e){}
-  return "";
-}
-
-/* identity */
-async function loadDashboardIdentity(){
-  try{
-    const { data: row } = await supabaseClient
-      .from("users")
-      .select("full_name, avatar_url, country")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-
-    const md=(window.COINLUXORA_USER?.user_metadata||{});
-    const fullName=(row?.full_name || md.full_name || "User");
-    const avatarUrl=(row?.avatar_url || md.avatar_url || "");
-    setNameEverywhere(fullName);
-    setTopAvatar(avatarUrl);
-    setSideAvatar(avatarUrl);
-
-    const iso = await detectCountryFromIP(); // ✅ blank if fails
-    setCountryChip(iso);
-  }catch{
-    setNameEverywhere("User");
-    setTopAvatar("");
-    setSideAvatar("");
-    setCountryChip("");
   }
 }
 
-/* balance */
-async function loadBalance(){
-  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-  const bal = Number(data?.balance || 0).toFixed(2);
-  document.getElementById("balance").innerHTML = "$" + bal;
-}
-
-/* ✅ Top 10 live prices */
-const TOP10_IDS = ["bitcoin","ethereum","tether","binancecoin","solana","ripple","usd-coin","dogecoin","cardano","tron"];
-
-async function loadTop10(){
-  try{
-    const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" + TOP10_IDS.join(",") + "&order=market_cap_desc&sparkline=false&price_change_percentage=24h";
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const html = (data||[]).map(c=>{
-      const chg = Number(c.price_change_percentage_24h || 0);
-      const cls = chg>=0 ? "pos":"neg";
-      return `
-        <div class="topCoin">
-          <div class="tcL">
-            <img class="tcLogo" src="${c.image}" alt="${c.symbol}"/>
-            <div style="min-width:0">
-              <div class="tcName">${c.name}</div>
-              <div class="tcSym">${String(c.symbol||"").toUpperCase()}</div>
-            </div>
-          </div>
-          <div class="tcR">
-            <div class="tcPrice">$${Number(c.current_price||0).toLocaleString()}</div>
-            <div class="tcChg ${cls}">${chg>=0?"+":""}${chg.toFixed(2)}%</div>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    document.getElementById("top10").innerHTML = html || "<div class='card err'>Failed to load coins.</div>";
-  }catch(e){
-    document.getElementById("top10").innerHTML = "<div class='card err'>Failed to load coins.</div>";
+/* save profile */
+async function saveProfile(){
+  if(!currentUser){
+    setMsg("err","Session missing. Please login again.");
+    return;
   }
+  setMsg("", "Saving changes…");
+
+  const full_name = document.getElementById("name").value.trim();
+  const phone     = document.getElementById("phone").value.trim();
+  const country   = document.getElementById("country").value.trim();
+  const pinVal    = document.getElementById("pin").value.trim();
+
+  if(!full_name){
+    setMsg("err","Name cannot be empty.");
+    return;
+  }
+  const finalPin = (pinVal === "****") ? null : pinVal;
+
+  const { error: dbError } = await supabaseClient
+    .from("users")
+    .upsert([{
+      email: currentUser.email,
+      full_name,
+      phone,
+      country,
+      pin: finalPin
+    }], { onConflict: "email" });
+
+  if(dbError){
+    setMsg("err","DB save failed: " + dbError.message);
+    return;
+  }
+
+  const { error: mdError } = await supabaseClient.auth.updateUser({
+    data: { full_name, phone, country, pin: finalPin || "" }
+  });
+
+  if(mdError){
+    setMsg("err","Metadata save failed: " + mdError.message);
+    return;
+  }
+
+  document.getElementById("bigName").textContent = full_name;
+  ["name","phone","country","pin"].forEach(id => document.getElementById(id).disabled = true);
+
+  setMsg("ok","Profile updated successfully ✅");
 }
 
-/* ✅ TradingView OrderBook embed */
-function loadTVOrderBook(){
-  const pair = document.getElementById("tvPair").value;
+/* change password */
+async function changePassword(){
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmNew  = document.getElementById("confirmNewPassword").value;
 
-  const widgetUrl =
-    "https://www.tradingview.com/widgetembed/?frameElementId=tv_ob" +
-    "&symbol=" + encodeURIComponent(pair) +
-    "&interval=1&hidesidetoolbar=1&symboledit=1&saveimage=0&toolbarbg=rgba(0,0,0,0)" +
-    "&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1";
+  if(newPassword.length < 8){
+    setMsg("err","New password must be at least 8 characters.");
+    return;
+  }
+  if(newPassword !== confirmNew){
+    setMsg("err","New passwords do not match.");
+    return;
+  }
 
-  document.getElementById("tvOrderBookFrame").src = widgetUrl;
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+  if(error){
+    setMsg("err", error.message);
+    return;
+  }
+
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmNewPassword").value = "";
+  setMsg("ok","Password changed successfully ✅");
 }
 
 /* logout */
@@ -854,25 +758,66 @@ async function logout(){
   window.location.replace("login.html");
 }
 
-/* init */
-function initWithUser(user){
-  currentUserEmail=user.email;
-  currentUserId=user.id;
+/* AVATAR UPLOAD */
+document.getElementById("avatarInput").addEventListener("change", async (e)=>{
+  try{
+    const file = e.target.files?.[0];
+    if(!file || !currentUser) return;
 
-  setGreeting();
-  startClock();
+    setMsg("", "Uploading photo…");
 
-  document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+    if(!file.type.startsWith("image/")){
+      setMsg("err","Please select an image file.");
+      return;
+    }
+    if(file.size > 2 * 1024 * 1024){
+      setMsg("err","Image too large (max 2MB).");
+      return;
+    }
 
-  hideGate();
-  loadDashboardIdentity();
-  loadBalance();
+    const ext = file.name.split(".").pop().toLowerCase();
+    const path = `${currentUser.id}/avatar.${ext}`;
 
-  loadTop10();
-  setInterval(loadTop10, 20000);
+    const { error: upErr } = await supabaseClient.storage.from("avatars")
+      .upload(path, file, { upsert:true, cacheControl:"3600" });
 
-  loadTVOrderBook();
-}
+    if(upErr){
+      setMsg("err","Avatar upload failed: " + upErr.message);
+      return;
+    }
+
+    const { data: pub } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+    const avatarUrl = pub?.publicUrl;
+    if(!avatarUrl){
+      setMsg("err","Could not fetch avatar url.");
+      return;
+    }
+
+    document.getElementById("avatarEmoji").style.display="none";
+    const img=document.getElementById("avatarImg");
+    img.src = avatarUrl + "?t=" + Date.now();
+    img.style.display="block";
+
+    const { error: dbError } = await supabaseClient
+      .from("users")
+      .upsert([{ email: currentUser.email, avatar_url: avatarUrl }], { onConflict:"email" });
+
+    if(dbError){
+      setMsg("err","DB avatar save failed: " + dbError.message);
+      return;
+    }
+
+    const { error: mdError } = await supabaseClient.auth.updateUser({ data: { avatar_url: avatarUrl } });
+    if(mdError){
+      setMsg("err","Metadata avatar save failed: " + mdError.message);
+      return;
+    }
+
+    setMsg("ok","Profile photo updated ✅");
+  }catch(err){
+    setMsg("err","Upload failed.");
+  }
+});
 </script>
 
 </body>
