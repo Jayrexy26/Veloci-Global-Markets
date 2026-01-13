@@ -52,8 +52,6 @@
       radial-gradient(900px 520px at 40% 90%, rgba(124,77,255,.20), transparent 60%),
       linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
   }
-
-  /* moving light blobs */
   .blob{
     position:fixed;
     width:520px;
@@ -85,7 +83,6 @@
     100% { transform: translate(0,0) scale(1); }
   }
 
-  /* subtle animated shimmer layer */
   .shimmer{
     position:fixed;
     inset:0;
@@ -136,6 +133,8 @@
     min-width:140px;
     border:1px solid rgba(255,255,255,.14);
     box-shadow:0 18px 50px rgba(109,87,255,.18);
+    cursor:pointer;
+    user-select:none;
   }
   .brand svg{width:22px;height:22px}
   .brand span{font-size:18px}
@@ -160,6 +159,61 @@
   .circleBtn svg{width:22px;height:22px}
 
   /* =========================================================
+     Menu sidebar (for Profile page)
+     ========================================================= */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,.65);
+    display:none; z-index:999;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.show{display:block;}
+  .sidebar{
+    position:fixed; top:0; left:-290px;
+    width:270px; height:100vh;
+    background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+    border-right:1px solid rgba(255,255,255,.12);
+    padding:16px;
+    transition:.28s ease;
+    z-index:1000;
+    box-shadow:0 20px 80px rgba(0,0,0,.6);
+  }
+  .sidebar.open{ left:0; }
+
+  .brandRow{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .brandSide{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+  .closeBtn{
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.14);
+    color:var(--text);
+    border-radius:12px;padding:8px 12px;
+    font-weight:1000;
+  }
+  .userTag{
+    padding:12px;border-radius:16px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.06);
+    margin-bottom:12px;
+  }
+  .sideItem{
+    display:flex;gap:10px;align-items:center;
+    padding:12px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;margin-bottom:10px;
+    color:var(--text);
+    background:rgba(0,0,0,.22);
+    font-weight:1000;
+    text-decoration:none;
+  }
+  .sideItem:hover{background:rgba(255,255,255,.08)}
+  .activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+  .sideLogout{
+    background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+    color:#020617;border:none;width:100%;
+    padding:14px;border-radius:16px;font-weight:1000;cursor:pointer
+  }
+
+  /* =========================================================
      Page content
      ========================================================= */
   .wrap{
@@ -181,21 +235,6 @@
     margin:0;
     letter-spacing:-.5px;
   }
-  .backBtn{
-    border:none;
-    cursor:pointer;
-    border-radius:14px;
-    padding:10px 14px;
-    font-weight:1000;
-    color:#9bdcff;
-    background:rgba(56,189,248,.10);
-    border:1px solid rgba(56,189,248,.25);
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .backBtn:hover{background:rgba(56,189,248,.14)}
-  .backBtn svg{width:20px;height:20px}
 
   .card{
     border:1px solid rgba(255,255,255,.12);
@@ -323,7 +362,6 @@
     box-shadow:0 18px 55px rgba(34,197,94,.18);
   }
   .saveBtn:active{transform:translateY(1px)}
-  .saveBtn svg{width:22px;height:22px}
 
   .sectionTitle{
     font-size:24px;
@@ -349,7 +387,6 @@
     box-shadow:0 18px 55px rgba(91,108,255,.22);
   }
   .blueBtn:active{transform:translateY(1px)}
-  .blueBtn svg{width:22px;height:22px}
 
   .tips{
     margin-top:18px;
@@ -437,10 +474,37 @@
 <div class="blob b3"></div>
 <div class="shimmer"></div>
 
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+  <div class="brandRow">
+    <div class="brandSide">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
+  </div>
+
+  <div class="userTag">
+    <div style="color:rgba(234,240,255,.55);font-weight:1000;font-size:12px;">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
+
+  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw</a>
+  <a class="sideItem" href="plans.html">💼 Plans</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support</a>
+
+  <a class="sideItem activeLink" href="profile.html">👤 Profile / Settings</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="toprow">
-    <div class="brand">
+    <!-- ✅ COIN LOGO now opens dashboard -->
+    <div class="brand" onclick="goDashboard()">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 2c3.9 0 7 3.1 7 7 0 3.3-2.3 6.1-5.4 6.8l1.5 3.2c.3.6 0 1.4-.7 1.7-.6.3-1.4 0-1.7-.7L11 18.7H8.6c-1 0-1.8-.8-1.8-1.8V16c-1.8-1.3-3-3.4-3-5.9 0-3.9 3.1-7 7-7Z" stroke="white" stroke-width="1.6"/>
       </svg>
@@ -448,12 +512,9 @@
     </div>
 
     <div class="topActions">
-      <button class="circleBtn" title="Theme">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 21a9 9 0 1 1 9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button class="circleBtn" title="Menu" onclick="window.location.href='user-dashboard.html'">
+      <!-- ✅ REMOVED the extra circle button -->
+      <!-- ✅ menu button now opens sidebar -->
+      <button class="circleBtn" title="Menu" onclick="openMenu()">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
@@ -465,12 +526,6 @@
 <div class="wrap">
   <div class="headRow">
     <h2 class="pageTitle">User Profile</h2>
-    <button class="backBtn" onclick="goDashboard()">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Back to Dashboard
-    </button>
   </div>
 
   <!-- PROFILE CARD -->
@@ -574,7 +629,7 @@
     <div class="field">
       <div class="label">Phone:</div>
       <div class="row">
-        <input id="phone" class="input" type="tel" disabled />
+        <input id="phone" class="input" type="tel" disabled placeholder=""/>
         <button class="miniBtn" onclick="toggleEdit('phone')" title="Edit Phone">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
@@ -583,13 +638,7 @@
       </div>
     </div>
 
-    <button class="saveBtn" onclick="saveProfile()">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M5 21h14a2 2 0 0 0 2-2V8l-4-4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" fill="white" opacity=".95"/>
-      </svg>
-      Save Profile Changes
-    </button>
-
+    <button class="saveBtn" onclick="saveProfile()">Save Profile Changes</button>
     <div id="msg" class="msg"></div>
   </div>
 
@@ -598,21 +647,6 @@
   <!-- CHANGE PASSWORD CARD -->
   <div class="card">
     <div class="sectionTitle">Change Password</div>
-
-    <div class="field">
-      <div class="label">Current Password:</div>
-      <div class="row">
-        <div class="pwWrap">
-          <input id="currentPassword" class="input" type="password" placeholder="********">
-          <button class="eyeBtn" onclick="toggleEye('currentPassword')" title="Show">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
 
     <div class="field">
       <div class="label">New Password:</div>
@@ -645,57 +679,31 @@
       </div>
     </div>
 
-    <button class="blueBtn" onclick="changePassword()">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="white" stroke-width="2.2"/>
-        <path d="M6 10h12v10H6V10Z" fill="white" opacity=".95"/>
-      </svg>
-      Change Password
-    </button>
-
-    <div class="tips">
-      <div class="tipsTitle">Security Tips</div>
-      <ul>
-        <li>Use a strong password with letters, numbers, and symbols</li>
-        <li>Never share your password or PIN with anyone</li>
-        <li>Change your password regularly</li>
-        <li>Use different passwords for different accounts</li>
-      </ul>
-    </div>
+    <button class="blueBtn" onclick="changePassword()">Change Password</button>
   </div>
+
 </div>
 
 <!-- bottom nav -->
 <div class="bottomNav">
   <div class="navWrap">
-    <a class="navItem" href="explore.html">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 21l9-4 9 4-9-19Z" stroke="currentColor" stroke-width="2"/></svg>
-      Explore
-    </a>
-    <a class="navItem" href="history.html">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      History
-    </a>
-
-    <a class="home" href="user-dashboard.html" title="Home">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M4 11 12 4l8 7v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/></svg>
-    </a>
-
-    <a class="navItem active" href="profile.html">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/><path d="M4 22c1-4 4-6 8-6s7 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Profile
-    </a>
+    <a class="navItem" href="explore.html">Explore</a>
+    <a class="navItem" href="history.html">History</a>
+    <a class="home" href="user-dashboard.html" title="Home">🏠</a>
+    <a class="navItem active" href="profile.html">Profile</a>
   </div>
 </div>
 
 <script>
 /* ============================================================
    ✅ COINLUXORA AUTH GUARD (LOGIN + EMAIL VERIFIED REQUIRED)
-   (Auto-added - protected page)
+   Auto-added - protected page
    ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentEmail = "";
 
 (async function authGuard(){
   try{
@@ -720,18 +728,31 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
     window.COINLUXORA_USER = user;
-    loadProfile(user);
+    currentEmail = user.email;
+
+    document.getElementById("sideEmail").innerText = currentEmail;
+
+    // Load from user_metadata (works even if users table has no columns)
+    loadProfileFromMetadata(user);
+
   }catch(e){
     window.location.replace("login.html");
   }
 })();
 
-/* =====================
-   UI functions
-===================== */
-function goDashboard(){
-  window.location.href="user-dashboard.html";
+/* MENU */
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
 }
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+}
+
+/* NAV */
+function goDashboard(){ window.location.href="user-dashboard.html"; }
+
 function toggleEdit(id){
   const el = document.getElementById(id);
   el.disabled = !el.disabled;
@@ -748,20 +769,14 @@ function setMsg(type, text){
   else el.textContent = text;
 }
 
-/* =====================
-   Load profile
-===================== */
-async function loadProfile(user){
-  const { data } = await supabaseClient
-    .from("users")
-    .select("*")
-    .eq("email", user.email)
-    .single();
+/* ✅ Load profile from metadata (NO users table column errors) */
+function loadProfileFromMetadata(user){
+  const md = user.user_metadata || {};
 
-  const full_name = data?.full_name || user.user_metadata?.full_name || "User";
-  const phone = data?.phone || user.user_metadata?.phone || "";
-  const country = data?.country || user.user_metadata?.country || "";
-  const pin = data?.pin || "";
+  const full_name = md.full_name || "User";
+  const phone = md.phone || "";
+  const country = md.country || "";
+  const pin = md.pin || "";
 
   document.getElementById("bigName").textContent = full_name;
   document.getElementById("bigEmail").textContent = user.email;
@@ -773,9 +788,7 @@ async function loadProfile(user){
   document.getElementById("pin").value = pin ? pin : "****";
 }
 
-/* =====================
-   Save profile
-===================== */
+/* ✅ Save profile to user_metadata (stable) */
 async function saveProfile(){
   setMsg("", "Saving changes…");
 
@@ -795,24 +808,19 @@ async function saveProfile(){
     return;
   }
 
-  const { error } = await supabaseClient
-    .from("users")
-    .upsert([{
-      email: user.email,
+  const { error } = await supabaseClient.auth.updateUser({
+    data: {
       full_name,
       phone,
       country,
-      pin: (pinVal === "****" ? null : pinVal)
-    }], { onConflict: "email" });
+      pin: (pinVal === "****" ? "" : pinVal)
+    }
+  });
 
   if(error){
     setMsg("err", error.message);
     return;
   }
-
-  await supabaseClient.auth.updateUser({
-    data: { full_name, phone, country }
-  });
 
   document.getElementById("bigName").textContent = full_name;
 
@@ -821,16 +829,8 @@ async function saveProfile(){
   setMsg("ok","Profile updated successfully ✅");
 }
 
-/* =====================
-   Change password
-===================== */
+/* Change password */
 async function changePassword(){
-  const user = window.COINLUXORA_USER;
-  if(!user){
-    setMsg("err","Session missing. Please login again.");
-    return;
-  }
-
   const newPassword = document.getElementById("newPassword").value;
   const confirmNew  = document.getElementById("confirmNewPassword").value;
 
@@ -850,11 +850,15 @@ async function changePassword(){
     return;
   }
 
-  document.getElementById("currentPassword").value = "";
   document.getElementById("newPassword").value = "";
   document.getElementById("confirmNewPassword").value = "";
 
   setMsg("ok","Password changed successfully ✅");
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.replace("login.html");
 }
 </script>
 
