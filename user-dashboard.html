@@ -250,7 +250,7 @@ body{
   border:1px solid rgba(255,255,255,.10);
   background:
     radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
-    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,0.24), transparent 55%),
+    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,.24), transparent 55%),
     linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
   color:white;
   box-shadow: 0 26px 60px rgba(0,0,0,0.25);
@@ -295,7 +295,7 @@ body{
 .pos{color:#34d399}
 .neg{color:#f87171}
 
-/* ===== TradingView Order Book ===== */
+/* ✅ TRADINGVIEW ORDERBOOK EMBED */
 .tvOBWrap{
   margin-top:12px;
   border-radius:18px;
@@ -484,7 +484,6 @@ body{
 }
 .dockItem .ico{font-size:18px;opacity:.95}
 .dockItem:hover{background:rgba(255,255,255,.06)}
-.dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
 .dockHome{
   width:78px;height:78px;border-radius:26px;
   background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
@@ -497,17 +496,6 @@ body{
 }
 .dockHome span{font-size:28px;color:white}
 .dockHome:hover{filter:brightness(1.05)}
-.dockBadge{
-  position:absolute;
-  top:2px;
-  right:18px;
-  min-width:18px;height:18px;
-  padding:0 6px;border-radius:999px;
-  background:#f87171;color:#020617;
-  font-weight:1000;font-size:11px;
-  display:none;align-items:center;justify-content:center;
-  border:1px solid rgba(255,255,255,.18);
-}
 </style>
 </head>
 
@@ -534,10 +522,7 @@ body{
 <!-- Sidebar -->
 <div id="sidebar" class="sidebar">
   <div class="sideTop">
-    <div class="sideBrand">
-      <div class="sideBrandIcon">◈</div>
-      COINLUXORA
-    </div>
+    <div class="sideBrand"><div class="sideBrandIcon">◈</div>COINLUXORA</div>
     <button class="closeBtn" onclick="closeMenu()">✕</button>
   </div>
 
@@ -566,7 +551,6 @@ body{
 </div>
 
 <div class="container">
-
   <div class="topRow">
     <div class="brand"><div class="brandIcon">📣</div>COIN</div>
     <div class="headerActions">
@@ -607,22 +591,14 @@ body{
   </div>
 
   <div class="box">
-    <h2>Active Investment Plan</h2>
-    <div id="planMsg" class="small">Loading…</div>
-    <div id="planBox"></div>
-  </div>
-
-  <!-- ✅ Top 10 major coins -->
-  <div class="box">
     <h2>Top 10 Major Cryptos</h2>
     <div class="small">Live prices refresh every 20 seconds.</div>
     <div id="top10" class="top10Grid"><div class="card">Loading…</div></div>
   </div>
 
-  <!-- ✅ TradingView Order Book -->
   <div class="box">
     <h2>Order Book</h2>
-    <div class="small">Professional exchange-style order book (always works in browser).</div>
+    <div class="small">Exchange-style order book (embedded).</div>
 
     <div class="tvOBWrap">
       <div class="tvOBHead">
@@ -636,26 +612,16 @@ body{
           <option value="BINANCE:DOGEUSDT">DOGE/USDT</option>
         </select>
       </div>
-
-      <!-- TradingView orderbook -->
       <iframe id="tvOrderBookFrame" class="tvFrame"></iframe>
     </div>
   </div>
-
 </div>
 
-<!-- DOCK -->
 <div class="dock">
   <div class="dockInner">
     <div class="dockBar">
-      <div class="dockItem" onclick="goDepositAndClear()">
-        <div id="badgeDepositDock" class="dockBadge">0</div>
-        <div class="ico">💳</div><div>Deposit</div>
-      </div>
-      <div class="dockItem" onclick="goWithdrawAndClear()">
-        <div id="badgeWithdrawDock" class="dockBadge">0</div>
-        <div class="ico">➡</div><div>Withdraw</div>
-      </div>
+      <div class="dockItem" onclick="goDepositAndClear()"><div class="ico">💳</div><div>Deposit</div></div>
+      <div class="dockItem" onclick="goWithdrawAndClear()"><div class="ico">➡</div><div>Withdraw</div></div>
       <div class="dockHome" onclick="goDashboard()"><span>🏠</span></div>
       <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
       <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
@@ -665,37 +631,49 @@ body{
 
 <script>
 /* ============================================================
-   ✅ AUTH GUARD
+   ✅ COINLUXORA AUTH GUARD (SESSION FIRST) - NO GLITCH
    ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="YOUR_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
 let currentUserId="";
 
-/* ===== auth ===== */
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
     const session = sessionData?.session;
-    if(!session){ window.location.replace("login.html"); return; }
+    if(!session){
+      window.location.replace("login.html");
+      return;
+    }
 
     const { data, error } = await supabaseClient.auth.getUser();
     const user = data?.user;
-    if(error || !user){ window.location.replace("login.html"); return; }
+    if(error || !user){
+      window.location.replace("login.html");
+      return;
+    }
 
     if(!user.email_confirmed_at){
       await supabaseClient.auth.signOut();
       window.location.replace("verify.html?status=unverified");
       return;
     }
+
     window.COINLUXORA_USER=user;
     initWithUser(user);
+
   }catch(e){
     window.location.replace("login.html");
   }
 })();
+
+/* MENU */
+function openMenu(){ document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
+function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
+function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
 
 /* NAV */
 function goPlans(){ window.location.href="plans.html"; }
@@ -703,10 +681,6 @@ function goProfile(){ window.location.href="profile.html"; }
 function goDepositAndClear(){ window.location.href="deposits.html"; }
 function goWithdrawAndClear(){ window.location.href="withdraw.html"; }
 function goDashboard(){ window.scrollTo({top:0,behavior:"smooth"}); }
-
-function openMenu(){ document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
-function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
-function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
 
 /* greeting */
 function setGreeting(){
@@ -736,30 +710,6 @@ function startClock(){
     dtEl.textContent=`${dayName}, ${day} ${mon} ${yr} | ${hhs}:${mm}:${ss} ${ampm}`;
   };
   tick(); setInterval(tick,1000);
-}
-
-/* flag helper */
-function isoToFlag(iso){
-  if(!iso || iso.length!==2) return "";
-  const code=iso.toUpperCase();
-  const A=0x1F1E6;
-  return String.fromCodePoint(...[...code].map(c=>A + c.charCodeAt(0)-65));
-}
-function setCountryChip(iso){
-  const el=document.getElementById("countryChip");
-  if(!iso){ el.style.display="none"; el.textContent=""; return; }
-  const flag=isoToFlag(iso);
-  if(!flag){ el.style.display="none"; el.textContent=""; return; }
-  el.textContent=`${flag} ${iso}`;
-  el.style.display="inline-flex";
-}
-async function detectCountryFromIP(){
-  try{
-    const res=await fetch("https://ipapi.co/json/");
-    const data=await res.json();
-    if(data?.country_code) return data.country_code.toUpperCase();
-  }catch(e){}
-  return "";
 }
 
 /* avatar */
@@ -793,6 +743,30 @@ function setNameEverywhere(fullName){
   document.getElementById("sideName").textContent=nice;
 }
 
+/* flag */
+function isoToFlag(iso){
+  if(!iso || iso.length!==2) return "";
+  const code=iso.toUpperCase();
+  const A=0x1F1E6;
+  return String.fromCodePoint(...[...code].map(c=>A + c.charCodeAt(0)-65));
+}
+function setCountryChip(iso){
+  const el=document.getElementById("countryChip");
+  if(!iso){ el.style.display="none"; el.textContent=""; return; }
+  const flag=isoToFlag(iso);
+  if(!flag){ el.style.display="none"; el.textContent=""; return; }
+  el.textContent=`${flag} ${iso}`;
+  el.style.display="inline-flex";
+}
+async function detectCountryFromIP(){
+  try{
+    const res=await fetch("https://ipapi.co/json/");
+    const data=await res.json();
+    if(data?.country_code) return data.country_code.toUpperCase();
+  }catch(e){}
+  return "";
+}
+
 /* identity */
 async function loadDashboardIdentity(){
   try{
@@ -805,14 +779,11 @@ async function loadDashboardIdentity(){
     const md=(window.COINLUXORA_USER?.user_metadata||{});
     const fullName=(row?.full_name || md.full_name || "User");
     const avatarUrl=(row?.avatar_url || md.avatar_url || "");
-    const country = (row?.country || md.country || "");
     setNameEverywhere(fullName);
     setTopAvatar(avatarUrl);
     setSideAvatar(avatarUrl);
 
-    let iso="";
-    if(country) iso = "";
-    if(!iso) iso = await detectCountryFromIP();
+    const iso = await detectCountryFromIP(); // ✅ blank if fails
     setCountryChip(iso);
   }catch{
     setNameEverywhere("User");
@@ -829,7 +800,7 @@ async function loadBalance(){
   document.getElementById("balance").innerHTML = "$" + bal;
 }
 
-/* ===== Top 10 live prices ===== */
+/* ✅ Top 10 live prices */
 const TOP10_IDS = ["bitcoin","ethereum","tether","binancecoin","solana","ripple","usd-coin","dogecoin","cardano","tron"];
 
 async function loadTop10(){
@@ -864,16 +835,15 @@ async function loadTop10(){
   }
 }
 
-/* ===== TradingView OrderBook ===== */
+/* ✅ TradingView OrderBook embed */
 function loadTVOrderBook(){
   const pair = document.getElementById("tvPair").value;
-  // TradingView orderbook widget frame
+
   const widgetUrl =
     "https://www.tradingview.com/widgetembed/?frameElementId=tv_ob" +
     "&symbol=" + encodeURIComponent(pair) +
     "&interval=1&hidesidetoolbar=1&symboledit=1&saveimage=0&toolbarbg=rgba(0,0,0,0)" +
-    "&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1" +
-    "&widget_type=orderbook";
+    "&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1";
 
   document.getElementById("tvOrderBookFrame").src = widgetUrl;
 }
@@ -891,6 +861,7 @@ function initWithUser(user){
 
   setGreeting();
   startClock();
+
   document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
   hideGate();
@@ -898,7 +869,7 @@ function initWithUser(user){
   loadBalance();
 
   loadTop10();
-  setInterval(loadTop10, 20000); // refresh every 20s
+  setInterval(loadTop10, 20000);
 
   loadTVOrderBook();
 }
