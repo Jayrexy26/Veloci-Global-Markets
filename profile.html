@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>User Profile - Coinluxora</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#f3f5f9;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --stroke:#e5e7eb;
+    --blue:#3b82f6;
+    --blue2:#2563eb;
+    --green:#22c55e;
+    --shadow:0 14px 40px rgba(2,6,23,.08);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-bottom:90px; /* bottom nav */
+  }
+
+  /* top header */
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:12px 14px;
+    background:rgba(243,245,249,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom:1px solid rgba(0,0,0,0.03);
+  }
+  .toprow{
+    max-width:980px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:linear-gradient(180deg,#6d5bd0,#5a64d6);
+    color:#fff;
+    border-radius:14px;
+    padding:12px 14px;
+    font-weight:900;
+    letter-spacing:0.5px;
+    min-width:140px;
+    box-shadow: 0 14px 28px rgba(88,94,210,.25);
+  }
+  .brand svg{width:22px;height:22px}
+  .brand span{font-size:18px}
+
+  .topActions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .circleBtn{
+    width:44px;height:44px;
+    border-radius:999px;
+    border:1px solid var(--stroke);
+    background:#fff;
+    display:grid;
+    place-items:center;
+    box-shadow:0 10px 24px rgba(2,6,23,.08);
+    cursor:pointer;
+  }
+  .circleBtn svg{width:22px;height:22px; color:#64748b}
+
+  /* page content */
+  .wrap{
+    max-width:980px;
+    margin:0 auto;
+    padding:14px;
+  }
+  .headRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:8px;
+    margin-bottom:12px;
+  }
+  .pageTitle{
+    font-size:30px;
+    font-weight:900;
+    margin:0;
+  }
+  .backBtn{
+    border:none;
+    cursor:pointer;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:900;
+    color:var(--blue2);
+    background:#e8f1ff;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .backBtn svg{width:20px;height:20px}
+
+  .card{
+    border:1px solid var(--stroke);
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+    overflow:hidden;
+  }
+
+  /* profile header */
+  .profileHead{
+    text-align:center;
+    padding:14px 0 6px;
+  }
+  .profileIcon{
+    width:110px;height:110px;
+    margin:0 auto 10px;
+    border-radius:999px;
+    background:#fff;
+    display:grid;
+    place-items:center;
+  }
+  .profileIcon svg{
+    width:90px;height:90px;
+    opacity:.95;
+  }
+
+  .bigName{
+    font-size:26px;
+    font-weight:900;
+    color:#94a3b8;
+    margin:0;
+  }
+  .bigEmail{
+    margin:6px 0 0 0;
+    color:#94a3b8;
+    font-size:18px;
+  }
+
+  /* form rows */
+  .field{
+    margin-top:16px;
+  }
+  .label{
+    font-size:18px;
+    font-weight:900;
+    color:#94a3b8;
+    margin:0 0 10px;
+  }
+  .row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .input, select{
+    flex:1;
+    height:48px;
+    border:1px solid #d1d5db;
+    border-radius:6px;
+    padding:10px 12px;
+    font-size:16px;
+    outline:none;
+    background:#fff;
+  }
+  .input:disabled{
+    background:#f8fafc;
+    color:#334155;
+  }
+
+  .miniBtn{
+    width:48px;
+    height:48px;
+    border:none;
+    border-radius:6px;
+    background:var(--blue);
+    color:#fff;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    box-shadow:0 10px 22px rgba(37,99,235,.18);
+  }
+  .miniBtn svg{width:22px;height:22px}
+  .miniBtn:active{transform:translateY(1px)}
+
+  .saveBtn{
+    margin-top:18px;
+    width:100%;
+    height:56px;
+    border:none;
+    border-radius:6px;
+    background:var(--green);
+    color:#fff;
+    cursor:pointer;
+    font-weight:900;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    box-shadow:0 14px 30px rgba(34,197,94,.18);
+  }
+  .saveBtn svg{width:22px;height:22px}
+  .saveBtn:active{transform:translateY(1px)}
+
+  /* change password section */
+  .sectionTitle{
+    font-size:26px;
+    font-weight:900;
+    color:#94a3b8;
+    margin:0 0 10px;
+  }
+  .note{
+    margin-top:8px;
+    font-size:14px;
+    color:#6b7280;
+  }
+  .pwWrap{position:relative; flex:1;}
+  .pwWrap .input{padding-right:48px;}
+  .eyeBtn{
+    position:absolute;
+    right:10px;
+    top:50%;
+    transform:translateY(-50%);
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    width:34px;height:34px;
+    color:#64748b;
+  }
+  .eyeBtn svg{width:22px;height:22px}
+
+  .blueBtn{
+    margin-top:18px;
+    width:100%;
+    height:58px;
+    border:none;
+    border-radius:6px;
+    background:linear-gradient(180deg,#2f6cf3,#245fe3);
+    color:#fff;
+    cursor:pointer;
+    font-weight:900;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    box-shadow:0 14px 30px rgba(37,99,235,.22);
+  }
+  .blueBtn svg{width:22px;height:22px}
+  .blueBtn:active{transform:translateY(1px)}
+
+  .tips{
+    margin-top:18px;
+    border-top:1px solid #eef2f7;
+    padding-top:14px;
+  }
+  .tipsTitle{
+    font-weight:900;
+    color:#94a3b8;
+    font-size:18px;
+    margin:0 0 10px;
+  }
+  ul{margin:0;padding-left:18px;color:#4b5563;line-height:1.7}
+
+  /* message */
+  .msg{
+    margin-top:12px;
+    min-height:18px;
+    text-align:center;
+    font-size:14px;
+    color:#6b7280;
+  }
+  .ok{color:#16a34a;font-weight:900}
+  .err{color:#ef4444;font-weight:900}
+
+  /* bottom nav */
+  .bottomNav{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    z-index:50;
+    padding:10px 14px 18px;
+    background:rgba(255,255,255,0.96);
+    border-top:1px solid rgba(0,0,0,0.06);
+  }
+  .navWrap{
+    max-width:980px;
+    margin:0 auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:28px;
+    background:#fff;
+    box-shadow:0 18px 40px rgba(2,6,23,.10);
+  }
+  .navItem{
+    width:70px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    color:#9ca3af;
+    font-size:12px;
+    font-weight:800;
+    text-decoration:none;
+  }
+  .navItem svg{width:22px;height:22px}
+  .home{
+    width:74px;height:74px;
+    border-radius:22px;
+    background:linear-gradient(180deg,#6d5bd0,#5a64d6);
+    display:grid;
+    place-items:center;
+    margin-top:-34px;
+    box-shadow:0 18px 38px rgba(88,94,210,.26);
+    color:#fff;
+    text-decoration:none;
+  }
+  .home svg{width:30px;height:30px}
+  .active{color:#111827}
+</style>
+</head>
+
+<body>
+
+<!-- ==============================
+     TOP BAR (like screenshot)
+================================ -->
+<div class="topbar">
+  <div class="toprow">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2c3.9 0 7 3.1 7 7 0 3.3-2.3 6.1-5.4 6.8l1.5 3.2c.3.6 0 1.4-.7 1.7-.6.3-1.4 0-1.7-.7L11 18.7H8.6c-1 0-1.8-.8-1.8-1.8V16c-1.8-1.3-3-3.4-3-5.9 0-3.9 3.1-7 7-7Z" stroke="white" stroke-width="1.6"/>
+      </svg>
+      <span>COIN</span>
+    </div>
+
+    <div class="topActions">
+      <button class="circleBtn" title="Theme">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 21a9 9 0 1 1 9-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="circleBtn" title="Menu">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="headRow">
+    <h2 class="pageTitle">User Profile</h2>
+    <button class="backBtn" onclick="goDashboard()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M15 18 9 12l6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back to Dashboard
+    </button>
+  </div>
+
+  <!-- PROFILE SETTINGS CARD -->
+  <div class="card">
+    <div class="profileHead">
+      <div class="profileIcon" aria-hidden="true">
+        <svg viewBox="0 0 120 120" fill="none">
+          <path d="M60 22c19 0 34 15 34 34 0 14-8 26-20 31l6 14c3 7-7 12-11 5l-6-12H47c-9 0-16-7-16-16v-4C21 66 16 57 16 46c0-19 15-34 34-34Z" stroke="black" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M48 60l-8-8c-2-2-6-2-8 0s-2 6 0 8l13 13c2 2 6 2 8 0l30-30c2-2 2-6 0-8s-6-2-8 0L48 60Z" fill="black"/>
+        </svg>
+      </div>
+
+      <p class="bigName" id="bigName">Loading...</p>
+      <p class="bigEmail" id="bigEmail">Loading...</p>
+    </div>
+
+    <div class="field">
+      <div class="label">Name:</div>
+      <div class="row">
+        <input id="name" class="input" type="text" disabled />
+        <button class="miniBtn" onclick="toggleEdit('name')" title="Edit Name">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">Email:</div>
+      <div class="row">
+        <input id="email" class="input" type="email" disabled />
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">PIN:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="pin" class="input" type="password" disabled placeholder="****"/>
+          <button class="eyeBtn" onclick="toggleEye('pin')" title="Show PIN">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+        <button class="miniBtn" onclick="toggleEdit('pin')" title="Edit PIN">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="note">PIN is required for withdrawals and security approvals.</div>
+    </div>
+
+    <div class="field">
+      <div class="label">Country:</div>
+      <div class="row">
+        <select id="country" class="input" disabled>
+          <option value="">Select Country</option>
+          <option>Nigeria</option><option>United States</option><option>United Kingdom</option><option>Canada</option>
+          <option>Germany</option><option>France</option><option>South Africa</option><option>Kenya</option>
+          <option>Ghana</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>India</option>
+          <option>Australia</option><option>Brazil</option><option>Mexico</option><option>Japan</option><option>Singapore</option>
+          <option>Afghanistan</option><option>Albania</option><option>Algeria</option><option>Andorra</option>
+          <option>Angola</option><option>Argentina</option><option>Armenia</option><option>Austria</option>
+          <option>Azerbaijan</option><option>Bahamas</option><option>Bahrain</option><option>Bangladesh</option>
+          <option>Belgium</option><option>Benin</option><option>Bhutan</option><option>Bolivia</option>
+          <option>Bulgaria</option><option>Burkina Faso</option><option>Cambodia</option><option>Cameroon</option>
+          <option>Chile</option><option>China</option><option>Colombia</option><option>Costa Rica</option>
+          <option>Croatia</option><option>Cuba</option><option>Cyprus</option><option>Denmark</option>
+          <option>Egypt</option><option>Estonia</option><option>Ethiopia</option><option>Finland</option>
+          <option>Gabon</option><option>Gambia</option><option>Georgia</option><option>Greece</option>
+          <option>Hungary</option><option>Iceland</option><option>Indonesia</option><option>Iran</option>
+          <option>Iraq</option><option>Ireland</option><option>Israel</option><option>Italy</option>
+          <option>Jamaica</option><option>Jordan</option><option>Kazakhstan</option><option>Kuwait</option>
+          <option>Lebanon</option><option>Lesotho</option><option>Liberia</option><option>Libya</option>
+          <option>Malaysia</option><option>Maldives</option><option>Mali</option><option>Malta</option>
+          <option>Mauritius</option><option>Morocco</option><option>Mozambique</option><option>Myanmar</option>
+          <option>Nepal</option><option>Netherlands</option><option>New Zealand</option><option>Nicaragua</option>
+          <option>Niger</option><option>Norway</option><option>Oman</option><option>Pakistan</option>
+          <option>Panama</option><option>Peru</option><option>Philippines</option><option>Poland</option>
+          <option>Portugal</option><option>Qatar</option><option>Romania</option><option>Russia</option>
+          <option>Rwanda</option><option>Senegal</option><option>Serbia</option><option>Seychelles</option>
+          <option>Sierra Leone</option><option>Slovakia</option><option>Slovenia</option><option>Somalia</option>
+          <option>South Korea</option><option>South Sudan</option><option>Sri Lanka</option><option>Sudan</option>
+          <option>Sweden</option><option>Switzerland</option><option>Syria</option><option>Taiwan</option>
+          <option>Tanzania</option><option>Thailand</option><option>Togo</option><option>Tunisia</option>
+          <option>Turkey</option><option>Uganda</option><option>Ukraine</option><option>Vietnam</option>
+          <option>Yemen</option><option>Zambia</option><option>Zimbabwe</option>
+        </select>
+        <button class="miniBtn" onclick="toggleEdit('country')" title="Edit Country">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">Phone:</div>
+      <div class="row">
+        <input id="phone" class="input" type="tel" disabled />
+        <button class="miniBtn" onclick="toggleEdit('phone')" title="Edit Phone">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-3L16.5 4a2 2 0 0 0-3 0L3 14.5V20Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <button class="saveBtn" onclick="saveProfile()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M5 21h14a2 2 0 0 0 2-2V8l-4-4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" fill="white" opacity=".95"/>
+        <path d="M7 21v-7h10v7" stroke="#16a34a" stroke-width="0"/>
+      </svg>
+      Save Profile Changes
+    </button>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <!-- CHANGE PASSWORD CARD -->
+  <div style="height:18px"></div>
+  <div class="card">
+    <div class="sectionTitle">Change Password</div>
+
+    <div class="field">
+      <div class="label">Current Password:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="currentPassword" class="input" type="password" placeholder="********">
+          <button class="eyeBtn" onclick="toggleEye('currentPassword')" title="Show">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">New Password:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="newPassword" class="input" type="password" placeholder="">
+          <button class="eyeBtn" onclick="toggleEye('newPassword')" title="Show">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="note">Password must be at least 8 characters long</div>
+    </div>
+
+    <div class="field">
+      <div class="label">Confirm New Password:</div>
+      <div class="row">
+        <div class="pwWrap">
+          <input id="confirmNewPassword" class="input" type="password" placeholder="">
+          <button class="eyeBtn" onclick="toggleEye('confirmNewPassword')" title="Show">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="blueBtn" onclick="changePassword()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 10V8a5 5 0 0 1 10 0v2" stroke="white" stroke-width="2.2"/>
+        <path d="M6 10h12v10H6V10Z" fill="white" opacity=".95"/>
+        <path d="M12 14v3" stroke="#1d4ed8" stroke-width="0"/>
+      </svg>
+      Change Password
+    </button>
+
+    <div class="tips">
+      <div class="tipsTitle">Security Tips</div>
+      <ul>
+        <li>Use a strong password with letters, numbers, and symbols</li>
+        <li>Never share your password or PIN with anyone</li>
+        <li>Change your password regularly</li>
+        <li>Use different passwords for different accounts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- bottom nav -->
+<div class="bottomNav">
+  <div class="navWrap">
+    <a class="navItem" href="explore.html">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 3 21l9-4 9 4-9-19Z" stroke="currentColor" stroke-width="2"/></svg>
+      Explore
+    </a>
+    <a class="navItem" href="history.html">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      History
+    </a>
+
+    <a class="home" href="user-dashboard.html" title="Home">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 11 12 4l8 7v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9Z" stroke="white" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    </a>
+
+    <a class="navItem active" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="2"/><path d="M4 22c1-4 4-6 8-6s7 2 8 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Profile
+    </a>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ✅ COINLUXORA AUTH GUARD (LOGIN + EMAIL VERIFIED REQUIRED)
+   Added because this is a PROTECTED PAGE.
+   ============================================================ */
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+(async function authGuard(){
+  try{
+    const { data, error } = await supabaseClient.auth.getUser();
+    if(error || !data?.user){
+      window.location.replace("login.html");
+      return;
+    }
+    const user = data.user;
+    if(!user.email_confirmed_at){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+    window.COINLUXORA_USER = user;
+    loadProfile(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
+
+/* =====================
+   UI functions
+===================== */
+function goDashboard(){
+  window.location.href="user-dashboard.html";
+}
+
+function toggleEdit(id){
+  const el = document.getElementById(id);
+  el.disabled = !el.disabled;
+  if(!el.disabled) el.focus();
+}
+
+function toggleEye(id){
+  const el = document.getElementById(id);
+  el.type = (el.type === "password") ? "text" : "password";
+}
+
+function setMsg(type, text){
+  const el = document.getElementById("msg");
+  if(type==="ok") el.innerHTML = `<span class="ok">${text}</span>`;
+  else if(type==="err") el.innerHTML = `<span class="err">${text}</span>`;
+  else el.textContent = text;
+}
+
+/* =====================
+   Load profile
+===================== */
+async function loadProfile(user){
+  // load from users table
+  const { data, error } = await supabaseClient
+    .from("users")
+    .select("*")
+    .eq("email", user.email)
+    .single();
+
+  // fallback from auth metadata
+  const full_name = data?.full_name || user.user_metadata?.full_name || "User";
+  const phone = data?.phone || user.user_metadata?.phone || "";
+  const country = data?.country || user.user_metadata?.country || "";
+  const pin = data?.pin || "";
+
+  document.getElementById("bigName").textContent = full_name;
+  document.getElementById("bigEmail").textContent = user.email;
+
+  document.getElementById("name").value = full_name;
+  document.getElementById("email").value = user.email;
+  document.getElementById("phone").value = phone;
+  document.getElementById("country").value = country;
+  document.getElementById("pin").value = pin ? pin : "****";
+}
+
+/* =====================
+   Save profile
+===================== */
+async function saveProfile(){
+  setMsg("", "Saving changes…");
+
+  const user = window.COINLUXORA_USER;
+  if(!user){
+    setMsg("err","Session missing. Please login again.");
+    return;
+  }
+
+  const full_name = document.getElementById("name").value.trim();
+  const phone     = document.getElementById("phone").value.trim();
+  const country   = document.getElementById("country").value.trim();
+  const pinVal    = document.getElementById("pin").value.trim();
+
+  if(!full_name){
+    setMsg("err","Name cannot be empty.");
+    return;
+  }
+
+  // update users table
+  const { error } = await supabaseClient
+    .from("users")
+    .upsert([{
+      email: user.email,
+      full_name,
+      phone,
+      country,
+      pin: (pinVal === "****" ? null : pinVal)
+    }], { onConflict: "email" });
+
+  if(error){
+    setMsg("err", error.message);
+    return;
+  }
+
+  // update auth metadata too
+  await supabaseClient.auth.updateUser({
+    data: { full_name, phone, country }
+  });
+
+  document.getElementById("bigName").textContent = full_name;
+
+  // lock fields again
+  ["name","phone","country","pin"].forEach(id => document.getElementById(id).disabled = true);
+
+  setMsg("ok","Profile updated successfully ✅");
+}
+
+/* =====================
+   Change password
+===================== */
+async function changePassword(){
+  const user = window.COINLUXORA_USER;
+  if(!user){
+    setMsg("err","Session missing. Please login again.");
+    return;
+  }
+
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmNew  = document.getElementById("confirmNewPassword").value;
+
+  if(newPassword.length < 8){
+    setMsg("err","New password must be at least 8 characters.");
+    return;
+  }
+  if(newPassword !== confirmNew){
+    setMsg("err","New passwords do not match.");
+    return;
+  }
+
+  // Supabase does NOT require current password when logged in
+  // If you need current password validation, it must be done with re-login.
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+  if(error){
+    setMsg("err", error.message);
+    return;
+  }
+
+  document.getElementById("currentPassword").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmNewPassword").value = "";
+
+  setMsg("ok","Password changed successfully ✅");
+}
+</script>
+
+</body>
+</html>
