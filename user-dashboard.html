@@ -2001,7 +2001,11 @@ document.getElementById("obPair").addEventListener("change",()=>{
 /* balance / plan */
 async function loadBalance(){
   const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-  const bal = Number(data?.balance || 0).toFixed(2);
+
+  /* ✅ FIXED: comma thousands formatting ($1,000.00) */
+  const balNum = Number(data?.balance || 0);
+  const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+
   document.getElementById("balance").innerHTML = "$" + bal;
 }
 function money(n){ return "$" + Number(n||0).toFixed(2); }
