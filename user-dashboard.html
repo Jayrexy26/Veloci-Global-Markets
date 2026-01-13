@@ -119,6 +119,7 @@ body{
 
 /* ============================================================
    ✅ STICKY MENU POLISH (FIX OVERLAP + PREMIUM SCROLL)
+   - ONLY affects topRow wrapper
    ============================================================ */
 .stickyMenu{
   position:sticky;
@@ -173,6 +174,7 @@ body{
 }
 .headerActions{display:flex;gap:10px;align-items:center}
 
+/* ✅ Avatar */
 .avatarBtn{
   width:46px;height:46px;border-radius:999px;
   border:1px solid rgba(255,255,255,.14);
@@ -355,7 +357,7 @@ body{
   cursor:pointer;
   box-shadow:0 16px 40px rgba(0,0,0,.35);
 }
-.swapBtn:hover{filter:brightness(1.05)}
+swapBtn:hover{filter:brightness(1.05)}
 .convBtn{
   width:100%;
   height:54px;
@@ -603,6 +605,7 @@ body{
   letter-spacing:.8px;
   text-transform:uppercase;
 }
+
 .sideItem{
   display:flex;align-items:center;gap:12px;
   padding:12px 12px;border-radius:18px;
@@ -722,7 +725,7 @@ body{
 }
 
 /* ============================================================
-   ✅ TOP 10 CRYPTO LIST
+   ✅ TOP 10 CRYPTO LIST (ADDED)
    ============================================================ */
 .crypto10Grid{
   margin-top:12px;
@@ -798,6 +801,7 @@ body{
 <div class="blob b4"></div>
 <div class="shimmer"></div>
 
+<!-- Loading -->
 <div id="authGate">
   <div class="gateCard">
     <div class="gateLogo">📣</div>
@@ -809,6 +813,7 @@ body{
 
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
+<!-- Sidebar -->
 <div id="sidebar" class="sidebar">
   <div class="sideTop">
     <div class="sideBrand">
@@ -844,6 +849,7 @@ body{
 
 <div class="container">
 
+  <!-- ✅ STICKY WRAP -->
   <div id="stickyMenu" class="stickyMenu">
     <div class="topRow">
       <div class="brand"><div class="brandIcon">📣</div>COIN</div>
@@ -1063,6 +1069,9 @@ const TOP10_IDS = [
 ];
 let top10Timer=null;
 
+/* ============================================================
+   ✅ helpers
+   ============================================================ */
 function fmtMoneySmart(n){
   const num=Number(n||0);
   if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
@@ -1224,48 +1233,29 @@ function isoToFlag(iso){
 function setCountryChip(iso, fullName=""){
   const el=document.getElementById("countryChip");
   if(!el) return;
-
-  if(!iso || iso.length!==2){
-    el.style.display="none";
-    el.textContent="";
-    return;
-  }
-
+  if(!iso || iso.length!==2){ el.style.display="none"; el.textContent=""; return; }
   const flag=isoToFlag(iso);
-  if(!flag){
-    el.style.display="none";
-    el.textContent="";
-    return;
-  }
-
+  if(!flag){ el.style.display="none"; el.textContent=""; return; }
   const cleanName = (fullName || "").trim();
-  el.textContent = cleanName
-    ? `${flag} ${iso.toUpperCase()} · ${cleanName}`
-    : `${flag} ${iso.toUpperCase()}`;
-
+  el.textContent = cleanName ? `${flag} ${iso.toUpperCase()} · ${cleanName}` : `${flag} ${iso.toUpperCase()}`;
   el.style.display="inline-flex";
 }
 function normalizeCountryText(v){
   if(!v) return "";
-  return String(v)
-    .replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"")
-    .replace(/[^\w\s-]/g," ")
-    .trim()
-    .toLowerCase();
+  return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
 }
 function isoToCountryName(iso){
   if(!iso) return "";
   const c = iso.toUpperCase();
-  const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom" };
+  const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
   return map[c] || "";
 }
 function countryNameToISO(name){
   if(!name) return "";
   const raw = String(name).trim();
   if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
-
   const n=normalizeCountryText(raw);
-  const map={ "nigeria":"NG","ng":"NG","usa":"US","united states":"US","uk":"GB","united kingdom":"GB" };
+  const map={ "nigeria":"NG","ng":"NG","nigerian":"NG","united states":"US","united states of america":"US","usa":"US","us":"US","america":"US","united kingdom":"GB","great britain":"GB","britain":"GB","england":"GB","uk":"GB","gb":"GB","canada":"CA","germany":"DE","france":"FR","south africa":"ZA","kenya":"KE","ghana":"GH","united arab emirates":"AE","uae":"AE","dubai":"AE","saudi arabia":"SA","india":"IN","australia":"AU","brazil":"BR","mexico":"MX","japan":"JP","singapore":"SG" };
   if(map[n]) return map[n];
   for(const key of Object.keys(map)){ if(n.includes(key)) return map[key]; }
   return "";
@@ -1299,24 +1289,14 @@ async function resolveCountryISO(countryNameFromDB){
 async function loadDashboardIdentity(){
   try{
     let fullName="", avatarUrl="", countryName="";
-    const { data: row, error } = await supabaseClient
-      .from("users")
-      .select("full_name, avatar_url, country")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-    if(!error && row){
-      fullName=row.full_name||"";
-      avatarUrl=row.avatar_url||"";
-      countryName=row.country||"";
-    }
+    const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+    if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
     const md=(window.COINLUXORA_USER?.user_metadata||{});
     if(!fullName) fullName=md.full_name||"User";
     if(!avatarUrl) avatarUrl=md.avatar_url||"";
-
     setNameEverywhere(fullName);
     setTopAvatar(avatarUrl);
     setSideAvatar(avatarUrl);
-
     const iso = await resolveCountryISO(countryName);
     const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
     setCountryChip(iso, niceName);
@@ -1328,7 +1308,6 @@ async function loadDashboardIdentity(){
   }
 }
 
-/* helpers */
 function nfmt(n, dp=2){
   return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp});
 }
@@ -1363,11 +1342,8 @@ function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
 
   function render(filter=""){
     const q=filter.trim().toLowerCase();
-    if(!q){
-      renderItems = items;
-    }else{
-      renderItems = items.filter(x => getSearch(x).includes(q));
-    }
+    if(!q){ renderItems = items; }
+    else{ renderItems = items.filter(x => getSearch(x).includes(q)); }
 
     const MAX = Math.min(renderItems.length, 600);
     const slice = renderItems.slice(0, MAX);
@@ -1423,9 +1399,6 @@ function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
   });
 }
 
-/* ==============================
-   ✅ Load ALL COINS + ALL FIATS
-   ============================== */
 const FAVORITES = [
   { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
   { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
@@ -1447,7 +1420,6 @@ async function loadCoinGeckoLists(){
   try{
     const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
     const coins = await coinRes.json();
-
     const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
     const list = [];
     for(const c of (coins||[])){
@@ -1484,19 +1456,306 @@ async function loadFxRates(){
 
 function swapCrypto(){
   cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
-  const tmp = selectedCryptoA;
-  selectedCryptoA = selectedCryptoB;
-  selectedCryptoB = tmp;
-  window.location.reload();
-}
-function swapFiat(){
-  const tmp = selectedFiatA;
-  selectedFiatA = selectedFiatB;
-  selectedFiatB = tmp;
-  window.location.reload();
+  const tmp = selectedCryptoA; selectedCryptoA = selectedCryptoB; selectedCryptoB = tmp;
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  if(cryptoDirection === "crypto_to_fiat"){
+    if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){ selectedCryptoA = FAVORITES[0]; }
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length>4) selectedCryptoB = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }else{
+    selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
+    mountDropdown("ddCryptoA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }
+
+  document.getElementById("cryptoRate").textContent="Rate: --";
+  document.getElementById("cryptoResult").textContent="--";
+  document.getElementById("cryptoReverse").textContent="--";
 }
 
-/* (rest of converter + plan + orderbook functions remain unchanged from earlier version) */
+async function convertCrypto(){
+  const amt = Number(document.getElementById("cryptoAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+    return;
+  }
+
+  try{
+    if(cryptoDirection === "crypto_to_fiat"){
+      const coinId = selectedCryptoA?.id || "bitcoin";
+      const fiat   = String(selectedCryptoB?.id || "USD").toLowerCase();
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+      const result = rate * amt;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoA.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${nfmt(result,2)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${fiat.toUpperCase()} ≈ ${(1/rate).toFixed(10)} ${selectedCryptoA.symbol?.toUpperCase()||coinId}`;
+    }else{
+      const fiat = String(selectedCryptoA?.id || "USD").toLowerCase();
+      const coinId = selectedCryptoB?.id || "bitcoin";
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+      const cryptoAmount = amt / rate;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoB.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${cryptoAmount.toFixed(10)} ${selectedCryptoB.symbol?.toUpperCase()||coinId}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${selectedCryptoB.symbol?.toUpperCase()||coinId} ≈ ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+    }
+  }catch(e){
+    document.getElementById("cryptoRate").textContent="Rate: unavailable (network)";
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+  }
+}
+
+function swapFiat(){
+  const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+  mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
+  mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
+  document.getElementById("fiatRate").textContent="Rate: --";
+  document.getElementById("fiatResult").textContent="--";
+}
+
+async function convertFiat(){
+  const amt = Number(document.getElementById("fiatAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("fiatResult").textContent="--";
+    return;
+  }
+  const from = String(selectedFiatA?.id || "USD").toUpperCase();
+  const to   = String(selectedFiatB?.id || "NGN").toUpperCase();
+  try{
+    if(!FX_RATES) await loadFxRates();
+    if(!FX_RATES) throw new Error("fx missing");
+    const fromRate = Number(FX_RATES[from] || 0);
+    const toRate   = Number(FX_RATES[to] || 0);
+    if(!fromRate || !toRate) throw new Error("rate missing");
+    const usdAmount = amt / fromRate;
+    const result = usdAmount * toRate;
+    const rate = toRate / fromRate;
+    document.getElementById("fiatRate").textContent = `Rate: 1 ${from} = ${nfmt(rate,6)} ${to}`;
+    document.getElementById("fiatResult").textContent = `${nfmt(result,2)} ${to}`;
+  }catch(e){
+    document.getElementById("fiatRate").textContent="Rate: unavailable (network)";
+    document.getElementById("fiatResult").textContent="--";
+  }
+}
+
+/* ===== order book ===== */
+function parsePairForProviders(pair){
+  const base=pair.replace("USDT","").replace("USD","");
+  return { binance: pair, okx: `${base}-USDT`, bybit: `${base}USDT` };
+}
+async function tryBinanceOrderBook(symbol){
+  const res = await fetch(`https://api.binance.com/api/v3/depth?symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  if(!data?.asks || !data?.bids) throw new Error("binance invalid");
+  return { asks:data.asks, bids:data.bids, source:"Binance" };
+}
+async function tryOKXOrderBook(instId){
+  const res = await fetch(`https://www.okx.com/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=20`);
+  const data = await res.json();
+  const book = data?.data?.[0];
+  if(!book?.asks || !book?.bids) throw new Error("okx invalid");
+  return { asks:book.asks, bids:book.bids, source:"OKX" };
+}
+async function tryBybitOrderBook(symbol){
+  const res = await fetch(`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${encodeURIComponent(symbol)}&limit=20`);
+  const data = await res.json();
+  const book = data?.result;
+  if(!book?.a || !book?.b) throw new Error("bybit invalid");
+  return { asks:book.a, bids:book.b, source:"Bybit" };
+}
+
+async function loadOrderBook(force=false){
+  const pair=document.getElementById("obPair").value;
+  const asksEl=document.getElementById("asks");
+  const bidsEl=document.getElementById("bids");
+  const meta=parsePairForProviders(pair);
+
+  if(force){
+    asksEl.innerHTML="<div class='obItem'>Loading…</div>";
+    bidsEl.innerHTML="<div class='obItem'>Loading…</div>";
+  }
+
+  try{
+    let book=null;
+    try{ book = await tryBinanceOrderBook(meta.binance); }
+    catch(e1){
+      try{ book = await tryOKXOrderBook(meta.okx); }
+      catch(e2){ book = await tryBybitOrderBook(meta.bybit); }
+    }
+
+    const asks=(book.asks||[]).slice(0,20);
+    const bids=(book.bids||[]).slice(0,20);
+
+    const aNorm = asks.map(x => [x[0], x[1]]);
+    const bNorm = bids.map(x => [x[0], x[1]]);
+
+    asksEl.innerHTML=aNorm.map(a=>`<div class="obItem"><span>${Number(a[0]).toLocaleString()}</span><span>${Number(a[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No asks</div>";
+    bidsEl.innerHTML=bNorm.map(b=>`<div class="obItem"><span>${Number(b[0]).toLocaleString()}</span><span>${Number(b[1]).toFixed(6)}</span></div>`).join("") || "<div class='obItem'>No bids</div>";
+
+  }catch(e){
+    asksEl.innerHTML="<div class='obItem'>Order book blocked / unavailable</div>";
+    bidsEl.innerHTML="<div class='obItem'>Try changing pair</div>";
+  }
+}
+function startOrderAutoRefresh(){
+  if(orderTimer) clearInterval(orderTimer);
+  orderTimer=setInterval(()=>loadOrderBook(false), 3000);
+}
+function loadChart(){
+  const pair=document.getElementById("obPair").value;
+  const base=pair.replace("USDT","").toUpperCase();
+  const tvSymbol = `BINANCE:${base}USDT`;
+  document.getElementById("chartPair").textContent = `${base}/USDT`;
+  const frame=document.getElementById("tvChart");
+  frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(tvSymbol)}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=rgba(0,0,0,0)&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1`;
+}
+document.getElementById("obPair").addEventListener("change",()=>{
+  loadOrderBook(true);
+  loadChart();
+});
+
+async function loadBalance(){
+  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+  const balNum = Number(data?.balance || 0);
+  const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+  document.getElementById("balance").innerHTML = "$" + bal;
+}
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
+}
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  if(error){
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
+    return;
+  }
+
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a style="color:#9bdcff;font-weight:1000" href="plans.html">Investment Plans</a> to start.</div>`;
+    return;
+  }
+
+  planMsg.innerHTML="";
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
+
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
+
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
+    </div>
+  `;
+}
+
+function setBadge(elId, count){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0) el.style.display="none";
+  else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
+}
+function setBadgeFromKey(key,val){
+  if(key==="deposits") setBadge("badgeDepositDock", val);
+  else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
+}
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
+  setBadge("badgeDepositDock", 0);
+  setBadge("badgeWithdrawDock", 0);
+
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
+
+  if(error) return;
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+}
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
+    }, payload => {
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
+    })
+    .subscribe();
+}
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
+
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){}
+}
 
 async function logout(){
   await supabaseClient.auth.signOut();
@@ -1514,11 +1773,21 @@ function initWithUser(user){
   hideGate();
   loadDashboardIdentity();
 
+  loadBalance();
+  loadActivePlan();
+  loadRealtimeBadgesOnce();
+  subscribeToRealtimeBadges();
+
   loadTop10MajorCryptos();
   startTop10AutoRefresh();
 
-  loadCoinGeckoLists();
+  loadCoinGeckoLists().then(async ()=>{
+    await loadOrderBook(true);
+    loadChart();
+    startOrderAutoRefresh();
+  });
 }
 </script>
+
 </body>
 </html>
