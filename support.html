@@ -3,58 +3,346 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Support</title>
+<title>Support - Coinluxora</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:14px}
-button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;background:#38bdf8;color:#020617}
-.box{border:1px solid #1e293b;border-radius:12px;padding:14px;background:#020617;margin-bottom:14px}
-h2{margin:0;font-size:18px}
-.small{color:#94a3b8;font-size:12px;margin-top:6px}
-.ok{color:#22c55e}
-.err{color:#f87171}
-input,textarea,select{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb}
-textarea{min-height:120px;resize:none}
-a{color:#38bdf8;text-decoration:none;font-weight:1000}
-.ticket{border:1px solid #1e293b;border-radius:12px;padding:12px;margin-top:10px}
-.pill{padding:6px 10px;border-radius:999px;font-weight:1000;font-size:12px;display:inline-block}
-.open{background:#facc15;color:#020617}
-.closed{background:#22c55e;color:#020617}
+:root{
+  --bg:#050a18;
+  --border:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.65);
+  --ok:#34d399;
+  --err:#f87171;
+  --warn:#facc15;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:
+    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  padding:16px;
+  padding-bottom:34px;
+}
+.container{max-width:980px;margin:0 auto}
+
+/* ✅ TOP FLOAT NAV */
+.topFloatNav{
+  position:sticky;
+  top:10px;
+  z-index:500;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+.backBtn{
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  backdrop-filter: blur(12px);
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+}
+.backBtn:hover{background:rgba(255,255,255,.08)}
+.menuBtn{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+}
+.menuBtn:hover{background:rgba(255,255,255,.10)}
+
+/* ✅ SIDEBAR + OVERLAY */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;
+  z-index:99998;
+  backdrop-filter: blur(6px);
+}
+.sidebar{
+  position:fixed; top:0; right:-340px;
+  width:300px; height:100vh;
+  background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+  border-left:1px solid rgba(255,255,255,.12);
+  padding:16px;
+  transition:.28s ease;
+  z-index:99999;
+  box-shadow:0 20px 90px rgba(0,0,0,.75);
+}
+.sidebar.open{ right:0; }
+.overlay.show{ display:block; }
+
+.sideTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+.brand{font-weight:1000;font-size:18px;letter-spacing:.6px;}
+.closeBtn{
+  width:44px;height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  font-size:18px;
+}
+.closeBtn:hover{background:rgba(255,255,255,.08)}
+.userTag{
+  padding:12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  margin-bottom:14px;
+}
+.sideSmall{color:var(--muted);font-size:13px;margin-top:0}
+.sideItem{
+  display:flex;gap:10px;align-items:center;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;margin-bottom:10px;
+  color:var(--text);
+  background:rgba(0,0,0,.22);
+  font-weight:1000;
+  text-decoration:none;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+.sideLogout{
+  width:100%;
+  padding:14px;
+  border-radius:16px;
+  border:none;
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  box-shadow:0 20px 70px rgba(239,68,68,.15);
+}
+
+/* Header */
+.topBar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 16px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border-radius:18px;
+  box-shadow:0 20px 80px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  margin-bottom:14px;
+}
+.topBar .title{font-weight:1000;letter-spacing:.2px}
+.topBar .email{
+  font-weight:900;color:rgba(255,255,255,.8);
+  font-size:13px;max-width:58%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+
+/* Sections */
+.section{
+  border:1px solid var(--border);
+  border-radius:22px;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  padding:18px;
+  margin-bottom:14px;
+}
+.section h2{margin:0;font-size:26px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:10px}
+
+/* Inputs */
+input,textarea{
+  width:100%;
+  padding:16px 14px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.32);
+  color:var(--text);
+  outline:none;
+  font-size:15px;
+  margin-top:12px;
+}
+textarea{min-height:130px;resize:none}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.35)}
+input:focus,textarea:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px rgba(99,102,241,.18)}
+
+.gradBtn{
+  width:100%;
+  margin-top:12px;
+  padding:16px 14px;
+  border:none;
+  border-radius:16px;
+  cursor:pointer;
+  font-weight:1000;
+  font-size:16px;
+  color:white;
+  background:linear-gradient(90deg, #5b6cff, #34d399);
+  box-shadow:0 18px 60px rgba(0,0,0,.50);
+}
+.gradBtn:active{transform:translateY(1px)}
+
+/* Ticket */
+.ticket{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:14px;
+  margin-top:12px;
+  background:rgba(0,0,0,.22);
+}
+.ticketTop{
+  display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+  flex-wrap:wrap;
+}
+.ticketTitle{font-weight:1000;font-size:16px}
+.ticketBody{margin-top:10px;color:rgba(255,255,255,.84);font-weight:800;line-height:1.4}
+.hr{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
+.ticketMeta{color:rgba(255,255,255,.65);font-size:13px;font-weight:900}
+.replyBox{
+  margin-top:10px;
+  padding:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+}
+.replyTitle{font-weight:1000}
+.replyText{margin-top:8px;color:rgba(255,255,255,.8);font-weight:900}
+
+/* Pill */
+.pill{
+  padding:7px 12px;border-radius:999px;font-weight:1000;font-size:12px;display:inline-block;
+  border:1px solid rgba(255,255,255,.12);
+}
+.open{background:rgba(250,204,21,.14);border-color:rgba(250,204,21,.35);color:#facc15}
+.closed{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.38);color:#22c55e}
+
+/* Quick support row */
+.quickGrid{
+  display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;
+}
+@media(min-width:720px){.quickGrid{grid-template-columns:1fr 1fr}}
+.quickCard{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:14px;
+  background:rgba(0,0,0,.22);
+}
+.quickCard strong{font-weight:1000}
+a{color:#9bdcff;text-decoration:none;font-weight:1000}
+a:hover{text-decoration:underline}
+
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+.warn{color:var(--warn);font-weight:1000}
 </style>
 </head>
 
 <body>
 
-<header>
-  <strong>Support Center</strong>
-  <button onclick="goDashboard()">Dashboard</button>
-</header>
+<!-- ✅ OVERLAY + SIDEBAR -->
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-<div class="box">
-  <h2>Contact Support</h2>
-  <div class="small">Submit a ticket and our support will respond.</div>
+<div id="sidebar" class="sidebar" aria-hidden="true">
+  <div class="sideTop">
+    <div class="brand">COINLUXORA</div>
+    <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
+  </div>
 
-  <input id="subject" placeholder="Subject (example: Deposit not credited)" />
-  <textarea id="message" placeholder="Describe your issue clearly..."></textarea>
+  <div class="userTag">
+    <div class="sideSmall">Logged in as</div>
+    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
+  </div>
 
-  <button style="width:100%;margin-top:12px;background:#22c55e" onclick="submitTicket()">Submit Ticket</button>
-  <div id="msg" class="small"></div>
+  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem activeLink" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+
+  <div style="height:12px"></div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
-<div class="box">
-  <h2>My Tickets</h2>
-  <div id="ticketMsg" class="small">Loading…</div>
-  <div id="ticketList"></div>
-</div>
+<div class="container">
 
-<div class="box">
-  <h2>Quick Support</h2>
-  <div class="small">You can also contact us instantly:</div><br>
-  ✅ WhatsApp: <a href="https://wa.me/2340000000000" target="_blank">Chat on WhatsApp</a><br><br>
-  ✅ Telegram: <a href="https://t.me/coinluxora_support" target="_blank">Chat on Telegram</a>
+  <!-- ✅ Sticky top nav -->
+  <div class="topFloatNav">
+    <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+    <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
+  </div>
+
+  <div class="topBar">
+    <div class="title">Support Center</div>
+    <div class="email" id="topEmail">Loading…</div>
+  </div>
+
+  <!-- Contact Support -->
+  <div class="section">
+    <h2>Contact Support</h2>
+    <div class="small">Submit a ticket and our support team will respond as soon as possible.</div>
+
+    <input id="subject" placeholder="Subject (example: Deposit not credited)" />
+    <textarea id="message" placeholder="Describe your issue clearly..."></textarea>
+
+    <button class="gradBtn" onclick="submitTicket()">Submit Ticket</button>
+    <div id="msg" class="small"></div>
+  </div>
+
+  <!-- Tickets -->
+  <div class="section">
+    <h2>My Tickets</h2>
+    <div id="ticketMsg" class="small">Loading…</div>
+    <div id="ticketList"></div>
+  </div>
+
+  <!-- Quick Support -->
+  <div class="section">
+    <h2>Quick Support</h2>
+    <div class="small">You can also contact us instantly:</div>
+
+    <div class="quickGrid">
+      <div class="quickCard">
+        <strong>✅ WhatsApp Support</strong>
+        <div class="small">Instant assistance via WhatsApp.</div>
+        <div style="margin-top:10px">
+          <a href="https://wa.me/2340000000000" target="_blank">Chat on WhatsApp →</a>
+        </div>
+      </div>
+
+      <div class="quickCard">
+        <strong>✅ Telegram Support</strong>
+        <div class="small">Live agent responses on Telegram.</div>
+        <div style="margin-top:10px">
+          <a href="https://t.me/coinluxora_support" target="_blank">Chat on Telegram →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -66,13 +354,30 @@ let currentUserEmail="";
 
 init();
 
+/* ✅ Menu Open/Close FIXED */
+function openMenu(){
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("overlay").classList.add("show");
+  document.getElementById("sidebar").setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+}
+function closeMenu(){
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("show");
+  document.getElementById("sidebar").setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Escape") closeMenu();
+});
+
 function goDashboard(){
   window.location.href="user-dashboard.html";
 }
 
 function pill(s){
   const st=(s||"open").toLowerCase();
-  return `<span class="pill ${st}">${st}</span>`;
+  return `<span class="pill ${st}">${st.toUpperCase()}</span>`;
 }
 
 async function init(){
@@ -82,6 +387,8 @@ async function init(){
     return;
   }
   currentUserEmail=userData.user.email;
+  document.getElementById("topEmail").innerText=currentUserEmail;
+  document.getElementById("sideEmail").innerText=currentUserEmail;
 
   loadTickets();
 }
@@ -133,24 +440,40 @@ async function loadTickets(){
   }
 
   if(!data || data.length===0){
-    ticketMsg.innerHTML="<span class='err'>No tickets yet.</span>";
+    ticketMsg.innerHTML="<span class='warn'>No tickets yet.</span>";
     ticketList.innerHTML="";
     return;
   }
 
-  ticketMsg.innerHTML="<span class='ok'>Loaded tickets ✅</span>";
+  ticketMsg.innerHTML="<span class='ok'>Tickets loaded ✅</span>";
   ticketList.innerHTML="";
 
   data.forEach(t=>{
     ticketList.innerHTML += `
       <div class="ticket">
-        <strong>${t.subject}</strong> ${pill(t.status)}
-        <div class="small" style="margin-top:8px">${t.message}</div>
-        <div class="small" style="margin-top:10px">Admin reply: <strong>${t.admin_reply || "Not yet replied"}</strong></div>
-        <div class="small" style="margin-top:10px">Date: ${new Date(t.created_at).toLocaleString()}</div>
+        <div class="ticketTop">
+          <div class="ticketTitle">${t.subject}</div>
+          <div>${pill(t.status)}</div>
+        </div>
+
+        <div class="ticketBody">${t.message}</div>
+
+        <div class="hr"></div>
+
+        <div class="ticketMeta">Date: ${new Date(t.created_at).toLocaleString()}</div>
+
+        <div class="replyBox">
+          <div class="replyTitle">Admin Reply</div>
+          <div class="replyText">${t.admin_reply || "Not yet replied"}</div>
+        </div>
       </div>
     `;
   });
+}
+
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
