@@ -1216,17 +1216,13 @@ function startTop10AutoRefresh(){
 }
 
 /* ============================================================
-   ✅ ORDER BOOK (FIXED 100%: WebSocket depth stream)
-   - No CORS
-   - Works on mobile
-   - Keeps your exact UI
+   ✅ ORDER BOOK — MULTI WS FALLBACK (FIXED FOR MOBILE NETWORKS)
    ============================================================ */
 
-let obWS = null;
-let obPairNow = "BTCUSDT";
-let lastAsks = [];
-let lastBids = [];
-let obLastUpdate = 0;
+let obWS=null;
+let obReconnectTimer=null;
+let obLastRender=0;
+let obActiveSource="--";
 
 function setOBStatus(text, ok=true){
   const el=document.getElementById("obStatusTxt");
@@ -1252,7 +1248,6 @@ function renderOB(asks, bids){
   const maxAsk = Math.max(...depthA.map(x=>x.q), 0.0000001);
   const maxBid = Math.max(...depthB.map(x=>x.q), 0.0000001);
 
-  // asks should display top->bottom (higher price at top in UI)
   const asksSorted=[...depthA].sort((x,y)=>y.p-x.p);
   const bidsSorted=[...depthB].sort((x,y)=>y.p-x.p);
 
@@ -1296,82 +1291,246 @@ function renderOB(asks, bids){
   if(spEl) spEl.textContent = spread ? `Spread: ${nfmt(spread, spread<1?8:4)}` : "Spread: --";
 }
 
-function parseDepthStream(data){
-  // Binance depth stream returns arrays of [price, qty] as strings
-  const asks = (data?.a || data?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
-  const bids = (data?.b || data?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
-  return {asks, bids};
-}
-
-function stopOrderBookSocket(){
+function stopOB(){
+  try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+  obReconnectTimer=null;
   try{
     if(obWS){
-      obWS.onopen = null;
-      obWS.onmessage = null;
-      obWS.onerror = null;
-      obWS.onclose = null;
+      obWS.onopen=null; obWS.onmessage=null; obWS.onerror=null; obWS.onclose=null;
       obWS.close();
     }
   }catch(e){}
-  obWS = null;
+  obWS=null;
 }
 
-function startOrderBook(){
+function scheduleOBReconnect(){
+  try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+  obReconnectTimer=setTimeout(()=>startOrderBook(), 1500);
+}
+
+function normalizePairForOKX(pair){
+  const base = pair.replace("USDT","").toUpperCase();
+  return `${base}-USDT`;
+}
+
+/* ---------- WS CONNECTORS ---------- */
+function connectBinanceWS(pair){
+  return new Promise((resolve,reject)=>{
+    const url = `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`;
+    const ws = new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance timeout"));
+    }, 1800);
+
+    ws.onopen=()=>{
+      clearTimeout(timer);
+      resolve({ws, source:"Binance (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance blocked"));
+    };
+  });
+}
+
+function connectBinanceAltWS(pair){
+  return new Promise((resolve,reject)=>{
+    // alternate endpoint
+    const url = `wss://data-stream.binance.vision/ws/${pair.toLowerCase()}@depth20@100ms`;
+    const ws = new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance alt timeout"));
+    }, 1800);
+
+    ws.onopen=()=>{
+      clearTimeout(timer);
+      resolve({ws, source:"Binance (Alt WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance alt blocked"));
+    };
+  });
+}
+
+function connectBybitWS(pair){
+  return new Promise((resolve,reject)=>{
+    // Bybit Spot orderbook via public WS
+    const url="wss://stream.bybit.com/v5/public/spot";
+    const ws=new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("bybit timeout"));
+    }, 2200);
+
+    ws.onopen=()=>{
+      try{
+        ws.send(JSON.stringify({
+          op:"subscribe",
+          args:[`orderbook.50.${pair.toUpperCase()}`]
+        }));
+      }catch(e){}
+      clearTimeout(timer);
+      resolve({ws, source:"Bybit (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("bybit blocked"));
+    };
+  });
+}
+
+function connectOKXWS(pair){
+  return new Promise((resolve,reject)=>{
+    const url="wss://ws.okx.com:8443/ws/v5/public";
+    const ws=new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("okx timeout"));
+    }, 2200);
+
+    ws.onopen=()=>{
+      try{
+        ws.send(JSON.stringify({
+          op:"subscribe",
+          args:[{channel:"books5", instId: normalizePairForOKX(pair)}]
+        }));
+      }catch(e){}
+      clearTimeout(timer);
+      resolve({ws, source:"OKX (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("okx blocked"));
+    };
+  });
+}
+
+/* ---------- Parse WS messages ---------- */
+function handleDepthMessage_Binance(raw){
+  // raw: {bids/asks} or {b/a}
+  const asks=(raw?.a || raw?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(raw?.b || raw?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+function handleDepthMessage_Bybit(raw){
+  // Bybit: {topic, data:{a:[...], b:[...]}}
+  const d=raw?.data;
+  if(!d) return null;
+  const asks=(d?.a || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(d?.b || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+function handleDepthMessage_OKX(raw){
+  // OKX: {data:[{asks:[], bids:[]}]}
+  const d=raw?.data?.[0];
+  if(!d) return null;
+  const asks=(d?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(d?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+/* ---------- MAIN: startOrderBook ---------- */
+async function startOrderBook(){
   const pair = document.getElementById("obPair")?.value || "BTCUSDT";
-  obPairNow = pair;
 
-  stopOrderBookSocket();
-
-  // Binance depth20 stream gives top 20 levels very fast
-  const url = `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`;
-
+  stopOB();
   setOBStatus("Connecting…", true);
   setOBMeta("--");
 
-  lastAsks = [];
-  lastBids = [];
-  obLastUpdate = 0;
+  // WS connect chain
+  const connectors = [
+    ()=>connectBinanceWS(pair),
+    ()=>connectBinanceAltWS(pair),
+    ()=>connectBybitWS(pair),
+    ()=>connectOKXWS(pair)
+  ];
 
-  try{
-    obWS = new WebSocket(url);
-  }catch(e){
-    setOBStatus("WebSocket blocked", false);
+  let connected=null;
+  for(const fn of connectors){
+    try{
+      connected = await fn();
+      break;
+    }catch(e){}
+  }
+
+  if(!connected){
+    setOBStatus("Disconnected (Network blocked)", false);
+    setOBMeta("--");
     return;
   }
 
-  obWS.onopen = ()=>{
-    setOBStatus("Live", true);
-    setOBMeta("Binance (WS)");
-  };
+  obWS = connected.ws;
+  obActiveSource = connected.source;
 
-  obWS.onerror = ()=>{
-    setOBStatus("Connection error", false);
-  };
+  setOBStatus("Live", true);
+  setOBMeta(obActiveSource);
 
-  obWS.onclose = ()=>{
+  obWS.onclose=()=>{
     setOBStatus("Disconnected", false);
+    setOBMeta("--");
+    scheduleOBReconnect();
+  };
+  obWS.onerror=()=>{
+    setOBStatus("Disconnected", false);
+    setOBMeta("--");
+    scheduleOBReconnect();
   };
 
-  obWS.onmessage = (ev)=>{
+  obWS.onmessage=(ev)=>{
     try{
-      const data = JSON.parse(ev.data);
+      const raw = JSON.parse(ev.data);
 
-      const parsed = parseDepthStream(data);
-      if(parsed.asks?.length) lastAsks = parsed.asks;
-      if(parsed.bids?.length) lastBids = parsed.bids;
-
-      // Render max once per ~150ms to reduce UI spam on mobile
-      const now = Date.now();
-      if(now - obLastUpdate > 150){
-        obLastUpdate = now;
-
-        // Sort: asks asc best first, bids desc best first
-        const asks = [...lastAsks].sort((a,b)=>a.p-b.p);
-        const bids = [...lastBids].sort((a,b)=>b.p-a.p);
-
-        renderOB(asks, bids);
-        setOBMeta("Binance (WS)");
+      // ignore ping/pong messages
+      if(raw?.event==="ping" || raw?.op==="pong") return;
+      if(raw?.op==="ping"){
+        try{ obWS.send(JSON.stringify({op:"pong"})); }catch(e){}
+        return;
       }
+
+      let parsed=null;
+
+      if(obActiveSource.includes("Binance")){
+        parsed = handleDepthMessage_Binance(raw);
+      }else if(obActiveSource.includes("Bybit")){
+        parsed = handleDepthMessage_Bybit(raw);
+      }else if(obActiveSource.includes("OKX")){
+        parsed = handleDepthMessage_OKX(raw);
+      }
+
+      if(!parsed) return;
+
+      // throttle rendering for mobile
+      const now=Date.now();
+      if(now - obLastRender < 150) return;
+      obLastRender = now;
+
+      renderOB(parsed.asks, parsed.bids);
+      setOBMeta(obActiveSource);
     }catch(e){}
   };
 }
@@ -1809,9 +1968,10 @@ function loadChart(){
 }
 document.getElementById("obPair").addEventListener("change",()=>{
   loadChart();
-  startOrderBook(); // ✅ now restarts websocket on pair change
+  startOrderBook();
 });
 
+/* ===== balance / plan / badges / logout ... (UNCHANGED) ===== */
 async function loadBalance(){
   const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
   const balNum = Number(data?.balance || 0);
@@ -1967,9 +2127,32 @@ function initWithUser(user){
 
   loadCoinGeckoLists().then(async ()=>{
     loadChart();
-    startOrderBook(); // ✅ starts websocket after chart
+    startOrderBook(); // ✅ fixed order book start
   });
 }
+
+/* ===== auth ===== */
+(async function authGuard(){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){ window.location.replace("login.html"); return; }
+
+    const { data, error } = await supabaseClient.auth.getUser();
+    const user = data?.user;
+    if(error || !user){ window.location.replace("login.html"); return; }
+
+    if(!user.email_confirmed_at){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+    window.COINLUXORA_USER=user;
+    initWithUser(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
 </script>
 
 </body>
