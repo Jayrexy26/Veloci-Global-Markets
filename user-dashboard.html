@@ -644,7 +644,7 @@ sideBrand{
   padding:12px 12px;
   border-radius:18px;
   border:1px solid rgba(255,255,255,.10);
-  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)); /* ✅ FIXED TYPO HERE */
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,,255,.03));
   box-shadow:0 18px 55px rgba(0,0,0,.35);
   margin:10px 0 14px;
   display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -1126,10 +1126,10 @@ sideBrand{
 })();
 
 /* ============================================================
-   ✅ AUTH GUARD  (EXISTING)
+   ✅ AUTH GUARD  (ADDED/EXISTING)
    ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjM0M30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1661,7 +1661,7 @@ async function startOrderBook(){
   };
 }
 
-/* ===== auth (ONLY ONCE NOW) ===== */
+/* ===== auth ===== */
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -2257,6 +2257,29 @@ function initWithUser(user){
     startOrderBook();
   });
 }
+
+/* ===== auth ===== */
+(async function authGuard(){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){ window.location.replace("login.html"); return; }
+
+    const { data, error } = await supabaseClient.auth.getUser();
+    const user = data?.user;
+    if(error || !user){ window.location.replace("login.html"); return; }
+
+    if(!user.email_confirmed_at){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+    window.COINLUXORA_USER=user;
+    initWithUser(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
 </script>
 
 </body>
