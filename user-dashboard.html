@@ -1138,9 +1138,6 @@ let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
 let top10Timer=null;
 
-/* Order book timer */
-let obTimer=null;
-
 /* ============================================================
    ✅ TOP 10 MAJOR CRYPTO
    ============================================================ */
@@ -1219,8 +1216,18 @@ function startTop10AutoRefresh(){
 }
 
 /* ============================================================
-   ✅ ORDER BOOK (WORKING with fallback + proxy)
+   ✅ ORDER BOOK (FIXED 100%: WebSocket depth stream)
+   - No CORS
+   - Works on mobile
+   - Keeps your exact UI
    ============================================================ */
+
+let obWS = null;
+let obPairNow = "BTCUSDT";
+let lastAsks = [];
+let lastBids = [];
+let obLastUpdate = 0;
+
 function setOBStatus(text, ok=true){
   const el=document.getElementById("obStatusTxt");
   if(!el) return;
@@ -1232,24 +1239,6 @@ function setOBMeta(exchangeName){
   const up=document.getElementById("obUpdated");
   if(ex) ex.textContent = "Source: " + (exchangeName || "--");
   if(up) up.textContent = "Updated: " + new Date().toLocaleTimeString();
-}
-
-function parseBinanceOB(json){
-  const asks=(json?.asks||[]).map(a=>({p:Number(a[0]), q:Number(a[1])})).filter(x=>x.p>0 && x.q>0);
-  const bids=(json?.bids||[]).map(b=>({p:Number(b[0]), q:Number(b[1])})).filter(x=>x.p>0 && x.q>0);
-  return {asks, bids};
-}
-function parseOKXOB(json){
-  const d=json?.data?.[0];
-  const asks=(d?.asks||[]).map(a=>({p:Number(a[0]), q:Number(a[1])})).filter(x=>x.p>0 && x.q>0);
-  const bids=(d?.bids||[]).map(b=>({p:Number(b[0]), q:Number(b[1])})).filter(x=>x.p>0 && x.q>0);
-  return {asks, bids};
-}
-function parseBybitOB(json){
-  const r=json?.result;
-  const asks=(r?.a||r?.asks||[]).map(a=>({p:Number(a[0]), q:Number(a[1])})).filter(x=>x.p>0 && x.q>0);
-  const bids=(r?.b||r?.bids||[]).map(b=>({p:Number(b[0]), q:Number(b[1])})).filter(x=>x.p>0 && x.q>0);
-  return {asks, bids};
 }
 
 function renderOB(asks, bids){
@@ -1307,92 +1296,84 @@ function renderOB(asks, bids){
   if(spEl) spEl.textContent = spread ? `Spread: ${nfmt(spread, spread<1?8:4)}` : "Spread: --";
 }
 
-function normalizePairForOKX(pair){
-  // BTCUSDT => BTC-USDT
-  const base = pair.replace("USDT","").toUpperCase();
-  return `${base}-USDT`;
-}
-function normalizePairForBybit(pair){
-  // Keep BTCUSDT format
-  return pair.toUpperCase();
-}
-function makeCORSUrl(url){
-  // Only used if direct fetch fails. Uses a public proxy (best-effort).
-  return `https://cors.isomorphic-git.org/${url}`;
+function parseDepthStream(data){
+  // Binance depth stream returns arrays of [price, qty] as strings
+  const asks = (data?.a || data?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids = (data?.b || data?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  return {asks, bids};
 }
 
-async function fetchJSON(url, useProxy=false){
-  const target = useProxy ? makeCORSUrl(url) : url;
-  const res = await fetch(target, { cache:"no-store" });
-  if(!res.ok) throw new Error("HTTP " + res.status);
-  return await res.json();
-}
-
-async function loadOrderBookOnce(){
-  const pair = document.getElementById("obPair")?.value || "BTCUSDT";
-
-  // Try Binance
+function stopOrderBookSocket(){
   try{
-    setOBStatus("Loading from Binance…", true);
-    const url = `https://api.binance.com/api/v3/depth?symbol=${encodeURIComponent(pair)}&limit=20`;
-    const json = await fetchJSON(url, false);
-    const {asks,bids} = parseBinanceOB(json);
-    if(!asks.length || !bids.length) throw new Error("Empty");
-    renderOB(asks,bids);
-    setOBStatus("Live", true);
-    setOBMeta("Binance");
-    return;
+    if(obWS){
+      obWS.onopen = null;
+      obWS.onmessage = null;
+      obWS.onerror = null;
+      obWS.onclose = null;
+      obWS.close();
+    }
   }catch(e){}
-
-  // OKX fallback
-  try{
-    setOBStatus("Loading from OKX…", true);
-    const instId = normalizePairForOKX(pair);
-    const url = `https://www.okx.com/api/v5/market/books?instId=${encodeURIComponent(instId)}&sz=20`;
-    const json = await fetchJSON(url, false);
-    const {asks,bids} = parseOKXOB(json);
-    if(!asks.length || !bids.length) throw new Error("Empty");
-    renderOB(asks,bids);
-    setOBStatus("Live", true);
-    setOBMeta("OKX");
-    return;
-  }catch(e){}
-
-  // Bybit fallback
-  try{
-    setOBStatus("Loading from Bybit…", true);
-    const symbol = normalizePairForBybit(pair);
-    const url = `https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${encodeURIComponent(symbol)}&limit=20`;
-    const json = await fetchJSON(url, false);
-    const {asks,bids} = parseBybitOB(json);
-    if(!asks.length || !bids.length) throw new Error("Empty");
-    renderOB(asks,bids);
-    setOBStatus("Live", true);
-    setOBMeta("Bybit");
-    return;
-  }catch(e){}
-
-  // FINAL CORS PROXY fallback
-  try{
-    setOBStatus("Network blocked — using proxy…", false);
-    const url = `https://api.binance.com/api/v3/depth?symbol=${encodeURIComponent(pair)}&limit=20`;
-    const json = await fetchJSON(url, true);
-    const {asks,bids} = parseBinanceOB(json);
-    if(!asks.length || !bids.length) throw new Error("Empty");
-    renderOB(asks,bids);
-    setOBStatus("Live (proxy)", true);
-    setOBMeta("Binance (Proxy)");
-    return;
-  }catch(e){
-    setOBStatus("Failed (CORS/Network)", false);
-    setOBMeta("--");
-  }
+  obWS = null;
 }
 
 function startOrderBook(){
-  if(obTimer) clearInterval(obTimer);
-  loadOrderBookOnce();
-  obTimer=setInterval(loadOrderBookOnce, 3000);
+  const pair = document.getElementById("obPair")?.value || "BTCUSDT";
+  obPairNow = pair;
+
+  stopOrderBookSocket();
+
+  // Binance depth20 stream gives top 20 levels very fast
+  const url = `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`;
+
+  setOBStatus("Connecting…", true);
+  setOBMeta("--");
+
+  lastAsks = [];
+  lastBids = [];
+  obLastUpdate = 0;
+
+  try{
+    obWS = new WebSocket(url);
+  }catch(e){
+    setOBStatus("WebSocket blocked", false);
+    return;
+  }
+
+  obWS.onopen = ()=>{
+    setOBStatus("Live", true);
+    setOBMeta("Binance (WS)");
+  };
+
+  obWS.onerror = ()=>{
+    setOBStatus("Connection error", false);
+  };
+
+  obWS.onclose = ()=>{
+    setOBStatus("Disconnected", false);
+  };
+
+  obWS.onmessage = (ev)=>{
+    try{
+      const data = JSON.parse(ev.data);
+
+      const parsed = parseDepthStream(data);
+      if(parsed.asks?.length) lastAsks = parsed.asks;
+      if(parsed.bids?.length) lastBids = parsed.bids;
+
+      // Render max once per ~150ms to reduce UI spam on mobile
+      const now = Date.now();
+      if(now - obLastUpdate > 150){
+        obLastUpdate = now;
+
+        // Sort: asks asc best first, bids desc best first
+        const asks = [...lastAsks].sort((a,b)=>a.p-b.p);
+        const bids = [...lastBids].sort((a,b)=>b.p-a.p);
+
+        renderOB(asks, bids);
+        setOBMeta("Binance (WS)");
+      }
+    }catch(e){}
+  };
 }
 
 /* ===== auth ===== */
@@ -1828,7 +1809,7 @@ function loadChart(){
 }
 document.getElementById("obPair").addEventListener("change",()=>{
   loadChart();
-  startOrderBook();
+  startOrderBook(); // ✅ now restarts websocket on pair change
 });
 
 async function loadBalance(){
@@ -1986,7 +1967,7 @@ function initWithUser(user){
 
   loadCoinGeckoLists().then(async ()=>{
     loadChart();
-    startOrderBook(); // ✅ start order book after chart
+    startOrderBook(); // ✅ starts websocket after chart
   });
 }
 </script>
