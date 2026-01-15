@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veloci Global Markets User Dashboard</title>
+  <title>VGM | User Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -643,16 +643,6 @@
       display:flex;align-items:center;justify-content:space-between;
       gap:10px;margin-bottom:12px;
     }
-    sideBrand{
-      display:flex;align-items:center;gap:10px;
-      font-weight:1000;font-size:16px;letter-spacing:.9px;
-      color:#fff;
-      padding:10px 12px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
-      box-shadow:0 16px 50px rgba(109,87,255,.18);
-      min-width:170px;
-    }
     .sideBrand{
       display:flex;align-items:center;gap:10px;
       font-weight:1000;font-size:16px;letter-spacing:.9px;
@@ -668,6 +658,7 @@
       display:grid;place-items:center;
       background:rgba(255,255,255,.16);
       border:1px solid rgba(255,255,255,.20);
+      font-weight:1000;
     }
     .closeBtn{
       background:rgba(0,0,0,.22);
@@ -685,7 +676,7 @@
       padding:12px 12px;
       border-radius:18px;
       border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,,255,.03));
       box-shadow:0 18px 55px rgba(0,0,0,.35);
       margin:10px 0 14px;
       display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -973,9 +964,10 @@
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <div class="sideTop">
+      <!-- ✅ CHANGED: "VGM" -> "Veloci Markets" AND icon inside box now "◈" -->
       <div class="sideBrand">
         <div class="sideBrandIcon">◈</div>
-        VELOCI GLOBAL MARKETS
+        Veloci Markets
       </div>
       <button class="closeBtn" onclick="closeMenu()">✕</button>
     </div>
@@ -1006,7 +998,9 @@
     <!-- ✅ STICKY WRAP -->
     <div id="stickyMenu" class="stickyMenu">
       <div class="topRow">
-        <div class="brand"><div class="brandIcon">📣</div>VGM</div>
+        <!-- ✅ CHANGED: top-left icon box now "◈" not "V" -->
+        <div class="brand"><div class="brandIcon">◈</div>VGM</div>
+
         <div class="headerActions">
           <button class="avatarBtn" onclick="goProfile()" title="Profile">
             <span id="avatarFallback" class="avatarFallback">👤</span>
@@ -1921,7 +1915,7 @@
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
 
-        const md=(window.VGM_USER?.user_metadata||{});
+        const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
@@ -2382,13 +2376,15 @@
         const user = data?.user;
         if(error || !user){ window.location.replace("login.html"); return; }
 
-        if(!user.email_confirmed_at){
+        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+
+        if(!confirmed){
           await supabaseClient.auth.signOut();
           window.location.replace("verify.html?status=unverified");
           return;
         }
 
-        window.VGM_USER=user;
+        window.COINLUXORA_USER=user;
         initWithUser(user);
       }catch(e){
         window.location.replace("login.html");
