@@ -333,6 +333,7 @@
       color:rgba(234,240,255,.72);
       font-size:1.02rem;
       line-height:1.45;
+      white-space:pre-line;
     }
 
     /* ✅ modal buttons */
@@ -360,6 +361,40 @@
       border:none;
       box-shadow:0 18px 55px rgba(239,68,68,.18);
     }
+    .mBtn.primary{
+      background:linear-gradient(180deg, rgba(139,211,255,1), rgba(59,130,246,1));
+      color:#040814;
+      border:none;
+      box-shadow:0 18px 55px rgba(59,130,246,.14);
+    }
+
+    /* ✅ email input inside modal */
+    .emailBox{
+      margin-top:14px;
+      display:none;
+      text-align:left;
+    }
+    .emailBox.show{ display:block; }
+    .emailBox label{
+      display:block;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:rgba(234,240,255,.75);
+      margin:0 0 8px;
+    }
+    .emailBox input{
+      width:100%;
+      height:48px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      color:#fff;
+      padding:0 14px;
+      outline:none;
+      font-weight:800;
+    }
+    .emailBox input::placeholder{ color:rgba(234,240,255,.45); }
   </style>
 </head>
 
@@ -423,9 +458,7 @@
       </div>
 
       <div class="smallActions">
-        <!-- ✅ NEW -->
         <button type="button" class="linkBtn" id="forgotPinBtn">Forgot PIN?</button>
-
         <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
       </div>
 
@@ -439,10 +472,15 @@
         <h2 class="modalTitle" id="modalTitle"></h2>
         <div class="modalSub" id="modalSub"></div>
 
-        <!-- ✅ modal buttons container (only used for Forgot PIN) -->
+        <!-- ✅ Email input -->
+        <div class="emailBox" id="emailBox">
+          <label for="forgotEmailInput">Email address</label>
+          <input id="forgotEmailInput" type="email" placeholder="Enter your email (e.g. you@gmail.com)" autocomplete="email"/>
+        </div>
+
         <div class="modalBtns" id="modalBtns" style="display:none;">
           <button class="mBtn cancel" type="button" id="modalCancelBtn">Cancel</button>
-          <button class="mBtn danger" type="button" id="modalLogoutBtn">Log out</button>
+          <button class="mBtn primary" type="button" id="modalSendBtn">Send PIN</button>
         </div>
       </div>
     </div>
@@ -455,7 +493,6 @@
   const userEmail = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  // ✅ new
   const forgotPinBtn = document.getElementById("forgotPinBtn");
 
   const pinDotsEl = document.getElementById("pinDots");
@@ -470,7 +507,10 @@
   const modalSub = document.getElementById("modalSub");
   const modalBtns = document.getElementById("modalBtns");
   const modalCancelBtn = document.getElementById("modalCancelBtn");
-  const modalLogoutBtn = document.getElementById("modalLogoutBtn");
+  const modalSendBtn = document.getElementById("modalSendBtn");
+
+  const emailBox = document.getElementById("emailBox");
+  const forgotEmailInput = document.getElementById("forgotEmailInput");
 
   const lockTimer = document.getElementById("lockTimer");
   const lockTimeText = document.getElementById("lockTimeText");
@@ -658,8 +698,9 @@
   });
 
   function showPopup(type, title, sub){
-    // default hide forgot buttons
     modalBtns.style.display = "none";
+    emailBox.classList.remove("show");
+    forgotEmailInput.value = "";
 
     statusCircle.className = "statusCircle " + type;
     modalTitle.textContent = title;
@@ -701,6 +742,31 @@
     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   }
 
+  /* =========================================================
+     ✅ Personal-use reversible pin store (simple obfuscation)
+     - This is NOT strong encryption; only for learning/personal
+     ========================================================= */
+  function encodePin(pin, userId){
+    // simple reversible obfuscation using base64 and userId salt
+    try{
+      const raw = `${pin}::${userId}`;
+      return btoa(unescape(encodeURIComponent(raw)));
+    }catch(e){
+      return "";
+    }
+  }
+  function decodePin(encoded, userId){
+    try{
+      const raw = decodeURIComponent(escape(atob(encoded)));
+      const parts = raw.split("::");
+      if(parts.length !== 2) return null;
+      if(parts[1] !== userId) return null;
+      return parts[0];
+    }catch(e){
+      return null;
+    }
+  }
+
   function applyAvatarPhoto(u){
     const meta = u?.user_metadata || {};
     const photo = meta.avatar_url || meta.picture || meta.photoURL || meta.profile_photo || "";
@@ -740,7 +806,7 @@
 
       const { data, error } = await supabaseClient
         .from("user_pins")
-        .select("pin_hash")
+        .select("pin_hash, pin_hint")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -777,10 +843,11 @@
     try{
       if(mode === "create"){
         const newHash = await sha256(input + ":" + user.id);
+        const hint = encodePin(input, user.id);
 
         const { error } = await supabaseClient
           .from("user_pins")
-          .insert([{ user_id: user.id, pin_hash: newHash }]);
+          .insert([{ user_id: user.id, pin_hash: newHash, pin_hint: hint }]);
 
         if(error){
           console.error(error);
@@ -845,29 +912,108 @@
     }
   }
 
-  // ✅ Forgot PIN popup (stylish)
+  /* =========================================================
+     ✅ Forgot PIN -> ask email -> send PIN to that email
+     Uses Supabase Edge Function: send-pin
+     ========================================================= */
   forgotPinBtn.addEventListener("click", ()=>{
     if(isBusy) return;
 
     showPopup(
       "info",
       "Forgot PIN?",
-      "For security reasons, you will be logged out and asked to login again. Then you can reset/change your PIN from your profile."
+      "Enter your email address.\nIf it matches your account, we will send your PIN to your email."
     );
 
-    // show buttons
+    emailBox.classList.add("show");
     modalBtns.style.display = "flex";
+
+    // auto-fill user email
+    forgotEmailInput.value = (user?.email || "");
+    setTimeout(()=> { try{ forgotEmailInput.focus(); }catch(e){} }, 60);
   });
 
   modalCancelBtn.addEventListener("click", ()=>{
     hidePopup();
   });
 
-  modalLogoutBtn.addEventListener("click", async ()=>{
+  modalSendBtn.addEventListener("click", async ()=>{
+    if(isBusy) return;
+    if(!supabaseClient || !user) return;
+
+    const enteredEmail = (forgotEmailInput.value || "").trim().toLowerCase();
+    const realEmail = (user.email || "").trim().toLowerCase();
+
+    if(!enteredEmail || !enteredEmail.includes("@")){
+      showPopup("err", "Invalid Email", "Please enter a valid email address.");
+      setTimeout(()=>{
+        // reopen input modal
+        showPopup("info","Forgot PIN?","Enter your email address.\nIf it matches your account, we will send your PIN to your email.");
+        emailBox.classList.add("show");
+        modalBtns.style.display = "flex";
+        forgotEmailInput.value = realEmail;
+        try{ forgotEmailInput.focus(); }catch(e){}
+      }, 900);
+      return;
+    }
+
+    // must match logged in user email
+    if(enteredEmail !== realEmail){
+      showPopup("err", "Email Mismatch", "That email does not match your logged-in account.");
+      return;
+    }
+
+    isBusy = true;
+
     try{
-      if(supabaseClient) await supabaseClient.auth.signOut();
-    }catch(e){}
-    window.location.href = "/login.html";
+      // pull hint
+      const { data, error } = await supabaseClient
+        .from("user_pins")
+        .select("pin_hint")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if(error){
+        console.error(error);
+        showPopup("err", "Error", "Could not retrieve your PIN. Try again.");
+        isBusy = false;
+        return;
+      }
+
+      const hint = data?.pin_hint || "";
+      const pin = decodePin(hint, user.id);
+
+      if(!pin){
+        showPopup("err", "PIN Not Recoverable", "Your PIN cannot be recovered. Please log out and create a new one.");
+        isBusy = false;
+        return;
+      }
+
+      showPopup("info", "Sending…", "Please wait while we send your PIN to your email.");
+
+      // Call edge function
+      const { data: fnData, error: fnError } = await supabaseClient.functions.invoke("send-pin", {
+        body: { email: enteredEmail, pin }
+      });
+
+      if(fnError){
+        console.error(fnError);
+        showPopup("err", "Email Failed", "Could not send email. Please try again.");
+        isBusy = false;
+        return;
+      }
+
+      showPopup("ok", "Sent ✔️", "Your PIN has been sent to your email.");
+      setTimeout(()=>{
+        hidePopup();
+        isBusy = false;
+      }, 1100);
+
+    }catch(err){
+      console.error(err);
+      showPopup("err", "Error", "Something went wrong. Try again.");
+      isBusy = false;
+    }
   });
 
   logoutBtn.addEventListener("click", async ()=>{
