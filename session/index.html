@@ -3,452 +3,99 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Secure Authentication | Coinluxora</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>PIN Test - Coinluxora</title>
 
   <style>
-    :root{
-      --bg:#050a18;
-      --card:#0b1226;
-      --stroke:rgba(255,255,255,.10);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.65);
-      --danger:#ef4444;
-    }
-
-    *{ box-sizing:border-box; }
     body{
       margin:0;
       min-height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
-      background: radial-gradient(1200px 800px at 50% 20%, rgba(139,211,255,.10), transparent 55%) , var(--bg);
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--text);
+      background:#050a18;
+      color:#fff;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       padding:24px;
     }
-
-    .card{
-      width:min(520px, 100%);
-      background:rgba(11,18,38,.86);
-      border:1px solid var(--stroke);
-      border-radius:18px;
-      padding:22px 22px 18px;
-      box-shadow:0 16px 50px rgba(0,0,0,.45);
-      position:relative;
-      overflow:hidden;
-      isolation:isolate;
-    }
-
-    /* ✅ glow layer forced behind everything */
-    .card:before{
-      content:"";
-      position:absolute;
-      inset:-120px -160px auto -160px;
-      height:260px;
-      background:radial-gradient(circle at 50% 40%, rgba(139,211,255,.18), transparent 60%);
-      pointer-events:none !important;
-      z-index:-1;
-    }
-
-    .layer{
-      position:relative;
-      z-index:2;
-    }
-
-    .top{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-
-    .avatar{
-      width:54px;
-      height:54px;
-      border-radius:50%;
-      border:1px solid var(--stroke);
+    .box{
+      width:min(520px,100%);
+      border:1px solid rgba(255,255,255,.15);
       background:rgba(255,255,255,.06);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
+      border-radius:16px;
+      padding:18px;
     }
-    .avatar svg{ width:34px; height:34px; opacity:.9; }
-
-    .who{ display:flex; flex-direction:column; gap:2px; }
-    .name{ font-weight:700; letter-spacing:.2px; }
-    .email{ font-size:.92rem; color:var(--muted); }
-
-    .divider{
-      height:1px;
-      background:var(--stroke);
-      margin:18px 0 16px;
-    }
-
-    h1{
-      margin:0;
-      font-size:1.75rem;
-      letter-spacing:.2px;
-    }
-    .sub{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:1.02rem;
-    }
-
-    /* ✅ PIN BOXES */
-    .pinBoxes{
-      margin:18px 0 18px;
-      display:flex;
-      justify-content:center;
-      gap:14px;
-    }
-    .pinBox{
-      width:56px;
+    .screen{
       height:56px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.16);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.15);
       background:rgba(255,255,255,.06);
       display:flex;
       align-items:center;
       justify-content:center;
+      font-weight:900;
+      letter-spacing:.6px;
+      margin-bottom:16px;
     }
-    .pinDot{
-      width:14px;
-      height:14px;
-      border-radius:999px;
-      background:transparent;
-      border:1px solid rgba(255,255,255,.30);
-      transition:.12s ease;
-    }
-    .pinBox.filled .pinDot{
-      background:rgba(255,255,255,.92);
-      border-color:rgba(255,255,255,.92);
-      transform:scale(1.06);
-    }
-
-    /* ✅ keypad always clickable */
     .pad{
       display:grid;
-      grid-template-columns:repeat(3, 1fr);
-      gap:14px;
-      max-width:320px;
-      margin:0 auto 18px;
-      position:relative;
-      z-index:9999;
-      pointer-events:auto !important;
-    }
-
-    .key{
-      height:64px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.90);
-      color:#0a0f1f;
-      font-weight:800;
-      font-size:1.25rem;
-      cursor:pointer;
-      user-select:none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      pointer-events:auto !important;
-      position:relative;
-      z-index:10000;
-    }
-
-    .key.ghost{
-      background:transparent;
-      color:rgba(255,255,255,.75);
-    }
-
-    .btn{
-      width:100%;
-      height:52px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.10);
-      color:rgba(234,240,255,.55);
-      font-weight:800;
-      letter-spacing:.6px;
-      cursor:not-allowed;
-    }
-    .btn.ready{
-      background:rgba(255,255,255,.16);
-      color:var(--text);
-      cursor:pointer;
-    }
-
-    .hint{
-      text-align:center;
-      margin:12px 0 0;
-      color:rgba(234,240,255,.60);
-      font-size:.95rem;
-      min-height:20px;
-    }
-
-    .smallActions{
-      display:flex;
-      justify-content:center;
+      grid-template-columns:repeat(3,1fr);
       gap:12px;
       margin-top:10px;
-      flex-wrap:wrap;
     }
-    .linkBtn{
-      background:transparent;
+    button{
+      height:64px;
+      border-radius:999px;
       border:none;
-      color:rgba(139,211,255,.90);
+      font-size:22px;
+      font-weight:900;
       cursor:pointer;
-      font-weight:700;
-      font-size:.95rem;
+      background:#fff;
+      color:#0a0f1f;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
     }
-
-    .danger{ color:var(--danger) !important; }
-
-    /* ✅ Hidden input for bulletproof mobile value updates */
-    .hiddenInput{
-      position:absolute;
-      opacity:0;
-      pointer-events:none;
-      height:1px;
-      width:1px;
-      left:-9999px;
-      top:-9999px;
-    }
+    button:active{transform:scale(.98)}
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <div class="layer">
+  <div class="box">
+    <div class="screen" id="screen">Tap any digit...</div>
 
-      <div class="top">
-        <div class="avatar">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" fill="currentColor" opacity=".85"/>
-          </svg>
-        </div>
-        <div class="who">
-          <div class="name" id="userName">Loading...</div>
-          <div class="email" id="userEmail"></div>
-        </div>
-      </div>
+    <div class="pad" id="pad">
+      <button type="button" data-num="1">1</button>
+      <button type="button" data-num="2">2</button>
+      <button type="button" data-num="3">3</button>
 
-      <div class="divider"></div>
+      <button type="button" data-num="4">4</button>
+      <button type="button" data-num="5">5</button>
+      <button type="button" data-num="6">6</button>
 
-      <h1>Secure Authentication</h1>
-      <div class="sub" id="subText">Please verify your 4-digit PIN code</div>
+      <button type="button" data-num="7">7</button>
+      <button type="button" data-num="8">8</button>
+      <button type="button" data-num="9">9</button>
 
-      <!-- Hidden input (bulletproof mobile) -->
-      <input id="pinInput" class="hiddenInput" inputmode="numeric" maxlength="4" />
-
-      <div class="pinBoxes" id="pinBoxes">
-        <div class="pinBox"><div class="pinDot"></div></div>
-        <div class="pinBox"><div class="pinDot"></div></div>
-        <div class="pinBox"><div class="pinDot"></div></div>
-        <div class="pinBox"><div class="pinDot"></div></div>
-      </div>
-
-      <div class="pad" id="pad">
-        <button type="button" class="key" data-num="7">7</button>
-        <button type="button" class="key" data-num="0">0</button>
-        <button type="button" class="key" data-num="1">1</button>
-
-        <button type="button" class="key" data-num="2">2</button>
-        <button type="button" class="key" data-num="3">3</button>
-        <button type="button" class="key" data-num="8">8</button>
-
-        <button type="button" class="key" data-num="4">4</button>
-        <button type="button" class="key" data-num="5">5</button>
-        <button type="button" class="key" data-num="6">6</button>
-
-        <button type="button" class="key" data-num="9">9</button>
-        <button type="button" class="key ghost" data-action="backspace">⌫</button>
-        <button type="button" class="key ghost" data-action="clear">Clear</button>
-      </div>
-
-      <div>
-        <button type="button" class="btn" id="verifyBtn" disabled>VERIFY</button>
-        <div class="hint" id="hint"></div>
-      </div>
-
-      <div class="smallActions">
-        <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
-      </div>
-
+      <button type="button" data-num="0" style="grid-column:2/3;">0</button>
     </div>
   </div>
 
 <script>
-  const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzE2MjUsImV4cCI6MjA1MjQ0NzYyNX0.RGOC9l-xiYk8gwQpC_XoB9XJrTz8g5og35s5t7XUL5o";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  let mode = "verify";
-  let pinHashFromDb = null;
-  let user = null;
-
-  const subText = document.getElementById("subText");
-  const hint = document.getElementById("hint");
-  const verifyBtn = document.getElementById("verifyBtn");
-  const userName = document.getElementById("userName");
-  const userEmail = document.getElementById("userEmail");
-  const logoutBtn = document.getElementById("logoutBtn");
+  const screen = document.getElementById("screen");
   const pad = document.getElementById("pad");
-  const pinInput = document.getElementById("pinInput");
-  const pinBoxes = Array.from(document.querySelectorAll(".pinBox"));
 
-  function setHint(msg, isDanger=false){
-    hint.textContent = msg || "";
-    hint.classList.toggle("danger", !!isDanger);
-  }
-
-  function setVerifyReady(ready){
-    verifyBtn.disabled = !ready;
-    verifyBtn.classList.toggle("ready", !!ready);
-  }
-
-  function renderPinBoxes(){
-    const v = (pinInput.value || "").slice(0,4);
-    pinBoxes.forEach((box, i)=>{
-      box.classList.toggle("filled", i < v.length);
-    });
-    setVerifyReady(v.length === 4);
-  }
-
-  function clearPin(){
-    pinInput.value = "";
-    renderPinBoxes();
-  }
-
-  async function sha256(str){
-    const data = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-
-  async function init(){
-    const { data: { user: u } } = await supabase.auth.getUser();
-    if(!u){
-      window.location.href = "/login.html";
-      return;
-    }
-    user = u;
-
-    userEmail.textContent = user.email || "";
-    userName.textContent = (user.user_metadata?.full_name || user.user_metadata?.name || "User");
-
-    const { data, error } = await supabase
-      .from("user_pins")
-      .select("pin_hash")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if(error){
-      setHint("PIN system not ready. Please try again.", true);
-      console.error(error);
-      return;
-    }
-
-    if(!data){
-      mode = "create";
-      pinHashFromDb = null;
-      subText.textContent = "Create your new 4-digit PIN";
-      setHint("Create a PIN you'll remember.");
-    } else {
-      mode = "verify";
-      pinHashFromDb = data.pin_hash;
-      subText.textContent = "Please verify your 4-digit PIN code";
-      setHint("");
-    }
-
-    clearPin();
-  }
-
-  // ✅ keypad input (guaranteed)
+  // ✅ MOST basic tap detection: click
   pad.addEventListener("click", (e)=>{
     const btn = e.target.closest("button");
     if(!btn) return;
-
-    const num = btn.getAttribute("data-num");
-    const action = btn.getAttribute("data-action");
-
-    if(num !== null){
-      if(pinInput.value.length >= 4) return;
-      pinInput.value += String(num);
-      renderPinBoxes();
-
-      if(pinInput.value.length === 4){
-        setTimeout(()=> verifyBtn.click(), 120);
-      }
-      return;
-    }
-
-    if(action === "backspace"){
-      pinInput.value = pinInput.value.slice(0,-1);
-      renderPinBoxes();
-      return;
-    }
-
-    if(action === "clear"){
-      setHint("");
-      clearPin();
-      return;
-    }
+    screen.textContent = "Tapped: " + btn.dataset.num;
   });
 
-  verifyBtn.addEventListener("click", async ()=>{
-    const input = (pinInput.value || "").slice(0,4);
-    if(input.length !== 4) return;
-
-    verifyBtn.disabled = true;
-    verifyBtn.classList.remove("ready");
-
-    try{
-      if(mode === "create"){
-        const newHash = await sha256(input + ":" + user.id);
-        const { error } = await supabase
-          .from("user_pins")
-          .insert([{ user_id: user.id, pin_hash: newHash }]);
-
-        if(error){
-          setHint("Unable to create PIN. Try again.", true);
-          console.error(error);
-          clearPin();
-          return;
-        }
-
-        setHint("PIN created successfully ✅");
-        setTimeout(()=> window.location.href = "/user-dashboard.html", 450);
-
-      } else {
-        const attemptHash = await sha256(input + ":" + user.id);
-
-        if(attemptHash !== pinHashFromDb){
-          setHint("Incorrect PIN. Try again.", true);
-          clearPin();
-          return;
-        }
-
-        setHint("Verified ✅");
-        setTimeout(()=> window.location.href = "/user-dashboard.html", 280);
-      }
-    }catch(err){
-      console.error(err);
-      setHint("Something went wrong. Try again.", true);
-      clearPin();
-    }
-  });
-
-  logoutBtn.addEventListener("click", async ()=>{
-    await supabase.auth.signOut();
-    window.location.href = "/login.html";
-  });
-
-  init();
+  // ✅ ALSO detect pointerdown
+  pad.addEventListener("pointerdown", (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    screen.textContent = "PointerDown: " + btn.dataset.num;
+  }, { passive:false });
 </script>
-
 </body>
 </html>
