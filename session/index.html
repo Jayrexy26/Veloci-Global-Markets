@@ -112,7 +112,7 @@
       margin:22px 0 20px;
       flex-direction:column;
       align-items:center;
-      gap:12px;
+      gap:10px;
     }
 
     .pinDots{
@@ -135,6 +135,20 @@
       background:rgba(255,255,255,.92);
       border-color:rgba(255,255,255,.92);
       transform:scale(1.08);
+    }
+
+    /* ✅ Attempts left text */
+    .attempts{
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:rgba(234,240,255,.65);
+      min-height:16px;
+      text-align:center;
+      user-select:none;
+    }
+    .attempts.danger{
+      color:rgba(248,113,113,.95);
     }
 
     @keyframes shake{
@@ -348,6 +362,9 @@
           <div class="dot"></div>
         </div>
 
+        <!-- ✅ Attempts left text -->
+        <div class="attempts" id="attemptsText"></div>
+
         <div class="lockTimer" id="lockTimer">
           <div class="t1">Too many incorrect attempts 🔒</div>
           <div class="t2" id="lockTimeText">05:00</div>
@@ -411,6 +428,9 @@
   const lockTimer = document.getElementById("lockTimer");
   const lockTimeText = document.getElementById("lockTimeText");
 
+  // ✅ Attempts left UI
+  const attemptsText = document.getElementById("attemptsText");
+
   let input = "";
   let mode = "verify";
   let pinHashFromDb = null;
@@ -422,7 +442,7 @@
   const MAX_TRIES = 5;
   const LOCK_MINUTES = 5;
   let lockInterval = null;
-  let limiterId = "guest"; // ✅ stable key id
+  let limiterId = "guest";
 
   function triesKey(){ return `coinluxora_pin_tries_${limiterId}`; }
   function lockKey(){  return `coinluxora_pin_lock_${limiterId}`; }
@@ -453,10 +473,38 @@
   function lockKeypad(){
     pad.classList.add("locked");
     lockTimer.classList.add("show");
+    // hide attempts text while locked
+    attemptsText.textContent = "";
+    attemptsText.classList.remove("danger");
   }
   function unlockKeypad(){
     pad.classList.remove("locked");
     lockTimer.classList.remove("show");
+  }
+
+  function updateAttemptsUI(){
+    const tries = getTries();
+    const left = Math.max(0, MAX_TRIES - tries);
+
+    // only show attempts in verify mode and NOT locked
+    const until = getLockUntil();
+    const locked = (until && until > Date.now());
+
+    if(mode !== "verify" || locked){
+      attemptsText.textContent = "";
+      attemptsText.classList.remove("danger");
+      return;
+    }
+
+    // show only after at least 1 wrong try
+    if(tries <= 0){
+      attemptsText.textContent = "";
+      attemptsText.classList.remove("danger");
+      return;
+    }
+
+    attemptsText.textContent = `Attempts left: ${left}`;
+    attemptsText.classList.toggle("danger", left <= 2);
   }
 
   function startCountdown(){
@@ -476,6 +524,7 @@
         unlockKeypad();
         resetInput();
         isBusy = false;
+        updateAttemptsUI();
         return;
       }
 
@@ -515,6 +564,15 @@
     void pinDotsEl.offsetWidth;
     pinDotsEl.classList.add("shake");
     setTimeout(()=> pinDotsEl.classList.remove("shake"), 520);
+  }
+
+  // ✅ soft vibration for wrong attempts (only on supported devices)
+  function softVibrate(){
+    try{
+      if(navigator.vibrate){
+        navigator.vibrate([18, 30, 18]);
+      }
+    }catch(e){}
   }
 
   function addDigit(n){
@@ -622,7 +680,6 @@
 
       user = session.user;
 
-      // ✅ stable limiter key
       limiterId = (user.email || user.id || "guest").toLowerCase().replace(/[^a-z0-9@._-]/g,"_");
 
       userEmail.textContent = user.email || "";
@@ -653,6 +710,7 @@
       }
 
       resetInput();
+      updateAttemptsUI();
     }catch(err){
       console.error(err);
     }
@@ -681,7 +739,6 @@
           return;
         }
 
-        // ✅ reset limiter
         setTries(0);
         setLockUntil(0);
         unlockKeypad();
@@ -693,10 +750,14 @@
         const attemptHash = await sha256(input + ":" + user.id);
 
         if(attemptHash !== pinHashFromDb){
+          // ✅ soft vibration on wrong pin
+          softVibrate();
+
           let tries = getTries() + 1;
           setTries(tries);
 
           shakeDots();
+          updateAttemptsUI();
 
           if(tries >= MAX_TRIES){
             resetInput();
@@ -724,6 +785,7 @@
         setTries(0);
         setLockUntil(0);
         unlockKeypad();
+        updateAttemptsUI();
 
         showPopup("ok", "Verified ✔️", "Redirecting you to your dashboard...");
         setTimeout(()=> window.location.href = "/user-dashboard.html", 520);
