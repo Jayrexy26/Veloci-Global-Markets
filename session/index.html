@@ -106,13 +106,21 @@
       font-size:1.02rem;
     }
 
-    /* ✅ ONLY ROUND DOTS (NO SQUARE BOXES) */
-    .pinDots{
-      margin:22px 0 20px;
+    /* ✅ ONLY ROUND DOTS */
+    .pinDotsWrap{
       display:flex;
       justify-content:center;
-      gap:18px;
+      margin:22px 0 20px;
     }
+
+    .pinDots{
+      display:flex;
+      gap:18px;
+      padding:6px 10px;
+      border-radius:999px;
+      transition:.14s ease;
+    }
+
     .dot{
       width:16px;
       height:16px;
@@ -125,6 +133,23 @@
       background:rgba(255,255,255,.92);
       border-color:rgba(255,255,255,.92);
       transform:scale(1.08);
+    }
+
+    /* ✅ shake animation like iPhone */
+    @keyframes shake{
+      0%{ transform:translateX(0); }
+      15%{ transform:translateX(-10px); }
+      30%{ transform:translateX(10px); }
+      45%{ transform:translateX(-8px); }
+      60%{ transform:translateX(8px); }
+      75%{ transform:translateX(-6px); }
+      90%{ transform:translateX(6px); }
+      100%{ transform:translateX(0); }
+    }
+    .pinDots.shake{
+      animation:shake .42s ease;
+      background:rgba(239,68,68,.10);
+      box-shadow:0 0 0 4px rgba(239,68,68,.14);
     }
 
     .pad{
@@ -157,23 +182,6 @@
       color:rgba(255,255,255,.75);
     }
 
-    .btn{
-      width:100%;
-      height:52px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.10);
-      color:rgba(234,240,255,.55);
-      font-weight:800;
-      letter-spacing:.6px;
-      cursor:not-allowed;
-    }
-    .btn.ready{
-      background:rgba(255,255,255,.16);
-      color:var(--text);
-      cursor:pointer;
-    }
-
     .smallActions{
       display:flex;
       justify-content:center;
@@ -190,7 +198,7 @@
       font-size:.95rem;
     }
 
-    /* ✅ POPUP MODAL */
+    /* ✅ POPUP */
     .overlay{
       position:fixed;
       inset:0;
@@ -293,12 +301,13 @@
       <h1>Secure Authentication</h1>
       <div class="sub" id="subText">Please verify your 4-digit PIN code</div>
 
-      <!-- ✅ only dots now -->
-      <div class="pinDots" id="pinDots">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
+      <div class="pinDotsWrap">
+        <div class="pinDots" id="pinDots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
       </div>
 
       <div class="pad" id="pad">
@@ -319,10 +328,6 @@
         <button type="button" class="key ghost" data-action="clear">Clear</button>
       </div>
 
-      <div>
-        <button type="button" class="btn" id="verifyBtn" disabled>VERIFY</button>
-      </div>
-
       <div class="smallActions">
         <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
       </div>
@@ -330,7 +335,6 @@
     </div>
   </div>
 
-  <!-- ✅ Popup -->
   <div class="overlay" id="overlay">
     <div class="modal">
       <div class="modalInner">
@@ -343,12 +347,12 @@
 
 <script>
   const pad = document.getElementById("pad");
-  const verifyBtn = document.getElementById("verifyBtn");
   const subText = document.getElementById("subText");
   const userName = document.getElementById("userName");
   const userEmail = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
 
+  const pinDotsEl = document.getElementById("pinDots");
   const dots = Array.from(document.querySelectorAll(".dot"));
 
   const avatarImg = document.getElementById("avatarImg");
@@ -366,14 +370,8 @@
   let supabaseClient = null;
   let isBusy = false;
 
-  function setVerifyReady(ready){
-    verifyBtn.disabled = !ready;
-    verifyBtn.classList.toggle("ready", !!ready);
-  }
-
   function renderDots(){
     dots.forEach((d, i)=> d.classList.toggle("filled", i < input.length));
-    setVerifyReady(input.length === 4 && !isBusy);
   }
 
   function resetInput(){
@@ -381,13 +379,21 @@
     renderDots();
   }
 
+  function shakeDots(){
+    pinDotsEl.classList.remove("shake");
+    void pinDotsEl.offsetWidth;
+    pinDotsEl.classList.add("shake");
+    setTimeout(()=> pinDotsEl.classList.remove("shake"), 520);
+  }
+
   function addDigit(n){
     if(isBusy) return;
     if(input.length >= 4) return;
     input += String(n);
     renderDots();
+
     if(input.length === 4){
-      setTimeout(()=> verifyBtn.click(), 120);
+      setTimeout(()=> verifyPin(), 120);
     }
   }
 
@@ -512,13 +518,12 @@
     }
   }
 
-  verifyBtn.addEventListener("click", async ()=>{
+  async function verifyPin(){
     if(isBusy) return;
     if(input.length !== 4) return;
     if(!supabaseClient || !user) return;
 
     isBusy = true;
-    setVerifyReady(false);
 
     try{
       if(mode === "create"){
@@ -542,17 +547,18 @@
         const attemptHash = await sha256(input + ":" + user.id);
 
         if(attemptHash !== pinHashFromDb){
-          // ❌ incorrect pin popup
+          // ❌ incorrect pin = shake + popup
+          shakeDots();
           showPopup("err", "Incorrect PIN ❌", "Please try again.");
+
           setTimeout(()=>{
             hidePopup();
             isBusy = false;
             resetInput();
-          }, 900);
+          }, 950);
           return;
         }
 
-        // ✅ correct
         showPopup("ok", "Verified ✔️", "Redirecting you to your dashboard...");
         setTimeout(()=> window.location.href = "/user-dashboard.html", 520);
       }
@@ -561,7 +567,7 @@
       isBusy = false;
       resetInput();
     }
-  });
+  }
 
   logoutBtn.addEventListener("click", async ()=>{
     try{
