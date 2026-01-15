@@ -15,6 +15,8 @@
       --text:#eaf0ff;
       --muted:rgba(234,240,255,.65);
       --danger:#ef4444;
+      --ok:#22c55e;
+      --accent:#8bd3ff;
     }
 
     *{ box-sizing:border-box; }
@@ -74,7 +76,6 @@
       flex:0 0 auto;
     }
 
-    /* ✅ Profile image */
     .avatar img{
       position:absolute;
       inset:0;
@@ -84,7 +85,6 @@
       display:none;
     }
 
-    /* default icon */
     .avatar svg{ width:34px; height:34px; opacity:.9; }
 
     .who{ display:flex; flex-direction:column; gap:2px; }
@@ -108,7 +108,7 @@
       font-size:1.02rem;
     }
 
-    /* Rounded PIN boxes */
+    /* PIN boxes */
     .pinBoxes{
       margin:18px 0 18px;
       display:flex;
@@ -187,14 +187,6 @@
       cursor:pointer;
     }
 
-    .hint{
-      text-align:center;
-      margin:12px 0 0;
-      color:rgba(234,240,255,.60);
-      font-size:.95rem;
-      min-height:20px;
-    }
-
     .smallActions{
       display:flex;
       justify-content:center;
@@ -211,7 +203,72 @@
       font-size:.95rem;
     }
 
-    .danger{ color:var(--danger) !important; }
+    /* ✅ POPUP MODAL */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:18px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .overlay.show{ display:flex; }
+
+    .modal{
+      width:min(420px, 100%);
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(11,18,38,.92);
+      box-shadow:0 28px 90px rgba(0,0,0,.60);
+      padding:20px 18px 18px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .modal:before{
+      content:"";
+      position:absolute;
+      inset:-120px -140px auto -140px;
+      height:240px;
+      background:radial-gradient(circle at 50% 45%, rgba(34,197,94,.22), transparent 60%);
+      pointer-events:none;
+    }
+
+    .modalInner{
+      position:relative;
+      z-index:2;
+      text-align:center;
+    }
+
+    .checkCircle{
+      width:66px;
+      height:66px;
+      border-radius:999px;
+      margin:6px auto 12px;
+      border:1px solid rgba(34,197,94,.35);
+      background:rgba(34,197,94,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 16px 55px rgba(34,197,94,.18);
+    }
+    .checkCircle svg{ width:34px; height:34px; }
+
+    .modalTitle{
+      font-weight:900;
+      font-size:1.5rem;
+      letter-spacing:.2px;
+      margin:0;
+    }
+    .modalSub{
+      margin:10px 0 0;
+      color:rgba(234,240,255,.72);
+      font-size:1.02rem;
+    }
   </style>
 </head>
 
@@ -222,10 +279,7 @@
 
       <div class="top">
         <div class="avatar" id="avatarBox">
-          <!-- ✅ image will show only if user has a photo -->
           <img id="avatarImg" alt="Profile"/>
-
-          <!-- default icon -->
           <svg id="avatarIcon" viewBox="0 0 24 24" fill="none">
             <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" fill="currentColor" opacity=".85"/>
           </svg>
@@ -269,7 +323,6 @@
 
       <div>
         <button type="button" class="btn" id="verifyBtn" disabled>VERIFY</button>
-        <div class="hint" id="hint"></div>
       </div>
 
       <div class="smallActions">
@@ -279,33 +332,48 @@
     </div>
   </div>
 
+  <!-- ✅ Verified popup -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modalInner">
+        <div class="checkCircle">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M20 6 9 17l-5-5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="modalTitle" id="modalTitle">Verified ✔️</h2>
+        <div class="modalSub" id="modalSub">Redirecting you to your dashboard...</div>
+      </div>
+    </div>
+  </div>
+
 <script>
   // ---------------------------
   // UI + keypad ALWAYS attach first ✅
   // ---------------------------
   const pad = document.getElementById("pad");
   const verifyBtn = document.getElementById("verifyBtn");
-  const hint = document.getElementById("hint");
   const subText = document.getElementById("subText");
   const userName = document.getElementById("userName");
   const userEmail = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
   const pinBoxes = Array.from(document.querySelectorAll(".pinBox"));
 
-  // ✅ avatar refs
+  // avatar refs
   const avatarImg = document.getElementById("avatarImg");
   const avatarIcon = document.getElementById("avatarIcon");
+
+  // modal refs
+  const overlay = document.getElementById("overlay");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalSub = document.getElementById("modalSub");
 
   let input = "";
   let mode = "verify";
   let pinHashFromDb = null;
   let user = null;
   let supabaseClient = null;
-
-  function setHint(msg, danger=false){
-    hint.textContent = msg || "";
-    hint.classList.toggle("danger", !!danger);
-  }
+  let isBusy = false;
 
   function setVerifyReady(ready){
     verifyBtn.disabled = !ready;
@@ -316,7 +384,7 @@
     pinBoxes.forEach((box, i)=>{
       box.classList.toggle("filled", i < input.length);
     });
-    setVerifyReady(input.length === 4);
+    setVerifyReady(input.length === 4 && !isBusy);
   }
 
   function resetInput(){
@@ -325,6 +393,7 @@
   }
 
   function addDigit(n){
+    if(isBusy) return;
     if(input.length >= 4) return;
     input += String(n);
     renderPinBoxes();
@@ -346,20 +415,27 @@
     }
 
     if(action === "backspace"){
+      if(isBusy) return;
       input = input.slice(0, -1);
       renderPinBoxes();
       return;
     }
 
     if(action === "clear"){
+      if(isBusy) return;
       resetInput();
-      setHint("");
       return;
     }
   });
 
+  function showVerifiedPopup(titleText="Verified ✔️", sub="Redirecting you to your dashboard..."){
+    modalTitle.textContent = titleText;
+    modalSub.textContent = sub;
+    overlay.classList.add("show");
+  }
+
   // ---------------------------
-  // Supabase logic AFTER UI ✅
+  // Supabase logic
   // ---------------------------
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -371,7 +447,6 @@
     return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
   }
 
-  // ✅ set avatar photo if exists
   function applyAvatarPhoto(u){
     const meta = u?.user_metadata || {};
     const photo =
@@ -385,8 +460,6 @@
       avatarImg.src = photo;
       avatarImg.style.display = "block";
       avatarIcon.style.display = "none";
-
-      // fallback if image fails
       avatarImg.onerror = () => {
         avatarImg.style.display = "none";
         avatarIcon.style.display = "block";
@@ -398,7 +471,6 @@
     try{
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // ✅ avoid redirect loop: delay + getSession
       await new Promise(r => setTimeout(r, 150));
       const { data: sessData } = await supabaseClient.auth.getSession();
       const session = sessData?.session;
@@ -410,7 +482,6 @@
 
       user = session.user;
 
-      // ✅ Apply user name/email/photo
       userEmail.textContent = user.email || "";
       userName.textContent = (user.user_metadata?.full_name || user.user_metadata?.name || "User");
       applyAvatarPhoto(user);
@@ -422,8 +493,8 @@
         .maybeSingle();
 
       if(error){
-        setHint("PIN system error: " + (error.message || "Unknown error"), true);
         console.error(error);
+        // no bottom message as requested — just keep page usable
         return;
       }
 
@@ -431,31 +502,26 @@
         mode = "create";
         pinHashFromDb = null;
         subText.textContent = "Create your new 4-digit PIN";
-        setHint("Create a PIN you'll remember.");
       } else {
         mode = "verify";
         pinHashFromDb = data.pin_hash;
         subText.textContent = "Please verify your 4-digit PIN code";
-        setHint("");
       }
 
       resetInput();
     }catch(err){
       console.error(err);
-      setHint("Page error: unable to load PIN system.", true);
+      // no bottom message as requested
     }
   }
 
   verifyBtn.addEventListener("click", async ()=>{
+    if(isBusy) return;
     if(input.length !== 4) return;
+    if(!supabaseClient || !user) return;
 
-    if(!supabaseClient || !user){
-      setHint("PIN system not ready. Refresh the page.", true);
-      return;
-    }
-
-    verifyBtn.disabled = true;
-    verifyBtn.classList.remove("ready");
+    isBusy = true;
+    setVerifyReady(false);
 
     try{
       if(mode === "create"){
@@ -466,30 +532,31 @@
           .insert([{ user_id: user.id, pin_hash: newHash }]);
 
         if(error){
-          setHint("Unable to create PIN: " + (error.message || "error"), true);
           console.error(error);
+          isBusy = false;
           resetInput();
           return;
         }
 
-        setHint("PIN created successfully ✅");
-        setTimeout(()=> window.location.href = "/user-dashboard.html", 450);
+        showVerifiedPopup("PIN Created ✔️", "Redirecting you to your dashboard...");
+        setTimeout(()=> window.location.href = "/user-dashboard.html", 650);
 
       } else {
         const attemptHash = await sha256(input + ":" + user.id);
 
         if(attemptHash !== pinHashFromDb){
-          setHint("Incorrect PIN. Try again.", true);
+          // wrong pin → just reset silently (no bottom verify box)
+          isBusy = false;
           resetInput();
           return;
         }
 
-        setHint("Verified ✅");
-        setTimeout(()=> window.location.href = "/user-dashboard.html", 280);
+        showVerifiedPopup("Verified ✔️", "Redirecting you to your dashboard...");
+        setTimeout(()=> window.location.href = "/user-dashboard.html", 520);
       }
     }catch(err){
       console.error(err);
-      setHint("Something went wrong. Try again.", true);
+      isBusy = false;
       resetInput();
     }
   });
