@@ -41,6 +41,9 @@
       box-shadow:0 16px 50px rgba(0,0,0,.45);
       position:relative;
       overflow:hidden;
+
+      /* ✅ important for mobile layering */
+      isolation:isolate;
     }
 
     .card:before{
@@ -50,14 +53,20 @@
       height:220px;
       background:radial-gradient(circle at 50% 40%, rgba(139,211,255,.18), transparent 60%);
       pointer-events:none;
+
+      /* ✅ push glow behind everything */
+      z-index:0;
+    }
+
+    .top, .divider, h1, .sub, .dots, .verifyWrap, .smallActions, .footerSpace{
+      position:relative;
+      z-index:2;
     }
 
     .top{
       display:flex;
       align-items:center;
       gap:14px;
-      position:relative;
-      z-index:1;
     }
 
     .avatar{
@@ -91,15 +100,11 @@
       margin:0;
       font-size:1.75rem;
       letter-spacing:.2px;
-      position:relative;
-      z-index:1;
     }
     .sub{
       margin:8px 0 0;
       color:var(--muted);
       font-size:1.02rem;
-      position:relative;
-      z-index:1;
     }
 
     .dots{
@@ -107,8 +112,6 @@
       display:flex;
       gap:12px;
       justify-content:center;
-      position:relative;
-      z-index:1;
     }
     .dot{
       width:12px;
@@ -122,6 +125,7 @@
       border-color:rgba(255,255,255,.85);
     }
 
+    /* ✅ keypad layer forced ABOVE everything */
     .pad{
       display:grid;
       grid-template-columns:repeat(3, 1fr);
@@ -129,8 +133,9 @@
       max-width:320px;
       margin:0 auto 18px;
       position:relative;
-      z-index:1;
+      z-index:5;
     }
+
     .key{
       height:64px;
       border-radius:999px;
@@ -142,8 +147,13 @@
       cursor:pointer;
       transition:transform .06s ease, opacity .2s ease;
       user-select:none;
+
+      /* ✅ mobile tap fixes */
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      pointer-events:auto;
+      position:relative;
+      z-index:6;
     }
     .key:active{ transform:scale(.98); }
     .key.ghost{
@@ -152,11 +162,8 @@
       color:rgba(255,255,255,.75);
     }
 
-    .verifyWrap{
-      margin-top:8px;
-      position:relative;
-      z-index:1;
-    }
+    .verifyWrap{ margin-top:8px; }
+
     .btn{
       width:100%;
       height:52px;
@@ -187,8 +194,6 @@
       justify-content:center;
       gap:12px;
       margin-top:10px;
-      position:relative;
-      z-index:1;
       flex-wrap:wrap;
     }
     .linkBtn{
@@ -203,9 +208,7 @@
 
     .danger{ color:var(--danger) !important; }
 
-    .footerSpace{
-      height:4px;
-    }
+    .footerSpace{ height:4px; }
   </style>
 </head>
 
@@ -261,25 +264,15 @@
   </div>
 
 <script>
-  // ---------------------------
-  // Supabase setup
-  // ---------------------------
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzE2MjUsImV4cCI6MjA1MjQ0NzYyNX0.RGOC9l-xiYk8gwQpC_XoB9XJrTz8g5og35s5t7XUL5o";
-
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ---------------------------
-  // State
-  // ---------------------------
-  let mode = "verify"; // "create" | "verify"
+  let mode = "verify";
   let input = "";
   let pinHashFromDb = null;
   let user = null;
 
-  // ---------------------------
-  // UI refs
-  // ---------------------------
   const titleText = document.getElementById("titleText");
   const subText = document.getElementById("subText");
   const dotsBox = document.getElementById("dots");
@@ -314,9 +307,6 @@
     setVerifyReady(false);
   }
 
-  // ---------------------------
-  // SHA-256 hash helper
-  // ---------------------------
   async function sha256(str){
     const data = new TextEncoder().encode(str);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -324,11 +314,7 @@
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // ---------------------------
-  // Load user + decide mode
-  // ---------------------------
   async function init(){
-    // Must be logged in to use this page
     const { data: { user: u } } = await supabase.auth.getUser();
     if(!u){
       window.location.href = "/login.html";
@@ -336,11 +322,9 @@
     }
     user = u;
 
-    // basic name/email
     userEmail.textContent = user.email || "";
     userName.textContent = (user.user_metadata?.full_name || user.user_metadata?.name || "User");
 
-    // fetch PIN record
     const { data, error } = await supabase
       .from("user_pins")
       .select("pin_hash")
@@ -356,13 +340,11 @@
     if(!data){
       mode = "create";
       pinHashFromDb = null;
-      titleText.textContent = "Secure Authentication";
       subText.textContent = "Create your new 4-digit PIN";
       setHint("Create a PIN you'll remember.");
     } else {
       mode = "verify";
       pinHashFromDb = data.pin_hash;
-      titleText.textContent = "Secure Authentication";
       subText.textContent = "Please verify your 4-digit PIN code";
       setHint("");
     }
@@ -371,39 +353,41 @@
     resetInput();
   }
 
-  // ---------------------------
-  // keypad interactions
-  // ---------------------------
-  document.querySelectorAll(".key[data-num]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      if(input.length >= 4) return;
-      input += btn.dataset.num;
-      renderDots();
+  // ✅ IMPORTANT: use pointerdown for mobile reliability
+  function addDigit(num){
+    if(input.length >= 4) return;
+    input += String(num);
+    renderDots();
 
-      if(input.length === 4){
-        setVerifyReady(true);
-        setTimeout(()=> verifyBtn.click(), 120);
-      } else {
-        setVerifyReady(false);
-      }
+    if(input.length === 4){
+      setVerifyReady(true);
+      setTimeout(()=> verifyBtn.click(), 120);
+    } else {
+      setVerifyReady(false);
+    }
+  }
+
+  document.querySelectorAll(".key[data-num]").forEach(btn=>{
+    btn.addEventListener("pointerdown", (e)=>{
+      e.preventDefault();
+      addDigit(btn.dataset.num);
     });
   });
 
-  document.getElementById("backspace").addEventListener("click", ()=>{
+  document.getElementById("backspace").addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
     if(input.length === 0) return;
     input = input.slice(0, -1);
     renderDots();
     setVerifyReady(input.length === 4);
   });
 
-  document.getElementById("clear").addEventListener("click", ()=>{
+  document.getElementById("clear").addEventListener("pointerdown", (e)=>{
+    e.preventDefault();
     resetInput();
     setHint("");
   });
 
-  // ---------------------------
-  // Verify/Create logic
-  // ---------------------------
   verifyBtn.addEventListener("click", async ()=>{
     if(input.length !== 4) return;
 
@@ -426,9 +410,7 @@
         }
 
         setHint("PIN created successfully ✅");
-        setTimeout(()=>{
-          window.location.href = "/user-dashboard.html";
-        }, 450);
+        setTimeout(()=> window.location.href = "/user-dashboard.html", 450);
 
       } else {
         const attemptHash = await sha256(input + ":" + user.id);
@@ -440,9 +422,7 @@
         }
 
         setHint("Verified ✅");
-        setTimeout(()=>{
-          window.location.href = "/user-dashboard.html";
-        }, 280);
+        setTimeout(()=> window.location.href = "/user-dashboard.html", 280);
       }
     }catch(err){
       console.error(err);
@@ -451,9 +431,6 @@
     }
   });
 
-  // ---------------------------
-  // logout
-  // ---------------------------
   logoutBtn.addEventListener("click", async ()=>{
     await supabase.auth.signOut();
     window.location.href = "/login.html";
