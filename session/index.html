@@ -111,6 +111,9 @@
       display:flex;
       justify-content:center;
       margin:22px 0 20px;
+      flex-direction:column;
+      align-items:center;
+      gap:12px;
     }
 
     .pinDots{
@@ -152,6 +155,38 @@
       box-shadow:0 0 0 4px rgba(239,68,68,.14);
     }
 
+    /* ✅ LOCK TIMER BOX */
+    .lockTimer{
+      width:100%;
+      max-width:360px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.20);
+      box-shadow:0 18px 55px rgba(0,0,0,.35);
+      text-align:center;
+      display:none;
+    }
+    .lockTimer.show{ display:block; }
+    .lockTimer .t1{
+      font-weight:1000;
+      color:rgba(234,240,255,.90);
+      letter-spacing:.2px;
+    }
+    .lockTimer .t2{
+      margin-top:6px;
+      font-size:22px;
+      font-weight:1000;
+      letter-spacing:1px;
+      color:#fff;
+    }
+    .lockTimer .t3{
+      margin-top:5px;
+      font-size:12px;
+      font-weight:900;
+      color:rgba(234,240,255,.60);
+    }
+
     .pad{
       display:grid;
       grid-template-columns:repeat(3, 1fr);
@@ -160,6 +195,7 @@
       margin:0 auto 18px;
       position:relative;
       z-index:5;
+      transition:.2s ease;
     }
 
     .key{
@@ -174,12 +210,20 @@
       user-select:none;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      transition:.12s ease;
     }
     .key:active{ transform:scale(.98); }
 
     .key.ghost{
       background:transparent;
       color:rgba(255,255,255,.75);
+    }
+
+    /* ✅ lock keypad */
+    .pad.locked{
+      opacity:.40;
+      pointer-events:none;
+      filter:grayscale(25%);
     }
 
     .smallActions{
@@ -308,6 +352,13 @@
           <div class="dot"></div>
           <div class="dot"></div>
         </div>
+
+        <!-- ✅ NEW lock timer UI -->
+        <div class="lockTimer" id="lockTimer">
+          <div class="t1">Too many incorrect attempts 🔒</div>
+          <div class="t2" id="lockTimeText">05:00</div>
+          <div class="t3">Try again when the timer ends.</div>
+        </div>
       </div>
 
       <div class="pad" id="pad">
@@ -363,12 +414,103 @@
   const modalTitle = document.getElementById("modalTitle");
   const modalSub = document.getElementById("modalSub");
 
+  // ✅ lock timer refs
+  const lockTimer = document.getElementById("lockTimer");
+  const lockTimeText = document.getElementById("lockTimeText");
+
   let input = "";
   let mode = "verify";
   let pinHashFromDb = null;
   let user = null;
   let supabaseClient = null;
   let isBusy = false;
+
+  /* =========================================================
+     ✅ PIN ATTEMPT LIMITER (5 tries + 5 min countdown)
+     ========================================================= */
+  const MAX_TRIES = 5;
+  const LOCK_MINUTES = 5;
+  let lockInterval = null;
+
+  function triesKey(){ return `coinluxora_pin_tries_${user?.id || "guest"}`; }
+  function lockKey(){ return `coinluxora_pin_lock_${user?.id || "guest"}`; }
+
+  function getTries(){
+    const t = parseInt(localStorage.getItem(triesKey()) || "0", 10);
+    return isNaN(t) ? 0 : t;
+  }
+  function setTries(val){
+    localStorage.setItem(triesKey(), String(val));
+  }
+
+  function getLockUntil(){
+    const v = parseInt(localStorage.getItem(lockKey()) || "0", 10);
+    return isNaN(v) ? 0 : v;
+  }
+  function setLockUntil(ts){
+    localStorage.setItem(lockKey(), String(ts));
+  }
+
+  function formatMMSS(ms){
+    const totalSec = Math.max(0, Math.floor(ms/1000));
+    const m = Math.floor(totalSec/60);
+    const s = totalSec % 60;
+    return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+  }
+
+  function lockKeypad(){
+    pad.classList.add("locked");
+    lockTimer.classList.add("show");
+  }
+  function unlockKeypad(){
+    pad.classList.remove("locked");
+    lockTimer.classList.remove("show");
+  }
+
+  function startCountdown(){
+    clearInterval(lockInterval);
+
+    lockKeypad();
+
+    const tick = ()=>{
+      const until = getLockUntil();
+      const remaining = until - Date.now();
+
+      if(remaining <= 0){
+        clearInterval(lockInterval);
+        lockInterval = null;
+        setLockUntil(0);
+        setTries(0);
+        unlockKeypad();
+        resetInput();
+        return;
+      }
+
+      lockTimeText.textContent = formatMMSS(remaining);
+    };
+
+    tick();
+    lockInterval = setInterval(tick, 250);
+  }
+
+  function isLocked(){
+    const until = getLockUntil();
+    return until && until > Date.now();
+  }
+
+  function enforceLockIfNeeded(){
+    if(isLocked()){
+      startCountdown();
+      return true;
+    }
+    return false;
+  }
+
+  function lockFor5Minutes(){
+    const until = Date.now() + LOCK_MINUTES * 60 * 1000;
+    setLockUntil(until);
+    startCountdown();
+  }
 
   function renderDots(){
     dots.forEach((d, i)=> d.classList.toggle("filled", i < input.length));
@@ -388,6 +530,7 @@
 
   function addDigit(n){
     if(isBusy) return;
+    if(enforceLockIfNeeded()) return;
     if(input.length >= 4) return;
     input += String(n);
     renderDots();
@@ -398,6 +541,8 @@
   }
 
   pad.addEventListener("click", (e)=>{
+    if(enforceLockIfNeeded()) return;
+
     const btn = e.target.closest("button");
     if(!btn) return;
 
@@ -491,6 +636,9 @@
       userName.textContent = (user.user_metadata?.full_name || user.user_metadata?.name || "User");
       applyAvatarPhoto(user);
 
+      // ✅ enforce lock (persist after refresh)
+      enforceLockIfNeeded();
+
       const { data, error } = await supabaseClient
         .from("user_pins")
         .select("pin_hash")
@@ -520,6 +668,7 @@
 
   async function verifyPin(){
     if(isBusy) return;
+    if(enforceLockIfNeeded()) return;
     if(input.length !== 4) return;
     if(!supabaseClient || !user) return;
 
@@ -540,6 +689,11 @@
           return;
         }
 
+        // ✅ after create: reset limiter counters
+        setTries(0);
+        setLockUntil(0);
+        unlockKeypad();
+
         showPopup("ok", "PIN Created ✔️", "Redirecting you to your dashboard...");
         setTimeout(()=> window.location.href = "/user-dashboard.html", 650);
 
@@ -547,9 +701,27 @@
         const attemptHash = await sha256(input + ":" + user.id);
 
         if(attemptHash !== pinHashFromDb){
-          // ❌ incorrect pin = shake + popup
+          // ❌ incorrect pin -> limiter
+          let tries = getTries() + 1;
+          setTries(tries);
+
+          if(tries >= MAX_TRIES){
+            resetInput();
+            shakeDots();
+            showPopup("err", "Too Many Attempts 🔒", "Please wait 5 minutes and try again.");
+
+            lockFor5Minutes();
+
+            setTimeout(()=>{
+              hidePopup();
+              isBusy = false;
+            }, 950);
+            return;
+          }
+
+          // normal incorrect
           shakeDots();
-          showPopup("err", "Incorrect PIN ❌", "Please try again.");
+          showPopup("err", "Incorrect PIN ❌", `${MAX_TRIES - tries} tries left. Please try again.`);
 
           setTimeout(()=>{
             hidePopup();
@@ -558,6 +730,11 @@
           }, 950);
           return;
         }
+
+        // ✅ correct: reset limiter
+        setTries(0);
+        setLockUntil(0);
+        unlockKeypad();
 
         showPopup("ok", "Verified ✔️", "Redirecting you to your dashboard...");
         setTimeout(()=> window.location.href = "/user-dashboard.html", 520);
