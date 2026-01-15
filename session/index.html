@@ -15,7 +15,6 @@
       --text:#eaf0ff;
       --muted:rgba(234,240,255,.65);
       --accent:#8bd3ff;
-      --btn:#1a2b52;
       --danger:#ef4444;
     }
 
@@ -41,8 +40,6 @@
       box-shadow:0 16px 50px rgba(0,0,0,.45);
       position:relative;
       overflow:hidden;
-
-      /* ✅ important for mobile layering */
       isolation:isolate;
     }
 
@@ -53,12 +50,10 @@
       height:220px;
       background:radial-gradient(circle at 50% 40%, rgba(139,211,255,.18), transparent 60%);
       pointer-events:none;
-
-      /* ✅ push glow behind everything */
       z-index:0;
     }
 
-    .top, .divider, h1, .sub, .dots, .verifyWrap, .smallActions, .footerSpace{
+    .layer{
       position:relative;
       z-index:2;
     }
@@ -101,39 +96,58 @@
       font-size:1.75rem;
       letter-spacing:.2px;
     }
+
     .sub{
       margin:8px 0 0;
       color:var(--muted);
       font-size:1.02rem;
     }
 
-    .dots{
+    /* ✅ PIN BOXES (rounded squares like screenshot) */
+    .pinBoxes{
       margin:18px 0 18px;
       display:flex;
-      gap:12px;
       justify-content:center;
-    }
-    .dot{
-      width:12px;
-      height:12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.20);
-      background:rgba(255,255,255,.05);
-    }
-    .dot.filled{
-      background:rgba(255,255,255,.85);
-      border-color:rgba(255,255,255,.85);
+      gap:14px;
     }
 
-    /* ✅ keypad layer forced ABOVE everything */
+    .pinBox{
+      width:56px;
+      height:56px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 12px 35px rgba(0,0,0,.25);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .pinDot{
+      width:14px;
+      height:14px;
+      border-radius:999px;
+      background:transparent;
+      border:1px solid rgba(255,255,255,.30);
+      transition: .12s ease;
+    }
+
+    .pinBox.filled .pinDot{
+      background: rgba(255,255,255,.92);
+      border-color: rgba(255,255,255,.92);
+      transform: scale(1.05);
+    }
+
     .pad{
       display:grid;
       grid-template-columns:repeat(3, 1fr);
       gap:14px;
       max-width:320px;
       margin:0 auto 18px;
-      position:relative;
       z-index:5;
+      position:relative;
     }
 
     .key{
@@ -145,24 +159,16 @@
       font-weight:800;
       font-size:1.25rem;
       cursor:pointer;
-      transition:transform .06s ease, opacity .2s ease;
       user-select:none;
-
-      /* ✅ mobile tap fixes */
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
-      pointer-events:auto;
-      position:relative;
-      z-index:6;
     }
     .key:active{ transform:scale(.98); }
+
     .key.ghost{
       background:transparent;
-      border:1px solid rgba(255,255,255,.12);
       color:rgba(255,255,255,.75);
     }
-
-    .verifyWrap{ margin-top:8px; }
 
     .btn{
       width:100%;
@@ -204,63 +210,69 @@
       font-weight:700;
       font-size:.95rem;
     }
-    .linkBtn:hover{ text-decoration:underline; }
 
     .danger{ color:var(--danger) !important; }
-
-    .footerSpace{ height:4px; }
   </style>
 </head>
 
 <body>
 
   <div class="card">
-    <div class="top">
-      <div class="avatar" id="avatarBox">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" fill="currentColor" opacity=".85"/>
-        </svg>
+    <div class="layer">
+
+      <div class="top">
+        <div class="avatar" id="avatarBox">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" fill="currentColor" opacity=".85"/>
+          </svg>
+        </div>
+        <div class="who">
+          <div class="name" id="userName">Loading...</div>
+          <div class="email" id="userEmail"> </div>
+        </div>
       </div>
-      <div class="who">
-        <div class="name" id="userName">Loading...</div>
-        <div class="email" id="userEmail"> </div>
+
+      <div class="divider"></div>
+
+      <h1 id="titleText">Secure Authentication</h1>
+      <div class="sub" id="subText">Please verify your 4-digit PIN code</div>
+
+      <!-- ✅ PIN BOXES -->
+      <div class="pinBoxes" id="pinBoxes">
+        <div class="pinBox"><div class="pinDot"></div></div>
+        <div class="pinBox"><div class="pinDot"></div></div>
+        <div class="pinBox"><div class="pinDot"></div></div>
+        <div class="pinBox"><div class="pinDot"></div></div>
       </div>
+
+      <div class="pad" id="pad">
+        <button type="button" class="key" data-num="7">7</button>
+        <button type="button" class="key" data-num="0">0</button>
+        <button type="button" class="key" data-num="1">1</button>
+
+        <button type="button" class="key" data-num="2">2</button>
+        <button type="button" class="key" data-num="3">3</button>
+        <button type="button" class="key" data-num="8">8</button>
+
+        <button type="button" class="key" data-num="4">4</button>
+        <button type="button" class="key" data-num="5">5</button>
+        <button type="button" class="key" data-num="6">6</button>
+
+        <button type="button" class="key" data-num="9">9</button>
+        <button type="button" class="key ghost" data-action="backspace">⌫</button>
+        <button type="button" class="key ghost" data-action="clear">Clear</button>
+      </div>
+
+      <div>
+        <button type="button" class="btn" id="verifyBtn" disabled>VERIFY</button>
+        <div class="hint" id="hint"></div>
+      </div>
+
+      <div class="smallActions">
+        <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
+      </div>
+
     </div>
-
-    <div class="divider"></div>
-
-    <h1 id="titleText">Secure Authentication</h1>
-    <div class="sub" id="subText">Please verify your 4-digit PIN code</div>
-
-    <div class="dots" id="dots"></div>
-
-    <div class="pad" id="pad">
-      <button type="button" class="key" data-num="7">7</button>
-      <button type="button" class="key" data-num="0">0</button>
-      <button type="button" class="key" data-num="1">1</button>
-
-      <button type="button" class="key" data-num="2">2</button>
-      <button type="button" class="key" data-num="3">3</button>
-      <button type="button" class="key" data-num="8">8</button>
-
-      <button type="button" class="key" data-num="4">4</button>
-      <button type="button" class="key" data-num="5">5</button>
-      <button type="button" class="key" data-num="6">6</button>
-
-      <button type="button" class="key" data-num="9">9</button>
-      <button type="button" class="key ghost" id="backspace">⌫</button>
-      <button type="button" class="key ghost" id="clear">Clear</button>
-    </div>
-
-    <div class="verifyWrap">
-      <button type="button" class="btn" id="verifyBtn" disabled>VERIFY</button>
-      <div class="hint" id="hint"></div>
-    </div>
-
-    <div class="smallActions">
-      <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
-    </div>
-    <div class="footerSpace"></div>
   </div>
 
 <script>
@@ -273,23 +285,14 @@
   let pinHashFromDb = null;
   let user = null;
 
-  const titleText = document.getElementById("titleText");
   const subText = document.getElementById("subText");
-  const dotsBox = document.getElementById("dots");
   const hint = document.getElementById("hint");
   const verifyBtn = document.getElementById("verifyBtn");
   const userName = document.getElementById("userName");
   const userEmail = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
-
-  function renderDots(){
-    dotsBox.innerHTML = "";
-    for(let i=0;i<4;i++){
-      const d = document.createElement("div");
-      d.className = "dot" + (i < input.length ? " filled" : "");
-      dotsBox.appendChild(d);
-    }
-  }
+  const pad = document.getElementById("pad");
+  const pinBoxes = Array.from(document.querySelectorAll(".pinBox"));
 
   function setHint(msg, isDanger=false){
     hint.textContent = msg || "";
@@ -301,9 +304,15 @@
     verifyBtn.classList.toggle("ready", !!ready);
   }
 
+  function renderPinBoxes(){
+    pinBoxes.forEach((box, i)=>{
+      box.classList.toggle("filled", i < input.length);
+    });
+  }
+
   function resetInput(){
     input = "";
-    renderDots();
+    renderPinBoxes();
     setVerifyReady(false);
   }
 
@@ -349,44 +358,52 @@
       setHint("");
     }
 
-    renderDots();
+    renderPinBoxes();
     resetInput();
   }
 
-  // ✅ IMPORTANT: use pointerdown for mobile reliability
-  function addDigit(num){
+  function addDigit(n){
     if(input.length >= 4) return;
-    input += String(num);
-    renderDots();
+    input += String(n);
+    renderPinBoxes();
 
     if(input.length === 4){
       setVerifyReady(true);
       setTimeout(()=> verifyBtn.click(), 120);
-    } else {
+    }else{
       setVerifyReady(false);
     }
   }
 
-  document.querySelectorAll(".key[data-num]").forEach(btn=>{
-    btn.addEventListener("pointerdown", (e)=>{
-      e.preventDefault();
-      addDigit(btn.dataset.num);
-    });
-  });
+  // ✅ SUPER RELIABLE: Event delegation (one listener)
+  pad.addEventListener("pointerdown", (e)=>{
+    const btn = e.target.closest("button");
+    if(!btn) return;
 
-  document.getElementById("backspace").addEventListener("pointerdown", (e)=>{
     e.preventDefault();
-    if(input.length === 0) return;
-    input = input.slice(0, -1);
-    renderDots();
-    setVerifyReady(input.length === 4);
-  });
 
-  document.getElementById("clear").addEventListener("pointerdown", (e)=>{
-    e.preventDefault();
-    resetInput();
-    setHint("");
-  });
+    const num = btn.getAttribute("data-num");
+    const action = btn.getAttribute("data-action");
+
+    if(num !== null){
+      addDigit(num);
+      return;
+    }
+
+    if(action === "backspace"){
+      if(input.length === 0) return;
+      input = input.slice(0, -1);
+      renderPinBoxes();
+      setVerifyReady(input.length === 4);
+      return;
+    }
+
+    if(action === "clear"){
+      resetInput();
+      setHint("");
+      return;
+    }
+  }, { passive:false });
 
   verifyBtn.addEventListener("click", async ()=>{
     if(input.length !== 4) return;
