@@ -339,7 +339,9 @@
   // Supabase logic AFTER UI ✅
   // ---------------------------
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzE2MjUsImV4cCI6MjA1MjQ0NzYyNX0.RGOC9l-xiYk8gwQpC_XoB9XJrTz8g5og35s5t7XUL5o";
+
+  // ✅ UPDATED ANON KEY (YOUR LATEST KEY)
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
   async function sha256(str){
     const data = new TextEncoder().encode(str);
@@ -352,7 +354,7 @@
     try{
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // ✅ avoid redirect loop: delay + getSession (more reliable)
+      // ✅ avoid redirect loop: delay + getSession
       await new Promise(r => setTimeout(r, 150));
       const { data: sessData } = await supabaseClient.auth.getSession();
       const session = sessData?.session;
@@ -374,7 +376,7 @@
         .maybeSingle();
 
       if(error){
-        setHint("PIN system not ready. Please try again.", true);
+        setHint("PIN system error: " + (error.message || "Unknown error"), true);
         console.error(error);
         return;
       }
@@ -418,7 +420,7 @@
           .insert([{ user_id: user.id, pin_hash: newHash }]);
 
         if(error){
-          setHint("Unable to create PIN. Try again.", true);
+          setHint("Unable to create PIN: " + (error.message || "error"), true);
           console.error(error);
           resetInput();
           return;
