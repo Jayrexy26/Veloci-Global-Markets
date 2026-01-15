@@ -1740,31 +1740,7 @@
       };
     }
 
-    /* ===== auth ===== */
-    (async function authGuard(){
-      try{
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const session = sessionData?.session;
-        if(!session){ window.location.replace("login.html"); return; }
-
-        const { data, error } = await supabaseClient.auth.getUser();
-        const user = data?.user;
-        if(error || !user){ window.location.replace("login.html"); return; }
-
-        if(!user.email_confirmed_at){
-          await supabaseClient.auth.signOut();
-          window.location.replace("verify.html?status=unverified");
-          return;
-        }
-
-        window.COINLUXORA_USER=user;
-        initWithUser(user);
-      }catch(e){
-        window.location.replace("login.html");
-      }
-    })();
-
-    /* NAV */
+    /* ===== nav ===== */
     function goPlans(){ window.location.href="plans.html"; }
     function goProfile(){ window.location.href="profile.html"; }
     function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
@@ -2383,7 +2359,9 @@
       });
     }
 
-    /* ===== auth ===== */
+    /* ============================================================
+      ✅ AUTH GUARD (ONE BLOCK) + EMAIL VERIFIED
+    ============================================================ */
     (async function authGuard(){
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
