@@ -137,7 +137,6 @@
       transform:scale(1.08);
     }
 
-    /* ✅ Attempts left text */
     .attempts{
       font-size:12px;
       font-weight:900;
@@ -251,7 +250,9 @@
       font-weight:700;
       font-size:.95rem;
     }
+    .linkBtn:hover{ text-decoration:underline; }
 
+    /* ✅ Popup overlay */
     .overlay{
       position:fixed;
       inset:0;
@@ -314,6 +315,11 @@
       background:rgba(239,68,68,.16);
       box-shadow:0 16px 55px rgba(239,68,68,.16);
     }
+    .statusCircle.info{
+      border-color:rgba(139,211,255,.35);
+      background:rgba(139,211,255,.14);
+      box-shadow:0 16px 55px rgba(139,211,255,.12);
+    }
     .statusCircle svg{ width:34px; height:34px; }
 
     .modalTitle{
@@ -326,6 +332,33 @@
       margin:10px 0 0;
       color:rgba(234,240,255,.72);
       font-size:1.02rem;
+      line-height:1.45;
+    }
+
+    /* ✅ modal buttons */
+    .modalBtns{
+      display:flex;
+      gap:10px;
+      margin-top:16px;
+    }
+    .mBtn{
+      flex:1;
+      height:48px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      cursor:pointer;
+      font-weight:1000;
+      letter-spacing:.2px;
+    }
+    .mBtn.cancel{
+      background:rgba(255,255,255,.06);
+      color:rgba(234,240,255,.85);
+    }
+    .mBtn.danger{
+      background:linear-gradient(180deg, rgba(248,113,113,1), rgba(239,68,68,1));
+      color:#040814;
+      border:none;
+      box-shadow:0 18px 55px rgba(239,68,68,.18);
     }
   </style>
 </head>
@@ -362,7 +395,6 @@
           <div class="dot"></div>
         </div>
 
-        <!-- ✅ Attempts left text -->
         <div class="attempts" id="attemptsText"></div>
 
         <div class="lockTimer" id="lockTimer">
@@ -391,6 +423,9 @@
       </div>
 
       <div class="smallActions">
+        <!-- ✅ NEW -->
+        <button type="button" class="linkBtn" id="forgotPinBtn">Forgot PIN?</button>
+
         <button type="button" class="linkBtn" id="logoutBtn">Log out</button>
       </div>
 
@@ -403,6 +438,12 @@
         <div class="statusCircle" id="statusCircle"></div>
         <h2 class="modalTitle" id="modalTitle"></h2>
         <div class="modalSub" id="modalSub"></div>
+
+        <!-- ✅ modal buttons container (only used for Forgot PIN) -->
+        <div class="modalBtns" id="modalBtns" style="display:none;">
+          <button class="mBtn cancel" type="button" id="modalCancelBtn">Cancel</button>
+          <button class="mBtn danger" type="button" id="modalLogoutBtn">Log out</button>
+        </div>
       </div>
     </div>
   </div>
@@ -414,6 +455,9 @@
   const userEmail = document.getElementById("userEmail");
   const logoutBtn = document.getElementById("logoutBtn");
 
+  // ✅ new
+  const forgotPinBtn = document.getElementById("forgotPinBtn");
+
   const pinDotsEl = document.getElementById("pinDots");
   const dots = Array.from(document.querySelectorAll(".dot"));
 
@@ -424,11 +468,13 @@
   const statusCircle = document.getElementById("statusCircle");
   const modalTitle = document.getElementById("modalTitle");
   const modalSub = document.getElementById("modalSub");
+  const modalBtns = document.getElementById("modalBtns");
+  const modalCancelBtn = document.getElementById("modalCancelBtn");
+  const modalLogoutBtn = document.getElementById("modalLogoutBtn");
 
   const lockTimer = document.getElementById("lockTimer");
   const lockTimeText = document.getElementById("lockTimeText");
 
-  // ✅ Attempts left UI
   const attemptsText = document.getElementById("attemptsText");
 
   let input = "";
@@ -438,7 +484,6 @@
   let supabaseClient = null;
   let isBusy = false;
 
-  // ✅ limiter
   const MAX_TRIES = 5;
   const LOCK_MINUTES = 5;
   let lockInterval = null;
@@ -473,7 +518,6 @@
   function lockKeypad(){
     pad.classList.add("locked");
     lockTimer.classList.add("show");
-    // hide attempts text while locked
     attemptsText.textContent = "";
     attemptsText.classList.remove("danger");
   }
@@ -486,7 +530,6 @@
     const tries = getTries();
     const left = Math.max(0, MAX_TRIES - tries);
 
-    // only show attempts in verify mode and NOT locked
     const until = getLockUntil();
     const locked = (until && until > Date.now());
 
@@ -496,7 +539,6 @@
       return;
     }
 
-    // show only after at least 1 wrong try
     if(tries <= 0){
       attemptsText.textContent = "";
       attemptsText.classList.remove("danger");
@@ -566,7 +608,6 @@
     setTimeout(()=> pinDotsEl.classList.remove("shake"), 520);
   }
 
-  // ✅ soft vibration for wrong attempts (only on supported devices)
   function softVibrate(){
     try{
       if(navigator.vibrate){
@@ -617,6 +658,9 @@
   });
 
   function showPopup(type, title, sub){
+    // default hide forgot buttons
+    modalBtns.style.display = "none";
+
     statusCircle.className = "statusCircle " + type;
     modalTitle.textContent = title;
     modalSub.textContent = sub;
@@ -626,10 +670,17 @@
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M20 6 9 17l-5-5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`;
-    } else {
+    } else if(type === "err"){
       statusCircle.innerHTML = `
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M6 6l12 12M18 6 6 18" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>`;
+    } else {
+      statusCircle.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10Z" stroke="white" stroke-width="2.2"/>
+          <path d="M12 8v5" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M12 16h.01" stroke="white" stroke-width="4" stroke-linecap="round"/>
         </svg>`;
     }
 
@@ -640,7 +691,6 @@
     overlay.classList.remove("show");
   }
 
-  // Supabase
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
@@ -750,7 +800,6 @@
         const attemptHash = await sha256(input + ":" + user.id);
 
         if(attemptHash !== pinHashFromDb){
-          // ✅ soft vibration on wrong pin
           softVibrate();
 
           let tries = getTries() + 1;
@@ -781,7 +830,6 @@
           return;
         }
 
-        // ✅ correct
         setTries(0);
         setLockUntil(0);
         unlockKeypad();
@@ -796,6 +844,31 @@
       resetInput();
     }
   }
+
+  // ✅ Forgot PIN popup (stylish)
+  forgotPinBtn.addEventListener("click", ()=>{
+    if(isBusy) return;
+
+    showPopup(
+      "info",
+      "Forgot PIN?",
+      "For security reasons, you will be logged out and asked to login again. Then you can reset/change your PIN from your profile."
+    );
+
+    // show buttons
+    modalBtns.style.display = "flex";
+  });
+
+  modalCancelBtn.addEventListener("click", ()=>{
+    hidePopup();
+  });
+
+  modalLogoutBtn.addEventListener("click", async ()=>{
+    try{
+      if(supabaseClient) await supabaseClient.auth.signOut();
+    }catch(e){}
+    window.location.href = "/login.html";
+  });
 
   logoutBtn.addEventListener("click", async ()=>{
     try{
