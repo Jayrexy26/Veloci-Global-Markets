@@ -1,1035 +1,2303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Coinluxora User Dashboard</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coinluxora User Dashboard</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    :root{
-      --bg:#050a18;
-      --stroke:rgba(255,255,255,.08);
-      --stroke2:rgba(255,255,255,.12);
-      --card:rgba(255,255,255,.04);
-      --card2:rgba(255,255,255,.06);
-      --txt:rgba(255,255,255,.90);
-      --muted:rgba(255,255,255,.65);
-      --muted2:rgba(255,255,255,.45);
-      --brand:#4da3ff;
-      --good:#27e0a4;
-      --bad:#ff4d6d;
-      --shadow:0 20px 50px rgba(0,0,0,.45);
-      --radius:18px;
-    }
+<style>
+:root{
+  --bg:#050a18;
+  --stroke:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.65);
 
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:radial-gradient(1200px 800px at 20% -10%, rgba(77,163,255,.18), transparent 45%),
-                 radial-gradient(900px 600px at 80% 10%, rgba(39,224,164,.12), transparent 55%),
-                 var(--bg);
-      color:var(--txt);
-      min-height:100vh;
-      overflow-x:hidden;
-    }
+  --ok:#22c55e;
+  --err:#f87171;
 
-    /* =========================
-       AUTH GUARD (SUPABASE)
-       ========================= */
-    .authCover{
-      position:fixed; inset:0;
-      background:linear-gradient(180deg, rgba(5,10,24,.98), rgba(5,10,24,.92));
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      z-index:999999;
-    }
-    .authBox{
-      width:min(520px, 92vw);
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:22px;
-      padding:26px 22px;
-      box-shadow:var(--shadow);
-    }
-    .authBox h2{font-size:20px;margin-bottom:8px}
-    .authBox p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:16px}
-    .authBox input{
-      width:100%;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.22);
-      color:var(--txt);
-      outline:none;
-      margin-bottom:10px;
-    }
-    .authActions{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{
-      padding:11px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      color:var(--txt);
-      cursor:pointer;
-      font-weight:600;
-      font-size:13px;
-      transition:.18s ease;
-      user-select:none;
-    }
-    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
-    .btn.brand{background:rgba(77,163,255,.18);border-color:rgba(77,163,255,.35)}
-    .btn.brand:hover{background:rgba(77,163,255,.26)}
-    .authMsg{margin-top:12px;font-size:13px;color:var(--muted)}
-    .hidden{display:none !important}
+  --blue:#5b6cff;
+  --purple:#7c4dff;
+  --green:#34d399;
+  --cyan:#38bdf8;
+  --pink:#ff4da6;
 
-    /* =========================
-       TOP BAR
-       ========================= */
-    header{
-      position:sticky;
-      top:0;
-      z-index:2000;
-      backdrop-filter: blur(10px);
-      background:rgba(5,10,24,.60);
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 18px;
-      gap:12px;
-    }
-    .brandRow{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-    .logo{
-      width:38px;height:38px;border-radius:14px;
-      background:linear-gradient(135deg, rgba(77,163,255,.9), rgba(39,224,164,.85));
-      box-shadow:0 12px 30px rgba(77,163,255,.22);
-      flex:0 0 auto;
-    }
-    .brandText{min-width:0}
-    .brandText h1{
-      font-size:16px;
-      letter-spacing:.3px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:260px;
-    }
-    .brandText span{color:var(--muted);font-size:12px}
-    .topRight{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex:0 0 auto;
-    }
-    .pill{
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      color:var(--muted);
-      font-size:12px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .menuBtn{
-      width:44px;height:44px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      cursor:pointer;
-      display:grid;
-      place-items:center;
-      transition:.18s ease;
-    }
-    .menuBtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
-    .bars{
-      width:18px;height:12px;
-      position:relative;
-    }
-    .bars:before,.bars:after,.bars div{
-      content:"";
-      position:absolute; left:0; right:0;
-      height:2px;border-radius:2px;
-      background:rgba(255,255,255,.85);
-    }
-    .bars:before{top:0}
-    .bars div{top:5px;opacity:.85}
-    .bars:after{bottom:0;opacity:.7}
+  --shadow: 0 26px 90px rgba(0,0,0,.55);
+}
 
-    /* =========================
-       LAYOUT
-       ========================= */
-    .container{
-      padding:18px;
-      display:grid;
-      grid-template-columns: 280px 1fr;
-      gap:18px;
-      max-width:1320px;
-      margin:0 auto;
-    }
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--text);
+  padding:16px;
+  padding-bottom:140px;
+  overflow-x:hidden;
+  background: var(--bg);
+}
 
-    /* =========================
-       SIDEBAR (DESKTOP)
-       ========================= */
-    aside{
-      position:sticky;
-      top:82px;
-      align-self:start;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:22px;
-      padding:16px;
-      height: calc(100vh - 110px);
-      overflow:auto;
-    }
-    .sideTitle{
-      font-size:12px;
-      letter-spacing:.12em;
-      color:var(--muted2);
-      margin-bottom:10px;
-      text-transform:uppercase;
-    }
-    .nav{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      padding-bottom:12px;
-    }
-    .nav a{
-      text-decoration:none;
-      color:rgba(255,255,255,.80);
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.18);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      transition:.18s ease;
-      font-size:13px;
-    }
-    .nav a:hover{background:rgba(255,255,255,.08);transform:translateY(-1px)}
-    .badge{
-      font-size:11px;
-      padding:4px 8px;
-      border-radius:999px;
-      background:rgba(77,163,255,.18);
-      border:1px solid rgba(77,163,255,.35);
-      color:rgba(255,255,255,.85);
-    }
+/* ===== UPPER ECHELON BACKGROUND ===== */
+.bgFlow{
+  position:fixed; inset:0; z-index:-4;
+  background:
+    radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
+    radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.20), transparent 55%),
+    radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
+    linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+}
+.blob{
+  position:fixed;
+  width:520px;height:520px;border-radius:999px;
+  filter: blur(72px);
+  opacity:.60;
+  z-index:-3;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
+.blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
+.blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
+.blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
+@keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+@keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
 
-    /* =========================
-       MAIN CONTENT
-       ========================= */
-    main{
-      min-width:0;
-    }
+.shimmer{
+  position:fixed; inset:-30px; z-index:-2;
+  opacity:.28;
+  background:
+    radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
+    radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
+    linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
+  animation: shimmerMove 6s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes shimmerMove{from{transform:translateY(0px) translateX(0px)}to{transform:translateY(42px) translateX(22px)}}
 
-    .grid2{
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap:18px;
-    }
+.container{max-width:920px;margin:0 auto}
 
-    .card{
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:22px;
-      padding:16px;
-      box-shadow:0 18px 40px rgba(0,0,0,.25);
-      min-width:0;
-    }
-    .cardHead{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px
-    }
-    .cardHead h2{
-      font-size:14px;
-      letter-spacing:.2px;
-      color:rgba(255,255,255,.88);
-    }
-    .subtxt{color:var(--muted);font-size:12px}
+/* ===== Loading Gate ===== */
+#authGate{
+  position:fixed; inset:0; z-index:99999;
+  display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+    var(--bg);
+}
+.gateCard{
+  width:min(520px,92vw);
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  border-radius:22px;
+  padding:18px;
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(14px);
+  text-align:center;
+}
+.gateLogo{
+  width:62px;height:62px;border-radius:18px;
+  margin:0 auto 10px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(124,77,255,1));
+  box-shadow:0 18px 50px rgba(109,87,255,.28);
+  font-size:28px;font-weight:1000;
+}
+.gateTxt{font-weight:1000}
+.gateSub{margin-top:6px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px}
+.spinner{
+  width:46px;height:46px;margin:14px auto 0;
+  border-radius:999px;
+  border:3px solid rgba(255,255,255,.18);
+  border-top-color:#9bdcff;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-    /* mini chart */
-    .miniChart{
-      height:220px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.08);
-      background:linear-gradient(180deg, rgba(77,163,255,.10), rgba(0,0,0,.18));
-      overflow:hidden;
-      position:relative;
-    }
-    canvas{display:block;width:100%;height:100%}
+/* ============================================================
+   ✅ STICKY MENU POLISH (FIX OVERLAP + PREMIUM SCROLL)
+   - ONLY affects topRow wrapper
+   ============================================================ */
+.stickyMenu{
+  position:sticky;
+  top:12px;
+  z-index:3000;
+  margin-bottom:10px;
+}
+.stickyMenu::before{
+  content:"";
+  position:absolute;
+  inset:-10px -10px -8px -10px;
+  border-radius:26px;
+  background:rgba(5,10,24,.58);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  z-index:-1;
+  pointer-events:none;
+  opacity:0;
+  transform: translateY(-6px);
+  transition: .18s ease;
+}
+.stickyMenu.isStuck::before{
+  opacity:1;
+  transform: translateY(0);
+}
+.stickyMenu.isStuck .topRow{
+  margin-bottom:8px;
+}
 
-    /* order book */
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-bottom:12px;
-    }
-    select, input[type="search"]{
-      padding:11px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.24);
-      color:rgba(255,255,255,.85);
-      outline:none;
-      font-size:13px;
-      min-width:160px;
-    }
+/* ===== TOP BAR ===== */
+.topRow{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:14px;
+}
+.brand{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(90deg, rgba(109,87,255,1), rgba(135,116,255,0.86));
+  color:white;font-weight:1000;letter-spacing:.6px;
+  box-shadow:0 18px 50px rgba(109,87,255,.25);
+  min-width:140px;
+}
+.brandIcon{
+  width:34px;height:34px;border-radius:12px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.headerActions{display:flex;gap:10px;align-items:center}
 
-    .obWrap{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-    }
-    .obCol{
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.20);
-      overflow:hidden;
-      min-width:0;
-    }
-    .obTop{
-      padding:10px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      color:var(--muted);
-      font-size:12px;
-    }
-    .obList{
-      max-height:300px;
-      overflow:auto;
-      padding:10px 10px 12px;
-    }
-    .obRow{
-      position:relative;
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap:8px;
-      padding:8px 8px;
-      border-radius:12px;
-      margin-bottom:6px;
-      font-size:12px;
-      color:rgba(255,255,255,.85);
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-      overflow:hidden;
-    }
-    .fillbar{
-      position:absolute; top:0; bottom:0;
-      opacity:.35;
-      pointer-events:none;
-      border-radius:12px;
-      filter: blur(0px);
-    }
-    .fillbar.buy{left:0;background:linear-gradient(90deg, rgba(39,224,164,.45), rgba(39,224,164,0))}
-    .fillbar.sell{right:0;background:linear-gradient(270deg, rgba(255,77,109,.45), rgba(255,77,109,0))}
-    .good{color:rgba(39,224,164,.95)}
-    .bad{color:rgba(255,77,109,.95)}
-    .centerPrice{
-      text-align:center;
-      margin-top:12px;
-      padding:10px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(77,163,255,.08);
-      color:rgba(255,255,255,.92);
-      font-weight:700;
-    }
+/* ✅ Avatar */
+.avatarBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(124,77,255,.32);
+  display:grid;place-items:center;
+  position:relative;overflow:hidden;
+}
+.avatarBtn:hover{filter:brightness(1.05)}
+.avatarFallback{font-size:18px;line-height:1;z-index:2;}
+.avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
 
-    /* top 10 list after orderbook */
-    .coinGrid{
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:10px;
-      margin-top:14px;
-    }
-    .coinItem{
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.20);
-      padding:12px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      min-width:0;
-    }
-    .coinL{
-      display:flex;
-      flex-direction:column;
-      min-width:0;
-    }
-    .coinL b{
-      font-size:13px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .coinL span{font-size:12px;color:var(--muted)}
-    .coinR{
-      text-align:right;
-      font-size:12px;
-      color:rgba(255,255,255,.85);
-      min-width:80px;
-    }
+.iconBtn{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.18);
+  color:white;font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  backdrop-filter: blur(10px);
+}
+.iconBtn:hover{background:rgba(255,255,255,.08)}
 
-    /* =========================
-       MOBILE MENU OVERLAY
-       FIXED: MENU MUST OVERLAY TOP BAR
-       ========================= */
-    .overlay{
-      position:fixed;
-      inset:0;
-      z-index:99990;
-      background:rgba(0,0,0,.55);
-      backdrop-filter: blur(10px);
-      display:none;
-    }
-    .overlay.active{display:block}
+/* ===== HELLO CARD ===== */
+.helloCard{
+  border-radius:20px;
+  padding:16px 16px;
+  overflow:hidden;
+  background:
+    radial-gradient(800px 220px at 20% 20%, rgba(255,255,255,.18), transparent 60%),
+    linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
+  color:white;
+  box-shadow:0 22px 70px rgba(109,87,255,.22);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.helloLeft{display:flex;align-items:center;gap:12px;}
+.helloLogo{
+  width:48px;height:48px;border-radius:18px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.22);
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.miniChip{
+  font-size:12px;font-weight:1000;
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex;gap:6px;align-items:center;
+}
+.helloTitle{font-weight:1000;font-size:18px}
+.helloSub{font-size:12px;font-weight:900;opacity:.92}
+.helloRight{
+  display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+}
+.helloRightTop{display:flex;align-items:center;gap:10px}
+.idChip{
+  padding:8px 12px;border-radius:999px;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.22);
+  font-weight:1000;font-size:12px;
+}
+.logoutBtn{
+  width:46px;height:46px;border-radius:999px;border:none;
+  cursor:pointer;
+  background:rgba(239,68,68,0.95);
+  color:#fff;
+  font-weight:1000;
+  box-shadow:0 16px 40px rgba(239,68,68,.22);
+}
+.datetimeChip{
+  padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.20);
+  font-weight:1000;font-size:12px;
+  color:#fff;
+  white-space:nowrap;
+}
 
-    .mobileMenu{
-      position:fixed;
-      top:0;
-      left:0;
-      height:100vh;
-      width:min(330px, 86vw);
-      z-index:99999; /* IMPORTANT: above header */
-      transform:translateX(-105%);
-      transition:.22s ease;
-      background:rgba(6,12,28,.98);
-      border-right:1px solid rgba(255,255,255,.10);
-      box-shadow:var(--shadow);
-      display:flex;
-      flex-direction:column;
-    }
-    .mobileMenu.active{transform:translateX(0)}
-    .mHead{
-      padding:18px 16px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex:0 0 auto;
-    }
-    .mHead b{font-size:13px;color:rgba(255,255,255,.88)}
-    .closeBtn{
-      width:40px;height:40px;border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      cursor:pointer;
-      display:grid;
-      place-items:center;
-    }
+/* ===== BOX ===== */
+.box{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;
+  padding:16px;
+  background:
+    radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
+    radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  margin-top:14px;
+}
+.box h2{margin:0;font-size:20px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:8px}
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+.card{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
 
-    /* THIS is the real fix for "can't see bottom menu items"
-       scrollable menu content inside the drawer */
-    .mBody{
-      padding:14px;
-      overflow:auto;        /* scroll enabled */
-      -webkit-overflow-scrolling:touch;
-      flex:1 1 auto;
-    }
-    .mBody .nav a{background:rgba(255,255,255,.04)}
+/* ✅ highlight polish on touch */
+.box, .balanceCard, .cryptoRow, .action, .card, .chartWrap, .obRow{
+  -webkit-tap-highlight-color: transparent;
+}
 
-    /* =========================
-       RESPONSIVE
-       ========================= */
-    @media (max-width: 980px){
-      .container{grid-template-columns: 1fr}
-      aside{display:none}
-      .grid2{grid-template-columns:1fr}
-      .coinGrid{grid-template-columns:1fr}
-    }
+/* ===== balanceCard ===== */
+.balanceCard{
+  margin-top:14px;
+  border-radius:24px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+    radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,.24), transparent 55%),
+    linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+  color:white;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.25);
+  padding:16px;
+}
+.bTitle{font-size:13px;font-weight:1000;opacity:.85}
+.bValue{font-size:34px;font-weight:1000;margin-top:8px}
+.bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
+.dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+.actionGrid{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+.action{
+  border-radius:18px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  padding:12px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  transition:.18s ease;
+}
+.action:hover{transform: translateY(-2px);background:rgba(255,255,255,.10)}
+.aIcon{
+  width:48px;height:48px;border-radius:999px;
+  display:grid;place-items:center;
+  font-size:20px;
+  font-weight:1000;color:#fff;
+}
+.aSend{background:linear-gradient(180deg,#6d57ff,#7c4dff)}
+.aReceive{background:linear-gradient(180deg,#18c07b,#11b981)}
+.aPlans{background:linear-gradient(180deg,#f59e0b,#f97316)}
+.aSupport{background:linear-gradient(180deg,#38bdf8,#5b6cff)}
+.aText{font-weight:1000;font-size:13px}
 
-  </style>
+/* ===== converters ===== */
+.convGrid{margin-top:14px;display:grid;gap:12px}
+.convRow{display:flex;gap:10px;flex-wrap:wrap}
+.inp{
+  flex:1;min-width:140px;
+  height:50px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  color:var(--text);
+  padding:10px 12px;
+  font-weight:1000;
+  outline:none;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.swapBtn{
+  width:54px;height:50px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.swapBtn:hover{filter:brightness(1.05)}
+.convBtn{
+  width:100%;
+  height:54px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 18px 55px rgba(91,108,255,.18);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.convBtn:hover{filter:brightness(1.05)}
+.rateLine{
+  margin-top:10px;
+  font-size:12px;
+  color:rgba(234,240,255,.75);
+  font-weight:900;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.rateDot{
+  width:10px;height:10px;border-radius:999px;
+  background:rgba(52,211,153,1);
+  box-shadow:0 0 18px rgba(52,211,153,.55);
+}
+
+/* ===== searchable dropdown unlimited ===== */
+.ddWrap{flex:1;min-width:220px;position:relative}
+.ddBtn{
+  width:100%;
+  height:50px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  color:rgba(234,240,255,.95);
+  padding:10px 12px;
+  font-weight:1000;
+  outline:none;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.ddLeft{display:flex;align-items:center;gap:10px;min-width:0}
+.ddIcon{
+  width:34px;height:34px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  display:grid;place-items:center;
+  font-size:14px;
+}
+.ddName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ddPanel{
+  position:absolute; top:56px; left:0; right:0;
+  z-index:100;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(2,6,23,.94);
+  box-shadow:0 26px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(16px);
+  overflow:hidden;
+  display:none;
+}
+.ddPanel.show{display:block;}
+.ddSearch{
+  width:100%;
+  height:46px;
+  border:none; outline:none;
+  padding:0 12px;
+  font-weight:1000;
+  color:#fff;
+  background:rgba(0,0,0,.20);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.ddList{max-height:320px;overflow:auto;}
+.ddItem{
+  padding:12px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  color:rgba(234,240,255,.86);
+  font-weight:900;
+}
+.ddItem:hover{background:rgba(255,255,255,.06)}
+.ddItem small{color:rgba(234,240,255,.55);font-weight:900}
+
+/* ===== mini chart ===== */
+.chartWrap{
+  margin-top:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  overflow:hidden;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.chartHead{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  font-weight:1000;
+  color:rgba(234,240,255,.78);
+  font-size:13px;
+}
+.chartFrame{width:100%;height:340px;border:0;display:block}
+
+/* ===== ORDER BOOK (NEW) ===== */
+.orderBookWrap{
+  margin-top:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  overflow:hidden;
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.obHead{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.10);
+  font-weight:1000;
+  color:rgba(234,240,255,.78);
+  font-size:13px;
+}
+.obStatus{
+  display:flex;gap:8px;align-items:center;font-weight:1000;font-size:12px;color:rgba(234,240,255,.70);
+}
+.pulseDot{
+  width:9px;height:9px;border-radius:999px;background:rgba(34,197,94,1);
+  box-shadow:0 0 18px rgba(34,197,94,.55);
+  animation:pulse 1.3s ease-in-out infinite;
+}
+@keyframes pulse{0%{transform:scale(.85);opacity:.7}50%{transform:scale(1.1);opacity:1}100%{transform:scale(.85);opacity:.7}}
+
+.obGrid{
+  display:grid;
+  grid-template-columns: 1fr 90px 1fr;
+  gap:10px;
+  padding:12px;
+}
+@media (max-width:720px){
+  .obGrid{ grid-template-columns:1fr; }
+}
+.obCol{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  overflow:hidden;
+  background:rgba(0,0,0,.18);
+}
+.obColHead{
+  display:flex;justify-content:space-between;gap:10px;
+  padding:10px 10px;
+  font-weight:1000;font-size:12px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  color:rgba(234,240,255,.75);
+}
+.obRows{
+  max-height:320px;
+  overflow:auto;
+}
+.obRow{
+  position:relative;
+  display:grid;
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap:10px;
+  padding:8px 10px;
+  font-weight:1000;
+  font-size:12px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.obRow:last-child{border-bottom:none}
+.obRow span{z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obRow .p{color:#f87171}
+.obRow.ask .p{color:#f87171}
+.obRow.bid .p{color:#22c55e}
+.obRow .bgBar{
+  position:absolute; inset:0;
+  z-index:1;
+  opacity:.14;
+}
+.obRow.ask .bgBar{ background:linear-gradient(90deg, rgba(248,113,113,.0), rgba(248,113,113,.55)); transform-origin:right; }
+.obRow.bid .bgBar{ background:linear-gradient(90deg, rgba(34,197,94,.55), rgba(34,197,94,.0)); transform-origin:left; }
+.obMid{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 0;
+}
+.midPrice{
+  font-weight:1000;
+  font-size:15px;
+}
+.spreadPill{
+  font-size:11px;
+  font-weight:1000;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);
+  color:rgba(234,240,255,.80);
+}
+.obFoot{
+  padding:10px 12px;
+  border-top:1px solid rgba(255,255,255,.10);
+  display:flex;justify-content:space-between;gap:10px;
+  color:rgba(234,240,255,.65);
+  font-size:12px;font-weight:900;
+}
+
+/* ===== SIDEBAR ===== */
+.overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.65);
+  display:none; z-index:999;
+  backdrop-filter: blur(4px);
+}
+.overlay.show{display:block;}
+.sidebar{
+  position:fixed; top:0; left:-315px;
+  width:292px; height:100vh;
+  padding:16px;
+  z-index:1000;
+  transition: .28s ease;
+  border-right:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+    linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+  box-shadow:0 26px 90px rgba(0,0,0,.60);
+  backdrop-filter: blur(16px);
+
+  /* ✅ scrollable menu */
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+
+  /* ✅ ONLY ADDED: premium thin scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
+}
+.sidebar::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,0);
+  background-clip:padding-box;
+}
+.sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+
+.sidebar.open{ left:0; }
+.sideTop{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:12px;
+}
+sideBrand{
+  display:flex;align-items:center;gap:10px;
+  font-weight:1000;font-size:16px;letter-spacing:.9px;
+  color:#fff;
+  padding:10px 12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
+  box-shadow:0 16px 50px rgba(109,87,255,.18);
+  min-width:170px;
+}
+.sideBrand{
+  display:flex;align-items:center;gap:10px;
+  font-weight:1000;font-size:16px;letter-spacing:.9px;
+  color:#fff;
+  padding:10px 12px;border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(90deg, rgba(109,87,255,.85), rgba(124,77,255,.85));
+  box-shadow:0 16px 50px rgba(109,87,255,.18);
+  min-width:170px;
+}
+.sideBrandIcon{
+  width:30px;height:30px;border-radius:12px;
+  display:grid;place-items:center;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.20);
+}
+.closeBtn{
+  background:rgba(0,0,0,.22);
+  border:1px solid rgba(255,255,255,.14);
+  color:rgba(234,240,255,.95);
+  border-radius:14px;
+  width:44px;height:44px;
+  cursor:pointer;
+  display:grid;place-items:center;
+  font-weight:1000;
+}
+.closeBtn:hover{background:rgba(255,255,255,.08)}
+
+.userTag{
+  padding:12px 12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,,255,.03));
+  box-shadow:0 18px 55px rgba(0,0,0,.35);
+  margin:10px 0 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.userTagLeft{min-width:0}
+.userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
+.userTag .t2{
+  margin-top:6px;font-weight:1000;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:180px;
+}
+.sideAvatar{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  display:grid;place-items:center;
+  position:relative;overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  flex:0 0 auto;
+}
+.sideAvatar span{font-size:18px}
+.sideAvatar img{
+  position:absolute; inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  display:none;
+}
+
+.menuGroupTitle{
+  margin:10px 0 8px;
+  font-size:12px;font-weight:1000;
+  color:rgba(234,240,255,.50);
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+
+.sideItem{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 12px;border-radius:18px;
+  color:rgba(234,240,255,.82);
+  text-decoration:none;
+  font-weight:1000;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.sideItem .i{
+  width:42px;height:42px;border-radius:16px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  font-size:18px;
+}
+.sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
+.activeLink{
+  border:1px solid rgba(56,189,248,.55);
+  background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
+  color:#cfefff;
+}
+.activeLink::after{
+  content:"";
+  position:absolute; inset:0;
+  background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
+  pointer-events:none;
+}
+.sideLogout{
+  margin-top:10px;
+  background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+  color:#020617;border:none;width:100%;
+  padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
+  box-shadow:0 18px 55px rgba(239,68,68,.18);
+}
+.sideLogout:hover{filter:brightness(1.03)}
+
+/* ===== DOCK ===== */
+.dock{
+  position:fixed;
+  left:0; right:0; bottom:14px;
+  z-index:2000;
+  pointer-events:none;
+}
+.dockInner{
+  pointer-events:auto;
+  max-width:980px;
+  margin:0 auto;
+  padding:0 14px;
+}
+.dockBar{
+  height:76px;
+  border-radius:28px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 20px 70px rgba(0,0,0,.45);
+  backdrop-filter: blur(14px);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  gap:10px;
+}
+.dockItem{
+  flex:1;
+  min-width:70px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border-radius:18px;
+  padding:10px 0;
+  color:rgba(234,240,255,.55);
+  font-size:12px;
+  font-weight:1000;
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+}
+.dockItem .ico{font-size:18px;opacity:.95}
+.dockItem:hover{background:rgba(255,255,255,.06)}
+.dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
+.dockHome{
+  width:78px;height:78px;border-radius:26px;
+  background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
+  box-shadow:0 22px 55px rgba(109,87,255,.30);
+  display:grid;place-items:center;
+  margin-top:-32px;
+  border:1px solid rgba(255,255,255,.16);
+  cursor:pointer;user-select:none;
+  flex:0 0 auto;
+  pointer-events:auto;
+}
+.dockHome span{font-size:28px;color:white}
+.dockHome:hover{filter:brightness(1.05)}
+.dockBadge{
+  position:absolute;
+  top:2px;
+  right:18px;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  border-radius:999px;
+  background:#f87171;
+  color:#020617;
+  font-weight:1000;
+  font-size:11px;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.18);
+}
+
+/* ============================================================
+   ✅ TOP 10 CRYPTO LIST (ADDED)
+   ============================================================ */
+.crypto10Grid{
+  margin-top:12px;
+  display:grid;
+  gap:10px;
+}
+.cryptoRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.cryptoLeft{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.cryptoLogo{
+  width:42px;
+  height:42px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  flex:0 0 auto;
+}
+.cryptoLogo img{width:100%;height:100%;object-fit:cover;display:block;}
+.cryptoName{
+  font-weight:1000;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cryptoSym{
+  display:block;
+  font-size:12px;
+  font-weight:1000;
+  color:rgba(234,240,255,.55);
+  margin-top:2px;
+}
+.cryptoRight{
+  text-align:right;
+  flex:0 0 auto;
+}
+.cryptoPrice{
+  font-weight:1000;
+  font-size:14px;
+}
+.cryptoChg{
+  margin-top:4px;
+  font-weight:1000;
+  font-size:12px;
+  color:rgba(234,240,255,.65);
+}
+.cryptoChg.up{color:rgba(34,197,94,1)}
+.cryptoChg.down{color:rgba(248,113,113,1)}
+</style>
 </head>
 
 <body>
+<div class="bgFlow"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="blob b4"></div>
+<div class="shimmer"></div>
 
-  <!-- AUTH COVER -->
-  <div id="authCover" class="authCover hidden">
-    <div class="authBox">
-      <h2>Coinluxora Login</h2>
-      <p>Please sign in. If you just registered, check your email to verify your account first.</p>
+<!-- Loading -->
+<div id="authGate">
+  <div class="gateCard">
+    <div class="gateLogo">📣</div>
+    <div class="gateTxt">Coinluxora</div>
+    <div class="gateSub">Securing your session…</div>
+    <div class="spinner"></div>
+  </div>
+</div>
 
-      <input id="authEmail" type="email" placeholder="Email"/>
-      <input id="authPass" type="password" placeholder="Password"/>
+<div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-      <div class="authActions">
-        <button class="btn brand" id="btnLogin">Login</button>
-        <button class="btn" id="btnSignup">Sign Up</button>
-        <button class="btn" id="btnResend">Resend Verification</button>
-      </div>
+<!-- Sidebar -->
+<div id="sidebar" class="sidebar">
+  <div class="sideTop">
+    <div class="sideBrand">
+      <div class="sideBrandIcon">◈</div>
+      COINLUXORA
+    </div>
+    <button class="closeBtn" onclick="closeMenu()">✕</button>
+  </div>
 
-      <div class="authMsg" id="authMsg"></div>
+  <div class="userTag">
+    <div class="userTagLeft">
+      <div class="t1">Logged in as</div>
+      <div id="sideName" class="t2">---</div>
+    </div>
+    <div class="sideAvatar" title="Profile photo">
+      <span id="sideAvatarFallback">👤</span>
+      <img id="sideAvatarImg" alt="Avatar"/>
     </div>
   </div>
 
-  <!-- MOBILE OVERLAY + MENU -->
-  <div id="overlay" class="overlay"></div>
-  <div id="mobileMenu" class="mobileMenu">
-    <div class="mHead">
-      <b>Menu</b>
-      <button id="closeMenu" class="closeBtn">✕</button>
-    </div>
+  <div class="menuGroupTitle">Navigation</div>
 
-    <div class="mBody">
-      <div class="sideTitle">Navigation</div>
-      <div class="nav">
-        <a href="#dashboard">Dashboard <span class="badge">Live</span></a>
-        <a href="#orderbook">Order Book</a>
-        <a href="#topcoins">Top Coins</a>
-        <a href="#news">News</a>
-        <a href="#profile">Profile</a>
-        <a href="#settings">Settings</a>
-        <a href="#support">Support</a>
-      </div>
+  <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+  <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+  <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+  <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
+  <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
+  <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+  <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
 
-      <div class="sideTitle">Account</div>
-      <div class="nav">
-        <a href="javascript:void(0)" id="logoutBtnM">Logout</a>
-      </div>
-    </div>
-  </div>
+  <button class="sideLogout" onclick="logout()">Logout</button>
+</div>
 
-  <!-- TOP BAR -->
-  <header>
-    <div class="topbar">
-      <div class="brandRow">
-        <div class="logo"></div>
-        <div class="brandText">
-          <h1>Coinluxora Dashboard</h1>
-          <span>Live crypto insights</span>
-        </div>
-      </div>
+<div class="container">
 
-      <div class="topRight">
-        <div class="pill" id="userPill">Not signed in</div>
-        <button class="menuBtn" id="openMenu" aria-label="Open menu">
-          <div class="bars"><div></div></div>
+  <!-- ✅ STICKY WRAP -->
+  <div id="stickyMenu" class="stickyMenu">
+    <div class="topRow">
+      <div class="brand"><div class="brandIcon">📣</div>COIN</div>
+      <div class="headerActions">
+        <button class="avatarBtn" onclick="goProfile()" title="Profile">
+          <span id="avatarFallback" class="avatarFallback">👤</span>
+          <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
         </button>
+        <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
       </div>
     </div>
-  </header>
-
-  <div class="container">
-    <!-- DESKTOP SIDEBAR -->
-    <aside>
-      <div class="sideTitle">Navigation</div>
-      <div class="nav">
-        <a href="#dashboard">Dashboard <span class="badge">Live</span></a>
-        <a href="#orderbook">Order Book</a>
-        <a href="#topcoins">Top Coins</a>
-        <a href="#news">News</a>
-        <a href="#profile">Profile</a>
-        <a href="#settings">Settings</a>
-        <a href="#support">Support</a>
-      </div>
-
-      <div class="sideTitle">Account</div>
-      <div class="nav">
-        <a href="javascript:void(0)" id="logoutBtnD">Logout</a>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main>
-      <section id="dashboard" class="grid2">
-        <div class="card">
-          <div class="cardHead">
-            <h2>Market Overview</h2>
-            <div class="subtxt" id="marketTime">Loading...</div>
-          </div>
-          <div class="miniChart">
-            <canvas id="chart"></canvas>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="cardHead">
-            <h2>Quick Stats</h2>
-            <div class="subtxt">Auto-updated</div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr;gap:10px">
-            <div class="coinItem">
-              <div class="coinL"><b id="statSymbol">BTC/USDT</b><span>Selected pair</span></div>
-              <div class="coinR" id="statPrice">--</div>
-            </div>
-            <div class="coinItem">
-              <div class="coinL"><b>24h Change</b><span>Percentage</span></div>
-              <div class="coinR" id="statChange">--</div>
-            </div>
-            <div class="coinItem">
-              <div class="coinL"><b>Spread</b><span>Bid/Ask</span></div>
-              <div class="coinR" id="statSpread">--</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ORDER BOOK -->
-      <section id="orderbook" class="card" style="margin-top:18px">
-        <div class="cardHead">
-          <h2>Order Book</h2>
-          <div class="subtxt">Binance public depth snapshot</div>
-        </div>
-
-        <div class="row">
-          <input type="search" id="pairSearch" placeholder="Search pair e.g. BTC, ETH..." />
-          <select id="pairSelect"></select>
-          <button class="btn brand" id="refreshOB">Refresh</button>
-        </div>
-
-        <div class="obWrap">
-          <div class="obCol">
-            <div class="obTop"><span>Asks (Sell)</span><span>Price / Amount / Total</span></div>
-            <div class="obList" id="asks"></div>
-          </div>
-          <div class="obCol">
-            <div class="obTop"><span>Bids (Buy)</span><span>Price / Amount / Total</span></div>
-            <div class="obList" id="bids"></div>
-          </div>
-        </div>
-
-        <div class="centerPrice" id="midPrice">--</div>
-
-        <!-- TOP COINS AFTER ORDERBOOK -->
-        <div id="topcoins" class="card" style="margin-top:16px;background:rgba(255,255,255,.03)">
-          <div class="cardHead">
-            <h2>Top 10 Major Cryptos</h2>
-            <div class="subtxt">Live price (USDT)</div>
-          </div>
-
-          <div class="coinGrid" id="top10Grid"></div>
-        </div>
-      </section>
-
-      <!-- NEWS -->
-      <section id="news" class="card" style="margin-top:18px">
-        <div class="cardHead">
-          <h2>Crypto News</h2>
-          <div class="subtxt">Latest headlines</div>
-        </div>
-        <div id="newsList" style="display:grid;gap:10px"></div>
-      </section>
-
-      <!-- PROFILE -->
-      <section id="profile" class="card" style="margin-top:18px">
-        <div class="cardHead">
-          <h2>Profile</h2>
-          <div class="subtxt">Account details</div>
-        </div>
-        <div id="profileBox" class="subtxt">Loading...</div>
-      </section>
-
-      <!-- SETTINGS -->
-      <section id="settings" class="card" style="margin-top:18px">
-        <div class="cardHead">
-          <h2>Settings</h2>
-          <div class="subtxt">Preferences</div>
-        </div>
-        <div class="subtxt">Coming soon</div>
-      </section>
-
-      <!-- SUPPORT -->
-      <section id="support" class="card" style="margin-top:18px">
-        <div class="cardHead">
-          <h2>Support</h2>
-          <div class="subtxt">Help & contact</div>
-        </div>
-        <div class="subtxt">Email: support@coinluxora.com</div>
-      </section>
-    </main>
   </div>
+
+  <div class="helloCard">
+    <div class="helloLeft">
+      <div class="helloLogo">💫</div>
+      <div>
+        <div class="chips">
+          <div class="miniChip">🟢 active</div>
+          <div class="miniChip" id="countryChip" style="display:none"></div>
+        </div>
+        <div class="helloTitle" id="greetingTitle">Greetings…</div>
+        <div class="helloSub" id="helloName">Loading…</div>
+      </div>
+    </div>
+
+    <div class="helloRight">
+      <div class="helloRightTop">
+        <div class="idChip" id="userIdChip">ID:</div>
+        <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+      </div>
+      <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
+    </div>
+  </div>
+
+  <div class="balanceCard">
+    <div class="bTitle">Total Portfolio Value</div>
+    <div class="bValue" id="balance">--</div>
+    <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
+
+    <div class="actionGrid">
+      <div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
+      <div class="action" onclick="goDepositAndClear()"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
+      <div class="action" onclick="goPlans()"><div class="aIcon aPlans">📈</div><div class="aText">Plans</div></div>
+      <div class="action" onclick="goSupportAndClear()"><div class="aIcon aSupport">💬</div><div class="aText">Support</div></div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Active Investment Plan</h2>
+    <div id="planMsg" class="small">Loading…</div>
+    <div id="planBox"></div>
+  </div>
+
+  <div class="box">
+    <h2>Top 10 Major Cryptos</h2>
+    <div class="small">Live market prices (auto refresh every 20 seconds).</div>
+    <div id="top10Msg" class="small">Loading…</div>
+    <div id="top10List" class="crypto10Grid"></div>
+  </div>
+
+  <div class="box">
+    <h2>Crypto Converter</h2>
+    <div class="small">Search & convert from ALL coins to ALL fiat currencies.</div>
+
+    <div class="convGrid">
+      <div class="convRow">
+        <div class="ddWrap" id="ddCryptoA"></div>
+        <button class="swapBtn" onclick="swapCrypto()">⇄</button>
+        <div class="ddWrap" id="ddCryptoB"></div>
+      </div>
+
+      <div class="convRow">
+        <input id="cryptoAmount" class="inp" type="number" min="0" step="0.00000001" placeholder="Enter amount"/>
+      </div>
+
+      <button class="convBtn" onclick="convertCrypto()">⚡ Convert</button>
+
+      <div class="card">
+        <div class="rateLine"><span class="rateDot"></span> <span id="cryptoRate">Rate: --</span></div>
+        <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="cryptoResult">--</strong></div>
+        <div class="small" style="margin-top:10px;font-size:14px;">Reverse: <strong id="cryptoReverse">--</strong></div>
+        <div class="small" style="margin-top:10px;font-size:13px;color:rgba(234,240,255,.55)">
+          Tip: Search by coin name or symbol (example: “btc”, “eth”, “sol”, “xrp”).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Fiat Currency Converter</h2>
+    <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
+
+    <div class="convGrid">
+      <div class="convRow">
+        <div class="ddWrap" id="ddFiatA"></div>
+        <button class="swapBtn" onclick="swapFiat()">⇄</button>
+        <div class="ddWrap" id="ddFiatB"></div>
+      </div>
+
+      <div class="convRow">
+        <input id="fiatAmount" class="inp" type="number" min="0" step="0.01" placeholder="Enter amount"/>
+      </div>
+
+      <button class="convBtn" onclick="convertFiat()">💱 Convert Fiat</button>
+
+      <div class="card">
+        <div class="rateLine"><span class="rateDot"></span> <span id="fiatRate">Rate: --</span></div>
+        <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="fiatResult">--</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Live Crypto Order Book</h2>
+    <div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
+
+    <!-- ✅ REPLACED ONLY THIS PART: SEARCHABLE ORDER BOOK PAIRS -->
+    <div class="convRow" style="margin-top:12px">
+      <div class="ddWrap" id="obPairWrap"></div>
+      <select id="obPair" style="display:none">
+        <option value="BTCUSDT">BTC/USDT</option>
+        <option value="ETHUSDT">ETH/USDT</option>
+        <option value="BNBUSDT">BNB/USDT</option>
+        <option value="XRPUSDT">XRP/USDT</option>
+        <option value="SOLUSDT">SOL/USDT</option>
+      </select>
+    </div>
+
+    <div class="chartWrap">
+      <div class="chartHead">
+        <span>Mini Candlestick Chart</span>
+        <span id="chartPair">BTC/USDT</span>
+      </div>
+      <iframe id="tvChart" class="chartFrame"></iframe>
+    </div>
+
+    <!-- ✅ ORDER BOOK UI (ADDED BELOW MINI CHART) -->
+    <div class="orderBookWrap">
+      <div class="obHead">
+        <span>Order Book</span>
+        <div class="obStatus">
+          <span class="pulseDot"></span>
+          <span id="obStatusTxt">Connecting…</span>
+        </div>
+      </div>
+
+      <div class="obGrid">
+        <div class="obCol">
+          <div class="obColHead"><span>Asks</span><span>Price / Amount / Total</span></div>
+          <div id="obAsks" class="obRows"></div>
+        </div>
+
+        <div class="obMid">
+          <div class="midPrice" id="obMidPrice">--</div>
+          <div class="spreadPill" id="obSpread">Spread: --</div>
+        </div>
+
+        <div class="obCol">
+          <div class="obColHead"><span>Bids</span><span>Price / Amount / Total</span></div>
+          <div id="obBids" class="obRows"></div>
+        </div>
+      </div>
+
+      <div class="obFoot">
+        <div id="obExchange">Source: --</div>
+        <div id="obUpdated">Updated: --</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="dock">
+  <div class="dockInner">
+    <div class="dockBar">
+      <div class="dockItem" onclick="goDepositAndClear()"><div id="badgeDepositDock" class="dockBadge">0</div><div class="ico">💳</div><div>Deposit</div></div>
+      <div class="dockItem" onclick="goWithdrawAndClear()"><div id="badgeWithdrawDock" class="dockBadge">0</div><div class="ico">➡</div><div>Withdraw</div></div>
+      <div class="dockHome" onclick="goDashboard()"><span>🏠</span></div>
+      <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
+      <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
+    </div>
+  </div>
+</div>
 
 <script>
-/* =========================
-   SUPABASE SETUP
-   ========================= */
-const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTYyNjQ1NzcsImV4cCI6MjAxMTg0MDU3N30.6JNSaZp8x0bS5lYB5j4Qqf8U3Jxv9x9pGd6Z5c3rVhk";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ============================================================
+   ✅ STICKY MENU POLISH SCRIPT
+   ============================================================ */
+(function(){
+  const sticky = document.getElementById("stickyMenu");
+  if(!sticky) return;
+  const onScroll = ()=>{
+    if(window.scrollY > 14) sticky.classList.add("isStuck");
+    else sticky.classList.remove("isStuck");
+  };
+  onScroll();
+  window.addEventListener("scroll", onScroll, {passive:true});
+})();
 
-/* AUTH ELEMENTS */
-const authCover = document.getElementById("authCover");
-const authEmail = document.getElementById("authEmail");
-const authPass  = document.getElementById("authPass");
-const authMsg   = document.getElementById("authMsg");
-const btnLogin  = document.getElementById("btnLogin");
-const btnSignup = document.getElementById("btnSignup");
-const btnResend = document.getElementById("btnResend");
+/* ============================================================
+   ✅ AUTH GUARD  (ADDED/EXISTING)
+   ============================================================ */
+const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
+const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function setAuthMsg(msg, isBad=false){
-  authMsg.style.color = isBad ? "rgba(255,77,109,.95)" : "rgba(39,224,164,.95)";
-  authMsg.textContent = msg;
-}
+let currentUserEmail="";
+let currentUserId="";
+let badgeChannel=null;
 
-/* =========================
-   ONE-BLOCK AUTH + EMAIL VERIFICATION GUARD
-   ========================= */
-async function requireAuth(){
-  const { data: { session } } = await supabase.auth.getSession();
+/* converter global */
+let ALL_COINS=[];
+let FIATS=[];
+let FX_RATES=null;
+let cryptoDirection="crypto_to_fiat";
 
-  if(!session){
-    authCover.classList.remove("hidden");
-    return null;
-  }
+let selectedCryptoA={ id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" };
+let selectedCryptoB={ id:"USD", label:"USD", icon:"$", symbol:"usd" };
+let selectedFiatA={ id:"USD", label:"USD", icon:"$" };
+let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
-  // If user not verified (email)
-  const user = session.user;
-  const emailConfirmed = user?.email_confirmed_at || user?.confirmed_at;
-  if(!emailConfirmed){
-    authCover.classList.remove("hidden");
-    setAuthMsg("Please verify your email first. Tap 'Resend Verification' if needed.", true);
-    return null;
-  }
+let top10Timer=null;
 
-  authCover.classList.add("hidden");
-  return session;
-}
-
-/* login signup resend */
-btnLogin.onclick = async () => {
-  setAuthMsg("Logging in...");
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: authEmail.value.trim(),
-    password: authPass.value
-  });
-  if(error){ setAuthMsg(error.message, true); return; }
-  setAuthMsg("Login successful ✅");
-  await boot();
-};
-
-btnSignup.onclick = async () => {
-  setAuthMsg("Creating account...");
-  const { data, error } = await supabase.auth.signUp({
-    email: authEmail.value.trim(),
-    password: authPass.value,
-    options: { emailRedirectTo: window.location.href }
-  });
-  if(error){ setAuthMsg(error.message, true); return; }
-  setAuthMsg("Signup successful ✅ Check your email to verify.", false);
-};
-
-btnResend.onclick = async () => {
-  setAuthMsg("Resending verification link...");
-  const email = authEmail.value.trim();
-  if(!email){ setAuthMsg("Enter your email first.", true); return; }
-  const { data, error } = await supabase.auth.resend({
-    type: "signup",
-    email
-  });
-  if(error){ setAuthMsg(error.message, true); return; }
-  setAuthMsg("Verification email sent ✅", false);
-};
-
-/* logout buttons */
-document.getElementById("logoutBtnD").onclick = async () => { await supabase.auth.signOut(); location.reload(); };
-document.getElementById("logoutBtnM").onclick = async () => { await supabase.auth.signOut(); location.reload(); };
-
-/* =========================
-   MENU TOGGLE (MOBILE)
-   ========================= */
-const overlay = document.getElementById("overlay");
-const mobileMenu = document.getElementById("mobileMenu");
-const openMenu = document.getElementById("openMenu");
-const closeMenu = document.getElementById("closeMenu");
-
-function openDrawer(){
-  overlay.classList.add("active");
-  mobileMenu.classList.add("active");
-  document.body.style.overflow = "hidden";
-}
-function closeDrawer(){
-  overlay.classList.remove("active");
-  mobileMenu.classList.remove("active");
-  document.body.style.overflow = "";
-}
-openMenu.onclick = openDrawer;
-closeMenu.onclick = closeDrawer;
-overlay.onclick = closeDrawer;
-
-/* =========================
-   MINI CHART (simple demo)
-   ========================= */
-const canvas = document.getElementById("chart");
-const ctx = canvas.getContext("2d");
-function resizeCanvas(){
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = Math.floor(rect.width * devicePixelRatio);
-  canvas.height = Math.floor(rect.height * devicePixelRatio);
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-}
-window.addEventListener("resize", resizeCanvas);
-
-function drawLine(data){
-  resizeCanvas();
-  const w = canvas.getBoundingClientRect().width;
-  const h = canvas.getBoundingClientRect().height;
-
-  ctx.clearRect(0,0,w,h);
-
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const pad = 18;
-
-  ctx.beginPath();
-  data.forEach((v,i)=>{
-    const x = pad + (i/(data.length-1))*(w-2*pad);
-    const y = pad + (1-(v-min)/(max-min || 1))*(h-2*pad);
-    if(i===0) ctx.moveTo(x,y);
-    else ctx.lineTo(x,y);
-  });
-  ctx.strokeStyle = "rgba(77,163,255,.95)";
-  ctx.lineWidth = 2.2;
-  ctx.stroke();
-
-  // glow
-  ctx.strokeStyle = "rgba(77,163,255,.25)";
-  ctx.lineWidth = 10;
-  ctx.stroke();
-}
-
-/* =========================
-   ORDER BOOK
-   ========================= */
-const pairSelect = document.getElementById("pairSelect");
-const pairSearch = document.getElementById("pairSearch");
-const asksEl = document.getElementById("asks");
-const bidsEl = document.getElementById("bids");
-const midPriceEl = document.getElementById("midPrice");
-const refreshOB = document.getElementById("refreshOB");
-
-const statSymbol = document.getElementById("statSymbol");
-const statPrice  = document.getElementById("statPrice");
-const statChange = document.getElementById("statChange");
-const statSpread = document.getElementById("statSpread");
-
-const pairsAll = [
-  "BTCUSDT","ETHUSDT","BNBUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOGEUSDT","TRXUSDT","AVAXUSDT","LINKUSDT",
-  "MATICUSDT","DOTUSDT","LTCUSDT","BCHUSDT","ATOMUSDT","NEARUSDT","ETCUSDT","FILUSDT","ICPUSDT","OPUSDT",
-  "ARBUSDT","INJUSDT","TIAUSDT","APTUSDT","SUIUSDT","RNDRUSDT","SEIUSDT","PEPEUSDT","SHIBUSDT","UNIUSDT"
+/* ============================================================
+   ✅ ORDER BOOK PAIRS (SEARCHABLE)
+   ============================================================ */
+const OB_PAIRS = [
+  { value:"BTCUSDT", label:"Bitcoin (BTC/USDT)", search:"bitcoin btc usdt btcusdt" },
+  { value:"ETHUSDT", label:"Ethereum (ETH/USDT)", search:"ethereum eth usdt ethusdt" },
+  { value:"BNBUSDT", label:"BNB (BNB/USDT)", search:"bnb binance bnbusdt usdt" },
+  { value:"SOLUSDT", label:"Solana (SOL/USDT)", search:"solana sol solusdt usdt" },
+  { value:"XRPUSDT", label:"XRP (XRP/USDT)", search:"xrp ripple xrpusdt usdt" },
+  { value:"ADAUSDT", label:"Cardano (ADA/USDT)", search:"cardano ada adausdt usdt" },
+  { value:"DOGEUSDT", label:"Dogecoin (DOGE/USDT)", search:"dogecoin doge dogeusdt usdt" },
+  { value:"TRXUSDT", label:"TRON (TRX/USDT)", search:"tron trx trxusdt usdt" },
+  { value:"DOTUSDT", label:"Polkadot (DOT/USDT)", search:"polkadot dot dotusdt usdt" },
+  { value:"MATICUSDT", label:"Polygon (MATIC/USDT)", search:"polygon matic maticusdt usdt" },
+  { value:"AVAXUSDT", label:"Avalanche (AVAX/USDT)", search:"avalanche avax avaxusdt usdt" },
+  { value:"LINKUSDT", label:"Chainlink (LINK/USDT)", search:"chainlink link linkusdt usdt" },
+  { value:"LTCUSDT", label:"Litecoin (LTC/USDT)", search:"litecoin ltc ltcusdt usdt" },
+  { value:"BCHUSDT", label:"Bitcoin Cash (BCH/USDT)", search:"bitcoin cash bch bchusdt usdt" },
+  { value:"ATOMUSDT", label:"Cosmos (ATOM/USDT)", search:"cosmos atom atomusdt usdt" },
+  { value:"XLMUSDT", label:"Stellar (XLM/USDT)", search:"stellar xlm xlmusdt usdt" },
+  { value:"NEARUSDT", label:"NEAR (NEAR/USDT)", search:"near nearusdt usdt" },
+  { value:"APTUSDT", label:"Aptos (APT/USDT)", search:"aptos apt aptusdt usdt" },
+  { value:"OPUSDT", label:"Optimism (OP/USDT)", search:"optimism op opusdt usdt" },
+  { value:"ARBUSDT", label:"Arbitrum (ARB/USDT)", search:"arbitrum arb arbusdt usdt" },
+  { value:"INJUSDT", label:"Injective (INJ/USDT)", search:"injective inj injusdt usdt" },
+  { value:"RNDRUSDT", label:"Render (RNDR/USDT)", search:"render rndr rndrusdt usdt" },
+  { value:"FILUSDT", label:"Filecoin (FIL/USDT)", search:"filecoin fil filusdt usdt" },
+  { value:"ETCUSDT", label:"Ethereum Classic (ETC/USDT)", search:"ethereum classic etc etcusdt usdt" },
+  { value:"UNIUSDT", label:"Uniswap (UNI/USDT)", search:"uniswap uni uniusdt usdt" },
+  { value:"AAVEUSDT", label:"Aave (AAVE/USDT)", search:"aave aaveusdt usdt" },
+  { value:"SUIUSDT", label:"Sui (SUI/USDT)", search:"sui sui usdt suiusdt" },
+  { value:"PEPEUSDT", label:"Pepe (PEPE/USDT)", search:"pepe pepeusdt usdt" },
+  { value:"SHIBUSDT", label:"Shiba Inu (SHIB/USDT)", search:"shiba inu shib shibusdt usdt" },
+  { value:"BATUSDT", label:"Basic Attention (BAT/USDT)", search:"basic attention bat batusdt usdt" },
+  { value:"GALAUSDT", label:"Gala (GALA/USDT)", search:"gala galausdt usdt" }
 ];
 
-function buildPairOptions(list){
-  pairSelect.innerHTML = "";
-  list.forEach(sym=>{
-    const opt = document.createElement("option");
-    opt.value = sym;
-    opt.textContent = sym.replace("USDT","/USDT");
-    pairSelect.appendChild(opt);
-  });
-}
+function mountOBPairs(){
+  const wrap=document.getElementById("obPairWrap");
+  const hidden=document.getElementById("obPair");
+  if(!wrap || !hidden) return;
 
-pairSearch.addEventListener("input", ()=>{
-  const q = pairSearch.value.trim().toUpperCase();
-  const filtered = !q ? pairsAll : pairsAll.filter(p=>p.includes(q));
-  buildPairOptions(filtered.length ? filtered : pairsAll);
-});
-
-buildPairOptions(pairsAll);
-pairSelect.value = "BTCUSDT";
-
-async function fetchOB(symbol){
-  const url = `https://api.binance.com/api/v3/depth?symbol=${symbol}&limit=30`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error("Failed to fetch order book");
-  return res.json();
-}
-
-function formatNum(n){
-  const x = Number(n);
-  if(!isFinite(x)) return "--";
-  if(x >= 1) return x.toLocaleString(undefined,{maximumFractionDigits:4});
-  return x.toLocaleString(undefined,{maximumFractionDigits:8});
-}
-
-function renderSide(list, type){
-  // list = [ [price, qty], ... ]
-  // compute totals + depth bars
-  let maxTotal = 0;
-  let rows = list.map(([p,q])=>{
-    const price = Number(p);
-    const qty = Number(q);
-    const total = price*qty;
-    if(total>maxTotal) maxTotal = total;
-    return {price, qty, total};
-  });
-
-  return rows.map(r=>{
-    const pct = maxTotal ? (r.total/maxTotal)*100 : 0;
-    return `
-      <div class="obRow">
-        <div class="fillbar ${type}" style="width:${pct}%;"></div>
-        <div class="${type==='sell'?'bad':'good'}">${formatNum(r.price)}</div>
-        <div>${formatNum(r.qty)}</div>
-        <div style="text-align:right">${formatNum(r.total)}</div>
+  wrap.innerHTML = `
+    <button class="ddBtn" type="button" id="obPairBtn">
+      <div class="ddLeft">
+        <div class="ddIcon">◈</div>
+        <div class="ddName" id="obPairName">BTC/USDT</div>
       </div>
-    `;
-  }).join("");
+      <div>▾</div>
+    </button>
+
+    <div class="ddPanel" id="obPairPanel">
+      <input class="ddSearch" id="obPairSearch" placeholder="Search coin/pair..." />
+      <div class="ddList" id="obPairList"></div>
+    </div>
+  `;
+
+  const btn=document.getElementById("obPairBtn");
+  const panel=document.getElementById("obPairPanel");
+  const search=document.getElementById("obPairSearch");
+  const list=document.getElementById("obPairList");
+  const nameEl=document.getElementById("obPairName");
+
+  function render(q=""){
+    const s=(q||"").trim().toLowerCase();
+    const items = !s ? OB_PAIRS : OB_PAIRS.filter(x => x.search.includes(s) || x.label.toLowerCase().includes(s) || x.value.toLowerCase().includes(s));
+    list.innerHTML = items.map(x=>`
+      <div class="ddItem" data-val="${x.value}" data-label="${x.label}">
+        <span>${x.label}</span>
+        <small>tap</small>
+      </div>
+    `).join("") || `<div class="ddItem"><span>No results</span></div>`;
+  }
+
+  function setPair(val, label){
+    hidden.value = val;
+    nameEl.textContent = label.includes("(") ? label.split("(")[1].replace(")","") : label;
+    document.getElementById("chartPair").textContent = nameEl.textContent;
+    hidden.dispatchEvent(new Event("change"));
+  }
+
+  // default sync
+  const init = OB_PAIRS.find(x=>x.value===hidden.value) || OB_PAIRS[0];
+  setTimeout(()=>setPair(init.value, init.label), 0);
+
+  render("");
+
+  btn.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    panel.classList.toggle("show");
+    if(panel.classList.contains("show")){
+      search.value="";
+      render("");
+      setTimeout(()=>search.focus(),40);
+    }
+  });
+
+  search.addEventListener("input",()=>render(search.value));
+
+  list.addEventListener("click",(e)=>{
+    const item=e.target.closest(".ddItem");
+    if(!item) return;
+    const val=item.getAttribute("data-val");
+    const label=item.getAttribute("data-label");
+    if(!val) return;
+    setPair(val,label);
+    panel.classList.remove("show");
+  });
+
+  document.addEventListener("click",(e)=>{
+    if(!wrap.contains(e.target)) panel.classList.remove("show");
+  });
 }
 
-async function updateOrderBook(){
-  const symbol = pairSelect.value;
-  statSymbol.textContent = symbol.replace("USDT","/USDT");
+/* ============================================================
+   ✅ TOP 10 MAJOR CRYPTO
+   ============================================================ */
+const TOP10_IDS = [
+  "bitcoin",
+  "ethereum",
+  "tether",
+  "binancecoin",
+  "solana",
+  "ripple",
+  "usd-coin",
+  "dogecoin",
+  "cardano",
+  "tron"
+];
 
-  asksEl.innerHTML = `<div class="subtxt">Loading...</div>`;
-  bidsEl.innerHTML = `<div class="subtxt">Loading...</div>`;
+/* ============================================================
+   ✅ helpers
+   ============================================================ */
+function fmtMoneySmart(n){
+  const num=Number(n||0);
+  if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
+  if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
+  return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
+}
+function nfmt(n, dp=2){
+  return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp});
+}
+
+async function loadTop10MajorCryptos(){
+  const msg=document.getElementById("top10Msg");
+  const list=document.getElementById("top10List");
+  if(!msg || !list) return;
 
   try{
-    const data = await fetchOB(symbol);
-    const asks = data.asks || [];
-    const bids = data.bids || [];
+    msg.textContent="Loading…";
+    const url =
+      `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(TOP10_IDS.join(","))}&order=market_cap_desc&per_page=10&page=1&sparkline=false`;
+    const res=await fetch(url);
+    const data=await res.json();
 
-    asksEl.innerHTML = renderSide(asks.slice(0, 20).reverse(), "sell");
-    bidsEl.innerHTML = renderSide(bids.slice(0, 20), "buy");
+    if(!Array.isArray(data) || data.length===0) throw new Error("No data");
+    msg.textContent="";
+    list.innerHTML = data.map(c=>{
+      const chg=Number(c.price_change_percentage_24h||0);
+      const chgClass = chg>=0 ? "up" : "down";
+      const sign = chg>=0 ? "+" : "";
+      return `
+        <div class="cryptoRow">
+          <div class="cryptoLeft">
+            <div class="cryptoLogo">
+              <img src="${c.image}" alt="${c.symbol}"/>
+            </div>
+            <div style="min-width:0">
+              <div class="cryptoName">${c.name}</div>
+              <span class="cryptoSym">${String(c.symbol||"").toUpperCase()}</span>
+            </div>
+          </div>
 
-    const bestAsk = asks.length ? Number(asks[0][0]) : 0;
-    const bestBid = bids.length ? Number(bids[0][0]) : 0;
-    const mid = (bestAsk && bestBid) ? ((bestAsk+bestBid)/2) : 0;
-
-    midPriceEl.textContent = mid ? `Mid Price: ${formatNum(mid)}` : "--";
-
-    statPrice.textContent = mid ? formatNum(mid) : "--";
-    const spread = (bestAsk && bestBid) ? (bestAsk - bestBid) : 0;
-    statSpread.textContent = spread ? formatNum(spread) : "--";
-
-    // change (fake calc via small random since depth doesn't provide)
-    const fake = ((Math.random()*2)-1).toFixed(2);
-    statChange.textContent = `${fake}%`;
-    statChange.style.color = (Number(fake) >= 0) ? "rgba(39,224,164,.95)" : "rgba(255,77,109,.95)";
-
-    // update mini chart with random walk
-    const points = [];
-    let v = mid || 100;
-    for(let i=0;i<40;i++){
-      v += (Math.random()-0.5) * (v*0.008);
-      points.push(v);
-    }
-    drawLine(points);
-
+          <div class="cryptoRight">
+            <div class="cryptoPrice">${fmtMoneySmart(c.current_price)}</div>
+            <div class="cryptoChg ${chgClass}">${sign}${chg.toFixed(2)}% (24h)</div>
+          </div>
+        </div>
+      `;
+    }).join("");
   }catch(e){
-    asksEl.innerHTML = `<div class="subtxt" style="color:rgba(255,77,109,.95)">Error loading order book</div>`;
-    bidsEl.innerHTML = `<div class="subtxt" style="color:rgba(255,77,109,.95)">Try again</div>`;
-    midPriceEl.textContent = "--";
+    msg.innerHTML = "<span class='err'>Unable to load live crypto prices (network blocked).</span>";
+    list.innerHTML = "";
   }
 }
 
-pairSelect.addEventListener("change", updateOrderBook);
-refreshOB.addEventListener("click", updateOrderBook);
-
-/* =========================
-   TOP 10 MAJOR COINS (LIVE PRICE)
-   ========================= */
-const top10 = [
-  {name:"Bitcoin", sym:"BTCUSDT"},
-  {name:"Ethereum", sym:"ETHUSDT"},
-  {name:"BNB", sym:"BNBUSDT"},
-  {name:"Solana", sym:"SOLUSDT"},
-  {name:"XRP", sym:"XRPUSDT"},
-  {name:"Cardano", sym:"ADAUSDT"},
-  {name:"Dogecoin", sym:"DOGEUSDT"},
-  {name:"TRON", sym:"TRXUSDT"},
-  {name:"Avalanche", sym:"AVAXUSDT"},
-  {name:"Chainlink", sym:"LINKUSDT"},
-];
-
-const top10Grid = document.getElementById("top10Grid");
-
-async function fetchTickerPrice(symbol){
-  const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error("ticker error");
-  return res.json();
+function startTop10AutoRefresh(){
+  if(top10Timer) clearInterval(top10Timer);
+  top10Timer=setInterval(loadTop10MajorCryptos, 20000);
 }
 
-async function renderTop10(){
-  top10Grid.innerHTML = "";
-  const promises = top10.map(async c=>{
+/* ============================================================
+   ✅ ORDER BOOK — MULTI WS FALLBACK (FIXED FOR MOBILE NETWORKS)
+   ============================================================ */
+
+let obWS=null;
+let obReconnectTimer=null;
+let obLastRender=0;
+let obActiveSource="--";
+
+function setOBStatus(text, ok=true){
+  const el=document.getElementById("obStatusTxt");
+  if(!el) return;
+  el.textContent=text;
+  el.style.color = ok ? "rgba(234,240,255,.75)" : "rgba(248,113,113,1)";
+}
+function setOBMeta(exchangeName){
+  const ex=document.getElementById("obExchange");
+  const up=document.getElementById("obUpdated");
+  if(ex) ex.textContent = "Source: " + (exchangeName || "--");
+  if(up) up.textContent = "Updated: " + new Date().toLocaleTimeString();
+}
+
+function renderOB(asks, bids){
+  const aEl=document.getElementById("obAsks");
+  const bEl=document.getElementById("obBids");
+  if(!aEl || !bEl) return;
+
+  const depthA=asks.slice(0,18);
+  const depthB=bids.slice(0,18);
+
+  const maxAsk = Math.max(...depthA.map(x=>x.q), 0.0000001);
+  const maxBid = Math.max(...depthB.map(x=>x.q), 0.0000001);
+
+  const asksSorted=[...depthA].sort((x,y)=>y.p-x.p);
+  const bidsSorted=[...depthB].sort((x,y)=>y.p-x.p);
+
+  let askTotal=0;
+  aEl.innerHTML = asksSorted.map(x=>{
+    askTotal += x.q;
+    const w = Math.min(100, (x.q/maxAsk)*100);
+    return `
+      <div class="obRow ask">
+        <div class="bgBar" style="transform:scaleX(${w/100});"></div>
+        <span class="p">${nfmt(x.p, x.p<1?8:2)}</span>
+        <span>${nfmt(x.q, x.q<1?6:4)}</span>
+        <span>${nfmt(askTotal, askTotal<1?6:4)}</span>
+      </div>
+    `;
+  }).join("") || `<div class="small" style="padding:10px">No asks</div>`;
+
+  let bidTotal=0;
+  bEl.innerHTML = bidsSorted.map(x=>{
+    bidTotal += x.q;
+    const w = Math.min(100, (x.q/maxBid)*100);
+    return `
+      <div class="obRow bid">
+        <div class="bgBar" style="transform:scaleX(${w/100});"></div>
+        <span class="p">${nfmt(x.p, x.p<1?8:2)}</span>
+        <span>${nfmt(x.q, x.q<1?6:4)}</span>
+        <span>${nfmt(bidTotal, bidTotal<1?6:4)}</span>
+      </div>
+    `;
+  }).join("") || `<div class="small" style="padding:10px">No bids</div>`;
+
+  const bestAsk = asks.length ? Math.min(...asks.map(x=>x.p)) : 0;
+  const bestBid = bids.length ? Math.max(...bids.map(x=>x.p)) : 0;
+
+  const mid = (bestAsk && bestBid) ? ((bestAsk + bestBid)/2) : 0;
+  const spread = (bestAsk && bestBid) ? (bestAsk - bestBid) : 0;
+
+  const midEl=document.getElementById("obMidPrice");
+  const spEl=document.getElementById("obSpread");
+  if(midEl) midEl.textContent = mid ? nfmt(mid, mid<1?8:2) : "--";
+  if(spEl) spEl.textContent = spread ? `Spread: ${nfmt(spread, spread<1?8:4)}` : "Spread: --";
+}
+
+function stopOB(){
+  try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+  obReconnectTimer=null;
+  try{
+    if(obWS){
+      obWS.onopen=null; obWS.onmessage=null; obWS.onerror=null; obWS.onclose=null;
+      obWS.close();
+    }
+  }catch(e){}
+  obWS=null;
+}
+
+function scheduleOBReconnect(){
+  try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+  obReconnectTimer=setTimeout(()=>startOrderBook(), 1500);
+}
+
+function normalizePairForOKX(pair){
+  const base = pair.replace("USDT","").toUpperCase();
+  return `${base}-USDT`;
+}
+
+/* ---------- WS CONNECTORS ---------- */
+function connectBinanceWS(pair){
+  return new Promise((resolve,reject)=>{
+    const url = `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`;
+    const ws = new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance timeout"));
+    }, 1800);
+
+    ws.onopen=()=>{
+      clearTimeout(timer);
+      resolve({ws, source:"Binance (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance blocked"));
+    };
+  });
+}
+
+function connectBinanceAltWS(pair){
+  return new Promise((resolve,reject)=>{
+    // alternate endpoint
+    const url = `wss://data-stream.binance.vision/ws/${pair.toLowerCase()}@depth20@100ms`;
+    const ws = new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance alt timeout"));
+    }, 1800);
+
+    ws.onopen=()=>{
+      clearTimeout(timer);
+      resolve({ws, source:"Binance (Alt WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("binance alt blocked"));
+    };
+  });
+}
+
+function connectBybitWS(pair){
+  return new Promise((resolve,reject)=>{
+    // Bybit Spot orderbook via public WS
+    const url="wss://stream.bybit.com/v5/public/spot";
+    const ws=new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("bybit timeout"));
+    }, 2200);
+
+    ws.onopen=()=>{
+      try{
+        ws.send(JSON.stringify({
+          op:"subscribe",
+          args:[`orderbook.50.${pair.toUpperCase()}`]
+        }));
+      }catch(e){}
+      clearTimeout(timer);
+      resolve({ws, source:"Bybit (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("bybit blocked"));
+    };
+  });
+}
+
+function connectOKXWS(pair){
+  return new Promise((resolve,reject)=>{
+    const url="wss://ws.okx.com:8443/ws/v5/public";
+    const ws=new WebSocket(url);
+
+    const timer=setTimeout(()=>{
+      try{ ws.close(); }catch(e){}
+      reject(new Error("okx timeout"));
+    }, 2200);
+
+    ws.onopen=()=>{
+      try{
+        ws.send(JSON.stringify({
+          op:"subscribe",
+          args:[{channel:"books5", instId: normalizePairForOKX(pair)}]
+        }));
+      }catch(e){}
+      clearTimeout(timer);
+      resolve({ws, source:"OKX (WS)"});
+    };
+    ws.onerror=()=>{
+      clearTimeout(timer);
+      try{ ws.close(); }catch(e){}
+      reject(new Error("okx blocked"));
+    };
+  });
+}
+
+/* ---------- Parse WS messages ---------- */
+function handleDepthMessage_Binance(raw){
+  // raw: {bids/asks} or {b/a}
+  const asks=(raw?.a || raw?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(raw?.b || raw?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+function handleDepthMessage_Bybit(raw){
+  // Bybit: {topic, data:{a:[...], b:[...]}}
+  const d=raw?.data;
+  if(!d) return null;
+  const asks=(d?.a || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(d?.b || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+function handleDepthMessage_OKX(raw){
+  // OKX: {data:[{asks:[], bids:[]}]}
+  const d=raw?.data?.[0];
+  if(!d) return null;
+  const asks=(d?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  const bids=(d?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+  if(!asks.length || !bids.length) return null;
+  return {
+    asks: asks.sort((x,y)=>x.p-y.p),
+    bids: bids.sort((x,y)=>y.p-x.p)
+  };
+}
+
+/* ---------- MAIN: startOrderBook ---------- */
+async function startOrderBook(){
+  const pair = document.getElementById("obPair")?.value || "BTCUSDT";
+
+  stopOB();
+  setOBStatus("Connecting…", true);
+  setOBMeta("--");
+
+  // WS connect chain
+  const connectors = [
+    ()=>connectBinanceWS(pair),
+    ()=>connectBinanceAltWS(pair),
+    ()=>connectBybitWS(pair),
+    ()=>connectOKXWS(pair)
+  ];
+
+  let connected=null;
+  for(const fn of connectors){
     try{
-      const t = await fetchTickerPrice(c.sym);
-      return { ...c, price: Number(t.price) };
-    }catch(e){
-      return { ...c, price: null };
+      connected = await fn();
+      break;
+    }catch(e){}
+  }
+
+  if(!connected){
+    setOBStatus("Disconnected (Network blocked)", false);
+    setOBMeta("--");
+    return;
+  }
+
+  obWS = connected.ws;
+  obActiveSource = connected.source;
+
+  setOBStatus("Live", true);
+  setOBMeta(obActiveSource);
+
+  obWS.onclose=()=>{
+    setOBStatus("Disconnected", false);
+    setOBMeta("--");
+    scheduleOBReconnect();
+  };
+  obWS.onerror=()=>{
+    setOBStatus("Disconnected", false);
+    setOBMeta("--");
+    scheduleOBReconnect();
+  };
+
+  obWS.onmessage=(ev)=>{
+    try{
+      const raw = JSON.parse(ev.data);
+
+      // ignore ping/pong messages
+      if(raw?.event==="ping" || raw?.op==="pong") return;
+      if(raw?.op==="ping"){
+        try{ obWS.send(JSON.stringify({op:"pong"})); }catch(e){}
+        return;
+      }
+
+      let parsed=null;
+
+      if(obActiveSource.includes("Binance")){
+        parsed = handleDepthMessage_Binance(raw);
+      }else if(obActiveSource.includes("Bybit")){
+        parsed = handleDepthMessage_Bybit(raw);
+      }else if(obActiveSource.includes("OKX")){
+        parsed = handleDepthMessage_OKX(raw);
+      }
+
+      if(!parsed) return;
+
+      // throttle rendering for mobile
+      const now=Date.now();
+      if(now - obLastRender < 150) return;
+      obLastRender = now;
+
+      renderOB(parsed.asks, parsed.bids);
+      setOBMeta(obActiveSource);
+    }catch(e){}
+  };
+}
+
+/* ===== auth ===== */
+(async function authGuard(){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){ window.location.replace("login.html"); return; }
+
+    const { data, error } = await supabaseClient.auth.getUser();
+    const user = data?.user;
+    if(error || !user){ window.location.replace("login.html"); return; }
+
+    if(!user.email_confirmed_at){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+    window.COINLUXORA_USER=user;
+    initWithUser(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
+
+/* NAV */
+function goPlans(){ window.location.href="plans.html"; }
+function goProfile(){ window.location.href="profile.html"; }
+function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
+function goWithdrawAndClear(){ clearBadge("withdrawals"); window.location.href="withdraw.html"; }
+function goSupportAndClear(){ clearBadge("notifications"); window.location.href="support.html"; }
+function goDashboard(){ window.scrollTo({top:0,behavior:"smooth"}); }
+
+function openMenu(){ document.getElementById("sidebar").classList.add("open"); document.getElementById("overlay").classList.add("show"); }
+function closeMenu(){ document.getElementById("sidebar").classList.remove("open"); document.getElementById("overlay").classList.remove("show"); }
+function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
+
+/* greeting */
+function setGreeting(){
+  const h = new Date().getHours();
+  let text="Greetings", emoji="✨";
+  if(h>=5 && h<12){ text="Good Morning"; emoji="🌞"; }
+  else if(h>=12 && h<17){ text="Good Afternoon"; emoji="☀️"; }
+  else { text="Good Evening"; emoji="🌙"; }
+  document.getElementById("greetingTitle").textContent = `${text} ${emoji}`;
+}
+function startClock(){
+  const dtEl=document.getElementById("dateTimeNow");
+  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const tick=()=>{
+    const now=new Date();
+    const dayName=days[now.getDay()];
+    const day=String(now.getDate()).padStart(2,"0");
+    const mon=months[now.getMonth()];
+    const yr=now.getFullYear();
+    let hh=now.getHours();
+    const ampm=hh>=12?"PM":"AM";
+    hh=hh%12; hh=hh?hh:12;
+    const hhs=String(hh).padStart(2,"0");
+    const mm=String(now.getMinutes()).padStart(2,"0");
+    const ss=String(now.getSeconds()).padStart(2,"0");
+    dtEl.textContent=`${dayName}, ${day} ${mon} ${yr} | ${hhs}:${mm}:${ss} ${ampm}`;
+  };
+  tick(); setInterval(tick,1000);
+}
+
+/* avatar */
+function setTopAvatar(avatarUrl){
+  const fallback=document.getElementById("avatarFallback");
+  const img=document.getElementById("avatarImgBtn");
+  if(avatarUrl){
+    img.src=avatarUrl+"?t="+Date.now();
+    img.style.display="block";
+    fallback.style.display="none";
+  }else{
+    img.style.display="none";
+    fallback.style.display="block";
+  }
+}
+function setSideAvatar(avatarUrl){
+  const fb=document.getElementById("sideAvatarFallback");
+  const img=document.getElementById("sideAvatarImg");
+  if(avatarUrl){
+    img.src=avatarUrl+"?t="+Date.now();
+    img.style.display="block";
+    fb.style.display="none";
+  }else{
+    img.style.display="none";
+    fb.style.display="block";
+  }
+}
+function setNameEverywhere(fullName){
+  const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
+  document.getElementById("helloName").innerHTML=`<span class="ok">${nice}</span>`;
+  document.getElementById("sideName").textContent=nice;
+}
+
+/* ========= COUNTRY CHIP ========= */
+function isoToFlag(iso){
+  if(!iso || iso.length!==2) return "";
+  const code=iso.toUpperCase();
+  const A=0x1F1E6;
+  return String.fromCodePoint(...[...code].map(c=>A + c.charCodeAt(0)-65));
+}
+function setCountryChip(iso, fullName=""){
+  const el=document.getElementById("countryChip");
+  if(!el) return;
+  if(!iso || iso.length!==2){ el.style.display="none"; el.textContent=""; return; }
+  const flag=isoToFlag(iso);
+  if(!flag){ el.style.display="none"; el.textContent=""; return; }
+  const cleanName = (fullName || "").trim();
+  el.textContent = cleanName ? `${flag} ${iso.toUpperCase()} · ${cleanName}` : `${flag} ${iso.toUpperCase()}`;
+  el.style.display="inline-flex";
+}
+function normalizeCountryText(v){
+  if(!v) return "";
+  return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
+}
+function isoToCountryName(iso){
+  if(!iso) return "";
+  const c = iso.toUpperCase();
+  const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
+  return map[c] || "";
+}
+function countryNameToISO(name){
+  if(!name) return "";
+  const raw = String(name).trim();
+  if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
+  const n=normalizeCountryText(raw);
+  const map={ "nigeria":"NG","ng":"NG","nigerian":"NG","united states":"US","united states of america":"US","usa":"US","us":"US","america":"US","united kingdom":"GB","great britain":"GB","britain":"GB","england":"GB","uk":"GB","gb":"GB","canada":"CA","germany":"DE","france":"FR","south africa":"ZA","kenya":"KE","ghana":"GH","united arab emirates":"AE","uae":"AE","dubai":"AE","saudi arabia":"SA","india":"IN","australia":"AU","brazil":"BR","mexico":"MX","japan":"JP","singapore":"SG" };
+  if(map[n]) return map[n];
+  for(const key of Object.keys(map)){ if(n.includes(key)) return map[key]; }
+  return "";
+}
+async function detectCountryFromIP(){
+  try{
+    const res=await fetch("https://ipapi.co/json/");
+    const data=await res.json();
+    if(data?.country_code) return String(data.country_code).toUpperCase();
+  }catch(e){}
+  return "";
+}
+function detectCountryFromLocale(){
+  try{
+    const loc = (navigator.language || "").toUpperCase();
+    const parts = loc.split("-");
+    if(parts.length>=2 && /^[A-Z]{2}$/.test(parts[1])) return parts[1];
+  }catch{}
+  return "";
+}
+async function resolveCountryISO(countryNameFromDB){
+  let iso = countryNameToISO(countryNameFromDB);
+  if(iso) return iso;
+  iso = await detectCountryFromIP();
+  if(iso) return iso;
+  iso = detectCountryFromLocale();
+  if(iso) return iso;
+  return "";
+}
+
+async function loadDashboardIdentity(){
+  try{
+    let fullName="", avatarUrl="", countryName="";
+    const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+    if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
+    const md=(window.COINLUXORA_USER?.user_metadata||{});
+    if(!fullName) fullName=md.full_name||"User";
+    if(!avatarUrl) avatarUrl=md.avatar_url||"";
+    setNameEverywhere(fullName);
+    setTopAvatar(avatarUrl);
+    setSideAvatar(avatarUrl);
+
+    const iso = await resolveCountryISO(countryName);
+    const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+    setCountryChip(iso, niceName);
+  }catch(e){
+    setNameEverywhere("User");
+    setTopAvatar("");
+    setSideAvatar("");
+    setCountryChip("");
+  }
+}
+
+/* ==============================
+   ✅ SEARCHABLE DROPDOWN (ALL ITEMS)
+   ============================== */
+function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
+  const root=document.getElementById(elId);
+  root.innerHTML = `
+    <button class="ddBtn" type="button">
+      <div class="ddLeft">
+        <div class="ddIcon">◈</div>
+        <div class="ddName">Select</div>
+      </div>
+      <div>▾</div>
+    </button>
+
+    <div class="ddPanel">
+      <input class="ddSearch" placeholder="Search..." />
+      <div class="ddList"></div>
+    </div>
+  `;
+
+  const btn=root.querySelector(".ddBtn");
+  const panel=root.querySelector(".ddPanel");
+  const list=root.querySelector(".ddList");
+  const search=root.querySelector(".ddSearch");
+  const nameEl=root.querySelector(".ddName");
+
+  let renderItems = items;
+
+  function render(filter=""){
+    const q=filter.trim().toLowerCase();
+    if(!q){ renderItems = items; }
+    else{ renderItems = items.filter(x => getSearch(x).includes(q)); }
+
+    const MAX = Math.min(renderItems.length, 600);
+    const slice = renderItems.slice(0, MAX);
+
+    list.innerHTML = slice.map(x => {
+      const lab=getLabel(x);
+      return `<div class="ddItem" data-id="${encodeURIComponent(JSON.stringify(x))}">
+        <span>${lab}</span>
+        <small>tap</small>
+      </div>`;
+    }).join("") || `<div class="ddItem"><span>No results</span></div>`;
+
+    if(renderItems.length > MAX){
+      const remain = renderItems.length - MAX;
+      list.innerHTML += `<div class="ddItem" style="opacity:.7"><span>Scroll/search to narrow results (${remain} more)…</span></div>`;
+    }
+  }
+
+  function setSelected(obj){
+    nameEl.textContent = getLabel(obj);
+    onPick(obj);
+  }
+
+  if(initial) setSelected(initial);
+  render("");
+
+  btn.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    panel.classList.toggle("show");
+    if(panel.classList.contains("show")){
+      search.value="";
+      render("");
+      setTimeout(()=>search.focus(),40);
     }
   });
 
-  const results = await Promise.all(promises);
+  search.addEventListener("input",()=>render(search.value));
 
-  top10Grid.innerHTML = results.map(c=>{
-    return `
-      <div class="coinItem">
-        <div class="coinL">
-          <b>${c.name}</b>
-          <span>${c.sym.replace("USDT","/USDT")}</span>
-        </div>
-        <div class="coinR">${c.price ? formatNum(c.price) : "--"}</div>
-      </div>
-    `;
-  }).join("");
+  list.addEventListener("click",(e)=>{
+    const item=e.target.closest(".ddItem");
+    if(!item) return;
+    const raw=item.getAttribute("data-id");
+    if(!raw) return;
+    try{
+      const obj=JSON.parse(decodeURIComponent(raw));
+      setSelected(obj);
+      panel.classList.remove("show");
+    }catch{}
+  });
+
+  document.addEventListener("click",(e)=>{
+    if(!root.contains(e.target)) panel.classList.remove("show");
+  });
 }
 
-/* =========================
-   NEWS (simple fetch)
-   ========================= */
-const newsList = document.getElementById("newsList");
-async function loadNews(){
-  // demo: use coindesk RSS via allorigins isn't reliable; keep simple placeholders
-  const demo = [
-    {t:"Bitcoin market steadies as traders await macro catalysts", s:"Coinluxora Feed", d:"Updated"},
-    {t:"Ethereum upgrades: what to watch this month", s:"Coinluxora Feed", d:"Updated"},
-    {t:"Altcoins rally on renewed risk appetite", s:"Coinluxora Feed", d:"Updated"},
-  ];
-  newsList.innerHTML = demo.map(n=>`
-    <div class="coinItem" style="justify-content:space-between">
-      <div class="coinL">
-        <b>${n.t}</b>
-        <span>${n.s}</span>
-      </div>
-      <div class="coinR">${n.d}</div>
+const FAVORITES = [
+  { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
+  { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
+  { id:"tether", label:"Tether (USDT)", icon:"₮", symbol:"usdt" },
+  { id:"binancecoin", label:"BNB (BNB)", icon:"◎", symbol:"bnb" },
+  { id:"solana", label:"Solana (SOL)", icon:"⟠", symbol:"sol" },
+  { id:"ripple", label:"XRP (XRP)", icon:"✕", symbol:"xrp" }
+];
+
+async function loadCoinGeckoLists(){
+  try{
+    const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
+    const fiats = await fiatRes.json();
+    FIATS = (fiats || []).map(x => String(x).toUpperCase());
+  }catch{
+    FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
+  }
+
+  try{
+    const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
+    const coins = await coinRes.json();
+    const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
+    const list = [];
+    for(const c of (coins||[])){
+      if(!c?.id || !c?.name) continue;
+      if(favMap.has(c.id)) continue;
+      const sym = (c.symbol||"").toLowerCase();
+      list.push({ id:c.id, label:`${c.name}${sym?` (${sym.toUpperCase()})`:""}`, icon:"◈", symbol:sym });
+    }
+    ALL_COINS = [...FAVORITES, ...list];
+  }catch{
+    ALL_COINS = [...FAVORITES];
+  }
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{ selectedCryptoA=x; }, selectedCryptoA);
+  mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedCryptoB=x; }, selectedCryptoB);
+  mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatA=x; }, selectedFiatA);
+  mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatB=x; }, selectedFiatB);
+
+  await loadFxRates();
+}
+
+async function loadFxRates(){
+  try{
+    const res = await fetch("https://open.er-api.com/v6/latest/USD");
+    const data = await res.json();
+    if(data?.result !== "success") throw new Error("fx fail");
+    FX_RATES = data.rates || {};
+  }catch{
+    FX_RATES = null;
+  }
+}
+
+function swapCrypto(){
+  cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
+  const tmp = selectedCryptoA; selectedCryptoA = selectedCryptoB; selectedCryptoB = tmp;
+
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+  if(cryptoDirection === "crypto_to_fiat"){
+    if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){ selectedCryptoA = FAVORITES[0]; }
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length>4) selectedCryptoB = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }else{
+    selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+    if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
+    mountDropdown("ddCryptoA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+    mountDropdown("ddCryptoB", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+  }
+
+  document.getElementById("cryptoRate").textContent="Rate: --";
+  document.getElementById("cryptoResult").textContent="--";
+  document.getElementById("cryptoReverse").textContent="--";
+}
+
+async function convertCrypto(){
+  const amt = Number(document.getElementById("cryptoAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+    return;
+  }
+
+  try{
+    if(cryptoDirection === "crypto_to_fiat"){
+      const coinId = selectedCryptoA?.id || "bitcoin";
+      const fiat   = String(selectedCryptoB?.id || "USD").toLowerCase();
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+      const result = rate * amt;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoA.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${nfmt(result,2)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${fiat.toUpperCase()} ≈ ${(1/rate).toFixed(10)} ${selectedCryptoA.symbol?.toUpperCase()||coinId}`;
+    }else{
+      const fiat = String(selectedCryptoA?.id || "USD").toLowerCase();
+      const coinId = selectedCryptoB?.id || "bitcoin";
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const rate = Number(data?.[coinId]?.[fiat] || 0);
+      if(!rate) throw new Error("rate missing");
+      const cryptoAmount = amt / rate;
+      document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoB.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+      document.getElementById("cryptoResult").textContent = `${cryptoAmount.toFixed(10)} ${selectedCryptoB.symbol?.toUpperCase()||coinId}`;
+      document.getElementById("cryptoReverse").textContent = `1 ${selectedCryptoB.symbol?.toUpperCase()||coinId} ≈ ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+    }
+  }catch(e){
+    document.getElementById("cryptoRate").textContent="Rate: unavailable (network)";
+    document.getElementById("cryptoResult").textContent="--";
+    document.getElementById("cryptoReverse").textContent="--";
+  }
+}
+
+function swapFiat(){
+  const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
+  const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+  mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
+  mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
+  document.getElementById("fiatRate").textContent="Rate: --";
+  document.getElementById("fiatResult").textContent="--";
+}
+
+async function convertFiat(){
+  const amt = Number(document.getElementById("fiatAmount").value || 0);
+  if(!amt || amt<=0){
+    document.getElementById("fiatResult").textContent="--";
+    return;
+  }
+  const from = String(selectedFiatA?.id || "USD").toUpperCase();
+  const to   = String(selectedFiatB?.id || "NGN").toUpperCase();
+  try{
+    if(!FX_RATES) await loadFxRates();
+    if(!FX_RATES) throw new Error("fx missing");
+    const fromRate = Number(FX_RATES[from] || 0);
+    const toRate   = Number(FX_RATES[to] || 0);
+    if(!fromRate || !toRate) throw new Error("rate missing");
+    const usdAmount = amt / fromRate;
+    const result = usdAmount * toRate;
+    const rate = toRate / fromRate;
+    document.getElementById("fiatRate").textContent = `Rate: 1 ${from} = ${nfmt(rate,6)} ${to}`;
+    document.getElementById("fiatResult").textContent = `${nfmt(result,2)} ${to}`;
+  }catch(e){
+    document.getElementById("fiatRate").textContent="Rate: unavailable (network)";
+    document.getElementById("fiatResult").textContent="--";
+  }
+}
+
+/* ===== chart ===== */
+function loadChart(){
+  const pair=document.getElementById("obPair").value;
+  const base=pair.replace("USDT","").toUpperCase();
+  const tvSymbol = `BINANCE:${base}USDT`;
+  document.getElementById("chartPair").textContent = `${base}/USDT`;
+  const frame=document.getElementById("tvChart");
+  frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(tvSymbol)}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=rgba(0,0,0,0)&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1`;
+}
+document.getElementById("obPair").addEventListener("change",()=>{
+  loadChart();
+  startOrderBook();
+});
+
+/* ===== balance / plan / badges / logout ... (UNCHANGED) ===== */
+async function loadBalance(){
+  const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+  const balNum = Number(data?.balance || 0);
+  const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+  document.getElementById("balance").innerHTML = "$" + bal;
+}
+function money(n){ return "$" + Number(n||0).toFixed(2); }
+function pill(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+}
+function daysBetween(date1, date2){
+  const d1=new Date(date1);
+  const d2=new Date(date2);
+  const diff=(d2 - d1) / (1000*60*60*24);
+  return Math.max(0, Math.ceil(diff));
+}
+async function loadActivePlan(){
+  const planMsg=document.getElementById("planMsg");
+  const planBox=document.getElementById("planBox");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .order("created_at",{ascending:false})
+    .limit(1);
+
+  if(error){
+    planMsg.innerHTML="<span class='err'>"+error.message+"</span>";
+    planBox.innerHTML="";
+    return;
+  }
+
+  if(!data || data.length===0){
+    planMsg.innerHTML="<span class='err'>No investment plan started yet.</span>";
+    planBox.innerHTML=`<div class="small">Go to <a style="color:#9bdcff;font-weight:1000" href="plans.html">Investment Plans</a> to start.</div>`;
+    return;
+  }
+
+  planMsg.innerHTML="";
+  const plan=data[0];
+  const amount=Number(plan.amount||0);
+  const roi=Number(plan.roi_percent||0);
+  const expected=amount+(amount*(roi/100));
+
+  let daysLeft="--";
+  if(plan.duration_days && plan.created_at){
+    const start=new Date(plan.created_at);
+    const end=new Date(start);
+    end.setDate(end.getDate()+Number(plan.duration_days||0));
+    daysLeft = daysBetween(new Date(), end);
+  }
+
+  planBox.innerHTML=`
+    <div class="card">
+      <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+      <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+      <div class="small">ROI: <strong>${roi}%</strong></div>
+      <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+      <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+      <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+      ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
     </div>
-  `).join("");
+  `;
 }
 
-/* =========================
-   BOOT
-   ========================= */
-async function boot(){
-  const session = await requireAuth();
-  if(!session) return;
+function setBadge(elId, count){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  const n=Number(count||0);
+  if(n<=0) el.style.display="none";
+  else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
+}
+function setBadgeFromKey(key,val){
+  if(key==="deposits") setBadge("badgeDepositDock", val);
+  else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
+}
+async function loadRealtimeBadgesOnce(){
+  if(!currentUserId) return;
+  setBadge("badgeDepositDock", 0);
+  setBadge("badgeWithdrawDock", 0);
 
-  const user = session.user;
-  document.getElementById("userPill").textContent = user.email || "Signed in";
-  document.getElementById("profileBox").textContent = `Email: ${user.email}`;
+  const { data, error } = await supabaseClient
+    .from("user_badges")
+    .select("badge_key, badge_value")
+    .eq("user_id", currentUserId);
 
-  document.getElementById("marketTime").textContent = new Date().toLocaleString();
+  if(error) return;
+  (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+}
+function subscribeToRealtimeBadges(){
+  if(!currentUserId) return;
+  if(badgeChannel){
+    supabaseClient.removeChannel(badgeChannel);
+    badgeChannel=null;
+  }
+  badgeChannel = supabaseClient
+    .channel("realtime-user-badges-dashboard")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "user_badges",
+      filter: `user_id=eq.${currentUserId}`
+    }, payload => {
+      const row = payload.new;
+      if(!row) return;
+      setBadgeFromKey(row.badge_key, row.badge_value);
+    })
+    .subscribe();
+}
+async function clearBadge(badge_key){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if(!accessToken) return;
 
-  await updateOrderBook();
-  await renderTop10();
-  await loadNews();
-
-  // refresh pieces
-  setInterval(()=>{ document.getElementById("marketTime").textContent = new Date().toLocaleString(); }, 30000);
-  setInterval(()=>{ renderTop10(); }, 45000);
+    await fetch(EDGE_CLEAR_BADGE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+        "apikey": SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ badge_key })
+    });
+  }catch(e){}
 }
 
-boot();
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.replace("login.html");
+}
+
+function initWithUser(user){
+  currentUserEmail=user.email;
+  currentUserId=user.id;
+
+  setGreeting();
+  startClock();
+  document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+
+  hideGate();
+  loadDashboardIdentity();
+
+  loadBalance();
+  loadActivePlan();
+  loadRealtimeBadgesOnce();
+  subscribeToRealtimeBadges();
+
+  loadTop10MajorCryptos();
+  startTop10AutoRefresh();
+
+  loadCoinGeckoLists().then(async ()=>{
+    mountOBPairs(); /* ✅ order book pair searchable dropdown */
+    loadChart();
+    startOrderBook();
+  });
+}
+
+/* ===== auth ===== */
+(async function authGuard(){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){ window.location.replace("login.html"); return; }
+
+    const { data, error } = await supabaseClient.auth.getUser();
+    const user = data?.user;
+    if(error || !user){ window.location.replace("login.html"); return; }
+
+    if(!user.email_confirmed_at){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+    window.COINLUXORA_USER=user;
+    initWithUser(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
 </script>
 
 </body>
