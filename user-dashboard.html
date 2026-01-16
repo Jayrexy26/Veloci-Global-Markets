@@ -307,6 +307,96 @@
       white-space:nowrap;
     }
 
+    /* ✅✅✅ LIVE PRICE TICKER (ADDED ONLY) ✅✅✅ */
+    .priceTicker{
+      margin-top:12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .priceTickerHead{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-weight:1000;
+      color:rgba(234,240,255,.78);
+      font-size:13px;
+    }
+    .tickerPulse{
+      display:flex;gap:8px;align-items:center;
+      font-size:12px;font-weight:1000;color:rgba(234,240,255,.70);
+    }
+    .tickerDot{
+      width:9px;height:9px;border-radius:999px;background:rgba(34,197,94,1);
+      box-shadow:0 0 18px rgba(34,197,94,.55);
+      animation:pulse 1.3s ease-in-out infinite;
+    }
+    .tickerTrack{
+      display:flex;
+      gap:14px;
+      padding:12px;
+      overflow:auto;
+      scroll-behavior:smooth;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
+    }
+    .tickerTrack::-webkit-scrollbar{height:8px}
+    .tickerTrack::-webkit-scrollbar-track{background:transparent}
+    .tickerTrack::-webkit-scrollbar-thumb{
+      background:rgba(255,255,255,.16);
+      border-radius:999px;
+      border:2px solid rgba(0,0,0,0);
+      background-clip:padding-box;
+    }
+    .tickerItem{
+      flex:0 0 auto;
+      min-width:170px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      padding:10px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .tickerLeft{
+      min-width:0;
+      display:flex;flex-direction:column;gap:3px;
+    }
+    .tickerName{
+      font-weight:1000;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-size:13px;
+    }
+    .tickerSymbol{
+      font-weight:900;
+      font-size:11px;
+      color:rgba(234,240,255,.55);
+    }
+    .tickerRight{
+      text-align:right;
+      flex:0 0 auto;
+    }
+    .tickerPrice{
+      font-weight:1000;
+      font-size:13px;
+    }
+    .tickerChg{
+      margin-top:3px;
+      font-weight:1000;
+      font-size:11px;
+      color:rgba(234,240,255,.65);
+      white-space:nowrap;
+    }
+    .tickerChg.up{color:rgba(34,197,94,1)}
+    .tickerChg.down{color:rgba(248,113,113,1)}
+
     /* ===== BOX ===== */
     .box{
       border:1px solid rgba(255,255,255,.12);
@@ -1069,6 +1159,18 @@
       </div>
     </div>
 
+    <!-- ✅✅✅ LIVE PRICE TICKER (INSERTED UNDER HELLO CARD ONLY) ✅✅✅ -->
+    <div class="priceTicker" id="priceTicker">
+      <div class="priceTickerHead">
+        <span>Live Price Stream</span>
+        <div class="tickerPulse">
+          <span class="tickerDot"></span>
+          <span id="tickerStatus">Connecting…</span>
+        </div>
+      </div>
+      <div class="tickerTrack" id="tickerTrack"></div>
+    </div>
+
     <div class="balanceCard">
       <div class="bTitle">Total Portfolio Value</div>
       <div class="bValue" id="balance">--</div>
@@ -1264,6 +1366,63 @@
     let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
     let top10Timer=null;
+
+    /* ============================================================
+      ✅✅✅ LIVE PRICE TICKER (ADDED ONLY)
+    ============================================================ */
+    const TICKER_IDS = [
+      "bitcoin","ethereum","binancecoin","solana","ripple","cardano",
+      "dogecoin","tron","polkadot","chainlink","litecoin","avalanche-2"
+    ];
+    let tickerTimer=null;
+
+    function fmtTickerPrice(n){
+      const num=Number(n||0);
+      if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
+      if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
+      return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
+    }
+
+    async function loadTicker(){
+      const track=document.getElementById("tickerTrack");
+      const status=document.getElementById("tickerStatus");
+      if(!track || !status) return;
+
+      try{
+        status.textContent="Live";
+        const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(TICKER_IDS.join(","))}&order=market_cap_desc&per_page=50&page=1&sparkline=false&price_change_percentage=24h`;
+        const res=await fetch(url);
+        const data=await res.json();
+        if(!Array.isArray(data) || !data.length) throw new Error("ticker empty");
+
+        track.innerHTML = data.map(c=>{
+          const chg=Number(c.price_change_percentage_24h||0);
+          const cls = chg>=0 ? "up" : "down";
+          const sign = chg>=0 ? "+" : "";
+          return `
+            <div class="tickerItem">
+              <div class="tickerLeft">
+                <div class="tickerName">${c.name}</div>
+                <div class="tickerSymbol">${String(c.symbol||"").toUpperCase()}</div>
+              </div>
+              <div class="tickerRight">
+                <div class="tickerPrice">${fmtTickerPrice(c.current_price)}</div>
+                <div class="tickerChg ${cls}">${sign}${chg.toFixed(2)}% (24h)</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }catch(e){
+        status.textContent="Offline";
+        track.innerHTML = `<div class="small" style="padding:12px"><span class="err">Unable to load ticker (network blocked).</span></div>`;
+      }
+    }
+
+    function startTicker(){
+      if(tickerTimer) clearInterval(tickerTimer);
+      loadTicker();
+      tickerTimer=setInterval(loadTicker, 3000); /* live stream feel */
+    }
 
     /* ============================================================
       ✅ NEWS
@@ -2386,6 +2545,9 @@
       loadActivePlan();
       loadRealtimeBadgesOnce();
       subscribeToRealtimeBadges();
+
+      /* ✅ ticker start (only added) */
+      startTicker();
 
       loadTop10MajorCryptos();
       startTop10AutoRefresh();
