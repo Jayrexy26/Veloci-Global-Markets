@@ -105,15 +105,6 @@
       backdrop-filter: blur(14px);
       text-align:center;
     }
-
-    /* ✅ LOGO IMAGE STYLE */
-    .logoImg{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      display:block;
-    }
-
     .gateLogo{
       width:62px;height:62px;border-radius:18px;
       margin:0 auto 10px;
@@ -135,7 +126,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
 
     /* ============================================================
-      ✅ STICKY MENU POLISH
+      ✅ STICKY MENU (HEIGHT MUST NOT CHANGE)
     ============================================================ */
     .stickyMenu{
       position:sticky;
@@ -163,44 +154,42 @@
       opacity:1;
       transform: translateY(0);
     }
-    .stickyMenu.isStuck .topRow{
-      margin-bottom:8px;
-    }
 
     /* ===== TOP BAR ===== */
     .topRow{
       display:flex; align-items:center; justify-content:space-between;
-      gap:12px; margin-bottom:14px;
+      gap:12px;
+      margin-bottom:14px;
+      height:56px;              /* ✅ fixed bar height */
+      min-height:56px;
     }
 
-    /* ✅ TOP LOGO: WIDE, 2x MAGNIFIED, NO BOX */
+    /* ✅ TOP LEFT LOGO ONLY — DOES NOT AFFECT BAR HEIGHT */
     .topLogoWrap{
       display:flex;
       align-items:center;
-      gap:12px;
+      justify-content:flex-start;
+      gap:0;
       padding:0;
       border:none;
       background:transparent;
       box-shadow:none;
-      min-width:unset;
       cursor:pointer;
       user-select:none;
+      height:56px;              /* match bar height */
+      overflow:hidden;
+      max-width:360px;
     }
-    .topLogoWide{
-      width:min(340px, 62vw);   /* ✅ wide */
-      height:74px;             /* ✅ tall for readability */
+    .topLogoSVG{
+      height:40px;              /* ✅ logo size but doesn't stretch bar */
+      width:auto;
       display:block;
-      object-fit:contain;
-      filter: drop-shadow(0 18px 45px rgba(109,87,255,.22));
-      transform: scale(2);     /* ✅ 2x magnification */
-      transform-origin:left center;
+      margin-left:2px;
+      filter: drop-shadow(0 14px 32px rgba(109,87,255,.18));
     }
     @media(max-width:520px){
-      .topLogoWide{
-        width:min(260px, 72vw);
-        height:64px;
-        transform: scale(1.85); /* mobile safe */
-      }
+      .topLogoWrap{max-width:260px;}
+      .topLogoSVG{height:36px;}
     }
 
     .headerActions{display:flex;gap:10px;align-items:center}
@@ -253,7 +242,7 @@
     }
     .helloLeft{display:flex;align-items:center;gap:12px;}
 
-    /* ✅ VERIFIED SHIELD ICON (replaces small hello logo) */
+    /* ✅ VERIFIED SHIELD ICON */
     .verifiedShield{
       width:48px;height:48px;border-radius:18px;
       background:rgba(255,255,255,.20);
@@ -524,7 +513,7 @@
     }
     .chartFrame{width:100%;height:340px;border:0;display:block}
 
-    /* ===== ORDER BOOK (NEW) ===== */
+    /* ===== ORDER BOOK ===== */
     .orderBookWrap{
       margin-top:12px;
       border-radius:18px;
@@ -629,6 +618,7 @@
       color:rgba(234,240,255,.65);
       font-size:12px;font-weight:900;
     }
+
     /* ===== SIDEBAR ===== */
     .overlay{
       position:fixed; inset:0;
@@ -670,29 +660,26 @@
 
     .sideTop{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:10px;
       margin-bottom:12px;
     }
 
-    /* ✅ SIDEBAR LOGO: STANDING ALONE, BIG, NO BOX */
+    /* ✅ SIDEBAR LOGO: INLINE SVG, SHARP */
     .sideLogoSolo{
       width:100%;
       display:flex;
       align-items:center;
-      justify-content:center;
-      padding:6px 0 2px;
+      justify-content:flex-start;
+      padding:0;
     }
-    .sideLogoSolo img{
-      width:220px;
+    .sideLogoSolo svg{
+      width:230px;
       max-width:100%;
-      height:90px;
-      object-fit:contain;
+      height:70px;
       display:block;
-      filter: drop-shadow(0 18px 45px rgba(109,87,255,.22));
-      transform: scale(1.35);
-      transform-origin:center;
+      filter: drop-shadow(0 16px 40px rgba(109,87,255,.18));
     }
 
     .closeBtn{
@@ -935,12 +922,45 @@
   <div class="blob b4"></div>
   <div class="shimmer"></div>
 
+  <!-- ✅ INLINE SVG LOGO (SHARP) -->
+  <template id="vgmLogoSVG">
+    <svg viewBox="0 0 820 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Veloci Global Markets">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#9bdcff"/>
+          <stop offset="0.35" stop-color="#6d57ff"/>
+          <stop offset="0.7" stop-color="#7c4dff"/>
+          <stop offset="1" stop-color="#ff4da6"/>
+        </linearGradient>
+        <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="6" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <!-- emblem -->
+      <g transform="translate(14,18)" filter="url(#glow)">
+        <path d="M70 0 L130 34 V102 C130 128 107 150 70 160 C33 150 10 128 10 102 V34 Z" fill="url(#g1)" opacity=".92"/>
+        <path d="M48 78 L64 94 L98 58" fill="none" stroke="#050a18" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+
+      <!-- logotype -->
+      <g transform="translate(175,30)">
+        <path d="M0 0 H34 L68 84 L102 0 H136 L86 120 H50 Z" fill="#eaf0ff"/>
+        <path d="M160 0 H194 V120 H160 Z" fill="#eaf0ff" opacity=".92"/>
+        <path d="M230 0 H274 L326 74 L378 0 H422 V120 H392 V46 L326 132 L260 46 V120 H230 Z" fill="#eaf0ff"/>
+        <rect x="0" y="138" width="430" height="10" rx="5" fill="url(#g1)" opacity=".9"/>
+      </g>
+    </svg>
+  </template>
+
   <!-- Loading -->
   <div id="authGate">
     <div class="gateCard">
-      <div class="gateLogo">
-        <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
-      </div>
+      <div class="gateLogo" id="gateLogoMount"></div>
       <div class="gateTxt">Veloci Global Markets</div>
       <div class="gateSub">Precision trading. Real-time execution.</div>
       <div class="spinner"></div>
@@ -953,10 +973,7 @@
   <div id="sidebar" class="sidebar">
     <div class="sideTop">
       <div style="flex:1;min-width:0">
-        <!-- ✅ big solo logo -->
-        <div class="sideLogoSolo">
-          <img src="assets/vgm-logo.png" alt="VGM">
-        </div>
+        <div class="sideLogoSolo" id="sideLogoMount"></div>
       </div>
       <button class="closeBtn" onclick="closeMenu()">✕</button>
     </div>
@@ -986,9 +1003,9 @@
   <div class="container">
     <div id="stickyMenu" class="stickyMenu">
       <div class="topRow">
-        <!-- ✅ TOP LOGO ONLY (no box / no text) -->
+        <!-- ✅ TOP LEFT SVG LOGO (SHARP, DOES NOT CHANGE HEIGHT) -->
         <div class="topLogoWrap" onclick="goDashboard()" title="Go to dashboard">
-          <img class="topLogoWide" src="assets/vgm-logo.png" alt="VGM">
+          <div id="topLogoMount"></div>
         </div>
 
         <div class="headerActions">
@@ -1003,7 +1020,6 @@
 
     <div class="helloCard">
       <div class="helloLeft">
-        <!-- ✅ verified shield icon instead of logo -->
         <div class="verifiedShield" title="Verified Account">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z" fill="rgba(255,255,255,.92)"/>
@@ -1078,6 +1094,7 @@
         </div>
       </div>
     </div>
+
     <div class="box">
       <h2>Fiat Currency Converter</h2>
       <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
@@ -1177,7 +1194,6 @@
           <div class="ico">➡</div><div>Withdraw</div>
         </div>
 
-        <!-- ✅ KEEP HOME ICON -->
         <div class="dockHome" onclick="goDashboard()"><span>🏠</span></div>
 
         <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
@@ -1187,6 +1203,36 @@
   </div>
 
   <script>
+    /* ✅ mount SVG into top left, sidebar, and gate */
+    (function mountLogo(){
+      const tpl = document.getElementById("vgmLogoSVG");
+      if(!tpl) return;
+      const svg = tpl.content.firstElementChild.cloneNode(true);
+
+      const top=document.getElementById("topLogoMount");
+      const side=document.getElementById("sideLogoMount");
+      const gate=document.getElementById("gateLogoMount");
+
+      if(top){
+        const svgTop = svg.cloneNode(true);
+        svgTop.classList.add("topLogoSVG");
+        top.innerHTML="";
+        top.appendChild(svgTop);
+      }
+      if(side){
+        const svgSide = svg.cloneNode(true);
+        side.innerHTML="";
+        side.appendChild(svgSide);
+      }
+      if(gate){
+        const svgGate = svg.cloneNode(true);
+        svgGate.style.width="54px";
+        svgGate.style.height="54px";
+        gate.innerHTML="";
+        gate.appendChild(svgGate);
+      }
+    })();
+
     /* ============================================================
       ✅ STICKY MENU POLISH SCRIPT
     ============================================================ */
@@ -1324,6 +1370,7 @@
       { value:"BATUSDT", label:"Basic Attention (BAT/USDT)", search:"basic attention bat batusdt usdt" },
       { value:"GALAUSDT", label:"Gala (GALA/USDT)", search:"gala galausdt usdt" }
     ];
+
     function mountOBPairs(){
       const wrap=document.getElementById("obPairWrap");
       const hidden=document.getElementById("obPair");
