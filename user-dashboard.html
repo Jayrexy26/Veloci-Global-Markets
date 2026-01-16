@@ -188,13 +188,13 @@
 
     /* ✅ 4x magnified logo WITHOUT changing sticky bar height */
     .brandLogoWide{
-      height:54px;                 /* ✅ layout height stays normal */
+      height:54px;
       width:auto;
       max-width:520px;
       display:block;
       object-fit:contain;
 
-      transform: translateX(-18px) scale(4);   /* ✅ ONLY CHANGE: shift left a bit */
+      transform: translateX(-18px) scale(4);
       transform-origin: left center;
 
       filter:
@@ -205,7 +205,7 @@
     /* prevent huge logo from breaking mobile */
     @media(max-width:520px){
       .brandLogoWide{
-        transform: translateX(-12px) scale(3); /* ✅ same shift, smaller scale on tiny screens */
+        transform: translateX(-12px) scale(3);
         transform-origin: left center;
       }
     }
@@ -308,81 +308,20 @@
     }
 
     /* ============================================================
-      ✅ LIVE FLOW TICKER (NEW) — ONLY ADDITION
+      ✅ TRADINGVIEW FLOW TICKER (NEW)
+      - NO BOX, NO BORDER, PLAIN
     ============================================================ */
-    .liveTicker{
+    .tvTickerPlain{
       margin-top:12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.22);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      overflow:hidden;
-      backdrop-filter: blur(12px);
-    }
-    .tickerBar{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.10);
-      font-weight:1000;
-      font-size:12px;
-      color:rgba(234,240,255,.85);
-    }
-    .tickerDot{
-      width:10px;height:10px;border-radius:999px;
-      background:rgba(34,197,94,1);
-      box-shadow:0 0 18px rgba(34,197,94,.55);
-    }
-    .tickerViewport{
       width:100%;
-      overflow:hidden;
-      position:relative;
-      height:48px;
+      background:transparent;
+      border:none;
+      box-shadow:none;
     }
-    .tickerTrack{
-      display:inline-flex;
-      align-items:center;
-      white-space:nowrap;
-      gap:26px;
-      padding-left:100%;
-      animation: tickerMove 22s linear infinite;
-      will-change: transform;
+    .tvTickerPlain *{
+      border:none !important;
+      box-shadow:none !important;
     }
-    @keyframes tickerMove{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-100%); }
-    }
-    .tickItem{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      font-weight:1000;
-      font-size:13px;
-      color:rgba(234,240,255,.90);
-    }
-    .tickSym{
-      padding:5px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.08);
-      font-size:12px;
-      font-weight:1000;
-      color:#cfefff;
-    }
-    .tickPrice{
-      color:#fff;
-    }
-    .tickChg{
-      font-size:12px;
-      font-weight:1000;
-    }
-    .tickUp{color:rgba(34,197,94,1)}
-    .tickDown{color:rgba(248,113,113,1)}
-
-    /* pause ticker when user holds / hovers */
-    .liveTicker:hover .tickerTrack{ animation-play-state: paused; }
-    .liveTicker:active .tickerTrack{ animation-play-state: paused; }
 
     /* ===== BOX ===== */
     .box{
@@ -762,7 +701,7 @@
 
     /* ✅ ONLY CHANGE: SIDEBAR LOGO 2X */
     .sideLogoWide{
-      height:128px;                 /* ✅ was 64px */
+      height:128px;
       width:auto;
       max-width:230px;
       display:block;
@@ -1110,7 +1049,6 @@
     <div id="stickyMenu" class="stickyMenu">
       <div class="topRow">
         <div class="brand">
-          <!-- ✅ Only wide magnified logo -->
           <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
         </div>
 
@@ -1146,13 +1084,27 @@
       </div>
     </div>
 
-    <!-- ✅ LIVE FLOWING TICKER (RIGHT UNDER HELLO CARD) -->
-    <div class="liveTicker" id="liveTicker">
-      <div class="tickerBar"><span class="tickerDot"></span> Live Prices</div>
-      <div class="tickerViewport">
-        <div class="tickerTrack" id="tickerTrack">
-          <div class="tickItem"><span class="tickSym">Loading…</span></div>
-        </div>
+    <!-- ✅ TRADINGVIEW FLOW TICKER (PLAIN, NO BOX) -->
+    <div class="tvTickerPlain">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+        {
+          "symbols": [
+            { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
+            { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" },
+            { "proName": "FX_IDC:EURUSD", "title": "EUR/USD" },
+            { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" },
+            { "proName": "BITSTAMP:ETHUSD", "title": "Ethereum" },
+            { "description": "Gold", "proName": "OANDA:XAUUSD" }
+          ],
+          "showSymbolLogo": true,
+          "isTransparent": true,
+          "displayMode": "adaptive",
+          "colorTheme": "dark",
+          "locale": "en"
+        }
+        </script>
       </div>
     </div>
 
@@ -1351,66 +1303,6 @@
     let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
     let top10Timer=null;
-
-    /* ============================================================
-      ✅ LIVE FLOWING TICKER (NEW) — ONLY ADDITION
-    ============================================================ */
-    const TICKER_COINS = [
-      { id:"bitcoin", sym:"BTC" },
-      { id:"ethereum", sym:"ETH" },
-      { id:"solana", sym:"SOL" },
-      { id:"ripple", sym:"XRP" },
-      { id:"dogecoin", sym:"DOGE" },
-      { id:"cardano", sym:"ADA" },
-      { id:"tron", sym:"TRX" },
-      { id:"binancecoin", sym:"BNB" }
-    ];
-
-    function fmtTickerPrice(n){
-      const num=Number(n||0);
-      if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
-      if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
-      return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
-    }
-
-    async function loadLiveTicker(){
-      const track=document.getElementById("tickerTrack");
-      if(!track) return;
-
-      try{
-        const ids = TICKER_COINS.map(x=>x.id).join(",");
-        const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids)}&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=24h`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if(!Array.isArray(data) || !data.length) throw new Error("no ticker data");
-
-        // build items
-        const items = data.map(c=>{
-          const sym=(c.symbol||"").toUpperCase();
-          const price=fmtTickerPrice(c.current_price);
-          const chg=Number(c.price_change_percentage_24h||0);
-          const up = chg>=0;
-          const sign = up?"+":"";
-          return `
-            <div class="tickItem">
-              <span class="tickSym">${sym}</span>
-              <span class="tickPrice">${price}</span>
-              <span class="tickChg ${up?"tickUp":"tickDown"}">${sign}${chg.toFixed(2)}%</span>
-            </div>
-          `;
-        }).join("");
-
-        // ✅ duplicate content so the scroll is seamless
-        track.innerHTML = items + items;
-      }catch(e){
-        track.innerHTML = `<div class="tickItem"><span class="tickSym">Ticker unavailable</span></div>`;
-      }
-    }
-
-    function startTickerAutoRefresh(){
-      loadLiveTicker();
-      setInterval(loadLiveTicker, 15000);
-    }
 
     /* ============================================================
       ✅ NEWS
@@ -1646,8 +1538,7 @@
     }
 
     function startTop10AutoRefresh(){
-      if(top10Timer) clearInterval(top10Timer);
-      top10Timer=setInterval(loadTop10MajorCryptos, 20000);
+      setInterval(loadTop10MajorCryptos, 20000);
     }
 
     /* ============================================================
@@ -2533,9 +2424,6 @@
       loadActivePlan();
       loadRealtimeBadgesOnce();
       subscribeToRealtimeBadges();
-
-      // ✅ start live ticker
-      startTickerAutoRefresh();
 
       loadTop10MajorCryptos();
       startTop10AutoRefresh();
