@@ -188,13 +188,13 @@
 
     /* ✅ 4x magnified logo WITHOUT changing sticky bar height */
     .brandLogoWide{
-      height:54px;
+      height:54px;                 /* ✅ layout height stays normal */
       width:auto;
       max-width:520px;
       display:block;
       object-fit:contain;
 
-      transform: scale(4);
+      transform: translateX(-18px) scale(4);   /* ✅ ONLY CHANGE: shift left a bit */
       transform-origin: left center;
 
       filter:
@@ -202,9 +202,10 @@
         drop-shadow(0 0 22px rgba(91,108,255,.22));
     }
 
+    /* prevent huge logo from breaking mobile */
     @media(max-width:520px){
       .brandLogoWide{
-        transform: scale(3);
+        transform: translateX(-12px) scale(3); /* ✅ same shift, smaller scale on tiny screens */
         transform-origin: left center;
       }
     }
@@ -258,6 +259,7 @@
     }
     .helloLeft{display:flex;align-items:center;gap:12px;}
 
+    /* ✅ shield verified icon */
     .helloLogo{
       width:48px;height:48px;border-radius:18px;
       background:rgba(255,255,255,.20);
@@ -303,25 +305,6 @@
       font-weight:1000;font-size:12px;
       color:#fff;
       white-space:nowrap;
-    }
-
-    /* ============================================================
-      ✅ LIVE PRICE STREAM (NEW)
-      ✅ Desktop-safe TradingView widget (NOT iframe url)
-    ============================================================ */
-    .priceStream{
-      margin-top:12px;
-      border-radius:20px;
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.06);
-      box-shadow:0 18px 55px rgba(0,0,0,.35);
-      backdrop-filter: blur(12px);
-    }
-    .tv-ticker-wrap{
-      width:100%;
-      height:78px;
-      display:block;
     }
 
     /* ===== BOX ===== */
@@ -688,38 +671,28 @@
       gap:10px;margin-bottom:12px;
     }
 
-    /* ✅ REVERTED: sidebar logo exactly normal (no resizing changes) */
+    /* ✅ sidebar wide logo (NO BOX) */
     .sideBrand{
       display:flex;
       align-items:center;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.22);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      min-width:190px;
+      gap:0;
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      min-width:unset;
     }
-    .sideLogoBox{
-      width:42px;height:42px;border-radius:14px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-weight:1000;
-      overflow:hidden;
-    }
-    .sideLogoBox img{width:100%;height:100%;object-fit:contain;display:block}
-    .sideBrandTxt{
-      font-weight:1000;
-      line-height:1.05;
-    }
-    .sideBrandTxt small{
+
+    /* ✅ ONLY CHANGE: SIDEBAR LOGO 2X */
+    .sideLogoWide{
+      height:128px;                 /* ✅ was 64px */
+      width:auto;
+      max-width:230px;
       display:block;
-      font-size:11px;
-      font-weight:900;
-      color:rgba(234,240,255,.55);
-      margin-top:4px;
-      letter-spacing:.4px;
+      object-fit:contain;
+      filter:
+        drop-shadow(0 18px 35px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(91,108,255,.18));
     }
 
     .closeBtn{
@@ -863,6 +836,7 @@
     .dockItem:hover{background:rgba(255,255,255,.06)}
     .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
 
+    /* ✅ home button stays HOME icon */
     .dockHome{
       width:78px;height:78px;border-radius:26px;
       background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
@@ -1027,15 +1001,8 @@
   <!-- Sidebar -->
   <div id="sidebar" class="sidebar">
     <div class="sideTop">
-      <!-- ✅ restored original sidebar logo layout -->
       <div class="sideBrand">
-        <div class="sideLogoBox">
-          <img src="assets/vgm-logo.png" alt="VGM">
-        </div>
-        <div class="sideBrandTxt">
-          Veloci Markets
-          <small>Global Markets</small>
-        </div>
+        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="VGM Logo">
       </div>
       <button class="closeBtn" onclick="closeMenu()">✕</button>
     </div>
@@ -1066,6 +1033,7 @@
     <div id="stickyMenu" class="stickyMenu">
       <div class="topRow">
         <div class="brand">
+          <!-- ✅ Only wide magnified logo -->
           <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
         </div>
 
@@ -1098,31 +1066,6 @@
           <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
         </div>
         <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
-      </div>
-    </div>
-
-    <!-- ✅ LIVE PRICE STREAM RIGHT UNDER HELLO CARD -->
-    <div class="priceStream">
-      <div class="tv-ticker-wrap">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-          {
-            "symbols": [
-              {"proName": "NASDAQ:META", "title": "META"},
-              {"proName": "NASDAQ:AMZN", "title": "AMZN"},
-              {"proName": "NASDAQ:AAPL", "title": "AAPL"},
-              {"proName": "NASDAQ:NVDA", "title": "NVDA"},
-              {"proName": "NYSE:TSLA",  "title": "TSLA"}
-            ],
-            "showSymbolLogo": true,
-            "colorTheme": "light",
-            "isTransparent": false,
-            "displayMode": "regular",
-            "locale": "en"
-          }
-          </script>
-        </div>
       </div>
     </div>
 
@@ -1298,7 +1241,7 @@
     })();
 
     /* ============================================================
-      ✅ AUTH + VERIFIED GUARD (UNCHANGED)
+      ✅ AUTH GUARD
     ============================================================ */
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -1560,6 +1503,291 @@
       top10Timer=setInterval(loadTop10MajorCryptos, 20000);
     }
 
+    /* ============================================================
+      ✅ ORDER BOOK — MULTI WS FALLBACK (UNCHANGED)
+    ============================================================ */
+    let obWS=null;
+    let obReconnectTimer=null;
+    let obLastRender=0;
+    let obActiveSource="--";
+
+    function setOBStatus(text, ok=true){
+      const el=document.getElementById("obStatusTxt");
+      if(!el) return;
+      el.textContent=text;
+      el.style.color = ok ? "rgba(234,240,255,.75)" : "rgba(248,113,113,1)";
+    }
+    function setOBMeta(exchangeName){
+      const ex=document.getElementById("obExchange");
+      const up=document.getElementById("obUpdated");
+      if(ex) ex.textContent = "Source: " + (exchangeName || "--");
+      if(up) up.textContent = "Updated: " + new Date().toLocaleTimeString();
+    }
+
+    function renderOB(asks, bids){
+      const aEl=document.getElementById("obAsks");
+      const bEl=document.getElementById("obBids");
+      if(!aEl || !bEl) return;
+
+      const depthA=asks.slice(0,18);
+      const depthB=bids.slice(0,18);
+
+      const maxAsk = Math.max(...depthA.map(x=>x.q), 0.0000001);
+      const maxBid = Math.max(...depthB.map(x=>x.q), 0.0000001);
+
+      const asksSorted=[...depthA].sort((x,y)=>y.p-x.p);
+      const bidsSorted=[...depthB].sort((x,y)=>y.p-x.p);
+
+      let askTotal=0;
+      aEl.innerHTML = asksSorted.map(x=>{
+        askTotal += x.q;
+        const w = Math.min(100, (x.q/maxAsk)*100);
+        return `
+          <div class="obRow ask">
+            <div class="bgBar" style="transform:scaleX(${w/100});"></div>
+            <span class="p">${nfmt(x.p, x.p<1?8:2)}</span>
+            <span>${nfmt(x.q, x.q<1?6:4)}</span>
+            <span>${nfmt(askTotal, askTotal<1?6:4)}</span>
+          </div>
+        `;
+      }).join("") || `<div class="small" style="padding:10px">No asks</div>`;
+
+      let bidTotal=0;
+      bEl.innerHTML = bidsSorted.map(x=>{
+        bidTotal += x.q;
+        const w = Math.min(100, (x.q/maxBid)*100);
+        return `
+          <div class="obRow bid">
+            <div class="bgBar" style="transform:scaleX(${w/100});"></div>
+            <span class="p">${nfmt(x.p, x.p<1?8:2)}</span>
+            <span>${nfmt(x.q, x.q<1?6:4)}</span>
+            <span>${nfmt(bidTotal, bidTotal<1?6:4)}</span>
+          </div>
+        `;
+      }).join("") || `<div class="small" style="padding:10px">No bids</div>`;
+
+      const bestAsk = asks.length ? Math.min(...asks.map(x=>x.p)) : 0;
+      const bestBid = bids.length ? Math.max(...bids.map(x=>x.p)) : 0;
+      const mid = (bestAsk && bestBid) ? ((bestAsk + bestBid)/2) : 0;
+      const spread = (bestAsk && bestBid) ? (bestAsk - bestBid) : 0;
+
+      const midEl=document.getElementById("obMidPrice");
+      const spEl=document.getElementById("obSpread");
+      if(midEl) midEl.textContent = mid ? nfmt(mid, mid<1?8:2) : "--";
+      if(spEl) spEl.textContent = spread ? `Spread: ${nfmt(spread, spread<1?8:4)}` : "Spread: --";
+    }
+
+    function stopOB(){
+      try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+      obReconnectTimer=null;
+      try{
+        if(obWS){
+          obWS.onopen=null; obWS.onmessage=null; obWS.onerror=null; obWS.onclose=null;
+          obWS.close();
+        }
+      }catch(e){}
+      obWS=null;
+    }
+
+    function scheduleOBReconnect(){
+      try{ if(obReconnectTimer) clearTimeout(obReconnectTimer); }catch(e){}
+      obReconnectTimer=setTimeout(()=>startOrderBook(), 1500);
+    }
+
+    function normalizePairForOKX(pair){
+      const base = pair.replace("USDT","").toUpperCase();
+      return `${base}-USDT`;
+    }
+
+    function connectBinanceWS(pair){
+      return new Promise((resolve,reject)=>{
+        const url = `wss://stream.binance.com:9443/ws/${pair.toLowerCase()}@depth20@100ms`;
+        const ws = new WebSocket(url);
+        const timer=setTimeout(()=>{
+          try{ ws.close(); }catch(e){}
+          reject(new Error("binance timeout"));
+        }, 1800);
+        ws.onopen=()=>{
+          clearTimeout(timer);
+          resolve({ws, source:"Binance (WS)"});
+        };
+        ws.onerror=()=>{
+          clearTimeout(timer);
+          try{ ws.close(); }catch(e){}
+          reject(new Error("binance blocked"));
+        };
+      });
+    }
+
+    function connectBinanceAltWS(pair){
+      return new Promise((resolve,reject)=>{
+        const url = `wss://data-stream.binance.vision/ws/${pair.toLowerCase()}@depth20@100ms`;
+        const ws = new WebSocket(url);
+        const timer=setTimeout(()=>{
+          try{ ws.close(); }catch(e){}
+          reject(new Error("binance alt timeout"));
+        }, 1800);
+        ws.onopen=()=>{
+          clearTimeout(timer);
+          resolve({ws, source:"Binance (Alt WS)"});
+        };
+        ws.onerror=()=>{
+          clearTimeout(timer);
+          try{ ws.close(); }catch(e){}
+          reject(new Error("binance alt blocked"));
+        };
+      });
+    }
+
+    function connectBybitWS(pair){
+      return new Promise((resolve,reject)=>{
+        const url="wss://stream.bybit.com/v5/public/spot";
+        const ws=new WebSocket(url);
+        const timer=setTimeout(()=>{
+          try{ ws.close(); }catch(e){}
+          reject(new Error("bybit timeout"));
+        }, 2200);
+        ws.onopen=()=>{
+          try{
+            ws.send(JSON.stringify({
+              op:"subscribe",
+              args:[`orderbook.50.${pair.toUpperCase()}`]
+            }));
+          }catch(e){}
+          clearTimeout(timer);
+          resolve({ws, source:"Bybit (WS)"});
+        };
+        ws.onerror=()=>{
+          clearTimeout(timer);
+          try{ ws.close(); }catch(e){}
+          reject(new Error("bybit blocked"));
+        };
+      });
+    }
+
+    function connectOKXWS(pair){
+      return new Promise((resolve,reject)=>{
+        const url="wss://ws.okx.com:8443/ws/v5/public";
+        const ws=new WebSocket(url);
+        const timer=setTimeout(()=>{
+          try{ ws.close(); }catch(e){}
+          reject(new Error("okx timeout"));
+        }, 2200);
+        ws.onopen=()=>{
+          try{
+            ws.send(JSON.stringify({
+              op:"subscribe",
+              args:[{channel:"books5", instId: normalizePairForOKX(pair)}]
+            }));
+          }catch(e){}
+          clearTimeout(timer);
+          resolve({ws, source:"OKX (WS)"});
+        };
+        ws.onerror=()=>{
+          clearTimeout(timer);
+          try{ ws.close(); }catch(e){}
+          reject(new Error("okx blocked"));
+        };
+      });
+    }
+
+    function handleDepthMessage_Binance(raw){
+      const asks=(raw?.a || raw?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      const bids=(raw?.b || raw?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      if(!asks.length || !bids.length) return null;
+      return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
+    }
+    function handleDepthMessage_Bybit(raw){
+      const d=raw?.data;
+      if(!d) return null;
+      const asks=(d?.a || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      const bids=(d?.b || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      if(!asks.length || !bids.length) return null;
+      return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
+    }
+    function handleDepthMessage_OKX(raw){
+      const d=raw?.data?.[0];
+      if(!d) return null;
+      const asks=(d?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      const bids=(d?.bids || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
+      if(!asks.length || !bids.length) return null;
+      return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
+    }
+
+    async function startOrderBook(){
+      const pair = document.getElementById("obPair")?.value || "BTCUSDT";
+      stopOB();
+      setOBStatus("Connecting…", true);
+      setOBMeta("--");
+
+      const connectors = [
+        ()=>connectBinanceWS(pair),
+        ()=>connectBinanceAltWS(pair),
+        ()=>connectBybitWS(pair),
+        ()=>connectOKXWS(pair)
+      ];
+
+      let connected=null;
+      for(const fn of connectors){
+        try{
+          connected = await fn();
+          break;
+        }catch(e){}
+      }
+
+      if(!connected){
+        setOBStatus("Disconnected (Network blocked)", false);
+        setOBMeta("--");
+        return;
+      }
+
+      obWS = connected.ws;
+      obActiveSource = connected.source;
+
+      setOBStatus("Live", true);
+      setOBMeta(obActiveSource);
+
+      obWS.onclose=()=>{
+        setOBStatus("Disconnected", false);
+        setOBMeta("--");
+        scheduleOBReconnect();
+      };
+      obWS.onerror=()=>{
+        setOBStatus("Disconnected", false);
+        setOBMeta("--");
+        scheduleOBReconnect();
+      };
+
+      obWS.onmessage=(ev)=>{
+        try{
+          const raw = JSON.parse(ev.data);
+          if(raw?.event==="ping" || raw?.op==="pong") return;
+
+          if(raw?.op==="ping"){
+            try{ obWS.send(JSON.stringify({op:"pong"})); }catch(e){}
+            return;
+          }
+
+          let parsed=null;
+          if(obActiveSource.includes("Binance")){
+            parsed = handleDepthMessage_Binance(raw);
+          }else if(obActiveSource.includes("Bybit")){
+            parsed = handleDepthMessage_Bybit(raw);
+          }else if(obActiveSource.includes("OKX")){
+            parsed = handleDepthMessage_OKX(raw);
+          }
+          if(!parsed) return;
+
+          const now=Date.now();
+          if(now - obLastRender < 150) return;
+          obLastRender = now;
+
+          renderOB(parsed.asks, parsed.bids);
+          setOBMeta(obActiveSource);
+        }catch(e){}
+      };
+    }
+
     /* ===== nav ===== */
     function goPlans(){ window.location.href="plans.html"; }
     function goProfile(){ window.location.href="profile.html"; }
@@ -1667,11 +1895,61 @@
       el.style.display="inline-flex";
     }
 
+    function normalizeCountryText(v){
+      if(!v) return "";
+      return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
+    }
+
+    function isoToCountryName(iso){
+      if(!iso) return "";
+      const c = iso.toUpperCase();
+      const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
+      return map[c] || "";
+    }
+
+    function countryNameToISO(name){
+      if(!name) return "";
+      const raw = String(name).trim();
+      if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
+      const n=normalizeCountryText(raw);
+      const map={ "nigeria":"NG","ng":"NG","nigerian":"NG","united states":"US","united states of america":"US","usa":"US","us":"US","america":"US","united kingdom":"GB","great britain":"GB","britain":"GB","england":"GB","uk":"GB","gb":"GB","canada":"CA","germany":"DE","france":"FR","south africa":"ZA","kenya":"KE","ghana":"GH","united arab emirates":"AE","uae":"AE","dubai":"AE","saudi arabia":"SA","india":"IN","australia":"AU","brazil":"BR","mexico":"MX","japan":"JP","singapore":"SG" };
+      if(map[n]) return map[n];
+      for(const key of Object.keys(map)){ if(n.includes(key)) return map[n]; }
+      return "";
+    }
+
+    async function detectCountryFromIP(){
+      try{
+        const res=await fetch("https://ipapi.co/json/");
+        const data=await res.json();
+        if(data?.country_code) return String(data.country_code).toUpperCase();
+      }catch(e){}
+      return "";
+    }
+    function detectCountryFromLocale(){
+      try{
+        const loc = (navigator.language || "").toUpperCase();
+        const parts = loc.split("-");
+        if(parts.length>=2 && /^[A-Z]{2}$/.test(parts[1])) return parts[1];
+      }catch{}
+      return "";
+    }
+
+    async function resolveCountryISO(countryNameFromDB){
+      let iso = countryNameToISO(countryNameFromDB);
+      if(iso) return iso;
+      iso = await detectCountryFromIP();
+      if(iso) return iso;
+      iso = detectCountryFromLocale();
+      if(iso) return iso;
+      return "";
+    }
+
     async function loadDashboardIdentity(){
       try{
-        let fullName="", avatarUrl="";
-        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url").eq("email", currentUserEmail).maybeSingle();
-        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; }
+        let fullName="", avatarUrl="", countryName="";
+        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
@@ -1680,18 +1958,293 @@
         setNameEverywhere(fullName);
         setTopAvatar(avatarUrl);
         setSideAvatar(avatarUrl);
+
+        const iso = await resolveCountryISO(countryName);
+        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+        setCountryChip(iso, niceName);
       }catch(e){
         setNameEverywhere("User");
         setTopAvatar("");
         setSideAvatar("");
+        setCountryChip("");
       }
     }
+
+    function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
+      const root=document.getElementById(elId);
+      root.innerHTML = `
+        <button class="ddBtn" type="button">
+          <div class="ddLeft">
+            <div class="ddIcon">◈</div>
+            <div class="ddName">Select</div>
+          </div>
+          <div>▾</div>
+        </button>
+        <div class="ddPanel">
+          <input class="ddSearch" placeholder="Search..." />
+          <div class="ddList"></div>
+        </div>
+      `;
+      const btn=root.querySelector(".ddBtn");
+      const panel=root.querySelector(".ddPanel");
+      const list=root.querySelector(".ddList");
+      const search=root.querySelector(".ddSearch");
+      const nameEl=root.querySelector(".ddName");
+
+      let renderItems = items;
+
+      function render(filter=""){
+        const q=filter.trim().toLowerCase();
+        if(!q){ renderItems = items; }
+        else{ renderItems = items.filter(x => getSearch(x).includes(q)); }
+        const MAX = Math.min(renderItems.length, 600);
+        const slice = renderItems.slice(0, MAX);
+
+        list.innerHTML = slice.map(x => {
+          const lab=getLabel(x);
+          return `<div class="ddItem" data-id="${encodeURIComponent(JSON.stringify(x))}">
+            <span>${lab}</span>
+            <small>tap</small>
+          </div>`;
+        }).join("") || `<div class="ddItem"><span>No results</span></div>`;
+
+        if(renderItems.length > MAX){
+          const remain = renderItems.length - MAX;
+          list.innerHTML += `<div class="ddItem" style="opacity:.7"><span>Scroll/search to narrow results (${remain} more)…</span></div>`;
+        }
+      }
+
+      function setSelected(obj){
+        nameEl.textContent = getLabel(obj);
+        onPick(obj);
+      }
+
+      if(initial) setSelected(initial);
+      render("");
+
+      btn.addEventListener("click",(e)=>{
+        e.stopPropagation();
+        panel.classList.toggle("show");
+        if(panel.classList.contains("show")){
+          search.value="";
+          render("");
+          setTimeout(()=>search.focus(),40);
+        }
+      });
+
+      search.addEventListener("input",()=>render(search.value));
+
+      list.addEventListener("click",(e)=>{
+        const item=e.target.closest(".ddItem");
+        if(!item) return;
+        const raw=item.getAttribute("data-id");
+        if(!raw) return;
+        try{
+          const obj=JSON.parse(decodeURIComponent(raw));
+          setSelected(obj);
+          panel.classList.remove("show");
+        }catch{}
+      });
+
+      document.addEventListener("click",(e)=>{
+        if(!root.contains(e.target)) panel.classList.remove("show");
+      });
+    }
+
+    const FAVORITES = [
+      { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
+      { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
+      { id:"tether", label:"Tether (USDT)", icon:"₮", symbol:"usdt" },
+      { id:"binancecoin", label:"BNB (BNB)", icon:"◎", symbol:"bnb" },
+      { id:"solana", label:"Solana (SOL)", icon:"⟠", symbol:"sol" },
+      { id:"ripple", label:"XRP (XRP)", icon:"✕", symbol:"xrp" }
+    ];
+
+    async function loadCoinGeckoLists(){
+      try{
+        const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
+        const fiats = await fiatRes.json();
+        FIATS = (fiats || []).map(x => String(x).toUpperCase());
+      }catch{
+        FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
+      }
+
+      try{
+        const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
+        const coins = await coinRes.json();
+        const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
+        const list = [];
+
+        for(const c of (coins||[])){
+          if(!c?.id || !c?.name) continue;
+          if(favMap.has(c.id)) continue;
+          const sym = (c.symbol||"").toLowerCase();
+          list.push({ id:c.id, label:`${c.name}${sym?` (${sym.toUpperCase()})`:""}`, icon:"◈", symbol:sym });
+        }
+        ALL_COINS = [...FAVORITES, ...list];
+      }catch{
+        ALL_COINS = [...FAVORITES];
+      }
+
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+      mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{ selectedCryptoA=x; }, selectedCryptoA);
+      mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedCryptoB=x; }, selectedCryptoB);
+      mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatA=x; }, selectedFiatA);
+      mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatB=x; }, selectedFiatB);
+
+      await loadFxRates();
+    }
+
+    async function loadFxRates(){
+      try{
+        const res = await fetch("https://open.er-api.com/v6/latest/USD");
+        const data = await res.json();
+        if(data?.result !== "success") throw new Error("fx fail");
+        FX_RATES = data.rates || {};
+      }catch{
+        FX_RATES = null;
+      }
+    }
+
+    function swapCrypto(){
+      cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
+      const tmp = selectedCryptoA; selectedCryptoA = selectedCryptoB; selectedCryptoB = tmp;
+
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+      if(cryptoDirection === "crypto_to_fiat"){
+        if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){ selectedCryptoA = FAVORITES[0]; }
+        if(!selectedCryptoB?.id || selectedCryptoB.id.length>4) selectedCryptoB = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+
+        mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+        mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+      }else{
+        selectedCryptoA = {id:"USD",label:"USD",icon:"$",symbol:"usd"};
+        if(!selectedCryptoB?.id || selectedCryptoB.id.length<=4) selectedCryptoB = FAVORITES[0];
+
+        mountDropdown("ddCryptoA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedCryptoA=x;}, selectedCryptoA);
+        mountDropdown("ddCryptoB", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{selectedCryptoB=x;}, selectedCryptoB);
+      }
+
+      document.getElementById("cryptoRate").textContent="Rate: --";
+      document.getElementById("cryptoResult").textContent="--";
+      document.getElementById("cryptoReverse").textContent="--";
+    }
+
+    async function convertCrypto(){
+      const amt = Number(document.getElementById("cryptoAmount").value || 0);
+      if(!amt || amt<=0){
+        document.getElementById("cryptoResult").textContent="--";
+        document.getElementById("cryptoReverse").textContent="--";
+        return;
+      }
+
+      try{
+        if(cryptoDirection === "crypto_to_fiat"){
+          const coinId = selectedCryptoA?.id || "bitcoin";
+          const fiat   = String(selectedCryptoB?.id || "USD").toLowerCase();
+          const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const rate = Number(data?.[coinId]?.[fiat] || 0);
+          if(!rate) throw new Error("rate missing");
+
+          const result = rate * amt;
+          document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoA.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+          document.getElementById("cryptoResult").textContent = `${nfmt(result,2)} ${fiat.toUpperCase()}`;
+          document.getElementById("cryptoReverse").textContent = `1 ${fiat.toUpperCase()} ≈ ${(1/rate).toFixed(10)} ${selectedCryptoA.symbol?.toUpperCase()||coinId}`;
+        }else{
+          const fiat = String(selectedCryptoA?.id || "USD").toLowerCase();
+          const coinId = selectedCryptoB?.id || "bitcoin";
+          const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coinId)}&vs_currencies=${encodeURIComponent(fiat)}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const rate = Number(data?.[coinId]?.[fiat] || 0);
+          if(!rate) throw new Error("rate missing");
+
+          const cryptoAmount = amt / rate;
+          document.getElementById("cryptoRate").textContent = `Rate: 1 ${selectedCryptoB.label} = ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+          document.getElementById("cryptoResult").textContent = `${cryptoAmount.toFixed(10)} ${selectedCryptoB.symbol?.toUpperCase()||coinId}`;
+          document.getElementById("cryptoReverse").textContent = `1 ${selectedCryptoB.symbol?.toUpperCase()||coinId} ≈ ${nfmt(rate,6)} ${fiat.toUpperCase()}`;
+        }
+      }catch(e){
+        document.getElementById("cryptoRate").textContent="Rate: unavailable (network)";
+        document.getElementById("cryptoResult").textContent="--";
+        document.getElementById("cryptoReverse").textContent="--";
+      }
+    }
+
+    function swapFiat(){
+      const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+      mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
+      mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
+      document.getElementById("fiatRate").textContent="Rate: --";
+      document.getElementById("fiatResult").textContent="--";
+    }
+
+    async function convertFiat(){
+      const amt = Number(document.getElementById("fiatAmount").value || 0);
+      if(!amt || amt<=0){
+        document.getElementById("fiatResult").textContent="--";
+        return;
+      }
+      const from = String(selectedFiatA?.id || "USD").toUpperCase();
+      const to   = String(selectedFiatB?.id || "NGN").toUpperCase();
+
+      try{
+        if(!FX_RATES) await loadFxRates();
+        if(!FX_RATES) throw new Error("fx missing");
+
+        const fromRate = Number(FX_RATES[from] || 0);
+        const toRate   = Number(FX_RATES[to] || 0);
+        if(!fromRate || !toRate) throw new Error("rate missing");
+
+        const usdAmount = amt / fromRate;
+        const result = usdAmount * toRate;
+        const rate = toRate / fromRate;
+
+        document.getElementById("fiatRate").textContent = `Rate: 1 ${from} = ${nfmt(rate,6)} ${to}`;
+        document.getElementById("fiatResult").textContent = `${nfmt(result,2)} ${to}`;
+      }catch(e){
+        document.getElementById("fiatRate").textContent="Rate: unavailable (network)";
+        document.getElementById("fiatResult").textContent="--";
+      }
+    }
+
+    function loadChart(){
+      const pair=document.getElementById("obPair").value;
+      const base=pair.replace("USDT","").toUpperCase();
+      const tvSymbol = `BINANCE:${base}USDT`;
+      document.getElementById("chartPair").textContent = `${base}/USDT`;
+
+      const frame=document.getElementById("tvChart");
+      frame.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${encodeURIComponent(tvSymbol)}&interval=60&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=rgba(0,0,0,0)&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1`;
+    }
+
+    document.getElementById("obPair").addEventListener("change",()=>{
+      loadChart();
+      startOrderBook();
+    });
 
     async function loadBalance(){
       const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
       const balNum = Number(data?.balance || 0);
       const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
       document.getElementById("balance").innerHTML = "$" + bal;
+    }
+
+    function money(n){ return "$" + Number(n||0).toFixed(2); }
+    function pill(status){
+      const s=(status||"pending").toLowerCase();
+      return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+    }
+    function daysBetween(date1, date2){
+      const d1=new Date(date1);
+      const d2=new Date(date2);
+      const diff=(d2 - d1) / (1000*60*60*24);
+      return Math.max(0, Math.ceil(diff));
     }
 
     async function loadActivePlan(){
@@ -1719,14 +2272,97 @@
 
       planMsg.innerHTML="";
       const plan=data[0];
+      const amount=Number(plan.amount||0);
+      const roi=Number(plan.roi_percent||0);
+      const expected=amount+(amount*(roi/100));
+
+      let daysLeft="--";
+      if(plan.duration_days && plan.created_at){
+        const start=new Date(plan.created_at);
+        const end=new Date(start);
+        end.setDate(end.getDate()+Number(plan.duration_days||0));
+        daysLeft = daysBetween(new Date(), end);
+      }
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name} Plan</strong>
-          <div class="small" style="margin-top:10px">Amount: <strong>$${Number(plan.amount||0).toFixed(2)}</strong></div>
-          <div class="small">ROI: <strong>${Number(plan.roi_percent||0)}%</strong></div>
+          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+          <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
+          <div class="small">ROI: <strong>${roi}%</strong></div>
+          <div class="small">Duration: <strong>${plan.duration_days} days</strong></div>
+          <div class="small">Expected Return: <strong>${money(expected)}</strong></div>
+          <div class="small">Days remaining: <strong>${daysLeft}</strong></div>
+          ${plan.admin_note ? `<div class="small">Admin note: <strong>${plan.admin_note}</strong></div>` : ""}
         </div>
       `;
+    }
+
+    function setBadge(elId, count){
+      const el=document.getElementById(elId);
+      if(!el) return;
+      const n=Number(count||0);
+      if(n<=0) el.style.display="none";
+      else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
+    }
+
+    function setBadgeFromKey(key,val){
+      if(key==="deposits") setBadge("badgeDepositDock", val);
+      else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
+    }
+
+    async function loadRealtimeBadgesOnce(){
+      if(!currentUserId) return;
+      setBadge("badgeDepositDock", 0);
+      setBadge("badgeWithdrawDock", 0);
+
+      const { data, error } = await supabaseClient
+        .from("user_badges")
+        .select("badge_key, badge_value")
+        .eq("user_id", currentUserId);
+
+      if(error) return;
+      (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
+    }
+
+    function subscribeToRealtimeBadges(){
+      if(!currentUserId) return;
+
+      if(badgeChannel){
+        supabaseClient.removeChannel(badgeChannel);
+        badgeChannel=null;
+      }
+
+      badgeChannel = supabaseClient
+        .channel("realtime-user-badges-dashboard")
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "user_badges",
+          filter: `user_id=eq.${currentUserId}`
+        }, payload => {
+          const row = payload.new;
+          if(!row) return;
+          setBadgeFromKey(row.badge_key, row.badge_value);
+        })
+        .subscribe();
+    }
+
+    async function clearBadge(badge_key){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if(!accessToken) return;
+
+        await fetch(EDGE_CLEAR_BADGE_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ badge_key })
+        });
+      }catch(e){}
     }
 
     async function logout(){
@@ -1740,16 +2376,28 @@
 
       setGreeting();
       startClock();
+
+      document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+
       hideGate();
+
       loadDashboardIdentity();
       loadBalance();
       loadActivePlan();
+      loadRealtimeBadgesOnce();
+      subscribeToRealtimeBadges();
 
       loadTop10MajorCryptos();
       startTop10AutoRefresh();
 
       loadNews();
       startNewsAutoRefresh();
+
+      loadCoinGeckoLists().then(async ()=>{
+        mountOBPairs();
+        loadChart();
+        startOrderBook();
+      });
     }
 
     (async function authGuard(){
@@ -1776,11 +2424,6 @@
         window.location.replace("login.html");
       }
     })();
-
-    /* NOTE:
-      TradingView ticker script loads automatically from HTML above.
-      If your desktop blocks third-party scripts, allow s3.tradingview.com in browser permissions.
-    */
   </script>
 </body>
 </html>
