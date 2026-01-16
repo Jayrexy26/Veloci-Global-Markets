@@ -142,8 +142,6 @@
       top:12px;
       z-index:3000;
       margin-bottom:10px;
-      width:100%;
-      left:0;
     }
     .stickyMenu::before{
       content:"";
@@ -173,13 +171,9 @@
     .topRow{
       display:flex; align-items:center; justify-content:space-between;
       gap:12px; margin-bottom:14px;
-
-      /* ✅ shift everything left tighter */
-      padding-left:0;
-      margin-left:-8px; /* ✅ PULL TO LEFT */
     }
 
-    /* ✅ wide / magnified logo holder (NO BOX) */
+    /* ✅ brand shifted left */
     .brand{
       display:flex;
       align-items:center;
@@ -189,33 +183,37 @@
       background:transparent;
       box-shadow:none;
       min-width:unset;
-      position:relative;
 
-      /* ✅ force logo hard-left */
-      margin-left:0;
+      /* ✅ SHIFT LEFT */
+      margin-left:-14px;
     }
 
-    /* ✅ 4x magnified logo WITHOUT changing sticky bar height */
+    /* ✅ LOGO MAGNIFIED CORRECTLY (NO TRANSFORM) */
     .brandLogoWide{
-      height:54px;
+      height:88px;              /* ✅ bigger logo */
       width:auto;
       max-width:520px;
       display:block;
       object-fit:contain;
 
-      transform: scale(4);
-      transform-origin: left center;
+      /* ✅ lift it so bar doesn't expand */
+      margin-top:-18px;
+      margin-bottom:-18px;
 
       filter:
         drop-shadow(0 18px 35px rgba(0,0,0,.55))
         drop-shadow(0 0 22px rgba(91,108,255,.22));
     }
 
-    /* keep mobile safe */
     @media(max-width:520px){
+      .brand{
+        margin-left:-10px;
+      }
       .brandLogoWide{
-        transform: scale(3);
-        transform-origin: left center;
+        height:76px;
+        margin-top:-14px;
+        margin-bottom:-14px;
+        max-width:340px;
       }
     }
 
@@ -267,6 +265,7 @@
       display:flex;align-items:center;justify-content:space-between;gap:12px;
     }
     .helloLeft{display:flex;align-items:center;gap:12px;}
+
     .helloLogo{
       width:48px;height:48px;border-radius:18px;
       background:rgba(255,255,255,.20);
@@ -275,6 +274,7 @@
       font-weight:1000;
       font-size:22px;
     }
+
     .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
     .miniChip{
       font-size:12px;font-weight:1000;
@@ -285,7 +285,10 @@
     }
     .helloTitle{font-weight:1000;font-size:18px}
     .helloSub{font-size:12px;font-weight:900;opacity:.92}
-    .helloRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+
+    .helloRight{
+      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+    }
     .helloRightTop{display:flex;align-items:center;gap:10px}
     .idChip{
       padding:8px 12px;border-radius:999px;
@@ -674,7 +677,7 @@
       gap:10px;margin-bottom:12px;
     }
 
-    /* ✅ sidebar wide logo (NO BOX) */
+    /* ✅ sidebar logo same size as top */
     .sideBrand{
       display:flex;
       align-items:center;
@@ -684,29 +687,27 @@
       background:transparent;
       box-shadow:none;
       min-width:unset;
-      margin-left:-4px;
     }
 
-    /* ✅ SIDE MENU LOGO NOW SAME SIZE AS TOP */
     .sideLogoWide{
-      height:54px;
+      height:88px;             /* ✅ SAME AS TOP */
       width:auto;
       max-width:520px;
       display:block;
       object-fit:contain;
-
-      transform: scale(4);
-      transform-origin: left center;
-
+      margin-top:-18px;
+      margin-bottom:-18px;
       filter:
         drop-shadow(0 18px 35px rgba(0,0,0,.55))
-        drop-shadow(0 0 22px rgba(91,108,255,.22));
+        drop-shadow(0 0 22px rgba(91,108,255,.18));
     }
 
     @media(max-width:520px){
       .sideLogoWide{
-        transform: scale(3);
-        transform-origin: left center;
+        height:76px;
+        margin-top:-14px;
+        margin-bottom:-14px;
+        max-width:340px;
       }
     }
 
@@ -851,6 +852,7 @@
     .dockItem:hover{background:rgba(255,255,255,.06)}
     .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
 
+    /* ✅ home button stays HOME icon */
     .dockHome{
       width:78px;height:78px;border-radius:26px;
       background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
@@ -1047,6 +1049,7 @@
     <div id="stickyMenu" class="stickyMenu">
       <div class="topRow">
         <div class="brand">
+          <!-- ✅ Only wide magnified logo -->
           <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
         </div>
 
@@ -1261,205 +1264,6 @@
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentUserEmail="";
-    let currentUserId="";
-    let badgeChannel=null;
-
-    /* converter global */
-    let ALL_COINS=[];
-    let FIATS=[];
-    let FX_RATES=null;
-
-    let cryptoDirection="crypto_to_fiat";
-    let selectedCryptoA={ id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" };
-    let selectedCryptoB={ id:"USD", label:"USD", icon:"$", symbol:"usd" };
-    let selectedFiatA={ id:"USD", label:"USD", icon:"$" };
-    let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
-
-    let top10Timer=null;
-
-    /* ============================================================
-      ✅ NEWS
-    ============================================================ */
-    let newsTimer=null;
-    const NEWS_RSS_URL="https://cryptopanic.com/news/rss/";
-    const RSS_TO_JSON="https://api.rss2json.com/v1/api.json?rss_url=";
-
-    function timeAgo(ts){
-      try{
-        const t=new Date(ts).getTime();
-        const now=Date.now();
-        const s=Math.max(1, Math.floor((now-t)/1000));
-        const m=Math.floor(s/60), h=Math.floor(m/60), d=Math.floor(h/24);
-        if(d>0) return d+"d ago";
-        if(h>0) return h+"h ago";
-        if(m>0) return m+"m ago";
-        return s+"s ago";
-      }catch(e){return ""}
-    }
-    function esc(s){
-      return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
-    }
-    async function loadNews(){
-      const msg=document.getElementById("newsMsg");
-      const list=document.getElementById("newsList");
-      if(!msg||!list) return;
-      try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
-      }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
-      }
-    }
-    function startNewsAutoRefresh(){
-      if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
-    }
-
-    /* ============================================================
-      ✅ ORDER BOOK PAIRS (SEARCHABLE)
-    ============================================================ */
-    const OB_PAIRS = [
-      { value:"BTCUSDT", label:"Bitcoin (BTC/USDT)", search:"bitcoin btc usdt btcusdt" },
-      { value:"ETHUSDT", label:"Ethereum (ETH/USDT)", search:"ethereum eth usdt ethusdt" },
-      { value:"BNBUSDT", label:"BNB (BNB/USDT)", search:"bnb binance bnbusdt usdt" },
-      { value:"SOLUSDT", label:"Solana (SOL/USDT)", search:"solana sol solusdt usdt" },
-      { value:"XRPUSDT", label:"XRP (XRP/USDT)", search:"xrp ripple xrpusdt usdt" },
-      { value:"ADAUSDT", label:"Cardano (ADA/USDT)", search:"cardano ada adausdt usdt" },
-      { value:"DOGEUSDT", label:"Dogecoin (DOGE/USDT)", search:"dogecoin doge dogeusdt usdt" },
-      { value:"TRXUSDT", label:"TRON (TRX/USDT)", search:"tron trx trxusdt usdt" },
-      { value:"DOTUSDT", label:"Polkadot (DOT/USDT)", search:"polkadot dot dotusdt usdt" },
-      { value:"MATICUSDT", label:"Polygon (MATIC/USDT)", search:"polygon matic maticusdt usdt" },
-      { value:"AVAXUSDT", label:"Avalanche (AVAX/USDT)", search:"avalanche avax avaxusdt usdt" },
-      { value:"LINKUSDT", label:"Chainlink (LINK/USDT)", search:"chainlink link linkusdt usdt" },
-      { value:"LTCUSDT", label:"Litecoin (LTC/USDT)", search:"litecoin ltc ltcusdt usdt" },
-      { value:"BCHUSDT", label:"Bitcoin Cash (BCH/USDT)", search:"bitcoin cash bch bchusdt usdt" },
-      { value:"ATOMUSDT", label:"Cosmos (ATOM/USDT)", search:"cosmos atom atomusdt usdt" },
-      { value:"XLMUSDT", label:"Stellar (XLM/USDT)", search:"stellar xlm xlmusdt usdt" },
-      { value:"NEARUSDT", label:"NEAR (NEAR/USDT)", search:"near nearusdt usdt" },
-      { value:"APTUSDT", label:"Aptos (APT/USDT)", search:"aptos apt aptusdt usdt" },
-      { value:"OPUSDT", label:"Optimism (OP/USDT)", search:"optimism op opusdt usdt" },
-      { value:"ARBUSDT", label:"Arbitrum (ARB/USDT)", search:"arbitrum arb arbusdt usdt" },
-      { value:"INJUSDT", label:"Injective (INJ/USDT)", search:"injective inj injusdt usdt" },
-      { value:"RNDRUSDT", label:"Render (RNDR/USDT)", search:"render rndr rndrusdt usdt" },
-      { value:"FILUSDT", label:"Filecoin (FIL/USDT)", search:"filecoin fil filusdt usdt" },
-      { value:"ETCUSDT", label:"Ethereum Classic (ETC/USDT)", search:"ethereum classic etc etcusdt usdt" },
-      { value:"UNIUSDT", label:"Uniswap (UNI/USDT)", search:"uniswap uni uniusdt usdt" },
-      { value:"AAVEUSDT", label:"Aave (AAVE/USDT)", search:"aave aaveusdt usdt" },
-      { value:"SUIUSDT", label:"Sui (SUI/USDT)", search:"sui sui usdt suiusdt" },
-      { value:"PEPEUSDT", label:"Pepe (PEPE/USDT)", search:"pepe pepeusdt usdt" },
-      { value:"SHIBUSDT", label:"Shiba Inu (SHIB/USDT)", search:"shiba inu shib shibusdt usdt" },
-      { value:"BATUSDT", label:"Basic Attention (BAT/USDT)", search:"basic attention bat batusdt usdt" },
-      { value:"GALAUSDT", label:"Gala (GALA/USDT)", search:"gala galausdt usdt" }
-    ];
-
-    function mountOBPairs(){
-      const wrap=document.getElementById("obPairWrap");
-      const hidden=document.getElementById("obPair");
-      if(!wrap || !hidden) return;
-
-      wrap.innerHTML = `
-        <button class="ddBtn" type="button" id="obPairBtn">
-          <div class="ddLeft">
-            <div class="ddIcon">◈</div>
-            <div class="ddName" id="obPairName">BTC/USDT</div>
-          </div>
-          <div>▾</div>
-        </button>
-        <div class="ddPanel" id="obPairPanel">
-          <input class="ddSearch" id="obPairSearch" placeholder="Search coin/pair..." />
-          <div class="ddList" id="obPairList"></div>
-        </div>
-      `;
-
-      const btn=document.getElementById("obPairBtn");
-      const panel=document.getElementById("obPairPanel");
-      const search=document.getElementById("obPairSearch");
-      const list=document.getElementById("obPairList");
-      const nameEl=document.getElementById("obPairName");
-
-      function render(q=""){
-        const s=(q||"").trim().toLowerCase();
-        const items = !s ? OB_PAIRS : OB_PAIRS.filter(x => x.search.includes(s) || x.label.toLowerCase().includes(s) || x.value.toLowerCase().includes(s));
-        list.innerHTML = items.map(x=>`
-          <div class="ddItem" data-val="${x.value}" data-label="${x.label}">
-            <span>${x.label}</span>
-            <small>tap</small>
-          </div>
-        `).join("") || `<div class="ddItem"><span>No results</span></div>`;
-      }
-
-      function setPair(val, label){
-        hidden.value = val;
-        nameEl.textContent = label.includes("(") ? label.split("(")[1].replace(")","") : label;
-        document.getElementById("chartPair").textContent = nameEl.textContent;
-        hidden.dispatchEvent(new Event("change"));
-      }
-
-      const init = OB_PAIRS.find(x=>x.value===hidden.value) || OB_PAIRS[0];
-      setTimeout(()=>setPair(init.value, init.label), 0);
-
-      render("");
-
-      btn.addEventListener("click",(e)=>{
-        e.stopPropagation();
-        panel.classList.toggle("show");
-        if(panel.classList.contains("show")){
-          search.value="";
-          render("");
-          setTimeout(()=>search.focus(),40);
-        }
-      });
-
-      search.addEventListener("input",()=>render(search.value));
-
-      list.addEventListener("click",(e)=>{
-        const item=e.target.closest(".ddItem");
-        if(!item) return;
-        const val=item.getAttribute("data-val");
-        const label=item.getAttribute("data-label");
-        if(!val) return;
-        setPair(val,label);
-        panel.classList.remove("show");
-      });
-
-      document.addEventListener("click",(e)=>{
-        if(!wrap.contains(e.target)) panel.classList.remove("show");
-      });
-    }
-
-    /* ===== nav ===== */
-    function goPlans(){ window.location.href="plans.html"; }
-    function goProfile(){ window.location.href="profile.html"; }
-    function goDepositAndClear(){ clearBadge("deposits"); window.location.href="deposits.html"; }
-    function goWithdrawAndClear(){ clearBadge("withdrawals"); window.location.href="withdraw.html"; }
-    function goSupportAndClear(){ clearBadge("notifications"); window.location.href="support.html"; }
-    function goDashboard(){ window.scrollTo({top:0,behavior:"smooth"}); }
-
     function openMenu(){
       document.getElementById("sidebar").classList.add("open");
       document.getElementById("overlay").classList.add("show");
@@ -1471,26 +1275,22 @@
       document.body.classList.remove("menuOpen");
     }
 
-    function hideGate(){
-      const g=document.getElementById("authGate");
-      if(g) g.style.display="none";
-    }
-
     async function logout(){
       await supabaseClient.auth.signOut();
       window.location.replace("login.html");
     }
 
-    /* ============================================================
-      ✅ quick auth
-    ============================================================ */
+    function hideGate(){
+      const g=document.getElementById("authGate");
+      if(g) g.style.display="none";
+    }
+
     (async function authGuard(){
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         if(!session){ window.location.replace("login.html"); return; }
         hideGate();
-        mountOBPairs();
       }catch(e){
         window.location.replace("login.html");
       }
