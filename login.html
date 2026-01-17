@@ -58,7 +58,7 @@
     border:1px solid var(--stroke);
     background: var(--card);
     box-shadow: 0 25px 80px rgba(0,0,0,.50);
-    padding:26px 22px 22px;
+    padding:18px 22px 22px; /* ✅ reduced top padding */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -67,16 +67,39 @@
   .logoSolo{
     display:flex;
     justify-content:center;
-    margin:0 auto 14px;
+    margin:0 auto 6px; /* ✅ reduced gap under logo */
   }
   .logoSolo img{
-    width:260px;                  /* BIG & readable */
-    max-width:88%;
+    width:300px;                  /* ✅ bigger */
+    max-width:92%;
     height:auto;
     object-fit:contain;
-    filter: drop-shadow(0 22px 50px rgba(0,0,0,.65));
     user-select:none;
     -webkit-user-drag:none;
+
+    /* ✅ premium glow + pulse */
+    filter:
+      drop-shadow(0 26px 60px rgba(0,0,0,.68))
+      drop-shadow(0 0 30px rgba(59,130,246,.30));
+    animation: logoPulse 2.8s ease-in-out infinite;
+    transform-origin:center;
+  }
+
+  @keyframes logoPulse{
+    0%, 100%{
+      transform: scale(1);
+      filter:
+        drop-shadow(0 26px 60px rgba(0,0,0,.68))
+        drop-shadow(0 0 24px rgba(59,130,246,.25));
+      opacity: .98;
+    }
+    50%{
+      transform: scale(1.03);
+      filter:
+        drop-shadow(0 30px 72px rgba(0,0,0,.72))
+        drop-shadow(0 0 44px rgba(59,130,246,.45));
+      opacity: 1;
+    }
   }
 
   h1{
@@ -93,10 +116,10 @@
 
   .sub{
     text-align:center;
-    margin-top:6px;
+    margin-top:4px;     /* ✅ reduced */
     color: var(--muted);
     font-size:16px;
-    margin-bottom:18px;
+    margin-bottom:14px; /* ✅ reduced */
   }
 
   .field{margin-top:14px;}
@@ -337,9 +360,9 @@
 
   @media(max-width:420px){
     h1{font-size:32px}
-    .card{padding:22px 18px 18px}
+    .card{padding:16px 18px 18px} /* ✅ tighter */
     .bottom{font-size:16px}
-    .logoSolo img{width:230px}
+    .logoSolo img{width:270px}
   }
 </style>
 </head>
@@ -349,7 +372,7 @@
 <div class="wrap">
   <div class="card">
 
-    <!-- ✅ Standalone Logo INSIDE card (no box) -->
+    <!-- ✅ Standalone pulsing/glowing logo INSIDE card -->
     <div class="logoSolo" aria-hidden="true">
       <img
         src="assets/vgm-logo.png"
@@ -444,7 +467,6 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 checkSessionSafely();
 
 async function checkSessionSafely(){
-  // ✅ stop login/session bounce: wait a moment then check session
   await new Promise(r => setTimeout(r, 150));
 
   const { data } = await supabaseClient.auth.getSession();
@@ -503,10 +525,8 @@ async function login(){
     return;
   }
 
-  // ✅ modal popup instead of success text
   setMsg("", "");
   showSuccessModal();
-
   setTimeout(()=> window.location.href="/session/", 1200);
 }
 
