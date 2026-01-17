@@ -137,16 +137,22 @@
     /* ✅ REMOVE small logo box (no longer used) */
     .logo{ display:none !important; }
 
-    /* ✅ Bigger readable logo inside sticky bar WITHOUT increasing bar height */
+    /* ✅ LOGO 3x BIGGER BUT STILL INSIDE STICKY BAR HEIGHT
+       - Keep bar height unchanged
+       - Use transform scaling while keeping height constrained
+    */
     .brandLogoImg{
-      height:32px;          /* stays within sticky bar height */
+      height:32px;
       width:auto;
       max-width:240px;
       object-fit:contain;
+
+      transform: translateY(1px) scale(3);
+      transform-origin: left center;
+
       filter:
         drop-shadow(0 10px 30px rgba(0,0,0,.55))
         drop-shadow(0 0 22px rgba(59,130,246,.22));
-      transform: translateY(1px);
     }
 
     .brandText{
@@ -228,7 +234,7 @@
       background: rgba(2,6,23,.12);
     }
 
-    /* ✅ MENU dropdown moved next to Get Started (top right) */
+    /* ✅ MENU dropdown */
     .menuWrap{ position:relative; }
     .menuBtn{
       display:inline-flex;
@@ -989,7 +995,7 @@
       animation: autoMarket 90s linear infinite;
     }
     .marketScroller:hover .marketAuto{
-      animation-play-state: paused; /* pause on hover */
+      animation-play-state: paused;
     }
 
     @keyframes autoMarket{
@@ -1116,18 +1122,53 @@
     }
     .spark canvas{ width:100%; height:100%; display:block; }
 
-    /* ✅ Testimonials */
-    .testGrid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:16px;
+    /* ✅ Testimonials - SLIDER (mobile + desktop)
+       - horizontal scroll
+       - scroll snap
+       - columns auto based on width
+    */
+    .testWrap{
       margin-top:18px;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      padding:14px 12px;
+      overflow:hidden;
+      position:relative;
     }
+    .testWrap::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.18), transparent 62%);
+      filter: blur(20px);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    .testSlider{
+      position:relative;
+      z-index:1;
+      display:flex;
+      gap:14px;
+      overflow-x:auto;
+      padding:10px 6px 14px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .testSlider::-webkit-scrollbar{ height:8px; }
+    .testSlider::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.12);
+      border-radius:999px;
+    }
+
     .testCard{
+      scroll-snap-align: start;
+      flex: 0 0 360px;
       border-radius:22px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
       padding:18px 16px;
       position:relative;
       overflow:hidden;
@@ -1142,6 +1183,7 @@
       pointer-events:none;
     }
     .testCard > *{position:relative; z-index:1;}
+
     .stars{
       display:flex;
       gap:4px;
@@ -1285,7 +1327,9 @@
       .calcGrid{grid-template-columns: 1fr;}
       .planGrid{grid-template-columns: 1fr 1fr;}
       .refGrid{grid-template-columns: 1fr 1fr;}
-      .testGrid{grid-template-columns: 1fr;}
+
+      /* Testimonials wider on tablet */
+      .testCard{ flex: 0 0 340px; }
     }
     @media(max-width: 560px){
       nav{display:none;}
@@ -1294,10 +1338,15 @@
       .brand{min-width:auto;}
       .navCTA{min-width:auto;}
       .coinCard{min-width: 310px; max-width:310px;}
+
       .planGrid{grid-template-columns: 1fr;}
       .statsGrid{grid-template-columns: 1fr;}
       .stepsGrid{grid-template-columns: 1fr;}
-      .brandLogoImg{height:28px; max-width:200px;}
+
+      /* ✅ smaller base logo, but still scaled 3x */
+      .brandLogoImg{height:26px; max-width:180px; transform: translateY(1px) scale(3);}
+      /* Testimonials full width slide */
+      .testCard{ flex: 0 0 86vw; }
     }
 
     /* ✅ Hide Google default translate banner (keeps UI clean) */
@@ -1345,7 +1394,6 @@
   <div class="container">
     <div class="nav">
       <a class="brand" href="index.html" aria-label="Veloci Global Markets">
-        <!-- ✅ Bigger readable logo in sticky bar -->
         <img class="brandLogoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets" onerror="this.style.display='none';" />
       </a>
 
@@ -1356,10 +1404,17 @@
         <a href="contact.html">Contact</a>
       </nav>
 
-      <!-- ✅ MENU MOVED TO TOP RIGHT BESIDE GET STARTED -->
+      <!-- ✅ INTERCHANGED POSITIONS:
+           Get Started now BEFORE Menu
+           Menu now at far right position
+      -->
       <div class="navCTA">
         <a class="btn btnOutline" href="login.html">Client Login</a>
 
+        <!-- ✅ Get Started moved LEFT where menu was -->
+        <a class="btn btnPrimary" href="signup.html">Get Started</a>
+
+        <!-- ✅ Menu moved RIGHT where Get Started was -->
         <div class="menuWrap">
           <button id="menuBtn" class="menuBtn" type="button" aria-haspopup="true" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none">
@@ -1378,7 +1433,6 @@
           </div>
         </div>
 
-        <a class="btn btnPrimary" href="signup.html">Get Started</a>
       </div>
     </div>
   </div>
@@ -1596,7 +1650,7 @@
   <div class="container">
     <div class="sectionTitle">
       <h3>Profit Calculator</h3>
-      <p>Fixed plan projections (7 days base). 14 days = x2, 30 days = x(30/7), 60 days = x(60/7).</p>
+      <!-- ✅ removed your unwanted writing under profit projection -->
     </div>
 
     <div class="calcGrid">
@@ -1862,7 +1916,10 @@
       <p>Testimonials are displayed from a configurable data source (backend-ready).</p>
     </div>
 
-    <div id="testimonials" class="testGrid"></div>
+    <!-- ✅ Testimonials slider wrapper -->
+    <div class="testWrap">
+      <div id="testimonials" class="testSlider" aria-label="Testimonials slider"></div>
+    </div>
   </div>
 </section>
 
@@ -1903,7 +1960,7 @@
 
 <script>
 /* =========================================================
-   ✅ MENU BUTTON DROPDOWN (now next to Get Started)
+   ✅ MENU BUTTON DROPDOWN
 ========================================================= */
 (function initMenu(){
   const btn = document.getElementById("menuBtn");
@@ -1931,7 +1988,7 @@
 })();
 
 /* =========================================================
-   ✅ TRANSLATOR (Google Translate engine — user selects language)
+   ✅ TRANSLATOR
 ========================================================= */
 function googleTranslateElementInit() {
   new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element');
@@ -2006,7 +2063,7 @@ function setGoogleTranslateLang(lang){
 })();
 
 /* =========================================================
-   ✅ Twinkling Dots Background (astrofx-style)
+   ✅ Twinkling Dots Background
 ========================================================= */
 (function initTwinklingBackground(){
   const canvas = document.getElementById("bgCanvas");
@@ -2220,24 +2277,6 @@ function setGoogleTranslateLang(lang){
     drawArea(points);
     drawGlowLine(points);
 
-    const idx = Math.floor((Math.sin(t)*0.5 + 0.5) * (points.length-1));
-    const orb = points[idx];
-    if(orb){
-      ctx.save();
-      ctx.shadowColor="rgba(96,165,250,0.80)";
-      ctx.shadowBlur=22;
-      ctx.fillStyle="rgba(96,165,250,0.95)";
-      ctx.beginPath();
-      ctx.arc(orb.x, orb.y, 4.2, 0, Math.PI*2);
-      ctx.fill();
-
-      ctx.globalAlpha=0.35;
-      ctx.beginPath();
-      ctx.arc(orb.x, orb.y, 14, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
-    }
-
     requestAnimationFrame(draw);
   }
 
@@ -2284,12 +2323,7 @@ function setGoogleTranslateLang(lang){
 })();
 
 /* =========================================================
-   ✅ FIXED Profit Calculator Logic (as you requested)
-   - Silver: 100 => 10000 for 7 days
-   - Gold: 100 => 15000 for 7 days
-   - Diamond: 100 => 18000 for 7 days
-   - Platinum: 100 => 20000 for 7 days
-   - 14 days = x2, 30 days = x(30/7), 60 days = x(60/7)
+   ✅ FIXED Profit Calculator Logic
 ========================================================= */
 (function initCalculator(){
   const amountEl = document.getElementById("calcAmount");
@@ -2298,7 +2332,6 @@ function setGoogleTranslateLang(lang){
   const profitEl = document.getElementById("calcProfit");
   const totalEl  = document.getElementById("calcTotal");
 
-  // baseReturnPer100 = return amount at 7 days if user invests $100
   const baseReturnPer100_7d = {
     silver: 10000,
     gold: 15000,
@@ -2316,16 +2349,9 @@ function setGoogleTranslateLang(lang){
     const plan = planEl.value || "gold";
 
     const base7 = baseReturnPer100_7d[plan] || 15000;
-
-    // return for 7 days for the entered amount
-    // amt = 100 => base7, amt = 200 => base7*2
     const baseReturnForAmt_7d = (amt/100) * base7;
-
-    // scale to duration:
-    // 14 days => x2, 30 => x(30/7), 60 => x(60/7)
     const multiplier = days / 7;
     const totalReturn = baseReturnForAmt_7d * multiplier;
-
     const profit = Math.max(0, totalReturn - amt);
 
     totalEl.textContent = money(totalReturn);
@@ -2484,7 +2510,7 @@ async function loadMarkets(){
   auto.innerHTML = "";
 
   coins.forEach(c=> auto.appendChild(createCoinCard(c)));
-  coins.forEach(c=> auto.appendChild(createCoinCard(c))); // duplicate for infinite loop
+  coins.forEach(c=> auto.appendChild(createCoinCard(c)));
 
   try{
     const res = await fetch(
@@ -2530,7 +2556,7 @@ async function loadMarkets(){
     }
 
     for(const item of data){
-      const allCards = auto.querySelectorAll(`.coinCard[data-coin="${item.id}"]`);
+      const allCards = auto.querySelectorAll(\`.coinCard[data-coin="\${item.id}"]\`);
       allCards.forEach(card => applyTo(card, item));
     }
 
@@ -2549,7 +2575,9 @@ async function getTestimonials(){
   return [
     { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
     { name:"Amina S.", role:"Investor", text:"The live markets and ticker give it a real terminal feel. Smooth experience.", stars:5 },
-    { name:"Michael R.", role:"Trader", text:"Verification and session PIN made me trust the security. Great UI and flow.", stars:5 }
+    { name:"Michael R.", role:"Trader", text:"Verification and session PIN made me trust the security. Great UI and flow.", stars:5 },
+    { name:"Chinedu I.", role:"Client", text:"Very advanced interface. Love the smooth background motion and chart animations.", stars:5 },
+    { name:"Sophia L.", role:"Investor", text:"The platform feels premium and trustworthy. Beautiful UI + easy onboarding.", stars:5 }
   ];
 }
 
