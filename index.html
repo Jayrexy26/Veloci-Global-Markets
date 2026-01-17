@@ -1,1466 +1,2601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veloci Global Markets | Client Portal</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Veloci Global Markets | Client Portal</title>
 
-  <meta name="description" content="Veloci Global Markets client portal for market tracking, portfolio tools, and account access." />
-  <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#050a18" />
+  <meta name="description" content="Veloci Global Markets client portal for market tracking, portfolio tools, and account access." />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#050a18" />
 
-  <style>
-    :root{
-      --bg:#050a18;
-      --panel:#0b1226;
-      --panel2:#0f1a34;
-      --stroke:rgba(255,255,255,.12);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.70);
-      --muted2:rgba(234,240,255,.55);
+  <style>
+    :root{
+      --bg:#050a18;
+      --panel:#0b1226;
+      --panel2:#0f1a34;
+      --stroke:rgba(255,255,255,.12);
+      --text:#eaf0ff;
+      --muted:rgba(234,240,255,.70);
+      --muted2:rgba(234,240,255,.55);
 
-      --brand:#3b82f6;
-      --brand2:#6366f1;
-      --ok:#22c55e;
-      --err:#f87171;
+      --brand:#3b82f6;
+      --brand2:#6366f1;
+      --ok:#22c55e;
+      --err:#f87171;
 
-      --shadow: 0 30px 120px rgba(0,0,0,.62);
-      --shadow2: 0 16px 60px rgba(0,0,0,.55);
-    }
+      --shadow: 0 30px 120px rgba(0,0,0,.62);
+      --shadow2: 0 16px 60px rgba(0,0,0,.55);
+    }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color:var(--text);
-      overflow-x:hidden;
-    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
 
-    a{color:inherit}
-    .container{
-      width:100%;
-      max-width:1220px;
-      margin:0 auto;
-      padding:0 18px;
-      position:relative;
-      z-index:2;
-    }
+    a{color:inherit}
+    .container{
+      width:100%;
+      max-width:1220px;
+      margin:0 auto;
+      padding:0 18px;
+      position:relative;
+      z-index:2;
+    }
 
-    /* Twinkling dots background canvas */
-    #bgCanvas{
-      position:fixed;
-      inset:0;
-      z-index:0;
-      pointer-events:none;
-      background:
-        radial-gradient(1200px 640px at 12% 12%, rgba(59,130,246,.20), transparent 58%),
-        radial-gradient(900px 560px at 86% 14%, rgba(99,102,241,.18), transparent 62%),
-        radial-gradient(720px 520px at 50% 90%, rgba(59,130,246,.10), transparent 60%),
-        var(--bg);
-    }
+    /* ✅ Twinkling dots background canvas */
+    #bgCanvas{
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+      background:
+        radial-gradient(1200px 640px at 12% 12%, rgba(59,130,246,.20), transparent 58%),
+        radial-gradient(900px 560px at 86% 14%, rgba(99,102,241,.18), transparent 62%),
+        radial-gradient(720px 520px at 50% 90%, rgba(59,130,246,.10), transparent 60%),
+        var(--bg);
+    }
 
-    /* Top bar */
-    .topbar{
-      position:relative;
-      z-index:3;
-      background: rgba(17,22,42,.56);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .topbarInner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 0;
-      font-size:12.5px;
-      color:rgba(234,240,255,.72);
-      flex-wrap:wrap;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      user-select:none;
-    }
+    /* ✅ Top bar */
+    .topbar{
+      position:relative;
+      z-index:3;
+      background: rgba(17,22,42,.56);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .topbarInner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 0;
+      font-size:12.5px;
+      color:rgba(234,240,255,.72);
+      flex-wrap:wrap;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      user-select:none;
+    }
 
-    /* MENU dropdown */
-    .menuWrap{ position:relative; }
-    .menuBtn{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      cursor:pointer;
-      font-weight:1100;
-      color:rgba(234,240,255,.85);
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      padding:7px 10px;
-      border-radius:999px;
-      transition:.15s ease;
-    }
-    .menuBtn:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
-    .menuBtn svg{ width:16px;height:16px; opacity:.95; }
+    /* ✅ Translator selector */
+    .langSelect{
+      cursor:pointer;
+      appearance:none;
+      -webkit-appearance:none;
+      border-radius:999px;
+      padding:7px 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: rgba(234,240,255,.86);
+      font-weight:1100;
+      outline:none;
+      transition:.15s ease;
+    }
+    .langSelect:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
+    .langSelect option{ color:#0b0f19; }
 
-    .menuDropdown{
-      position:absolute;
-      top: 42px;
-      left:0;
-      min-width:220px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.80);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 30px 120px rgba(0,0,0,.65);
-      padding:10px;
-      display:none;
-      z-index:9999;
-      overflow:hidden;
-    }
-    .menuDropdown::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .menuDropdown a{
-      position:relative;
-      z-index:1;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      text-decoration:none;
-      padding:10px 12px;
-      border-radius:12px;
-      color:rgba(234,240,255,.86);
-      font-weight:1100;
-      border:1px solid transparent;
-      background: rgba(255,255,255,.02);
-      transition:.12s ease;
-      margin:6px 0;
-    }
-    .menuDropdown a:hover{
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.10);
-    }
-    .menuDropdown small{
-      color: rgba(234,240,255,.55);
-      font-weight:1000;
-    }
+    /* ✅ Navbar */
+    header{
+      position:sticky;
+      top:0;
+      z-index:1000;
+      background: rgba(5,10,24,.72);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .nav{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 0;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      text-decoration:none;
+      user-select:none;
+      min-width: 260px;
+    }
 
-    /* Translator selector */
-    .langSelect{
-      cursor:pointer;
-      appearance:none;
-      -webkit-appearance:none;
-      border-radius:999px;
-      padding:7px 12px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color: rgba(234,240,255,.86);
-      font-weight:1100;
-      outline:none;
-      transition:.15s ease;
-    }
-    .langSelect:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
-    .langSelect option{ color:#0b0f19; }
+    /* ✅ REMOVE small logo box (no longer used) */
+    .logo{ display:none !important; }
 
-    /* Navbar */
-    header{
-      position:sticky;
-      top:0;
-      z-index:1000;
-      background: rgba(5,10,24,.72);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    .nav{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 0;
-      gap:12px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      text-decoration:none;
-      user-select:none;
-      min-width: 260px;
-    }
-    .logo{
-      width:46px;height:46px;
-      border-radius:14px;
-      background: rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.12);
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-      box-shadow: 0 14px 46px rgba(0,0,0,.45);
-      position:relative;
-    }
-    .logo::after{
-      content:"";
-      position:absolute;
-      inset:-50px;
-      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.28), transparent 55%);
-      filter: blur(18px);
-      opacity:.85;
-      pointer-events:none;
-    }
-    .logo img{
-      width:88px;
-      height:88px;
-      object-fit:cover;
-      transform: translateY(-6px);
-      filter: drop-shadow(0 10px 30px rgba(0,0,0,.55));
-      position:relative;
-      z-index:1;
-    }
-    .brandText{
-      display:flex;
-      flex-direction:column;
-      line-height:1.1;
-    }
-    .brandText strong{
-      font-weight:1000;
-      letter-spacing:-.2px;
-      font-size:14px;
-    }
-    .brandText span{
-      font-size:11.5px;
-      color:rgba(234,240,255,.62);
-      font-weight:800;
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
+    /* ✅ Bigger readable logo inside sticky bar WITHOUT increasing bar height */
+    .brandLogoImg{
+      height:32px;          /* stays within sticky bar height */
+      width:auto;
+      max-width:240px;
+      object-fit:contain;
+      filter:
+        drop-shadow(0 10px 30px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(59,130,246,.22));
+      transform: translateY(1px);
+    }
 
-    nav{
-      display:flex;
-      align-items:center;
-      gap:18px;
-      flex-wrap:wrap;
-      justify-content:center;
-    }
-    nav a{
-      text-decoration:none;
-      font-size:14px;
-      color:rgba(234,240,255,.86);
-      font-weight:1100;
-      opacity:.92;
-      transition:.15s ease;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid transparent;
-    }
-    nav a:hover{
-      opacity:1;
-      background: rgba(255,255,255,.05);
-      border-color: rgba(255,255,255,.08);
-    }
+    .brandText{
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+    .brandText strong{
+      font-weight:1000;
+      letter-spacing:-.2px;
+      font-size:14px;
+    }
+    .brandText span{
+      font-size:11.5px;
+      color:rgba(234,240,255,.62);
+      font-weight:800;
+      letter-spacing:.35px;
+      text-transform:uppercase;
+    }
 
-    .navCTA{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      min-width: 260px;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      border-radius:999px;
-      padding:11px 16px;
-      font-weight:1100;
-      font-size:14px;
-      text-decoration:none;
-      transition:.15s ease;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      position:relative;
-      overflow:hidden;
-    }
-    .btn:hover{transform:translateY(-1px)}
-    .btnPrimary{
-      border:none;
-      color:white;
-      background: linear-gradient(180deg, var(--brand), #2563eb);
-      box-shadow: 0 18px 55px rgba(37,99,235,.35);
-    }
-    .btnOutline{
-      border:1px solid rgba(96,165,250,.40);
-      color:#a6c8ff;
-      background: rgba(2,6,23,.12);
-    }
+    nav{
+      display:flex;
+      align-items:center;
+      gap:18px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    nav a{
+      text-decoration:none;
+      font-size:14px;
+      color:rgba(234,240,255,.86);
+      font-weight:1100;
+      opacity:.92;
+      transition:.15s ease;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid transparent;
+    }
+    nav a:hover{
+      opacity:1;
+      background: rgba(255,255,255,.05);
+      border-color: rgba(255,255,255,.08);
+    }
 
-    /* TradingView Ticker Tape */
-    .tickerWrap{
-      position:relative;
-      z-index:3;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(2,6,23,.22);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .tickerInner{ padding: 12px 0; }
-    .tickerGlass{
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-    }
+    .navCTA{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      min-width: 260px;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      border-radius:999px;
+      padding:11px 16px;
+      font-weight:1100;
+      font-size:14px;
+      text-decoration:none;
+      transition:.15s ease;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      position:relative;
+      overflow:hidden;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btnPrimary{
+      border:none;
+      color:white;
+      background: linear-gradient(180deg, var(--brand), #2563eb);
+      box-shadow: 0 18px 55px rgba(37,99,235,.35);
+    }
+    .btnOutline{
+      border:1px solid rgba(96,165,250,.40);
+      color:#a6c8ff;
+      background: rgba(2,6,23,.12);
+    }
 
-    /* HERO */
-    .hero{
-      padding:78px 0 18px;
-      position:relative;
-      z-index:2;
-    }
-    .heroGrid{
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:30px;
-      align-items:center;
-    }
+    /* ✅ MENU dropdown moved next to Get Started (top right) */
+    .menuWrap{ position:relative; }
+    .menuBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      font-weight:1100;
+      color:rgba(234,240,255,.85);
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding:10px 14px;
+      border-radius:999px;
+      transition:.15s ease;
+    }
+    .menuBtn:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
+    .menuBtn svg{ width:16px;height:16px; opacity:.95; }
 
-    .kicker{
-      display:inline-flex;
-      gap:10px;
-      align-items:center;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color:rgba(234,240,255,.78);
-      font-weight:1100;
-      font-size:13px;
-      width:fit-content;
-    }
-    .kicker b{
-      color:#fff;
-      background: rgba(59,130,246,.18);
-      border:1px solid rgba(96,165,250,.28);
-      padding:4px 8px;
-      border-radius:999px;
-      font-size:12px;
-    }
+    .menuDropdown{
+      position:absolute;
+      top: 48px;
+      right:0;
+      min-width:220px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.80);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 30px 120px rgba(0,0,0,.65);
+      padding:10px;
+      display:none;
+      z-index:9999;
+      overflow:hidden;
+    }
+    .menuDropdown::before{
+      content:"";
+      position:absolute;
+      inset:-60px;
+      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.20), transparent 62%);
+      filter: blur(20px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .menuDropdown a{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      text-decoration:none;
+      padding:10px 12px;
+      border-radius:12px;
+      color:rgba(234,240,255,.86);
+      font-weight:1100;
+      border:1px solid transparent;
+      background: rgba(255,255,255,.02);
+      transition:.12s ease;
+      margin:6px 0;
+    }
+    .menuDropdown a:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+    }
+    .menuDropdown small{
+      color: rgba(234,240,255,.55);
+      font-weight:1000;
+    }
 
-    .hero h2{
-      margin:14px 0 10px;
-      font-size:52px;
-      line-height:1.03;
-      letter-spacing:-1.2px;
-      font-weight:1100;
-      background: linear-gradient(90deg, #eaf0ff, #9cc7ff, #aab4ff);
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-      text-shadow: 0 30px 120px rgba(0,0,0,.55);
-    }
+    /* ✅ TradingView Ticker Tape */
+    .tickerWrap{
+      position:relative;
+      z-index:3;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(2,6,23,.22);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .tickerInner{ padding: 12px 0; }
+    .tickerGlass{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+    }
 
-    .hero p{
-      margin:0;
-      font-size:16px;
-      color:rgba(234,240,255,.72);
-      line-height:1.72;
-      max-width:660px;
-    }
+    /* ✅ HERO */
+    .hero{
+      padding:78px 0 18px;
+      position:relative;
+      z-index:2;
+    }
+    .heroGrid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:30px;
+      align-items:center;
+    }
 
-    .heroBtns{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin-top:22px;
-    }
+    .kicker{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color:rgba(234,240,255,.78);
+      font-weight:1100;
+      font-size:13px;
+      width:fit-content;
+    }
+    .kicker b{
+      color:#fff;
+      background: rgba(59,130,246,.18);
+      border:1px solid rgba(96,165,250,.28);
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+    }
 
-    .badges{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:18px;
-    }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.78);
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .badge svg{width:16px;height:16px;opacity:.95}
+    .hero h2{
+      margin:14px 0 10px;
+      font-size:52px;
+      line-height:1.03;
+      letter-spacing:-1.2px;
+      font-weight:1100;
+      background: linear-gradient(90deg, #eaf0ff, #9cc7ff, #aab4ff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow: 0 30px 120px rgba(0,0,0,.55);
+    }
 
-    /* 3D chart card */
-    .chartCard{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-      transform-style: preserve-3d;
-      perspective: 1100px;
-    }
-    .chartCard::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.26), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .chartTop{
-      position:relative;
-      z-index:2;
-      padding:16px 16px 10px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .chartTop .title{
-      font-size:13px;
-      font-weight:1100;
-      color:rgba(234,240,255,.84);
-      letter-spacing:.2px;
-      padding:9px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.28);
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-    }
-    .livePulse{
-      width:8px;height:8px;border-radius:50%;
-      background: var(--ok);
-      box-shadow: 0 0 0 5px rgba(34,197,94,.12);
-    }
-    .chartTop .right{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .miniTag{
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.72);
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
+    .hero p{
+      margin:0;
+      font-size:16px;
+      color:rgba(234,240,255,.72);
+      line-height:1.72;
+      max-width:660px;
+    }
 
-    .chartArea{
-      position:relative;
-      z-index:2;
-      padding:0 14px 14px;
-    }
+    .heroBtns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:22px;
+    }
 
-    .chartFrame{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      transform: translateZ(18px);
-    }
-    canvas#chartCanvas{
-      display:block;
-      width:100%;
-      height:330px;
-    }
-    .glowLine{
-      position:absolute;
-      inset:auto -30px 14px -30px;
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(96,165,250,.75), transparent);
-      filter: blur(.2px);
-      opacity:.9;
-      z-index:3;
-    }
+    .badges{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:18px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12.5px;
+      font-weight:1100;
+      color:rgba(234,240,255,.78);
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .badge svg{width:16px;height:16px;opacity:.95}
 
-    .chartFooter{
-      display:flex;
-      gap:10px;
-      padding:12px 14px 0;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-      color:rgba(234,240,255,.66);
-      font-size:12.5px;
-      font-weight:900;
-    }
-    .chipRow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .chip{
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color:rgba(234,240,255,.72);
-      font-weight:1100;
-      font-size:12px;
-    }
+    /* ✅ 3D chart card */
+    .chartCard{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      transform-style: preserve-3d;
+      perspective: 1100px;
+    }
+    .chartCard::before{
+      content:"";
+      position:absolute;
+      inset:-60px;
+      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.26), transparent 62%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .chartTop{
+      position:relative;
+      z-index:2;
+      padding:16px 16px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .chartTop .title{
+      font-size:13px;
+      font-weight:1100;
+      color:rgba(234,240,255,.84);
+      letter-spacing:.2px;
+      padding:9px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.28);
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+    }
+    .livePulse{
+      width:8px;height:8px;border-radius:50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 5px rgba(34,197,94,.12);
+    }
+    .chartTop .right{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .miniTag{
+      font-size:12px;
+      font-weight:1100;
+      color:rgba(234,240,255,.72);
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
 
-    /* Sections */
-    section{
-      padding:56px 0;
-      position:relative;
-      z-index:2;
-    }
-    .sectionTitle{
-      text-align:center;
-      max-width:920px;
-      margin:0 auto 24px;
-    }
-    .sectionTitle h3{
-      margin:0;
-      font-size:32px;
-      font-weight:1100;
-      letter-spacing:-.7px;
-      background: linear-gradient(90deg, #eaf0ff, #a8c8ff);
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-    }
-    .sectionTitle p{
-      margin:10px 0 0;
-      color:rgba(234,240,255,.70);
-      line-height:1.7;
-      font-size:15px;
-    }
+    .chartArea{
+      position:relative;
+      z-index:2;
+      padding:0 14px 14px;
+    }
 
-    /* Stats counters */
-    .statsGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:14px;
-      margin-top:22px;
-    }
-    .statBox{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      padding:18px 16px;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      overflow:hidden;
-      position:relative;
-      text-align:center;
-    }
-    .statBox::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .statBox > *{position:relative; z-index:1;}
-    .statNum{
-      font-size:30px;
-      font-weight:1200;
-      letter-spacing:-.6px;
-      color:#eaf0ff;
-    }
-    .statLbl{
-      margin-top:8px;
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
+    .chartFrame{
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.30);
+      overflow:hidden;
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      position:relative;
+      transform: translateZ(18px);
+    }
+    canvas#chartCanvas{
+      display:block;
+      width:100%;
+      height:330px;
+    }
+    .glowLine{
+      position:absolute;
+      inset:auto -30px 14px -30px;
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(96,165,250,.75), transparent);
+      filter: blur(.2px);
+      opacity:.9;
+      z-index:3;
+    }
 
-    /* Steps */
-    .stepsGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:16px;
-    }
-    .stepCard{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.28);
-      padding:18px 16px;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      overflow:hidden;
-    }
-    .stepCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.14), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .stepCard > *{position:relative; z-index:1;}
-    .stepTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:10px;
-    }
-    .stepIcon{
-      width:46px;height:46px;border-radius:16px;
-      display:grid;place-items:center;
-      background: rgba(59,130,246,.10);
-      border:1px solid rgba(96,165,250,.24);
-      box-shadow: 0 12px 38px rgba(0,0,0,.35);
-    }
-    .stepIcon svg{width:22px;height:22px}
-    .stepNum{
-      font-weight:1200;
-      color:rgba(234,240,255,.55);
-      letter-spacing:.4px;
-      font-size:12px;
-    }
-    .stepCard h4{
-      margin:0;
-      font-size:16px;
-      font-weight:1200;
-      letter-spacing:-.2px;
-    }
-    .stepCard p{
-      margin:8px 0 0;
-      color:rgba(234,240,255,.70);
-      font-size:14px;
-      line-height:1.65;
-    }
+    .chartFooter{
+      display:flex;
+      gap:10px;
+      padding:12px 14px 0;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      color:rgba(234,240,255,.66);
+      font-size:12.5px;
+      font-weight:900;
+    }
+    .chipRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color:rgba(234,240,255,.72);
+      font-weight:1100;
+      font-size:12px;
+    }
 
-    /* Profit Calculator */
-    .calcGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:16px;
-      align-items:stretch;
-      margin-top:18px;
-    }
-    .calcBox{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      box-shadow: var(--shadow);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .calcBox::before{
-      content:"";
-      position:absolute;
-      inset:-80px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .calcBox > *{position:relative; z-index:1;}
-    .calcTitle{
-      font-size:15px;
-      font-weight:1200;
-      color:rgba(234,240,255,.90);
-      margin:0 0 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .calcTitle span{
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.65);
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.20);
-    }
+    /* ✅ Sections */
+    section{
+      padding:56px 0;
+      position:relative;
+      z-index:2;
+      scroll-margin-top: 110px;
+    }
 
-    .calcField{margin-top:12px;}
-    .calcLabel{
-      font-size:13px;
-      font-weight:1100;
-      color:rgba(234,240,255,.70);
-      margin-bottom:8px;
-    }
-    .calcInput, .calcSelect{
-      width:100%;
-      padding:14px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      color: var(--text);
-      font-size:15px;
-      font-weight:900;
-      outline:none;
-      transition:.18s ease;
-    }
-    .calcInput:focus, .calcSelect:focus{
-      border-color: rgba(96,165,250,.60);
-      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
-    }
+    /* ✅ scroll unfold + fade */
+    .reveal{
+      opacity:0;
+      transform: translateY(26px) scale(.985);
+      transition: opacity .8s ease, transform .8s ease;
+      will-change: opacity, transform;
+    }
+    .reveal.show{
+      opacity:1;
+      transform: translateY(0) scale(1);
+    }
 
-    .calcResult{
-      margin-top:14px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.26);
-      padding:14px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .resCard{
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      padding:12px 12px;
-    }
-    .resCard small{
-      display:block;
-      color:rgba(234,240,255,.62);
-      font-weight:1100;
-      font-size:12px;
-      margin-bottom:6px;
-    }
-    .resCard strong{
-      font-size:18px;
-      font-weight:1200;
-      letter-spacing:-.3px;
-    }
+    /* ✅ section highlight on touch */
+    .touchHighlight{
+      border-radius: 18px;
+      transition: box-shadow .35s ease, transform .25s ease;
+    }
+    .touchHighlight.active{
+      box-shadow:
+        0 0 0 1px rgba(96,165,250,.18),
+        0 0 0 6px rgba(59,130,246,.10),
+        0 28px 120px rgba(0,0,0,.40);
+      transform: translateY(-1px);
+    }
 
-    /* Plans */
-    .planGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:16px;
-      margin-top:18px;
-    }
-    .planCard{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      box-shadow: var(--shadow2);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      min-height: 320px;
-    }
-    .planCard::before{
-      content:"";
-      position:absolute;
-      inset:-90px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
-      filter: blur(22px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .planCard > *{position:relative; z-index:1;}
-    .planHead{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .planName{
-      font-weight:1300;
-      font-size:18px;
-      letter-spacing:-.3px;
-    }
-    .planTag{
-      font-size:12px;
-      font-weight:1200;
-      color:rgba(234,240,255,.70);
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.20);
-    }
-    .planPrice{
-      font-size:28px;
-      font-weight:1400;
-      letter-spacing:-.6px;
-      margin-top:4px;
-    }
-    .planPrice small{
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-    }
-    .planList{
-      margin:0;
-      padding:0;
-      list-style:none;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      color:rgba(234,240,255,.74);
-      font-size:13.5px;
-      font-weight:900;
-      line-height:1.45;
-    }
-    .planList li{
-      display:flex;
-      align-items:flex-start;
-      gap:8px;
-    }
-    .planList svg{width:18px;height:18px; margin-top:1px; opacity:.95;}
-    .planBtn{
-      margin-top:auto;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .planBtn a{
-      width:100%;
-      text-align:center;
-      justify-content:center;
-    }
-    .planFeatured{
-      border-color: rgba(96,165,250,.34);
-      background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(255,255,255,.04));
-      transform: translateY(-4px);
-    }
-    .planGlow{
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.28), transparent 62%);
-      filter: blur(22px);
-      opacity:0.95;
-      pointer-events:none;
-    }
+    .sectionTitle{
+      text-align:center;
+      max-width:920px;
+      margin:0 auto 24px;
+    }
+    .sectionTitle h3{
+      margin:0;
+      font-size:32px;
+      font-weight:1100;
+      letter-spacing:-.7px;
+      background: linear-gradient(90deg, #eaf0ff, #a8c8ff);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    .sectionTitle p{
+      margin:10px 0 0;
+      color:rgba(234,240,255,.70);
+      line-height:1.7;
+      font-size:15px;
+    }
 
-    /* Referral section */
-    .refGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:14px;
-      margin-top:18px;
-    }
-    .refCard{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      padding:16px 14px;
-      position:relative;
-      overflow:hidden;
-      text-align:center;
-    }
-    .refCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(59,130,246,.18), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .refCard > *{position:relative; z-index:1;}
-    .refPct{
-      font-size:32px;
-      font-weight:1400;
-      letter-spacing:-.7px;
-    }
-    .refLvl{
-      margin-top:8px;
-      font-size:12px;
-      font-weight:1200;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    .refNote{
-      margin-top:10px;
-      color:rgba(234,240,255,.72);
-      font-size:13px;
-      line-height:1.55;
-      font-weight:900;
-    }
+    /* ✅ Stats counters */
+    .statsGrid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+      margin-top:22px;
+    }
+    .statBox{
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding:18px 16px;
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      overflow:hidden;
+      position:relative;
+      text-align:center;
+    }
+    .statBox::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
+      filter: blur(20px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .statBox > *{position:relative; z-index:1;}
+    .statNum{
+      font-size:30px;
+      font-weight:1200;
+      letter-spacing:-.6px;
+      color:#eaf0ff;
+    }
+    .statLbl{
+      margin-top:8px;
+      font-size:12.5px;
+      font-weight:1100;
+      color:rgba(234,240,255,.62);
+      letter-spacing:.35px;
+      text-transform:uppercase;
+    }
 
-    /* Partner slider */
-    .partnerTrack{
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      margin-top:18px;
-    }
-    .partnerTrack::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.18), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .partnerRow{
-      display:flex;
-      gap:18px;
-      padding:16px 10px;
-      align-items:center;
-      animation: slidePartners 26s linear infinite;
-      width:max-content;
-      position:relative;
-      z-index:1;
-    }
-    .partnerPill{
-      min-width: 160px;
-      padding:12px 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.26);
-      text-align:center;
-      font-weight:1200;
-      color:rgba(234,240,255,.82);
-      letter-spacing:.25px;
-      white-space:nowrap;
-    }
-    @keyframes slidePartners{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-50%); }
-    }
+    /* ✅ Steps */
+    .stepsGrid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:16px;
+    }
+    .stepCard{
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.28);
+      padding:18px 16px;
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    .stepCard::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.14), transparent 62%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .stepCard > *{position:relative; z-index:1;}
+    .stepTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .stepIcon{
+      width:46px;height:46px;border-radius:16px;
+      display:grid;place-items:center;
+      background: rgba(59,130,246,.10);
+      border:1px solid rgba(96,165,250,.24);
+      box-shadow: 0 12px 38px rgba(0,0,0,.35);
+    }
+    .stepIcon svg{width:22px;height:22px}
+    .stepNum{
+      font-weight:1200;
+      color:rgba(234,240,255,.55);
+      letter-spacing:.4px;
+      font-size:12px;
+    }
+    .stepCard h4{
+      margin:0;
+      font-size:16px;
+      font-weight:1200;
+      letter-spacing:-.2px;
+    }
+    .stepCard p{
+      margin:8px 0 0;
+      color:rgba(234,240,255,.70);
+      font-size:14px;
+      line-height:1.65;
+    }
 
-    /* Markets row */
-    .marketRowWrap{
-      max-width:1200px;
-      margin:0 auto;
-    }
-    .marketScroller{
-      display:flex;
-      gap:14px;
-      overflow:hidden;
-      padding: 6px 2px 10px;
-      position:relative;
-    }
+    /* ✅ Profit Calculator */
+    .calcGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+      align-items:stretch;
+      margin-top:18px;
+    }
+    .calcBox{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      box-shadow: var(--shadow);
+      padding:18px 16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .calcBox::before{
+      content:"";
+      position:absolute;
+      inset:-80px;
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
+      filter: blur(20px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .calcBox > *{position:relative; z-index:1;}
+    .calcTitle{
+      font-size:15px;
+      font-weight:1200;
+      color:rgba(234,240,255,.90);
+      margin:0 0 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .calcTitle span{
+      font-size:12px;
+      font-weight:1100;
+      color:rgba(234,240,255,.65);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.20);
+    }
 
-    .marketAuto{
-      display:flex;
-      gap:14px;
-      width:max-content;
-      animation: autoMarket 90s linear infinite;
-    }
-    .marketScroller:hover .marketAuto{
-      animation-play-state: paused; /* pause on hover */
-    }
+    .calcField{margin-top:12px;}
+    .calcLabel{
+      font-size:13px;
+      font-weight:1100;
+      color:rgba(234,240,255,.70);
+      margin-bottom:8px;
+    }
+    .calcInput, .calcSelect{
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.30);
+      color: var(--text);
+      font-size:15px;
+      font-weight:900;
+      outline:none;
+      transition:.18s ease;
+    }
+    .calcInput:focus, .calcSelect:focus{
+      border-color: rgba(96,165,250,.60);
+      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
+    }
 
-    @keyframes autoMarket{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-50%); }
-    }
+    .calcResult{
+      margin-top:14px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.26);
+      padding:14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .resCard{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      padding:12px 12px;
+    }
+    .resCard small{
+      display:block;
+      color:rgba(234,240,255,.62);
+      font-weight:1100;
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .resCard strong{
+      font-size:18px;
+      font-weight:1200;
+      letter-spacing:-.3px;
+    }
 
-    .coinCard{
-      min-width: 360px;
-      max-width: 360px;
+    /* ✅ Plans */
+    .planGrid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:16px;
+      margin-top:18px;
+    }
+    .planCard{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      box-shadow: var(--shadow2);
+      padding:18px 16px;
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height: 320px;
+    }
+    .planCard::before{
+      content:"";
+      position:absolute;
+      inset:-90px;
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
+      filter: blur(22px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .planCard > *{position:relative; z-index:1;}
+    .planHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .planName{
+      font-weight:1300;
+      font-size:18px;
+      letter-spacing:-.3px;
+    }
+    .planTag{
+      font-size:12px;
+      font-weight:1200;
+      color:rgba(234,240,255,.70);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.20);
+    }
+    .planPrice{
+      font-size:28px;
+      font-weight:1400;
+      letter-spacing:-.6px;
+      margin-top:4px;
+    }
+    .planPrice small{
+      font-size:12.5px;
+      font-weight:1100;
+      color:rgba(234,240,255,.62);
+    }
+    .planList{
+      margin:0;
+      padding:0;
+      list-style:none;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      color:rgba(234,240,255,.74);
+      font-size:13.5px;
+      font-weight:900;
+      line-height:1.45;
+    }
+    .planList li{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+    }
+    .planList svg{width:18px;height:18px; margin-top:1px; opacity:.95;}
+    .planBtn{
+      margin-top:auto;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .planBtn a{
+      width:100%;
+      text-align:center;
+      justify-content:center;
+    }
+    .planFeatured{
+      border-color: rgba(96,165,250,.34);
+      background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(255,255,255,.04));
+      transform: translateY(-4px);
+    }
+    .planGlow{
+      position:absolute;
+      inset:-60px;
+      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.28), transparent 62%);
+      filter: blur(22px);
+      opacity:0.95;
+      pointer-events:none;
+    }
 
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.32);
-      box-shadow: 0 18px 70px rgba(0,0,0,.38);
-      position:relative;
-      overflow:hidden;
-      padding:16px 14px;
-    }
-    .coinCard::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.18), transparent 64%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .coinCardInner{position:relative; z-index:1;}
-    .coinTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .coinLeft{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width: 0;
-    }
-    .coinLogo{
-      width:44px;height:44px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-      box-shadow: 0 14px 46px rgba(0,0,0,.35);
-      flex:0 0 auto;
-    }
-    .coinLogo img{
-      width:26px;height:26px;
-      object-fit:contain;
-      filter: drop-shadow(0 10px 25px rgba(0,0,0,.55));
-    }
-    .coinMeta{
-      min-width: 0;
-      display:flex;
-      flex-direction:column;
-      line-height:1.1;
-    }
-    .coinName{
-      font-size:14px;
-      font-weight:1200;
-      letter-spacing:-.2px;
-      color:rgba(234,240,255,.92);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 200px;
-    }
-    .coinSym{
-      margin-top:4px;
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    .coinRight{text-align:right;}
-    .coinPrice{
-      font-size:20px;
-      font-weight:1300;
-      letter-spacing:-.4px;
-      color:#eaf0ff;
-      white-space:nowrap;
-    }
-    .coinChange{
-      margin-top:6px;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      font-size:12px;
-      font-weight:1200;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      white-space:nowrap;
-    }
-    .chgUp{ color: rgba(34,197,94,.96); border-color: rgba(34,197,94,.20); background: rgba(34,197,94,.08);}
-    .chgDown{ color: rgba(248,113,113,.96); border-color: rgba(248,113,113,.22); background: rgba(248,113,113,.08);}
+    /* ✅ Referral section */
+    .refGrid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+      margin-top:18px;
+    }
+    .refCard{
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.30);
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      padding:16px 14px;
+      position:relative;
+      overflow:hidden;
+      text-align:center;
+    }
+    .refCard::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 30% 20%, rgba(59,130,246,.18), transparent 62%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .refCard > *{position:relative; z-index:1;}
+    .refPct{
+      font-size:32px;
+      font-weight:1400;
+      letter-spacing:-.7px;
+    }
+    .refLvl{
+      margin-top:8px;
+      font-size:12px;
+      font-weight:1200;
+      color:rgba(234,240,255,.62);
+      letter-spacing:.35px;
+      text-transform:uppercase;
+    }
+    .refNote{
+      margin-top:10px;
+      color:rgba(234,240,255,.72);
+      font-size:13px;
+      line-height:1.55;
+      font-weight:900;
+    }
 
-    .coinBottom{
-      margin-top:12px;
-      border-top:1px solid rgba(255,255,255,.10);
-      padding-top:12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      color:rgba(234,240,255,.65);
-      font-size:12.5px;
-      font-weight:900;
-    }
-    .spark{
-      width:96px;
-      height:30px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.22);
-      overflow:hidden;
-      position:relative;
-    }
-    .spark canvas{ width:100%; height:100%; display:block; }
+    /* ✅ Partner slider */
+    .partnerTrack{
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      overflow:hidden;
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      position:relative;
+      margin-top:18px;
+    }
+    .partnerTrack::before{
+      content:"";
+      position:absolute;
+      inset:-60px;
+      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.18), transparent 62%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .partnerRow{
+      display:flex;
+      gap:18px;
+      padding:16px 10px;
+      align-items:center;
+      animation: slidePartners 26s linear infinite;
+      width:max-content;
+      position:relative;
+      z-index:1;
+    }
+    .partnerPill{
+      min-width: 160px;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.26);
+      text-align:center;
+      font-weight:1200;
+      color:rgba(234,240,255,.82);
+      letter-spacing:.25px;
+      white-space:nowrap;
+    }
+    @keyframes slidePartners{
+      from{ transform: translateX(0); }
+      to{ transform: translateX(-50%); }
+    }
 
-    /* Testimonials */
-    .testGrid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:16px;
-      margin-top:18px;
-    }
-    .testCard{
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .testCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .testCard > *{position:relative; z-index:1;}
-    .stars{
-      display:flex;
-      gap:4px;
-      margin-bottom:10px;
-    }
-    .stars svg{width:16px;height:16px; opacity:.95;}
-    .testText{
-      color:rgba(234,240,255,.74);
-      font-size:14px;
-      line-height:1.65;
-      font-weight:900;
-    }
-    .testUser{
-      margin-top:14px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .avatar{
-      width:42px;height:42px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      display:grid;
-      place-items:center;
-      font-weight:1200;
-      color:#eaf0ff;
-    }
-    .userMeta{
-      line-height:1.1;
-    }
-    .userMeta strong{
-      display:block;
-      font-weight:1200;
-      font-size:13.5px;
-    }
-    .userMeta span{
-      display:block;
-      font-weight:900;
-      font-size:12px;
-      color:rgba(234,240,255,.62);
-      margin-top:4px;
-    }
+    /* ✅ Markets row */
+    .marketRowWrap{
+      max-width:1200px;
+      margin:0 auto;
+    }
+    .marketScroller{
+      display:flex;
+      gap:14px;
+      overflow:hidden;
+      padding: 6px 2px 10px;
+      position:relative;
+    }
 
-    /* CTA band */
-    .ctaBand{padding:0;}
-    .ctaBox{
-      border-radius:28px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(2,6,23,.22));
-      box-shadow: 0 30px 130px rgba(0,0,0,.65);
-      padding:28px 20px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      overflow:hidden;
-      position:relative;
-    }
-    .ctaBox::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 20% 20%, rgba(96,165,250,.28), transparent 65%);
-      filter: blur(26px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .ctaBox .left{position:relative; z-index:1; max-width:760px;}
-    .ctaBox h4{
-      margin:0;
-      font-size:22px;
-      font-weight:1300;
-      letter-spacing:-.35px;
-      color:#eaf0ff;
-    }
-    .ctaBox p{
-      margin:8px 0 0;
-      color:rgba(234,240,255,.70);
-      line-height:1.65;
-      font-size:14px;
-    }
-    .ctaBox .right{
-      position:relative;
-      z-index:1;
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
+    .marketAuto{
+      display:flex;
+      gap:14px;
+      width:max-content;
+      animation: autoMarket 90s linear infinite;
+    }
+    .marketScroller:hover .marketAuto{
+      animation-play-state: paused; /* pause on hover */
+    }
 
-    /* Footer */
-    footer{
-      padding:26px 0 34px;
-      border-top:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.26);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      position:relative;
-      z-index:2;
-    }
-    .footInner{
-      text-align:center;
-      font-size:12px;
-      color:rgba(234,240,255,.66);
-      line-height:1.6;
-    }
-    .footer-links{
-      margin-top:12px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:center;
-    }
-    .footer-links a{
-      color:#9cc7ff;
-      font-weight:1100;
-      text-decoration:none;
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .footer-links a:hover{background: rgba(255,255,255,.06);}
-    .risk{
-      margin-top:12px;
-      max-width:920px;
-      margin-left:auto;
-      margin-right:auto;
-      color: rgba(234,240,255,.55);
-      font-size:11.5px;
-    }
+    @keyframes autoMarket{
+      from{ transform: translateX(0); }
+      to{ transform: translateX(-50%); }
+    }
 
-    /* Responsive */
-    @media(max-width: 1100px){
-      .heroGrid{grid-template-columns: 1fr; gap:18px;}
-      .hero h2{font-size:44px;}
-      .chartCard{max-width:600px;}
-      .statsGrid{grid-template-columns: 1fr 1fr;}
-      .stepsGrid{grid-template-columns: 1fr 1fr;}
-      .calcGrid{grid-template-columns: 1fr;}
-      .planGrid{grid-template-columns: 1fr 1fr;}
-      .refGrid{grid-template-columns: 1fr 1fr;}
-      .testGrid{grid-template-columns: 1fr;}
-    }
-    @media(max-width: 560px){
-      nav{display:none;}
-      .hero{padding:56px 0 18px;}
-      .hero h2{font-size:36px;}
-      .brand{min-width:auto;}
-      .navCTA{min-width:auto;}
-      .coinCard{min-width: 310px; max-width:310px;}
-      .planGrid{grid-template-columns: 1fr;}
-      .statsGrid{grid-template-columns: 1fr;}
-      .stepsGrid{grid-template-columns: 1fr;}
-    }
+    .coinCard{
+      min-width: 360px;
+      max-width: 360px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.32);
+      box-shadow: 0 18px 70px rgba(0,0,0,.38);
+      position:relative;
+      overflow:hidden;
+      padding:16px 14px;
+    }
+    .coinCard::before{
+      content:"";
+      position:absolute;
+      inset:-60px;
+      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.18), transparent 64%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .coinCardInner{position:relative; z-index:1;}
+    .coinTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .coinLeft{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .coinLogo{
+      width:44px;height:44px;border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      box-shadow: 0 14px 46px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .coinLogo img{
+      width:26px;height:26px;
+      object-fit:contain;
+      filter: drop-shadow(0 10px 25px rgba(0,0,0,.55));
+    }
+    .coinMeta{
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+    .coinName{
+      font-size:14px;
+      font-weight:1200;
+      letter-spacing:-.2px;
+      color:rgba(234,240,255,.92);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 200px;
+    }
+    .coinSym{
+      margin-top:4px;
+      font-size:12px;
+      font-weight:1100;
+      color:rgba(234,240,255,.62);
+      letter-spacing:.35px;
+      text-transform:uppercase;
+    }
+    .coinRight{text-align:right;}
+    .coinPrice{
+      font-size:20px;
+      font-weight:1300;
+      letter-spacing:-.4px;
+      color:#eaf0ff;
+      white-space:nowrap;
+    }
+    .coinChange{
+      margin-top:6px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:12px;
+      font-weight:1200;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      white-space:nowrap;
+    }
+    .chgUp{ color: rgba(34,197,94,.96); border-color: rgba(34,197,94,.20); background: rgba(34,197,94,.08);}
+    .chgDown{ color: rgba(248,113,113,.96); border-color: rgba(248,113,113,.22); background: rgba(248,113,113,.08);}
 
-    /* Hide Google default translate banner (keeps UI clean) */
-    .goog-te-banner-frame.skiptranslate { display: none !important; }
-    body { top: 0px !important; }
-    #goog-gt-tt, .goog-te-balloon-frame { display:none !important; }
-  </style>
+    .coinBottom{
+      margin-top:12px;
+      border-top:1px solid rgba(255,255,255,.10);
+      padding-top:12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:rgba(234,240,255,.65);
+      font-size:12.5px;
+      font-weight:900;
+    }
+    .spark{
+      width:96px;
+      height:30px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.22);
+      overflow:hidden;
+      position:relative;
+    }
+    .spark canvas{ width:100%; height:100%; display:block; }
+
+    /* ✅ Testimonials */
+    .testGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:16px;
+      margin-top:18px;
+    }
+    .testCard{
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 18px 70px rgba(0,0,0,.35);
+      padding:18px 16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .testCard::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
+      filter: blur(18px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .testCard > *{position:relative; z-index:1;}
+    .stars{
+      display:flex;
+      gap:4px;
+      margin-bottom:10px;
+    }
+    .stars svg{width:16px;height:16px; opacity:.95;}
+    .testText{
+      color:rgba(234,240,255,.74);
+      font-size:14px;
+      line-height:1.65;
+      font-weight:900;
+    }
+    .testUser{
+      margin-top:14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .avatar{
+      width:42px;height:42px;border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.30);
+      display:grid;
+      place-items:center;
+      font-weight:1200;
+      color:#eaf0ff;
+    }
+    .userMeta{
+      line-height:1.1;
+    }
+    .userMeta strong{
+      display:block;
+      font-weight:1200;
+      font-size:13.5px;
+    }
+    .userMeta span{
+      display:block;
+      font-weight:900;
+      font-size:12px;
+      color:rgba(234,240,255,.62);
+      margin-top:4px;
+    }
+
+    /* ✅ CTA band */
+    .ctaBand{padding:0;}
+    .ctaBox{
+      border-radius:28px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(2,6,23,.22));
+      box-shadow: 0 30px 130px rgba(0,0,0,.65);
+      padding:28px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .ctaBox::before{
+      content:"";
+      position:absolute;
+      inset:-70px;
+      background: radial-gradient(circle at 20% 20%, rgba(96,165,250,.28), transparent 65%);
+      filter: blur(26px);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .ctaBox .left{position:relative; z-index:1; max-width:760px;}
+    .ctaBox h4{
+      margin:0;
+      font-size:22px;
+      font-weight:1300;
+      letter-spacing:-.35px;
+      color:#eaf0ff;
+    }
+    .ctaBox p{
+      margin:8px 0 0;
+      color:rgba(234,240,255,.70);
+      line-height:1.65;
+      font-size:14px;
+    }
+    .ctaBox .right{
+      position:relative;
+      z-index:1;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    /* ✅ Footer */
+    footer{
+      padding:26px 0 34px;
+      border-top:1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.26);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position:relative;
+      z-index:2;
+    }
+    .footInner{
+      text-align:center;
+      font-size:12px;
+      color:rgba(234,240,255,.66);
+      line-height:1.6;
+    }
+    .footer-links{
+      margin-top:12px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+    }
+    .footer-links a{
+      color:#9cc7ff;
+      font-weight:1100;
+      text-decoration:none;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .footer-links a:hover{background: rgba(255,255,255,.06);}
+    .risk{
+      margin-top:12px;
+      max-width:920px;
+      margin-left:auto;
+      margin-right:auto;
+      color: rgba(234,240,255,.55);
+      font-size:11.5px;
+    }
+
+    /* ✅ Responsive */
+    @media(max-width: 1100px){
+      .heroGrid{grid-template-columns: 1fr; gap:18px;}
+      .hero h2{font-size:44px;}
+      .chartCard{max-width:600px;}
+      .statsGrid{grid-template-columns: 1fr 1fr;}
+      .stepsGrid{grid-template-columns: 1fr 1fr;}
+      .calcGrid{grid-template-columns: 1fr;}
+      .planGrid{grid-template-columns: 1fr 1fr;}
+      .refGrid{grid-template-columns: 1fr 1fr;}
+      .testGrid{grid-template-columns: 1fr;}
+    }
+    @media(max-width: 560px){
+      nav{display:none;}
+      .hero{padding:56px 0 18px;}
+      .hero h2{font-size:36px;}
+      .brand{min-width:auto;}
+      .navCTA{min-width:auto;}
+      .coinCard{min-width: 310px; max-width:310px;}
+      .planGrid{grid-template-columns: 1fr;}
+      .statsGrid{grid-template-columns: 1fr;}
+      .stepsGrid{grid-template-columns: 1fr;}
+      .brandLogoImg{height:28px; max-width:200px;}
+    }
+
+    /* ✅ Hide Google default translate banner (keeps UI clean) */
+    .goog-te-banner-frame.skiptranslate { display: none !important; }
+    body { top: 0px !important; }
+    #goog-gt-tt, .goog-te-balloon-frame { display:none !important; }
+  </style>
 </head>
 
 <body>
 
 <canvas id="bgCanvas"></canvas>
 
-<!-- Top bar -->
+<!-- ✅ Top bar -->
 <div class="topbar">
-  <div class="container">
-    <div class="topbarInner">
+  <div class="container">
+    <div class="topbarInner">
+      <span class="pill">Support: <b style="color:#eaf0ff;">support@veloci-global-markets.online</b></span>
 
-      <!-- MENU BUTTON (top left) -->
-      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-        <div class="menuWrap">
-          <button id="menuBtn" class="menuBtn" type="button" aria-haspopup="true" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 7h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              <path d="M4 12h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-              <path d="M4 17h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Menu
-          </button>
+      <!-- TRANSLATOR -->
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <select id="langSelect" class="langSelect" aria-label="Translate this page">
+          <option value="">Translate</option>
+          <option value="en">English</option>
+          <option value="fr">French</option>
+          <option value="es">Spanish</option>
+          <option value="de">German</option>
+          <option value="it">Italian</option>
+          <option value="pt">Portuguese</option>
+          <option value="nl">Dutch</option>
+          <option value="tr">Turkish</option>
+          <option value="ar">Arabic</option>
+          <option value="hi">Hindi</option>
+          <option value="zh-CN">Chinese (Simplified)</option>
+        </select>
 
-          <div id="menuDropdown" class="menuDropdown" role="menu" aria-label="Top menu">
-            <a href="about.html" role="menuitem">About <small>Company</small></a>
-            <a href="terms.html" role="menuitem">Terms <small>Policy</small></a>
-            <a href="faq.html" role="menuitem">FAQ <small>Help</small></a>
-            <a href="contact.html" role="menuitem">Contact <small>Support</small></a>
-          </div>
-        </div>
-
-        <span class="pill">Support: <b style="color:#eaf0ff;">support@veloci-global-markets.online</b></span>
-      </div>
-
-      <!-- TRANSLATOR -->
-      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-        <select id="langSelect" class="langSelect" aria-label="Translate this page">
-          <option value="">Translate</option>
-          <option value="en">English</option>
-          <option value="fr">French</option>
-          <option value="es">Spanish</option>
-          <option value="de">German</option>
-          <option value="it">Italian</option>
-          <option value="pt">Portuguese</option>
-          <option value="nl">Dutch</option>
-          <option value="tr">Turkish</option>
-          <option value="ar">Arabic</option>
-          <option value="hi">Hindi</option>
-          <option value="zh-CN">Chinese (Simplified)</option>
-        </select>
-
-        <!-- hidden google translate widget -->
-        <div id="google_translate_element" style="display:none;"></div>
-      </div>
-
-    </div>
-  </div>
+        <div id="google_translate_element" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Navbar -->
+<!-- ✅ Navbar -->
 <header>
-  <div class="container">
-    <div class="nav">
-      <a class="brand" href="index.html" aria-label="Veloci Global Markets">
-        <div class="logo" aria-hidden="true">
-          <img src="assets/vgm-logo.png" alt="" onerror="this.style.display='none';" />
-        </div>
-        <div class="brandText">
-          <strong>Veloci Global Markets</strong>
-          <span>Client Portal</span>
-        </div>
-      </a>
+  <div class="container">
+    <div class="nav">
+      <a class="brand" href="index.html" aria-label="Veloci Global Markets">
+        <!-- ✅ Bigger readable logo in sticky bar -->
+        <img class="brandLogoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets" onerror="this.style.display='none';" />
+      </a>
 
-      <nav aria-label="Primary navigation">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="faq.html">FAQ</a>
-        <a href="contact.html">Contact</a>
-      </nav>
+      <nav aria-label="Primary navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="faq.html">FAQ</a>
+        <a href="contact.html">Contact</a>
+      </nav>
 
-      <div class="navCTA">
-        <a class="btn btnOutline" href="login.html">Client Login</a>
-        <a class="btn btnPrimary" href="signup.html">Get Started</a>
-      </div>
-    </div>
-  </div>
+      <!-- ✅ MENU MOVED TO TOP RIGHT BESIDE GET STARTED -->
+      <div class="navCTA">
+        <a class="btn btnOutline" href="login.html">Client Login</a>
+
+        <div class="menuWrap">
+          <button id="menuBtn" class="menuBtn" type="button" aria-haspopup="true" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <path d="M4 12h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <path d="M4 17h16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Menu
+          </button>
+
+          <div id="menuDropdown" class="menuDropdown" role="menu" aria-label="Top menu">
+            <a href="about.html" role="menuitem">About <small>Company</small></a>
+            <a href="terms.html" role="menuitem">Terms <small>Policy</small></a>
+            <a href="faq.html" role="menuitem">FAQ <small>Help</small></a>
+            <a href="contact.html" role="menuitem">Contact <small>Support</small></a>
+          </div>
+        </div>
+
+        <a class="btn btnPrimary" href="signup.html">Get Started</a>
+      </div>
+    </div>
+  </div>
 </header>
 
-<!-- Live ticker tape -->
+<!-- ✅ Live ticker tape -->
 <div class="tickerWrap">
-  <div class="container">
-    <div class="tickerInner">
-      <div class="tickerGlass">
-        <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-          {
-            "symbols": [
-              {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-              {"proName": "NASDAQ:NDX", "title": "NASDAQ 100"},
-              {"proName": "FX:EURUSD", "title": "EUR/USD"},
-              {"proName": "FX:GBPUSD", "title": "GBP/USD"},
-              {"proName": "CRYPTO:BTCUSD", "title": "Bitcoin"},
-              {"proName": "CRYPTO:ETHUSD", "title": "Ethereum"},
-              {"proName": "CRYPTO:SOLUSD", "title": "Solana"},
-              {"proName": "OANDA:XAUUSD", "title": "Gold"}
-            ],
-            "showSymbolLogo": true,
-            "isTransparent": true,
-            "displayMode": "adaptive",
-            "colorTheme": "dark",
-            "locale": "en"
-          }
-          </script>
-        </div>
-        <!-- TradingView Widget END -->
-      </div>
-    </div>
-  </div>
+  <div class="container">
+    <div class="tickerInner">
+      <div class="tickerGlass">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+          {
+            "symbols": [
+              {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+              {"proName": "NASDAQ:NDX", "title": "NASDAQ 100"},
+              {"proName": "FX:EURUSD", "title": "EUR/USD"},
+              {"proName": "FX:GBPUSD", "title": "GBP/USD"},
+              {"proName": "CRYPTO:BTCUSD", "title": "Bitcoin"},
+              {"proName": "CRYPTO:ETHUSD", "title": "Ethereum"},
+              {"proName": "CRYPTO:SOLUSD", "title": "Solana"},
+              {"proName": "OANDA:XAUUSD", "title": "Gold"}
+            ],
+            "showSymbolLogo": true,
+            "isTransparent": true,
+            "displayMode": "adaptive",
+            "colorTheme": "dark",
+            "locale": "en"
+          }
+          </script>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="container">
-    <div class="heroGrid">
+<!-- ✅ Hero -->
+<section class="hero reveal touchHighlight">
+  <div class="container">
+    <div class="heroGrid">
 
-      <div>
-        <div class="kicker"><b>Secure</b> Advanced Client Portal & Market Tools</div>
-        <h2>Trade Smarter.<br/>Track Faster.<br/>Grow Confidently.</h2>
-        <p>
-          Veloci Global Markets delivers a premium client experience built for speed and security —
-          with modern onboarding, real-time market visibility, and an elite portal designed for control.
-        </p>
+      <div>
+        <div class="kicker"><b>Secure</b> Advanced Client Portal & Market Tools</div>
+        <h2>Trade Smarter.<br/>Track Faster.<br/>Grow Confidently.</h2>
+        <p>
+          Veloci Global Markets delivers a premium client experience built for speed and security —
+          with modern onboarding, real-time market visibility, and an elite portal designed for control.
+        </p>
 
-        <div class="heroBtns">
-          <a class="btn btnPrimary" href="signup.html">Create Account</a>
-          <a class="btn btnOutline" href="login.html">Login</a>
-        </div>
+        <div class="heroBtns">
+          <a class="btn btnPrimary" href="signup.html">Create Account</a>
+          <a class="btn btnOutline" href="login.html">Login</a>
+        </div>
 
-        <div class="badges">
-          <span class="badge">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4Z" stroke="white" opacity=".9" stroke-width="1.7"/>
-              <path d="M9 12l2 2 4-5" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Bank-grade Security
-          </span>
-          <span class="badge">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 19V5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M4 19h16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M7 15l3-3 3 2 4-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Live Market Tracking
-          </span>
-          <span class="badge">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M12 2v20" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M6 8h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-              <path d="M6 16h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-            Elite Client Tools
-          </span>
-        </div>
-      </div>
+        <div class="badges">
+          <span class="badge">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l7 4v6c0 5-3 9-7 10C8 21 5 17 5 12V6l7-4Z" stroke="white" opacity=".9" stroke-width="1.7"/>
+              <path d="M9 12l2 2 4-5" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Bank-grade Security
+          </span>
+          <span class="badge">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 19h16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M7 15l3-3 3 2 4-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Live Market Tracking
+          </span>
+          <span class="badge">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2v20" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M6 8h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M6 16h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Elite Client Tools
+          </span>
+        </div>
+      </div>
 
-      <!-- 3D Realistic Chart -->
-      <div class="chartCard" id="tiltCard" aria-label="3D Trading Chart">
-        <div class="chartTop">
-          <div class="title">
-            <span class="livePulse" aria-hidden="true"></span>
- &nbs
+      <div class="chartCard" id="tiltCard" aria-label="3D Trading Chart">
+        <div class="chartTop">
+          <div class="title">
+            <span class="livePulse" aria-hidden="true"></span>
+            3D Trading Chart
+          </div>
+          <div class="right">
+            <span class="miniTag">BTC • ETH • FX</span>
+            <span class="miniTag">Realtime Motion</span>
+          </div>
+        </div>
+
+        <div class="chartArea">
+          <div class="chartFrame">
+            <div class="glowLine" aria-hidden="true"></div>
+            <canvas id="chartCanvas"></canvas>
+          </div>
+
+          <div class="chartFooter">
+            <div class="chipRow">
+              <span class="chip">Volatility AI</span>
+              <span class="chip">Trend Detection</span>
+              <span class="chip">Liquidity Zones</span>
+            </div>
+            <div style="opacity:.9;">Secure Visual Analytics</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Platform Activity</h3>
+      <p>Our infrastructure is designed for high-performance access and global clients.</p>
+    </div>
+
+    <div class="statsGrid">
+      <div class="statBox">
+        <div class="statNum" data-count="250000">0</div>
+        <div class="statLbl">Clients Served</div>
+      </div>
+      <div class="statBox">
+        <div class="statNum" data-count="48">0</div>
+        <div class="statLbl">Countries</div>
+      </div>
+      <div class="statBox">
+        <div class="statNum" data-count="12000000">0</div>
+        <div class="statLbl">Processed Volume ($)</div>
+      </div>
+      <div class="statBox">
+        <div class="statNum" data-count="99.9">0</div>
+        <div class="statLbl">Uptime (%)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Start in Minutes</h3>
+      <p>Get onboarded quickly with a premium and secure flow.</p>
+    </div>
+
+    <div class="stepsGrid">
+      <div class="stepCard">
+        <div class="stepTop">
+          <div class="stepIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 7h16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 12h10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 17h13" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="stepNum">STEP 01</div>
+        </div>
+        <h4>Create Account</h4>
+        <p>Sign up and verify your email to activate your secure client access.</p>
+      </div>
+
+      <div class="stepCard">
+        <div class="stepTop">
+          <div class="stepIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l8 4v6c0 5-3 9-8 10C7 21 4 17 4 12V6l8-4Z" stroke="white" stroke-width="1.8"/>
+              <path d="M9 12l2 2 4-5" stroke="white" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="stepNum">STEP 02</div>
+        </div>
+        <h4>Secure Session</h4>
+        <p>Set up your secure PIN session for protected portal entry.</p>
+      </div>
+
+      <div class="stepCard">
+        <div class="stepTop">
+          <div class="stepIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 19h16" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M7 15l3-3 3 2 4-6" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="stepNum">STEP 03</div>
+        </div>
+        <h4>Track Markets</h4>
+        <p>Monitor live instruments with premium visualization and tickers.</p>
+      </div>
+
+      <div class="stepCard">
+        <div class="stepTop">
+          <div class="stepIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M7 7h10M7 12h10M7 17h10" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 4h16v16H4V4Z" stroke="white" opacity=".9" stroke-width="1.7"/>
+            </svg>
+          </div>
+          <div class="stepNum">STEP 04</div>
+        </div>
+        <h4>Manage Account</h4>
+        <p>Use your dashboard to access tools, profile settings and support.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ✅ Profit Calculator -->
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Profit Calculator</h3>
+      <p>Fixed plan projections (7 days base). 14 days = x2, 30 days = x(30/7), 60 days = x(60/7).</p>
+    </div>
+
+    <div class="calcGrid">
+      <div class="calcBox">
+        <div class="calcTitle">
+          Investment Settings
+          <span>Simulation</span>
+        </div>
+
+        <div class="calcField">
+          <div class="calcLabel">Amount (USD)</div>
+          <input id="calcAmount" class="calcInput" type="number" min="10" value="100" />
+        </div>
+
+        <div class="calcField">
+          <div class="calcLabel">Plan</div>
+          <select id="calcPlan" class="calcSelect">
+            <option value="silver">Silver</option>
+            <option value="gold" selected>Gold</option>
+            <option value="diamond">Diamond</option>
+            <option value="platinum">Platinum</option>
+          </select>
+        </div>
+
+        <div class="calcField">
+          <div class="calcLabel">Duration (Days)</div>
+          <select id="calcDays" class="calcSelect">
+            <option value="7" selected>7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+          </select>
+        </div>
+
+        <div class="calcResult">
+          <div class="resCard">
+            <small>Projected Return</small>
+            <strong id="calcTotal">$0</strong>
+          </div>
+          <div class="resCard">
+            <small>Projected Profit</small>
+            <strong id="calcProfit">$0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="calcBox">
+        <div class="calcTitle">
+          Projection Overview
+          <span>Insights</span>
+        </div>
+
+        <div style="color:rgba(234,240,255,.72); font-weight:950; line-height:1.75; font-size:14px;">
+          This calculator is built on your fixed plan projection rules:
+          <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px;">
+            <span class="pill">Silver: <b style="color:#eaf0ff;">$100 → $10,000 (7d)</b></span>
+            <span class="pill">Gold: <b style="color:#eaf0ff;">$100 → $15,000 (7d)</b></span>
+            <span class="pill">Diamond: <b style="color:#eaf0ff;">$100 → $18,000 (7d)</b></span>
+            <span class="pill">Platinum: <b style="color:#eaf0ff;">$100 → $20,000 (7d)</b></span>
+          </div>
+
+          <div style="margin-top:14px; color:rgba(234,240,255,.60); font-weight:900; font-size:12.5px;">
+            Risk Warning: Trading and investments involve risk. Past performance does not guarantee future results.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Plans</h3>
+      <p>Choose the plan tier that best fits your goals. Designed for premium clients.</p>
+    </div>
+
+    <div class="planGrid">
+
+      <div class="planCard">
+        <div class="planHead">
+          <div class="planName">Silver</div>
+          <div class="planTag">Starter</div>
+        </div>
+        <div class="planPrice">$500 <small>minimum</small></div>
+        <ul class="planList">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Premium client onboarding
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Secure portal session
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Live market visibility
+          </li>
+        </ul>
+        <div class="planBtn">
+          <a class="btn btnPrimary" href="signup.html">Get Started</a>
+        </div>
+      </div>
+
+      <div class="planCard planFeatured">
+        <div class="planGlow" aria-hidden="true"></div>
+        <div class="planHead">
+          <div class="planName">Gold</div>
+          <div class="planTag">Popular</div>
+        </div>
+        <div class="planPrice">$2,000 <small>minimum</small></div>
+        <ul class="planList">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Enhanced analytics
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Priority support
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Advanced tools suite
+          </li>
+        </ul>
+        <div class="planBtn">
+          <a class="btn btnPrimary" href="signup.html">Choose Gold</a>
+        </div>
+      </div>
+
+      <div class="planCard">
+        <div class="planHead">
+          <div class="planName">Diamond</div>
+          <div class="planTag">Advanced</div>
+        </div>
+        <div class="planPrice">$5,000 <small>minimum</small></div>
+        <ul class="planList">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Premium insights suite
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Dedicated assistance
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Higher performance tracking
+          </li>
+        </ul>
+        <div class="planBtn">
+          <a class="btn btnPrimary" href="signup.html">Choose Diamond</a>
+        </div>
+      </div>
+
+      <div class="planCard">
+        <div class="planHead">
+          <div class="planName">Platinum</div>
+          <div class="planTag">Elite</div>
+        </div>
+        <div class="planPrice">$10,000 <small>minimum</small></div>
+        <ul class="planList">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Elite analytics suite
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            VIP client support
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Highest tier access tools
+          </li>
+        </ul>
+        <div class="planBtn">
+          <a class="btn btnPrimary" href="signup.html">Choose Platinum</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Referral Commissions</h3>
+      <p>Invite clients and earn commission levels in a structured system.</p>
+    </div>
+
+    <div class="refGrid">
+      <div class="refCard">
+        <div class="refPct">5%</div>
+        <div class="refLvl">Level 1</div>
+        <div class="refNote">Earn commission on direct referrals.</div>
+      </div>
+      <div class="refCard">
+        <div class="refPct">3%</div>
+        <div class="refLvl">Level 2</div>
+        <div class="refNote">Earn additional rewards from level 2 network.</div>
+      </div>
+      <div class="refCard">
+        <div class="refPct">2%</div>
+        <div class="refLvl">Level 3</div>
+        <div class="refNote">Grow your team and increase earning power.</div>
+      </div>
+      <div class="refCard">
+        <div class="refPct">1%</div>
+        <div class="refLvl">Level 4</div>
+        <div class="refNote">Final tier commission for extended referrals.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Trusted Partners</h3>
+      <p>We integrate modern tools and market providers to improve client experience.</p>
+    </div>
+
+    <div class="partnerTrack" aria-label="Partner slider">
+      <div class="partnerRow" id="partnerRow">
+        <div class="partnerPill">TradingView</div>
+        <div class="partnerPill">CoinGecko</div>
+        <div class="partnerPill">MetaTrader</div>
+        <div class="partnerPill">FX Liquidity</div>
+        <div class="partnerPill">Market Analytics</div>
+        <div class="partnerPill">Cloud Security</div>
+
+        <div class="partnerPill">TradingView</div>
+        <div class="partnerPill">CoinGecko</div>
+        <div class="partnerPill">MetaTrader</div>
+        <div class="partnerPill">FX Liquidity</div>
+        <div class="partnerPill">Market Analytics</div>
+        <div class="partnerPill">Cloud Security</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>Live Markets</h3>
+      <p>Realistic tracking with symbols, live prices, sparkline motion, and 24h percentage changes.</p>
+    </div>
+
+    <div class="marketRowWrap">
+      <div id="marketScroller" class="marketScroller" aria-label="Live markets row">
+        <div id="marketAuto" class="marketAuto"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reveal touchHighlight">
+  <div class="container">
+    <div class="sectionTitle">
+      <h3>What clients say</h3>
+      <p>Testimonials are displayed from a configurable data source (backend-ready).</p>
+    </div>
+
+    <div id="testimonials" class="testGrid"></div>
+  </div>
+</section>
+
+<section class="ctaBand reveal touchHighlight">
+  <div class="container">
+    <div class="ctaBox">
+      <div class="left">
+        <h4>Ready to access your secure client portal?</h4>
+        <p>Create an account and verify your email to unlock your client session and set up your secure PIN.</p>
+      </div>
+      <div class="right">
+        <a class="btn btnOutline" href="login.html">I already have an account</a>
+        <a class="btn btnPrimary" href="signup.html">Get Started</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="reveal touchHighlight">
+  <div class="container">
+    <div class="footInner">
+      © 2026 Veloci Global Markets. All rights reserved.
+
+      <div class="footer-links">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="risk.html">Risk Disclosure</a>
+        <a href="contact.html">Contact</a>
+      </div>
+
+      <div class="risk">
+        Risk Warning: Trading and investments involve risk. Past performance does not guarantee future results.
+        This website is provided for informational purposes and client account access only.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   ✅ MENU BUTTON DROPDOWN (now next to Get Started)
+========================================================= */
+(function initMenu(){
+  const btn = document.getElementById("menuBtn");
+  const dd  = document.getElementById("menuDropdown");
+  if(!btn || !dd) return;
+
+  function close(){
+    dd.style.display = "none";
+    btn.setAttribute("aria-expanded","false");
+  }
+  function open(){
+    dd.style.display = "block";
+    btn.setAttribute("aria-expanded","true");
+  }
+
+  btn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    const openNow = dd.style.display === "block";
+    if(openNow) close();
+    else open();
+  });
+
+  document.addEventListener("click", ()=> close());
+  dd.addEventListener("click", (e)=> e.stopPropagation());
+})();
+
+/* =========================================================
+   ✅ TRANSLATOR (Google Translate engine — user selects language)
+========================================================= */
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element');
+}
+
+function setGoogleTranslateLang(lang){
+  const combo = document.querySelector("select.goog-te-combo");
+  if(combo){
+    combo.value = lang;
+    combo.dispatchEvent(new Event("change"));
+    return true;
+  }
+  return false;
+}
+
+(function initTranslator(){
+  const select = document.getElementById("langSelect");
+  if(!select) return;
+
+  select.addEventListener("change", ()=>{
+    const lang = select.value;
+    if(!lang) return;
+
+    if(setGoogleTranslateLang(lang)) return;
+
+    let tries = 0;
+    const interval = setInterval(()=>{
+      tries++;
+      if(setGoogleTranslateLang(lang) || tries > 25){
+        clearInterval(interval);
+      }
+    }, 200);
+  });
+})();
+
+/* =========================================================
+   ✅ Scroll unfold + fade reveal
+========================================================= */
+(function initReveal(){
+  const items = document.querySelectorAll(".reveal");
+  if(!items.length) return;
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add("show");
+        io.unobserve(entry.target);
+      }
+    });
+  }, {threshold: 0.12});
+
+  items.forEach(el => io.observe(el));
+})();
+
+/* =========================================================
+   ✅ Touch highlight per section
+========================================================= */
+(function initTouchHighlight(){
+  const blocks = document.querySelectorAll(".touchHighlight");
+  if(!blocks.length) return;
+
+  function activate(el){
+    blocks.forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+    setTimeout(()=> el.classList.remove("active"), 700);
+  }
+
+  blocks.forEach(el=>{
+    el.addEventListener("touchstart", ()=> activate(el), {passive:true});
+    el.addEventListener("mousedown", ()=> activate(el));
+  });
+})();
+
+/* =========================================================
+   ✅ Twinkling Dots Background (astrofx-style)
+========================================================= */
+(function initTwinklingBackground(){
+  const canvas = document.getElementById("bgCanvas");
+  const ctx = canvas.getContext("2d");
+  let w=0,h=0, dpr=1;
+  const particles=[];
+  const PCOUNT = 130;
+
+  function resize(){
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w*dpr);
+    canvas.height = Math.floor(h*dpr);
+    canvas.style.width = w+"px";
+    canvas.style.height = h+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function spawn(){
+    particles.length = 0;
+    for(let i=0;i<PCOUNT;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: rand(0.8, 2.2),
+        a: rand(0.12, 0.85),
+        tw: rand(0.003, 0.012),
+        vx: rand(-0.08, 0.08),
+        vy: rand(-0.06, 0.06),
+        hue: (Math.random() < 0.55) ? 210 : 240
+      });
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+
+    const grd = ctx.createRadialGradient(w*0.2, h*0.2, 0, w*0.2, h*0.2, 650);
+    grd.addColorStop(0, "rgba(59,130,246,0.10)");
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0,0,w,h);
+
+    for(const p of particles){
+      p.x += p.vx;
+      p.y += p.vy;
+      if(p.x < -50) p.x = w+50;
+      if(p.x > w+50) p.x = -50;
+      if(p.y < -50) p.y = h+50;
+      if(p.y > h+50) p.y = -50;
+
+      p.a += p.tw * (Math.random() > 0.5 ? 1 : -1);
+      p.a = Math.max(0.06, Math.min(0.95, p.a));
+
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*12);
+      glow.addColorStop(0, `hsla(${p.hue}, 92%, 65%, ${p.a})`);
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r*12, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  spawn();
+  draw();
+
+  window.addEventListener("resize", () => {
+    resize();
+    spawn();
+  });
+})();
+
+/* =========================================================
+   ✅ 3D Realistic Trading Chart Animation
+========================================================= */
+(function initChart(){
+  const canvas = document.getElementById("chartCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let w=0,h=0,dpr=1;
+  let t=0;
+  let series = [];
+
+  function resize(){
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    w = Math.floor(rect.width);
+    h = Math.floor(rect.height);
+    canvas.width = Math.floor(w*dpr);
+    canvas.height = Math.floor(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function initSeries(){
+    series = [];
+    let base = h*0.58;
+    for(let i=0;i<90;i++){
+      base += rand(-10,10);
+      base = Math.max(h*0.25, Math.min(h*0.78, base));
+      series.push(base);
+    }
+  }
+
+  function drawGrid(){
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+
+    for(let i=1;i<=5;i++){
+      const y = (h/6)*i;
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    for(let i=1;i<=6;i++){
+      const x = (w/7)*i;
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawGlowLine(points){
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(96,165,250,0.35)";
+    ctx.shadowColor = "rgba(96,165,250,0.55)";
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    for(let i=0;i<points.length;i++){
+      const p=points[i];
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(234,240,255,0.85)";
+    ctx.beginPath();
+    for(let i=0;i<points.length;i++){
+      const p=points[i];
+      if(i===0) ctx.moveTo(p.x,p.y);
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawArea(points){
+    ctx.save();
+    const grd = ctx.createLinearGradient(0, 0, 0, h);
+    grd.addColorStop(0, "rgba(59,130,246,0.22)");
+    grd.addColorStop(1, "rgba(59,130,246,0)");
+    ctx.fillStyle = grd;
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, h);
+    for(const p of points) ctx.lineTo(p.x, p.y);
+    ctx.lineTo(points[points.length-1].x, h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function draw(){
+    t += 0.015;
+    ctx.clearRect(0,0,w,h);
+
+    const bg = ctx.createLinearGradient(0,0,0,h);
+    bg.addColorStop(0, "rgba(2,6,23,0.00)");
+    bg.addColorStop(1, "rgba(2,6,23,0.35)");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,w,h);
+
+    drawGrid();
+
+    const last = series[series.length-1];
+    let next = last + Math.sin(t*2.3)*rand(-3.5,3.5) + rand(-6,6);
+    next = Math.max(h*0.22, Math.min(h*0.82, next));
+    series.push(next);
+    series.shift();
+
+    const points=[];
+    for(let i=0;i<series.length;i++){
+      const x = (w/(series.length-1))*i;
+      points.push({x, y: series[i]});
+    }
+
+    drawArea(points);
+    drawGlowLine(points);
+
+    const idx = Math.floor((Math.sin(t)*0.5 + 0.5) * (points.length-1));
+    const orb = points[idx];
+    if(orb){
+      ctx.save();
+      ctx.shadowColor="rgba(96,165,250,0.80)";
+      ctx.shadowBlur=22;
+      ctx.fillStyle="rgba(96,165,250,0.95)";
+      ctx.beginPath();
+      ctx.arc(orb.x, orb.y, 4.2, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.globalAlpha=0.35;
+      ctx.beginPath();
+      ctx.arc(orb.x, orb.y, 14, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initSeries();
+  draw();
+
+  window.addEventListener("resize", () => {
+    resize();
+    initSeries();
+  });
+})();
+
+/* =========================================================
+   ✅ 3D Card Tilt
+========================================================= */
+(function initTilt(){
+  const card = document.getElementById("tiltCard");
+  if(!card) return;
+  let bounds = null;
+
+  function onMove(e){
+    if(!bounds) bounds = card.getBoundingClientRect();
+    const mx = (e.touches ? e.touches[0].clientX : e.clientX);
+    const my = (e.touches ? e.touches[0].clientY : e.clientY);
+    const px = (mx - bounds.left) / bounds.width;
+    const py = (my - bounds.top) / bounds.height;
+
+    const rotY = (px - 0.5) * 10;
+    const rotX = (0.5 - py) * 10;
+
+    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(0)`;
+  }
+
+  function reset(){
+    bounds = null;
+    card.style.transform = "rotateX(0deg) rotateY(0deg) translateZ(0)";
+  }
+
+  card.addEventListener("mousemove", onMove);
+  card.addEventListener("mouseleave", reset);
+  card.addEventListener("touchmove", onMove, {passive:true});
+  card.addEventListener("touchend", reset);
+})();
+
+/* =========================================================
+   ✅ FIXED Profit Calculator Logic (as you requested)
+   - Silver: 100 => 10000 for 7 days
+   - Gold: 100 => 15000 for 7 days
+   - Diamond: 100 => 18000 for 7 days
+   - Platinum: 100 => 20000 for 7 days
+   - 14 days = x2, 30 days = x(30/7), 60 days = x(60/7)
+========================================================= */
+(function initCalculator(){
+  const amountEl = document.getElementById("calcAmount");
+  const planEl = document.getElementById("calcPlan");
+  const daysEl = document.getElementById("calcDays");
+  const profitEl = document.getElementById("calcProfit");
+  const totalEl  = document.getElementById("calcTotal");
+
+  // baseReturnPer100 = return amount at 7 days if user invests $100
+  const baseReturnPer100_7d = {
+    silver: 10000,
+    gold: 15000,
+    diamond: 18000,
+    platinum: 20000
+  };
+
+  function money(v){
+    return "$" + Number(v).toLocaleString(undefined, {maximumFractionDigits: 0});
+  }
+
+  function update(){
+    const amt = Math.max(0, Number(amountEl.value || 0));
+    const days = Math.max(7, Number(daysEl.value || 7));
+    const plan = planEl.value || "gold";
+
+    const base7 = baseReturnPer100_7d[plan] || 15000;
+
+    // return for 7 days for the entered amount
+    // amt = 100 => base7, amt = 200 => base7*2
+    const baseReturnForAmt_7d = (amt/100) * base7;
+
+    // scale to duration:
+    // 14 days => x2, 30 => x(30/7), 60 => x(60/7)
+    const multiplier = days / 7;
+    const totalReturn = baseReturnForAmt_7d * multiplier;
+
+    const profit = Math.max(0, totalReturn - amt);
+
+    totalEl.textContent = money(totalReturn);
+    profitEl.textContent = money(profit);
+  }
+
+  amountEl.addEventListener("input", update);
+  planEl.addEventListener("change", update);
+  daysEl.addEventListener("change", update);
+  update();
+})();
+
+/* =========================================================
+   ✅ Stats Counter Animation
+========================================================= */
+(function initCounters(){
+  const nums = document.querySelectorAll(".statNum");
+  if(!nums.length) return;
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const el = entry.target;
+        const target = parseFloat(el.getAttribute("data-count") || "0");
+        const duration = 1200;
+        const startTime = performance.now();
+
+        function step(now){
+          const t = Math.min(1, (now-startTime)/duration);
+          const eased = 1 - Math.pow(1-t, 3);
+          const val = target * eased;
+
+          if(String(target).includes(".")){
+            el.textContent = val.toFixed(1);
+          }else{
+            el.textContent = Math.floor(val).toLocaleString();
+          }
+
+          if(t < 1) requestAnimationFrame(step);
+          else{
+            if(String(target).includes(".")) el.textContent = target.toFixed(1);
+            else el.textContent = Math.floor(target).toLocaleString();
+          }
+        }
+
+        requestAnimationFrame(step);
+        io.unobserve(el);
+      }
+    });
+  }, {threshold: 0.2});
+
+  nums.forEach(n => io.observe(n));
+})();
+
+/* =========================================================
+   ✅ Live Markets (auto-slide slow)
+========================================================= */
+const coins = [
+  "bitcoin","ethereum","tether","binancecoin","solana","ripple","cardano","dogecoin",
+  "tron","polkadot","chainlink","litecoin","polygon","avalanche-2","uniswap","shiba-inu"
+];
+
+function fmtMoney(v){
+  if(v >= 1000) return "$" + v.toLocaleString(undefined, {maximumFractionDigits: 0});
+  if(v >= 10) return "$" + v.toLocaleString(undefined, {maximumFractionDigits: 2});
+  return "$" + v.toLocaleString(undefined, {maximumFractionDigits: 4});
+}
+
+function createCoinCard(coin){
+  const wrap = document.createElement("div");
+  wrap.className = "coinCard";
+  wrap.innerHTML = `
+    <div class="coinCardInner">
+      <div class="coinTop">
+        <div class="coinLeft">
+          <div class="coinLogo">
+            <img alt="" />
+          </div>
+          <div class="coinMeta">
+            <div class="coinName">Loading…</div>
+            <div class="coinSym">—</div>
+          </div>
+        </div>
+        <div class="coinRight">
+          <div class="coinPrice">$ --</div>
+          <div class="coinChange">—</div>
+        </div>
+      </div>
+
+      <div class="coinBottom">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="opacity:.95;">24h change</div>
+          <div style="opacity:.75; font-size:12px;">Live update</div>
+        </div>
+        <div class="spark"><canvas></canvas></div>
+      </div>
+    </div>
+  `;
+
+  wrap.dataset.coin = coin;
+  return wrap;
+}
+
+function drawSparkline(canvas, values, up=true){
+  const ctx = canvas.getContext("2d");
+  const rect = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = Math.floor(w*dpr);
+  canvas.height = Math.floor(h*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  ctx.clearRect(0,0,w,h);
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(0.0001, max-min);
+
+  const points = values.map((v,i)=>({
+    x: (w/(values.length-1))*i,
+    y: h - ((v-min)/range)*h
+  }));
+
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = up ? "rgba(34,197,94,0.55)" : "rgba(248,113,113,0.55)";
+  ctx.strokeStyle = up ? "rgba(34,197,94,0.65)" : "rgba(248,113,113,0.65)";
+  ctx.beginPath();
+  for(let i=0;i<points.length;i++){
+    const p = points[i];
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = up ? "rgba(34,197,94,0.95)" : "rgba(248,113,113,0.95)";
+  ctx.beginPath();
+  for(let i=0;i<points.length;i++){
+    const p = points[i];
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.lineTo(p.x,p.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+async function loadMarkets(){
+  const auto = document.getElementById("marketAuto");
+  if(!auto) return;
+
+  auto.innerHTML = "";
+
+  coins.forEach(c=> auto.appendChild(createCoinCard(c)));
+  coins.forEach(c=> auto.appendChild(createCoinCard(c))); // duplicate for infinite loop
+
+  try{
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=" +
+      encodeURIComponent(coins.join(",")) +
+      "&order=market_cap_desc&per_page=250&page=1&sparkline=true&price_change_percentage=24h"
+    );
+    const data = await res.json();
+
+    function applyTo(card, item){
+      const logoImg = card.querySelector(".coinLogo img");
+      const nameEl = card.querySelector(".coinName");
+      const symEl  = card.querySelector(".coinSym");
+      const priceEl = card.querySelector(".coinPrice");
+      const chgEl = card.querySelector(".coinChange");
+      const sparkCanvas = card.querySelector(".spark canvas");
+
+      if(logoImg) logoImg.src = item.image || "";
+      if(nameEl) nameEl.textContent = item.name || item.id;
+      if(symEl) symEl.textContent = (item.symbol || "").toUpperCase();
+      if(priceEl) priceEl.textContent = fmtMoney(item.current_price || 0);
+
+      const chg = (item.price_change_percentage_24h ?? item.price_change_percentage_24h_in_currency);
+      const pct = (typeof chg === "number") ? chg : null;
+
+      if(chgEl){
+        if(pct === null){
+          chgEl.textContent = "—";
+          chgEl.className = "coinChange";
+        }else{
+          const up = pct >= 0;
+          chgEl.textContent = (up ? "▲ " : "▼ ") + Math.abs(pct).toFixed(2) + "%";
+          chgEl.className = "coinChange " + (up ? "chgUp" : "chgDown");
+        }
+      }
+
+      const spark = item.sparkline_in_7d?.price;
+      if(sparkCanvas && Array.isArray(spark) && spark.length > 10){
+        const sliced = spark.slice(-40);
+        const up = pct !== null ? (pct >= 0) : true;
+        drawSparkline(sparkCanvas, sliced, up);
+      }
+    }
+
+    for(const item of data){
+      const allCards = auto.querySelectorAll(`.coinCard[data-coin="${item.id}"]`);
+      allCards.forEach(card => applyTo(card, item));
+    }
+
+  }catch(e){
+    console.log("Market feed unavailable:", e);
+  }
+}
+
+loadMarkets();
+setInterval(loadMarkets, 45000);
+
+/* =========================================================
+   ✅ Testimonials (backend-ready later)
+========================================================= */
+async function getTestimonials(){
+  return [
+    { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
+    { name:"Amina S.", role:"Investor", text:"The live markets and ticker give it a real terminal feel. Smooth experience.", stars:5 },
+    { name:"Michael R.", role:"Trader", text:"Verification and session PIN made me trust the security. Great UI and flow.", stars:5 }
+  ];
+}
+
+function starIcons(n){
+  let s="";
+  for(let i=0;i<n;i++){
+    s += `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2l3 7 7 .6-5.3 4.4 1.7 7-6.4-3.9-6.4 3.9 1.7-7L2 9.6 9 9l3-7Z" stroke="#60a5fa" stroke-width="1.8" fill="rgba(96,165,250,0.18)"/>
+      </svg>
+    `;
+  }
+  return s;
+}
+
+(async function initTestimonials(){
+  const box = document.getElementById("testimonials");
+  if(!box) return;
+
+  const list = await getTestimonials();
+
+  box.innerHTML = list.map(t => `
+    <div class="testCard">
+      <div class="stars">${starIcons(t.stars || 5)}</div>
+      <div class="testText">“${t.text}”</div>
+      <div class="testUser">
+        <div class="avatar">${(t.name || "U").trim().slice(0,1).toUpperCase()}</div>
+        <div class="userMeta">
+          <strong>${t.name || "Client"}</strong>
+          <span>${t.role || "User"}</span>
+        </div>
+      </div>
+    </div>
+  `).join("");
+})();
+
+/* =========================================================
+   ✅ Google Translate loader script
+========================================================= */
+(function loadGoogleTranslate(){
+  const s = document.createElement("script");
+  s.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+  s.async = true;
+  document.head.appendChild(s);
+})();
+</script>
+
+</body>
+</html>
