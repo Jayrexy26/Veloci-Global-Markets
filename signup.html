@@ -452,10 +452,10 @@
 
 <script>
   const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5Mj230M30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
   const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-  // If already logged in → go session
+  // ✅ Safety check: if logged in but not verified, force sign out
   checkSessionSafely();
   async function checkSessionSafely(){
     await new Promise(r => setTimeout(r, 150));
@@ -531,6 +531,7 @@
     }
   }
 
+  // ✅ Google signup/login (OAuth)
   async function signUpWithGoogle(){
     setMsg("", "Opening Google sign-in…");
 
@@ -550,63 +551,80 @@
   async function signup(){
     setMsg("", "Creating account…");
 
-    const full_name=document.getElementById("fullname").value.trim();
-    const email=document.getElementById("email").value.trim();
-    const country=document.getElementById("country").value.trim();
-    const phone=document.getElementById("phone").value.trim();
-    const password=document.getElementById("password").value;
-    const confirmPassword=document.getElementById("confirmPassword").value;
+    try{
+      const full_name=document.getElementById("fullname").value.trim();
+      const email=document.getElementById("email").value.trim();
+      const country=document.getElementById("country").value.trim();
+      const phone=document.getElementById("phone").value.trim();
+      const password=document.getElementById("password").value;
+      const confirmPassword=document.getElementById("confirmPassword").value;
 
-    if(!full_name || !email || !country || !phone || !password || !confirmPassword){
-      setMsg("err","Please complete all required fields.");
-      return;
-    }
-
-    if(password.length < 8){
-      setMsg("err","Password must be at least 8 characters.");
-      return;
-    }
-
-    if(password !== confirmPassword){
-      setMsg("err","Passwords do not match.");
-      return;
-    }
-
-    const redirectTo = window.location.origin + "/verify.html";
-
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options:{
-        emailRedirectTo: redirectTo,
-        data:{ full_name, phone, country }
+      if(!full_name || !email || !country || !phone || !password || !confirmPassword){
+        setMsg("err","Please complete all required fields.");
+        return;
       }
-    });
 
-    if(error){
-      setMsg("err", error.message);
-      return;
+      if(password.length < 8){
+        setMsg("err","Password must be at least 8 characters.");
+        return;
+      }
+
+      if(password !== confirmPassword){
+        setMsg("err","Passwords do not match.");
+        return;
+      }
+
+      // ✅ IMPORTANT:
+      // Supabase email verification link must go to verified.html (token handler)
+      const redirectTo = window.location.origin + "/verified.html";
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options:{
+          emailRedirectTo: redirectTo,
+          data:{ full_name, phone, country }
+        }
+      });
+
+      if(error){
+        setMsg("err", error.message);
+        return;
+      }
+
+      // ✅ save profile in users table
+      const userId = data?.user?.id || null;
+      const { error: dbError } = await supabaseClient.from("users").upsert([{
+        id: userId,
+        email,
+        full_name,
+        phone,
+        country,
+        balance: 0,
+        notes: "new user"
+      }], { onConflict: "email" });
+
+      if(dbError){
+        console.warn("Users table upsert failed:", dbError);
+      }
+
+      // ✅ Modal only (no plain success text)
+      setMsg("", "");
+      showVerifyModal();
+
+      // ✅ redirect to verify waiting page
+      setTimeout(()=>{
+        window.location.href="verify.html?email="+encodeURIComponent(email);
+      }, 1800);
+
+    }catch(e){
+      console.error("Signup crashed:", e);
+      const msg = (e && e.message) ? e.message : String(e);
+      setMsg("err", msg.includes("Failed to fetch")
+        ? "Network blocked: Supabase request failed. Check Supabase Auth URL Configuration (Site URL + Redirect URLs) and ensure your domain is allowed."
+        : msg
+      );
     }
-
-    // ✅ save basic profile (optional)
-    const userId = data?.user?.id || null;
-    await supabaseClient.from("users").upsert([{
-      id: userId,
-      email,
-      full_name,
-      phone,
-      country,
-      balance: 0,
-      notes: "new user"
-    }], { onConflict: "email" });
-
-    // ✅ NO plain text message — modal only
-    setMsg("", "");
-    showVerifyModal();
-
-    setTimeout(()=>{
-      window.location.href="verify.html?email="+encodeURIComponent(email);
-    }, 1800);
   }
 
   updateStrength();
