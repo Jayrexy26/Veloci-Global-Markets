@@ -471,6 +471,7 @@
   const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
   const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
+  // ✅ Safety session check (same idea as login page)
   checkSessionSafely();
   async function checkSessionSafely(){
     await new Promise(r => setTimeout(r, 150));
@@ -483,7 +484,7 @@
         setMsg("err", "Please verify your email before continuing.");
         return;
       }
-      window.location.href="user-dashboard.html";
+      window.location.href="/session/";
     }
   }
 
@@ -572,7 +573,9 @@
         return;
       }
 
-      const redirectTo = window.location.origin + "/verify.html";
+      // ✅ IMPORTANT FIX:
+      // verification link in email must go to VERIFIED.html (token page)
+      const redirectTo = window.location.origin + "/verified.html";
 
       const { data, error } = await supabaseClient.auth.signUp({
         email,
@@ -590,6 +593,7 @@
 
       const userId = data?.user?.id || null;
 
+      // ✅ Optional: save profile. If RLS blocks it, we don't break signup.
       const { error: dbError } = await supabaseClient.from("users").upsert([{
         id: userId,
         email,
@@ -600,7 +604,6 @@
         notes: "new user"
       }], { onConflict: "email" });
 
-      // ✅ show DB error if any (RLS etc) — but still allow verification redirect
       if(dbError){
         console.warn("Users table upsert failed:", dbError);
       }
@@ -614,8 +617,6 @@
 
     }catch(e){
       console.error("Signup crashed:", e);
-
-      // ✅ THIS will replace "Failed to fetch" with real information
       const msg = (e && e.message) ? e.message : String(e);
       setMsg("err", msg.includes("Failed to fetch")
         ? "Network blocked: Supabase request failed. Check Supabase Auth URL Configuration (Site URL + Redirect URLs) and ensure your domain is allowed."
