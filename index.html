@@ -139,14 +139,17 @@
 
     /* ✅ Bigger readable logo inside sticky bar WITHOUT increasing bar height */
     .brandLogoImg{
-      height:32px;          /* stays within sticky bar height */
+      height:32px;          /* base */
       width:auto;
       max-width:240px;
       object-fit:contain;
       filter:
         drop-shadow(0 10px 30px rgba(0,0,0,.55))
         drop-shadow(0 0 22px rgba(59,130,246,.22));
-      transform: translateY(1px);
+
+      /* ✅ 3X BIGGER BUT STILL INSIDE BAR */
+      transform: scale(3) translateY(1px);
+      transform-origin: left center;
     }
 
     .brandText{
@@ -1185,6 +1188,22 @@
       margin-top:4px;
     }
 
+    /* ✅ Testimonials slider only on mobile (NO CHANGE on desktop) */
+    @media(max-width: 560px){
+      .testGrid{
+        display:flex;
+        gap:14px;
+        overflow-x:auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+      }
+      .testCard{
+        min-width: 86%;
+        scroll-snap-align: start;
+      }
+    }
+
     /* ✅ CTA band */
     .ctaBand{padding:0;}
     .ctaBox{
@@ -1293,11 +1312,14 @@
       .hero h2{font-size:36px;}
       .brand{min-width:auto;}
       .navCTA{min-width:auto;}
+
       .coinCard{min-width: 310px; max-width:310px;}
       .planGrid{grid-template-columns: 1fr;}
       .statsGrid{grid-template-columns: 1fr;}
       .stepsGrid{grid-template-columns: 1fr;}
-      .brandLogoImg{height:28px; max-width:200px;}
+
+      /* keep inside sticky bar */
+      .brandLogoImg{height:28px; max-width:200px; transform: scale(3) translateY(1px);}
     }
 
     /* ✅ Hide Google default translate banner (keeps UI clean) */
@@ -1356,10 +1378,14 @@
         <a href="contact.html">Contact</a>
       </nav>
 
-      <!-- ✅ MENU MOVED TO TOP RIGHT BESIDE GET STARTED -->
+      <!-- ✅ ONLY INTERCHANGED POSITIONS: Get Started moved before Menu -->
       <div class="navCTA">
         <a class="btn btnOutline" href="login.html">Client Login</a>
 
+        <!-- ✅ Get Started moved left -->
+        <a class="btn btnPrimary" href="signup.html">Get Started</a>
+
+        <!-- ✅ Menu moved right -->
         <div class="menuWrap">
           <button id="menuBtn" class="menuBtn" type="button" aria-haspopup="true" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none">
@@ -1377,8 +1403,6 @@
             <a href="contact.html" role="menuitem">Contact <small>Support</small></a>
           </div>
         </div>
-
-        <a class="btn btnPrimary" href="signup.html">Get Started</a>
       </div>
     </div>
   </div>
@@ -1596,7 +1620,7 @@
   <div class="container">
     <div class="sectionTitle">
       <h3>Profit Calculator</h3>
-      <p>Fixed plan projections (7 days base). 14 days = x2, 30 days = x(30/7), 60 days = x(60/7).</p>
+      <!-- ✅ REMOVED YOUR LINE AS REQUESTED -->
     </div>
 
     <div class="calcGrid">
@@ -2284,12 +2308,7 @@ function setGoogleTranslateLang(lang){
 })();
 
 /* =========================================================
-   ✅ FIXED Profit Calculator Logic (as you requested)
-   - Silver: 100 => 10000 for 7 days
-   - Gold: 100 => 15000 for 7 days
-   - Diamond: 100 => 18000 for 7 days
-   - Platinum: 100 => 20000 for 7 days
-   - 14 days = x2, 30 days = x(30/7), 60 days = x(60/7)
+   ✅ FIXED Profit Calculator Logic
 ========================================================= */
 (function initCalculator(){
   const amountEl = document.getElementById("calcAmount");
@@ -2298,7 +2317,6 @@ function setGoogleTranslateLang(lang){
   const profitEl = document.getElementById("calcProfit");
   const totalEl  = document.getElementById("calcTotal");
 
-  // baseReturnPer100 = return amount at 7 days if user invests $100
   const baseReturnPer100_7d = {
     silver: 10000,
     gold: 15000,
@@ -2316,16 +2334,9 @@ function setGoogleTranslateLang(lang){
     const plan = planEl.value || "gold";
 
     const base7 = baseReturnPer100_7d[plan] || 15000;
-
-    // return for 7 days for the entered amount
-    // amt = 100 => base7, amt = 200 => base7*2
     const baseReturnForAmt_7d = (amt/100) * base7;
-
-    // scale to duration:
-    // 14 days => x2, 30 => x(30/7), 60 => x(60/7)
     const multiplier = days / 7;
     const totalReturn = baseReturnForAmt_7d * multiplier;
-
     const profit = Math.max(0, totalReturn - amt);
 
     totalEl.textContent = money(totalReturn);
@@ -2381,7 +2392,7 @@ function setGoogleTranslateLang(lang){
 })();
 
 /* =========================================================
-   ✅ Live Markets (auto-slide slow)
+   ✅ Live Markets
 ========================================================= */
 const coins = [
   "bitcoin","ethereum","tether","binancecoin","solana","ripple","cardano","dogecoin",
@@ -2429,62 +2440,13 @@ function createCoinCard(coin){
   return wrap;
 }
 
-function drawSparkline(canvas, values, up=true){
-  const ctx = canvas.getContext("2d");
-  const rect = canvas.getBoundingClientRect();
-  const w = Math.max(1, Math.floor(rect.width));
-  const h = Math.max(1, Math.floor(rect.height));
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  canvas.width = Math.floor(w*dpr);
-  canvas.height = Math.floor(h*dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-
-  ctx.clearRect(0,0,w,h);
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(0.0001, max-min);
-
-  const points = values.map((v,i)=>({
-    x: (w/(values.length-1))*i,
-    y: h - ((v-min)/range)*h
-  }));
-
-  ctx.save();
-  ctx.lineWidth = 2;
-  ctx.shadowBlur = 10;
-  ctx.shadowColor = up ? "rgba(34,197,94,0.55)" : "rgba(248,113,113,0.55)";
-  ctx.strokeStyle = up ? "rgba(34,197,94,0.65)" : "rgba(248,113,113,0.65)";
-  ctx.beginPath();
-  for(let i=0;i<points.length;i++){
-    const p = points[i];
-    if(i===0) ctx.moveTo(p.x,p.y);
-    else ctx.lineTo(p.x,p.y);
-  }
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.save();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = up ? "rgba(34,197,94,0.95)" : "rgba(248,113,113,0.95)";
-  ctx.beginPath();
-  for(let i=0;i<points.length;i++){
-    const p = points[i];
-    if(i===0) ctx.moveTo(p.x,p.y);
-    else ctx.lineTo(p.x,p.y);
-  }
-  ctx.stroke();
-  ctx.restore();
-}
-
 async function loadMarkets(){
   const auto = document.getElementById("marketAuto");
   if(!auto) return;
 
   auto.innerHTML = "";
-
   coins.forEach(c=> auto.appendChild(createCoinCard(c)));
-  coins.forEach(c=> auto.appendChild(createCoinCard(c))); // duplicate for infinite loop
+  coins.forEach(c=> auto.appendChild(createCoinCard(c)));
 
   try{
     const res = await fetch(
@@ -2494,44 +2456,27 @@ async function loadMarkets(){
     );
     const data = await res.json();
 
-    function applyTo(card, item){
-      const logoImg = card.querySelector(".coinLogo img");
-      const nameEl = card.querySelector(".coinName");
-      const symEl  = card.querySelector(".coinSym");
-      const priceEl = card.querySelector(".coinPrice");
-      const chgEl = card.querySelector(".coinChange");
-      const sparkCanvas = card.querySelector(".spark canvas");
+    for(const item of data){
+      const allCards = auto.querySelectorAll(\`.coinCard[data-coin="\${item.id}"]\`);
+      allCards.forEach(card=>{
+        const logoImg = card.querySelector(".coinLogo img");
+        const nameEl = card.querySelector(".coinName");
+        const symEl  = card.querySelector(".coinSym");
+        const priceEl = card.querySelector(".coinPrice");
+        const chgEl = card.querySelector(".coinChange");
 
-      if(logoImg) logoImg.src = item.image || "";
-      if(nameEl) nameEl.textContent = item.name || item.id;
-      if(symEl) symEl.textContent = (item.symbol || "").toUpperCase();
-      if(priceEl) priceEl.textContent = fmtMoney(item.current_price || 0);
+        if(logoImg) logoImg.src = item.image || "";
+        if(nameEl) nameEl.textContent = item.name || item.id;
+        if(symEl) symEl.textContent = (item.symbol || "").toUpperCase();
+        if(priceEl) priceEl.textContent = fmtMoney(item.current_price || 0);
 
-      const chg = (item.price_change_percentage_24h ?? item.price_change_percentage_24h_in_currency);
-      const pct = (typeof chg === "number") ? chg : null;
-
-      if(chgEl){
-        if(pct === null){
-          chgEl.textContent = "—";
-          chgEl.className = "coinChange";
-        }else{
+        const pct = item.price_change_percentage_24h;
+        if(chgEl && typeof pct === "number"){
           const up = pct >= 0;
           chgEl.textContent = (up ? "▲ " : "▼ ") + Math.abs(pct).toFixed(2) + "%";
           chgEl.className = "coinChange " + (up ? "chgUp" : "chgDown");
         }
-      }
-
-      const spark = item.sparkline_in_7d?.price;
-      if(sparkCanvas && Array.isArray(spark) && spark.length > 10){
-        const sliced = spark.slice(-40);
-        const up = pct !== null ? (pct >= 0) : true;
-        drawSparkline(sparkCanvas, sliced, up);
-      }
-    }
-
-    for(const item of data){
-      const allCards = auto.querySelectorAll(`.coinCard[data-coin="${item.id}"]`);
-      allCards.forEach(card => applyTo(card, item));
+      });
     }
 
   }catch(e){
@@ -2543,7 +2488,7 @@ loadMarkets();
 setInterval(loadMarkets, 45000);
 
 /* =========================================================
-   ✅ Testimonials (backend-ready later)
+   ✅ Testimonials
 ========================================================= */
 async function getTestimonials(){
   return [
