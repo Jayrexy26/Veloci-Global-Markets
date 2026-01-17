@@ -52,6 +52,21 @@
 
   .wrap{ width:100%; max-width:520px; z-index:1; }
 
+  /* ✅ NEW: big logo with no box */
+  .logoWrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:14px;
+  }
+  .logoBig{
+    width:180px;            /* ~3x */
+    height:auto;
+    object-fit:contain;
+    filter: drop-shadow(0 18px 38px rgba(0,0,0,.55));
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+
   .card{
     width:100%;
     border-radius:18px;
@@ -61,28 +76,6 @@
     padding:26px 22px 22px;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-  }
-
-  .topIcon{
-    width:60px; height:60px;
-    border-radius:18px;
-    margin:0 auto 12px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 10px 35px rgba(0,0,0,.40);
-    overflow:hidden;
-  }
-
-  /* ✅ logo image (no style change to layout) */
-  .topLogo{
-    width:40px;
-    height:40px;
-    object-fit:contain;
-    filter: drop-shadow(0 8px 20px rgba(0,0,0,.50));
-    display:block;
   }
 
   h1{
@@ -210,7 +203,7 @@
   }
   .bottom a:hover{text-decoration:underline;}
 
-  /* ✅ Added: trust/legal links for legitimacy */
+  /* ✅ Trust/Legal */
   .trust{
     margin-top:18px;
     padding-top:14px;
@@ -235,10 +228,80 @@
   }
   .trust a:hover{text-decoration:underline;}
 
+  /* ✅ NEW: Modal */
+  .modalOverlay{
+    position:fixed;
+    inset:0;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    padding:18px;
+  }
+  .modal{
+    width:100%;
+    max-width:420px;
+    border-radius:20px;
+    border:1px solid rgba(255,255,255,0.14);
+    background: rgba(2,6,23,.72);
+    box-shadow: 0 35px 120px rgba(0,0,0,.70);
+    padding:22px 18px 18px;
+    text-align:center;
+  }
+  .modalTitle{
+    font-size:22px;
+    font-weight:1000;
+    letter-spacing:-.2px;
+    margin:0;
+    color:#eaf0ff;
+  }
+  .modalSub{
+    margin-top:8px;
+    color: rgba(234,240,255,.72);
+    font-size:14px;
+    font-weight:800;
+  }
+  .dots{
+    display:inline-flex;
+    gap:4px;
+    margin-left:6px;
+    transform: translateY(1px);
+  }
+  .dot{
+    width:6px;height:6px;
+    border-radius:50%;
+    background: rgba(96,165,250,.95);
+    opacity:.25;
+    animation: blink 1.1s infinite;
+  }
+  .dot:nth-child(2){animation-delay:.18s}
+  .dot:nth-child(3){animation-delay:.36s}
+  @keyframes blink{
+    0%, 100% { opacity:.25; transform: translateY(0px); }
+    45% { opacity:1; transform: translateY(-1px); }
+  }
+
+  .modalGlow{
+    margin:14px auto 0;
+    width:86px;height:86px;
+    border-radius:24px;
+    background: rgba(34,197,94,.10);
+    border:1px solid rgba(34,197,94,.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 15px 55px rgba(34,197,94,.08);
+  }
+  .modalGlow svg{width:34px;height:34px; filter: drop-shadow(0 12px 30px rgba(0,0,0,.65));}
+
   @media(max-width:420px){
     h1{font-size:32px}
     .card{padding:22px 18px 18px}
     .bottom{font-size:16px}
+    .logoBig{width:165px}
   }
 </style>
 </head>
@@ -246,16 +309,13 @@
 <body>
 
 <div class="wrap">
-  <div class="card">
 
-    <div class="topIcon" aria-hidden="true">
-      <img
-        src="assets/vgm-logo.png"
-        alt="Veloci Global Markets"
-        class="topLogo"
-        onerror="this.style.display='none';"
-      />
-    </div>
+  <!-- ✅ Big logo above card, no box -->
+  <div class="logoWrap">
+    <img src="assets/vgm-logo.png" alt="Veloci Global Markets" class="logoBig" />
+  </div>
+
+  <div class="card">
 
     <h1>Login</h1>
     <div class="sub">Access your Veloci Global Markets account</div>
@@ -308,6 +368,26 @@
   </div>
 </div>
 
+<!-- ✅ Success Modal -->
+<div id="successModal" class="modalOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Login successful">
+    <div class="modalGlow" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2 class="modalTitle">Login Successful</h2>
+    <div class="modalSub">
+      Redirecting
+      <span class="dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -344,6 +424,12 @@ function togglePassword(){
   el.type = (el.type==="password") ? "text" : "password";
 }
 
+function showSuccessModal(){
+  const modal = document.getElementById("successModal");
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+}
+
 async function login(){
   setMsg("", "Logging in…");
 
@@ -369,8 +455,11 @@ async function login(){
     return;
   }
 
-  setMsg("ok","Login successful ✅ Redirecting…");
-  setTimeout(()=> window.location.href="/session/", 400);
+  // ✅ Requested: modal popup instead of success text
+  setMsg("", "");
+  showSuccessModal();
+
+  setTimeout(()=> window.location.href="/session/", 1200);
 }
 
 async function forgotPassword(){
