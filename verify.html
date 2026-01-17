@@ -3,89 +3,358 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Verify Email - Coinluxora</title>
+  <title>Verify Email - Veloci Global Markets</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    :root{
+      --bg:#020617;
+      --stroke: rgba(255,255,255,0.12);
+      --card: rgba(255,255,255,0.06);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --brand1:#3b82f6;
+      --brand2:#2563eb;
+      --ok:#22c55e;
+      --err:#f87171;
+    }
+
+    *{box-sizing:border-box}
     body{
       margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      padding:16px;
+      overflow-x:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(900px 500px at 15% 12%, rgba(59,130,246,.18), transparent 55%),
+        radial-gradient(700px 420px at 85% 18%, rgba(99,102,241,.15), transparent 55%),
+        radial-gradient(600px 360px at 45% 92%, rgba(59,130,246,.10), transparent 55%);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .wrap{ width:100%; max-width:520px; z-index:1; }
+
+    .card{
+      width:100%;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      background: var(--card);
+      box-shadow: 0 25px 80px rgba(0,0,0,.50);
+      padding:26px 22px 22px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      text-align:center;
+    }
+
+    /* ✅ Logo crop to remove PNG transparent padding */
+    .logoSolo{
+      display:flex;
+      justify-content:center;
+      margin:-10px auto 10px;
+      padding:0;
+      line-height:0;
+      height:110px;
+      overflow:hidden;
+    }
+    .logoSolo img{
+      width:330px;
+      max-width:98%;
+      height:135px;
+      object-fit:cover;
+      object-position:center 38%;
+      user-select:none;
+      -webkit-user-drag:none;
+      filter:
+        drop-shadow(0 22px 54px rgba(0,0,0,.66))
+        drop-shadow(0 0 28px rgba(59,130,246,.28));
+      animation: logoPulse 2.8s ease-in-out infinite;
+      transform-origin:center;
+      display:block;
+    }
+
+    @keyframes logoPulse{
+      0%, 100%{
+        transform: scale(1);
+        filter:
+          drop-shadow(0 22px 54px rgba(0,0,0,.66))
+          drop-shadow(0 0 22px rgba(59,130,246,.24));
+        opacity: .98;
+      }
+      50%{
+        transform: scale(1.03);
+        filter:
+          drop-shadow(0 26px 66px rgba(0,0,0,.72))
+          drop-shadow(0 0 42px rgba(59,130,246,.42));
+        opacity: 1;
+      }
+    }
+
+    h1{
+      margin:0;
+      font-size:28px;
+      font-weight:1000;
+      letter-spacing:-0.6px;
+      background: linear-gradient(90deg, #3b82f6, #6366f1);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      line-height:1.2;
+      padding-bottom:2px;
+    }
+
+    .sub{
+      margin-top:8px;
+      color: rgba(229,231,235,.70);
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .msg{
+      margin-top:16px;
+      font-size:14px;
+      color: var(--muted);
+      min-height:18px;
+    }
+    .msg .ok{ color: var(--ok); font-weight:1000; }
+    .msg .err{ color: var(--err); font-weight:1000; }
+
+    /* ✅ Modal */
+    .modalOverlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:18px;
+    }
+    .modal{
+      width:100%;
+      max-width:420px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(2,6,23,.72);
+      box-shadow: 0 35px 120px rgba(0,0,0,.70);
+      padding:22px 18px 18px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .modalWatermark{
+      position:absolute;
+      inset:0;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:16px;
-      font-family:system-ui;
-      background:#020617;
-      color:#e5e7eb;
+      pointer-events:none;
+      z-index:0;
     }
-    .box{
-      max-width:520px;
-      width:100%;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.06);
-      border-radius:18px;
-      padding:22px;
-      box-shadow:0 25px 80px rgba(0,0,0,.50);
-      backdrop-filter: blur(12px);
+    .modalWatermark img{
+      width:280px;
+      max-width:90%;
+      opacity:0.07;
+      filter: drop-shadow(0 40px 90px rgba(0,0,0,.85));
+      transform: translateY(-6px);
     }
-    h2{margin:0 0 8px 0}
-    .muted{color:#94a3b8}
-    .ok{color:#22c55e;font-weight:900}
-    .err{color:#f87171;font-weight:900}
-    .btn{
-      margin-top:16px;
-      width:100%;
-      padding:14px;
-      border:none;
-      border-radius:14px;
-      cursor:pointer;
-      font-weight:900;
-      background: linear-gradient(180deg, #3b82f6, #2563eb);
-      color:white;
+    .modal::before{
+      content:"";
+      position:absolute;
+      inset:-40px;
+      background: radial-gradient(circle at 50% 18%, rgba(96,165,250,.24), transparent 62%);
+      filter: blur(16px);
+      opacity:.85;
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .modalTitle{
+      font-size:22px;
+      font-weight:1000;
+      letter-spacing:-.2px;
+      margin:0;
+      color:#eaf0ff;
+      position:relative;
+      z-index:1;
+    }
+    .modalSub{
+      margin-top:8px;
+      color: rgba(234,240,255,.72);
+      font-size:14px;
+      font-weight:800;
+      position:relative;
+      z-index:1;
+    }
+
+    .dots{
+      display:inline-flex;
+      gap:4px;
+      margin-left:6px;
+      transform: translateY(1px);
+    }
+    .dot{
+      width:6px;height:6px;
+      border-radius:50%;
+      background: rgba(96,165,250,.95);
+      opacity:.25;
+      animation: blink 1.1s infinite;
+    }
+    .dot:nth-child(2){animation-delay:.18s}
+    .dot:nth-child(3){animation-delay:.36s}
+    @keyframes blink{
+      0%, 100% { opacity:.25; transform: translateY(0px); }
+      45% { opacity:1; transform: translateY(-1px); }
+    }
+
+    .modalGlow{
+      margin:14px auto 0;
+      width:86px;height:86px;
+      border-radius:24px;
+      background: rgba(34,197,94,.10);
+      border:1px solid rgba(34,197,94,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 15px 55px rgba(34,197,94,.08);
+      position:relative;
+      z-index:1;
+    }
+    .modalGlow svg{width:34px;height:34px; filter: drop-shadow(0 12px 30px rgba(0,0,0,.65));}
+
+    @media(max-width:420px){
+      h1{font-size:26px}
+      .card{padding:22px 18px 18px}
+      .logoSolo{height:104px;margin:-14px auto 10px;}
+      .logoSolo img{width:300px;height:130px}
     }
   </style>
 </head>
+
 <body>
 
-  <div class="box">
-    <h2>Verify your email</h2>
-    <p class="muted">
-      We’ve sent a verification link to your email.
-      Open your inbox and click the link to activate your account.
-    </p>
+  <div class="wrap">
+    <div class="card">
 
-    <p id="msg" class="muted">Waiting for verification…</p>
+      <div class="logoSolo" aria-hidden="true">
+        <img src="assets/vgm-logo.png" alt="Veloci Global Markets" onerror="this.style.display='none';"/>
+      </div>
 
-    <button class="btn" onclick="goLogin()">Go to Login</button>
+      <h1>Email Verification</h1>
+      <div class="sub">
+        Please wait while we confirm your email verification.
+      </div>
+
+      <p id="msg" class="msg"></p>
+
+    </div>
+  </div>
+
+  <!-- ✅ Success Modal -->
+  <div id="successModal" class="modalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Email verified">
+
+      <div class="modalWatermark" aria-hidden="true">
+        <img src="assets/vgm-logo.png" alt="" />
+      </div>
+
+      <div class="modalGlow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M20 6L9 17l-5-5" stroke="#22c55e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <h2 class="modalTitle">Email Verified Successfully</h2>
+      <div class="modalSub">
+        Redirecting to Secure Session
+        <span class="dots" aria-hidden="true">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </span>
+      </div>
+
+    </div>
   </div>
 
 <script>
   const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
   const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-  const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const msg=document.getElementById("msg");
+  verifyNow();
 
-  // When Supabase returns from email link, it may auto-create a session
-  init();
-
-  async function init(){
-    // try check session
-    const { data } = await supabaseClient.auth.getSession();
-
-    if(data.session){
-      // VERIFIED ✅
-      msg.innerHTML = "<span class='ok'>Email verified ✅ Redirecting to dashboard…</span>";
-      setTimeout(()=> window.location.href="user-dashboard.html", 1200);
-      return;
-    }
-
-    msg.innerHTML = "<span class='muted'>Still not verified yet. After clicking the link, refresh this page.</span>";
+  function setMsg(type, text){
+    const msg=document.getElementById("msg");
+    if(type==="ok") msg.innerHTML=`<span class="ok">${text}</span>`;
+    else if(type==="err") msg.innerHTML=`<span class="err">${text}</span>`;
+    else msg.textContent=text;
   }
 
-  function goLogin(){
-    window.location.href="login.html";
+  function showSuccessModal(){
+    const modal=document.getElementById("successModal");
+    modal.style.display="flex";
+    modal.setAttribute("aria-hidden","false");
+  }
+
+  async function verifyNow(){
+    try{
+      setMsg("", "Verifying your email…");
+
+      // ✅ Supabase processes verification tokens automatically on page load.
+      // All we need to do is confirm that user session exists & email is confirmed.
+
+      // Wait a bit for Supabase to finalize session from token
+      await new Promise(r => setTimeout(r, 400));
+
+      const { data, error } = await supabaseClient.auth.getSession();
+      if(error){
+        setMsg("err", error.message);
+        return;
+      }
+
+      const session = data?.session;
+      const user = session?.user;
+
+      if(!user){
+        setMsg("err", "Verification link is invalid or expired. Please request a new verification email.");
+        return;
+      }
+
+      if(!user.email_confirmed_at){
+        setMsg("err", "Email not verified yet. Please try again or open the newest verification email.");
+        return;
+      }
+
+      // ✅ VERIFIED
+      setMsg("", "");
+      showSuccessModal();
+
+      // ✅ Redirect into secure session flow (PIN create)
+      setTimeout(()=>{
+        window.location.href="/session/";
+      }, 1300);
+
+    }catch(e){
+      console.error(e);
+      setMsg("err", "Something went wrong. Please reload this page.");
+    }
   }
 </script>
 
