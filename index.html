@@ -122,7 +122,7 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      padding:18px 0; /* ✅ slightly increased to fit 3x logo */
+      padding:14px 0; /* ✅ RESET sticky bar height (unchanged) */
       gap:12px;
     }
     .brand{
@@ -132,22 +132,23 @@
       text-decoration:none;
       user-select:none;
       min-width: 260px;
+      overflow:hidden; /* ✅ keeps scaled logo from breaking bar */
     }
 
     /* ✅ REMOVE small logo box (no longer used) */
     .logo{ display:none !important; }
 
-    /* ✅ 3x Bigger readable logo inside sticky bar */
+    /* ✅ Bigger readable logo (3x) with TRANSFORM only (no height change) */
     .brandLogoImg{
-      height:96px;          /* ✅ 3x bigger than 32px */
+      height:32px;          /* ✅ does NOT increase sticky bar height */
       width:auto;
       max-width:240px;
-      max-height:96px;
       object-fit:contain;
       filter:
         drop-shadow(0 10px 30px rgba(0,0,0,.55))
         drop-shadow(0 0 22px rgba(59,130,246,.22));
-      transform: translateY(1px);
+      transform: translateY(1px) scale(3); /* ✅ 3x bigger */
+      transform-origin:left center;
     }
 
     .brandText{
@@ -229,7 +230,7 @@
       background: rgba(2,6,23,.12);
     }
 
-    /* ✅ MENU dropdown moved next to Get Started (top right) */
+    /* ✅ MENU dropdown */
     .menuWrap{ position:relative; }
     .menuBtn{
       display:inline-flex;
@@ -1186,6 +1187,27 @@
       margin-top:4px;
     }
 
+    /* ✅ Mobile testimonials slider (swipe columns) */
+    @media(max-width: 560px){
+      .testGrid{
+        display:flex !important;
+        overflow-x:auto;
+        gap:14px;
+        padding: 6px 2px 12px;
+        scroll-snap-type:x mandatory;
+        -webkit-overflow-scrolling:touch;
+      }
+      .testCard{
+        min-width: 86%;
+        scroll-snap-align:center;
+      }
+      .testGrid::-webkit-scrollbar{ height: 8px; }
+      .testGrid::-webkit-scrollbar-thumb{
+        background: rgba(255,255,255,.10);
+        border-radius: 999px;
+      }
+    }
+
     /* ✅ CTA band */
     .ctaBand{padding:0;}
     .ctaBox{
@@ -1298,7 +1320,14 @@
       .planGrid{grid-template-columns: 1fr;}
       .statsGrid{grid-template-columns: 1fr;}
       .stepsGrid{grid-template-columns: 1fr;}
-      .brandLogoImg{height:64px; max-width:220px; max-height:64px;} /* ✅ keeps 3x effect but safe on mobile */
+
+      /* ✅ scaled logo safe on mobile */
+      .brandLogoImg{
+        height:28px;
+        max-width:200px;
+        transform: translateY(1px) scale(2.2);
+        transform-origin:left center;
+      }
     }
 
     /* ✅ Hide Google default translate banner (keeps UI clean) */
@@ -1357,13 +1386,14 @@
         <a href="contact.html">Contact</a>
       </nav>
 
+      <!-- ✅ MENU + Get Started (positions swapped as requested) -->
       <div class="navCTA">
         <a class="btn btnOutline" href="login.html">Client Login</a>
 
-        <!-- ✅ SWAPPED: Get Started moved BEFORE Menu -->
+        <!-- ✅ Get Started moved left (before Menu) -->
         <a class="btn btnPrimary" href="signup.html">Get Started</a>
 
-        <!-- ✅ Menu moved to the far right -->
+        <!-- ✅ Menu moved right (after Get Started) -->
         <div class="menuWrap">
           <button id="menuBtn" class="menuBtn" type="button" aria-haspopup="true" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none">
@@ -1905,7 +1935,7 @@
 
 <script>
 /* =========================================================
-   ✅ MENU BUTTON DROPDOWN (now far right)
+   ✅ MENU BUTTON DROPDOWN
 ========================================================= */
 (function initMenu(){
   const btn = document.getElementById("menuBtn");
@@ -2370,7 +2400,7 @@ function setGoogleTranslateLang(lang){
 })();
 
 /* =========================================================
-   ✅ Live Markets (auto-slide slow)
+   ✅ Live Markets
 ========================================================= */
 const coins = [
   "bitcoin","ethereum","tether","binancecoin","solana","ripple","cardano","dogecoin",
@@ -2473,7 +2503,7 @@ async function loadMarkets(){
   auto.innerHTML = "";
 
   coins.forEach(c=> auto.appendChild(createCoinCard(c)));
-  coins.forEach(c=> auto.appendChild(createCoinCard(c))); // duplicate for infinite loop
+  coins.forEach(c=> auto.appendChild(createCoinCard(c)));
 
   try{
     const res = await fetch(
@@ -2532,7 +2562,7 @@ loadMarkets();
 setInterval(loadMarkets, 45000);
 
 /* =========================================================
-   ✅ Testimonials (backend-ready later)
+   ✅ Testimonials
 ========================================================= */
 async function getTestimonials(){
   return [
