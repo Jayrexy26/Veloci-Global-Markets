@@ -1467,1475 +1467,6 @@
 <body>
 
 <canvas id="bgCanvas"></canvas>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veloci Global Markets | Client Portal</title>
-
-  <meta name="description" content="Veloci Global Markets client portal for market tracking, portfolio tools, and account access." />
-  <meta name="robots" content="index, follow" />
-  <meta name="theme-color" content="#050a18" />
-
-  <style>
-    :root{
-      --bg:#050a18;
-      --panel:#0b1226;
-      --panel2:#0f1a34;
-      --stroke:rgba(255,255,255,.12);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.70);
-      --muted2:rgba(234,240,255,.55);
-
-      --brand:#3b82f6;
-      --brand2:#6366f1;
-      --ok:#22c55e;
-      --err:#f87171;
-
-      --shadow: 0 30px 120px rgba(0,0,0,.62);
-      --shadow2: 0 16px 60px rgba(0,0,0,.55);
-
-      /* ✅ Plan badge colors */
-      --badgeStarter: rgba(59,130,246,.45);
-      --badgePopular: rgba(34,197,94,.45);
-      --badgePro: rgba(168,85,247,.45);
-      --badgeElite: rgba(251,191,36,.45);
-    }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color:var(--text);
-      overflow-x:hidden;
-    }
-
-    a{color:inherit}
-    .container{
-      width:100%;
-      max-width:1220px;
-      margin:0 auto;
-      padding:0 18px;
-      position:relative;
-      z-index:2;
-    }
-
-    /* ✅ Twinkling dots background canvas */
-    #bgCanvas{
-      position:fixed;
-      inset:0;
-      z-index:0;
-      pointer-events:none;
-      background:
-        radial-gradient(1200px 640px at 12% 12%, rgba(59,130,246,.20), transparent 58%),
-        radial-gradient(900px 560px at 86% 14%, rgba(99,102,241,.18), transparent 62%),
-        radial-gradient(720px 520px at 50% 90%, rgba(59,130,246,.10), transparent 60%),
-        var(--bg);
-    }
-
-    /* ✅ Top bar */
-    .topbar{
-      position:relative;
-      z-index:3;
-      background: rgba(17,22,42,.56);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .topbarInner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:10px 0;
-      font-size:12.5px;
-      color:rgba(234,240,255,.72);
-      flex-wrap:wrap;
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      user-select:none;
-    }
-
-    /* ✅ Translator selector */
-    .langSelect{
-      cursor:pointer;
-      appearance:none;
-      -webkit-appearance:none;
-      border-radius:999px;
-      padding:7px 12px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color: rgba(234,240,255,.86);
-      font-weight:1100;
-      outline:none;
-      transition:.15s ease;
-      max-width:360px;
-    }
-    .langSelect:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
-    .langSelect option{ color:#0b0f19; }
-
-    /* ✅ Navbar */
-    header{
-      position:sticky;
-      top:0;
-      z-index:1000;
-      background: rgba(5,10,24,.72);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-    .nav{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 0;
-      gap:12px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      text-decoration:none;
-      user-select:none;
-      min-width: 260px;
-      overflow:visible;
-    }
-
-    /* ✅ REMOVE small logo box (no longer used) */
-    .logo{ display:none !important; }
-
-    /* ✅ BIG logo WITHOUT changing bar height */
-    .brandLogoImg{
-      height:32px;
-      width:auto;
-      max-width:260px;
-      object-fit:contain;
-      filter:
-        drop-shadow(0 10px 30px rgba(0,0,0,.55))
-        drop-shadow(0 0 22px rgba(59,130,246,.22));
-      transform: translateY(1px) scale(2.6);
-      transform-origin:left center;
-    }
-
-    nav{
-      display:flex;
-      align-items:center;
-      gap:18px;
-      flex-wrap:wrap;
-      justify-content:center;
-    }
-    nav a{
-      text-decoration:none;
-      font-size:14px;
-      color:rgba(234,240,255,.86);
-      font-weight:1100;
-      opacity:.92;
-      transition:.15s ease;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid transparent;
-    }
-    nav a:hover{
-      opacity:1;
-      background: rgba(255,255,255,.05);
-      border-color: rgba(255,255,255,.08);
-    }
-
-    .navCTA{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      min-width: 260px;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      border-radius:999px;
-      padding:11px 16px;
-      font-weight:1100;
-      font-size:14px;
-      text-decoration:none;
-      transition:.15s ease;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      position:relative;
-      overflow:hidden;
-      white-space:nowrap;
-    }
-    .btn:hover{transform:translateY(-1px)}
-    .btnPrimary{
-      border:none;
-      color:white;
-      background: linear-gradient(180deg, var(--brand), #2563eb);
-      box-shadow: 0 18px 55px rgba(37,99,235,.35);
-    }
-    .btnOutline{
-      border:1px solid rgba(96,165,250,.40);
-      color:#a6c8ff;
-      background: rgba(2,6,23,.12);
-    }
-
-    /* ✅ MENU dropdown */
-    .menuWrap{ position:relative; }
-    .menuBtn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      font-weight:1100;
-      color:rgba(234,240,255,.85);
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      padding:10px 12px;
-      border-radius:999px;
-      transition:.15s ease;
-      width:44px;
-      height:44px;
-    }
-    .menuBtn:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
-    .menuBtn svg{ width:18px;height:18px; opacity:.98; }
-
-    .menuDropdown{
-      position:absolute;
-      top: 48px;
-      right:0;
-      min-width:220px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.90);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 30px 120px rgba(0,0,0,.65);
-      padding:10px;
-      display:none;
-      z-index:9999;
-      overflow:hidden;
-    }
-    .menuDropdown::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .menuDropdown a{
-      position:relative;
-      z-index:1;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      text-decoration:none;
-      padding:10px 12px;
-      border-radius:12px;
-      color:rgba(234,240,255,.86);
-      font-weight:1100;
-      border:1px solid transparent;
-      background: rgba(255,255,255,.02);
-      transition:.12s ease;
-      margin:6px 0;
-    }
-    .menuDropdown a:hover{
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.10);
-    }
-    .menuDropdown small{
-      color: rgba(234,240,255,.55);
-      font-weight:1000;
-    }
-
-    /* ✅ TradingView Ticker Tape */
-    .tickerWrap{
-      position:relative;
-      z-index:3;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(2,6,23,.22);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .tickerInner{ padding: 12px 0; }
-    .tickerGlass{
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-    }
-
-    /* ✅ Sections */
-    section{
-      padding:56px 0;
-      position:relative;
-      z-index:2;
-      scroll-margin-top: 110px;
-      overflow:hidden; /* ✅ FIX: prevents glow overflow shadow on left */
-    }
-
-    /* ✅ scroll unfold + fade */
-    .reveal{
-      opacity:0;
-      transform: translateY(26px) scale(.985);
-      transition: opacity .8s ease, transform .8s ease;
-      will-change: opacity, transform;
-    }
-    .reveal.show{
-      opacity:1;
-      transform: translateY(0) scale(1);
-    }
-
-    /* ✅ section highlight on touch */
-    .touchHighlight{
-      border-radius: 18px;
-      transition: box-shadow .35s ease, transform .25s ease;
-    }
-    .touchHighlight.active{
-      box-shadow:
-        0 0 0 1px rgba(96,165,250,.18),
-        0 0 0 6px rgba(59,130,246,.10),
-        0 28px 120px rgba(0,0,0,.40);
-      transform: translateY(-1px);
-    }
-
-    /* ✅ individual cards highlight */
-    .tapHighlight{
-      border-radius: 18px;
-      transition: box-shadow .35s ease, transform .25s ease, border-color .25s ease;
-      will-change: transform, box-shadow;
-    }
-    .tapHighlight.tapActive{
-      box-shadow:
-        0 0 0 1px rgba(96,165,250,.18),
-        0 0 0 6px rgba(59,130,246,.10),
-        0 28px 120px rgba(0,0,0,.40);
-      transform: translateY(-1px);
-    }
-
-    /* ✅ Plan highlight colors */
-    .tapActive.starterGlow{
-      box-shadow:
-        0 0 0 1px rgba(59,130,246,.22),
-        0 0 0 6px rgba(59,130,246,.14),
-        0 30px 130px rgba(0,0,0,.55);
-    }
-    .tapActive.popularGlow{
-      box-shadow:
-        0 0 0 1px rgba(34,197,94,.22),
-        0 0 0 6px rgba(34,197,94,.14),
-        0 30px 130px rgba(0,0,0,.55);
-    }
-    .tapActive.proGlow{
-      box-shadow:
-        0 0 0 1px rgba(168,85,247,.22),
-        0 0 0 6px rgba(168,85,247,.14),
-        0 30px 130px rgba(0,0,0,.55);
-    }
-    .tapActive.eliteGlow{
-      box-shadow:
-        0 0 0 1px rgba(251,191,36,.22),
-        0 0 0 6px rgba(251,191,36,.14),
-        0 30px 130px rgba(0,0,0,.55);
-    }
-
-    /* ✅ Plan badge */
-    .planBadge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      margin-left:10px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:1200;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      color: rgba(234,240,255,.92);
-      transform: translateY(-2px);
-      white-space:nowrap;
-    }
-    .badgeStarter{ background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.26); }
-    .badgePopular{ background: rgba(34,197,94,.16); border-color: rgba(34,197,94,.26); }
-    .badgePro{ background: rgba(168,85,247,.16); border-color: rgba(168,85,247,.26); }
-    .badgeElite{ background: rgba(251,191,36,.14); border-color: rgba(251,191,36,.28); }
-
-    /* ✅ NEW: plan logo image (transparent, NOT boxed) */
-    .planLogoImg{
-      width:70px;
-      height:auto;
-      object-fit:contain;
-      filter: drop-shadow(0 14px 40px rgba(0,0,0,.55));
-      opacity:.98;
-      pointer-events:none;
-    }
-
-    /* ✅ position plan logo inside plan card (outside badge) */
-    .planLogoWrap{
-      width:100%;
-      display:flex;
-      justify-content:flex-end;
-      margin-top:2px;
-      margin-bottom:4px;
-    }
-
-    /* ✅ HERO */
-    .hero{
-      padding:78px 0 18px;
-      position:relative;
-      z-index:2;
-    }
-    .heroGrid{
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:30px;
-      align-items:center;
-    }
-
-    .kicker{
-      display:inline-flex;
-      gap:10px;
-      align-items:center;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color:rgba(234,240,255,.78);
-      font-weight:1100;
-      font-size:13px;
-      width:fit-content;
-    }
-    .kicker b{
-      color:#fff;
-      background: rgba(59,130,246,.18);
-      border:1px solid rgba(96,165,250,.28);
-      padding:4px 8px;
-      border-radius:999px;
-      font-size:12px;
-    }
-
-    .hero h2{
-      margin:14px 0 10px;
-      font-size:52px;
-      line-height:1.03;
-      letter-spacing:-1.2px;
-      font-weight:1100;
-      background: linear-gradient(90deg, #eaf0ff, #9cc7ff, #aab4ff);
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-      text-shadow: 0 30px 120px rgba(0,0,0,.55);
-    }
-
-    .hero p{
-      margin:0;
-      font-size:16px;
-      color:rgba(234,240,255,.72);
-      line-height:1.72;
-      max-width:660px;
-    }
-
-    .heroBtns{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin-top:22px;
-    }
-
-    .badges{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:18px;
-    }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.78);
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .badge svg{width:16px;height:16px;opacity:.95}
-
-    /* ✅ 3D chart card */
-    .chartCard{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-      transform-style: preserve-3d;
-      perspective: 1100px;
-    }
-    .chartCard::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.26), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .chartTop{
-      position:relative;
-      z-index:2;
-      padding:16px 16px 10px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .chartTop .title{
-      font-size:13px;
-      font-weight:1100;
-      color:rgba(234,240,255,.84);
-      letter-spacing:.2px;
-      padding:9px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.28);
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-    }
-    .livePulse{
-      width:8px;height:8px;border-radius:50%;
-      background: var(--ok);
-      box-shadow: 0 0 0 5px rgba(34,197,94,.12);
-    }
-    .chartTop .right{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .miniTag{
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.72);
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-
-    .chartArea{
-      position:relative;
-      z-index:2;
-      padding:0 14px 14px;
-    }
-
-    .chartFrame{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      transform: translateZ(18px);
-    }
-    canvas#chartCanvas{
-      display:block;
-      width:100%;
-      height:330px;
-    }
-    .glowLine{
-      position:absolute;
-      inset:auto -30px 14px -30px;
-      height:1px;
-      background: linear-gradient(90deg, transparent, rgba(96,165,250,.75), transparent);
-      filter: blur(.2px);
-      opacity:.9;
-      z-index:3;
-    }
-
-    .chartFooter{
-      display:flex;
-      gap:10px;
-      padding:12px 14px 0;
-      flex-wrap:wrap;
-      align-items:center;
-      justify-content:space-between;
-      color:rgba(234,240,255,.66);
-      font-size:12.5px;
-      font-weight:900;
-    }
-    .chipRow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .chip{
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color:rgba(234,240,255,.72);
-      font-weight:1100;
-      font-size:12px;
-    }
-
-    /* ✅ section title */
-    .sectionTitle{
-      text-align:center;
-      max-width:920px;
-      margin:0 auto 24px;
-    }
-    .sectionTitle h3{
-      margin:0;
-      font-size:32px;
-      font-weight:1100;
-      letter-spacing:-.7px;
-      background: linear-gradient(90deg, #eaf0ff, #a8c8ff);
-      -webkit-background-clip:text;
-      background-clip:text;
-      color:transparent;
-    }
-    .sectionTitle p{
-      margin:10px 0 0;
-      color:rgba(234,240,255,.70);
-      line-height:1.7;
-      font-size:15px;
-    }
-
-    /* ✅ Stats counters */
-    .statsGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:14px;
-      margin-top:22px;
-    }
-    .statBox{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      padding:18px 16px;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      overflow:hidden;
-      position:relative;
-      text-align:center;
-    }
-    .statBox::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .statBox > *{position:relative; z-index:1;}
-    .statNum{
-      font-size:30px;
-      font-weight:1200;
-      letter-spacing:-.6px;
-      color:#eaf0ff;
-    }
-    .statLbl{
-      margin-top:8px;
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-
-    /* ✅ Steps */
-    .stepsGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:16px;
-    }
-    .stepCard{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.28);
-      padding:18px 16px;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      overflow:hidden;
-    }
-    .stepCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.14), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .stepCard > *{position:relative; z-index:1;}
-    .stepTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      margin-bottom:10px;
-    }
-    .stepIcon{
-      width:46px;height:46px;border-radius:16px;
-      display:grid;place-items:center;
-      background: rgba(59,130,246,.10);
-      border:1px solid rgba(96,165,250,.24);
-      box-shadow: 0 12px 38px rgba(0,0,0,.35);
-    }
-    .stepIcon svg{width:22px;height:22px}
-    .stepNum{
-      font-weight:1200;
-      color:rgba(234,240,255,.55);
-      letter-spacing:.4px;
-      font-size:12px;
-    }
-    .stepCard h4{
-      margin:0;
-      font-size:16px;
-      font-weight:1200;
-      letter-spacing:-.2px;
-    }
-    .stepCard p{
-      margin:8px 0 0;
-      color:rgba(234,240,255,.70);
-      font-size:14px;
-      line-height:1.65;
-    }
-
-    /* ✅ Profit Calculator */
-    .calcGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:16px;
-      align-items:stretch;
-      margin-top:18px;
-    }
-    .calcBox{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      box-shadow: var(--shadow);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .calcBox::before{
-      content:"";
-      position:absolute;
-      inset:-80px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
-      filter: blur(20px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .calcBox > *{position:relative; z-index:1;}
-    .calcTitle{
-      font-size:15px;
-      font-weight:1200;
-      color:rgba(234,240,255,.90);
-      margin:0 0 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .calcTitle span{
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.65);
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.20);
-    }
-
-    .calcField{margin-top:12px;}
-    .calcLabel{
-      font-size:13px;
-      font-weight:1100;
-      color:rgba(234,240,255,.70);
-      margin-bottom:8px;
-    }
-    .calcInput, .calcSelect{
-      width:100%;
-      padding:14px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      color: var(--text);
-      font-size:15px;
-      font-weight:900;
-      outline:none;
-      transition:.18s ease;
-    }
-    .calcInput:focus, .calcSelect:focus{
-      border-color: rgba(96,165,250,.60);
-      box-shadow: 0 0 0 4px rgba(59,130,246,.18);
-    }
-
-    .calcResult{
-      margin-top:14px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.26);
-      padding:14px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .resCard{
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      padding:12px 12px;
-    }
-    .resCard small{
-      display:block;
-      color:rgba(234,240,255,.62);
-      font-weight:1100;
-      font-size:12px;
-      margin-bottom:6px;
-    }
-    .resCard strong{
-      font-size:18px;
-      font-weight:1200;
-      letter-spacing:-.3px;
-    }
-
-    /* ✅ Plans */
-    .planGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:16px;
-      margin-top:18px;
-    }
-    .planCard{
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.05);
-      box-shadow: var(--shadow2);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      min-height: 320px;
-    }
-    .planCard::before{
-      content:"";
-      position:absolute;
-      inset:-90px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.22), transparent 62%);
-      filter: blur(22px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .planCard > *{position:relative; z-index:1;}
-    .planHead{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .planName{
-      font-weight:1300;
-      font-size:18px;
-      letter-spacing:-.3px;
-      display:flex;
-      flex-wrap:wrap;
-      align-items:center;
-      gap:6px;
-    }
-    .planTag{
-      font-size:12px;
-      font-weight:1200;
-      color:rgba(234,240,255,.70);
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.20);
-    }
-    .planPrice{
-      font-size:28px;
-      font-weight:1400;
-      letter-spacing:-.6px;
-      margin-top:4px;
-    }
-    .planPrice small{
-      font-size:12.5px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-    }
-    .planList{
-      margin:0;
-      padding:0;
-      list-style:none;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      color:rgba(234,240,255,.74);
-      font-size:13.5px;
-      font-weight:900;
-      line-height:1.45;
-    }
-    .planList li{
-      display:flex;
-      align-items:flex-start;
-      gap:8px;
-    }
-    .planList svg{width:18px;height:18px; margin-top:1px; opacity:.95;}
-    .planBtn{
-      margin-top:auto;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .planBtn a{
-      width:100%;
-      text-align:center;
-      justify-content:center;
-    }
-    .planFeatured{
-      border-color: rgba(96,165,250,.34);
-      background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(255,255,255,.04));
-      transform: translateY(-4px);
-    }
-    .planGlow{
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 50% 20%, rgba(96,165,250,.28), transparent 62%);
-      filter: blur(22px);
-      opacity:0.95;
-      pointer-events:none;
-    }
-
-    /* ✅ Referral section */
-    .refGrid{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:14px;
-      margin-top:18px;
-    }
-    .refCard{
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      padding:16px 14px;
-      position:relative;
-      overflow:hidden;
-      text-align:center;
-    }
-    .refCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(59,130,246,.18), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .refCard > *{position:relative; z-index:1;}
-    .refPct{
-      font-size:32px;
-      font-weight:1400;
-      letter-spacing:-.7px;
-    }
-    .refLvl{
-      margin-top:8px;
-      font-size:12px;
-      font-weight:1200;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    .refNote{
-      margin-top:10px;
-      color:rgba(234,240,255,.72);
-      font-size:13px;
-      line-height:1.55;
-      font-weight:900;
-    }
-
-    /* ✅ Partner slider */
-    .partnerTrack{
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      overflow:hidden;
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      position:relative;
-      margin-top:18px;
-    }
-    .partnerTrack::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(96,165,250,.18), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .partnerRow{
-      display:flex;
-      gap:18px;
-      padding:16px 10px;
-      align-items:center;
-      animation: slidePartners 26s linear infinite;
-      width:max-content;
-      position:relative;
-      z-index:1;
-    }
-    .partnerPill{
-      min-width: 160px;
-      padding:12px 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.26);
-      text-align:center;
-      font-weight:1200;
-      color:rgba(234,240,255,.82);
-      letter-spacing:.25px;
-      white-space:nowrap;
-    }
-    @keyframes slidePartners{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-50%); }
-    }
-
-    /* ✅ Markets row */
-    .marketRowWrap{
-      max-width:1200px;
-      margin:0 auto;
-    }
-    .marketScroller{
-      display:flex;
-      gap:14px;
-      overflow:hidden;
-      padding: 6px 2px 10px;
-      position:relative;
-    }
-
-    .marketAuto{
-      display:flex;
-      gap:14px;
-      width:max-content;
-      animation: autoMarket 90s linear infinite;
-    }
-    .marketScroller:hover .marketAuto{
-      animation-play-state: paused;
-    }
-
-    @keyframes autoMarket{
-      from{ transform: translateX(0); }
-      to{ transform: translateX(-50%); }
-    }
-
-    .coinCard{
-      min-width: 360px;
-      max-width: 360px;
-      border-radius:20px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.32);
-      box-shadow: 0 18px 70px rgba(0,0,0,.38);
-      position:relative;
-      overflow:hidden;
-      padding:16px 14px;
-    }
-    .coinCard::before{
-      content:"";
-      position:absolute;
-      inset:-60px;
-      background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.18), transparent 64%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .coinCardInner{position:relative; z-index:1;}
-    .coinTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-    .coinLeft{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width: 0;
-    }
-    .coinLogo{
-      width:44px;height:44px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      display:grid;
-      place-items:center;
-      overflow:hidden;
-      box-shadow: 0 14px 46px rgba(0,0,0,.35);
-      flex:0 0 auto;
-    }
-    .coinLogo img{
-      width:26px;height:26px;
-      object-fit:contain;
-      filter: drop-shadow(0 10px 25px rgba(0,0,0,.55));
-    }
-    .coinMeta{
-      min-width: 0;
-      display:flex;
-      flex-direction:column;
-      line-height:1.1;
-    }
-    .coinName{
-      font-size:14px;
-      font-weight:1200;
-      letter-spacing:-.2px;
-      color:rgba(234,240,255,.92);
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 200px;
-    }
-    .coinSym{
-      margin-top:4px;
-      font-size:12px;
-      font-weight:1100;
-      color:rgba(234,240,255,.62);
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    .coinRight{text-align:right;}
-    .coinPrice{
-      font-size:20px;
-      font-weight:1300;
-      letter-spacing:-.4px;
-      color:#eaf0ff;
-      white-space:nowrap;
-    }
-    .coinChange{
-      margin-top:6px;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      font-size:12px;
-      font-weight:1200;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      white-space:nowrap;
-    }
-    .chgUp{ color: rgba(34,197,94,.96); border-color: rgba(34,197,94,.20); background: rgba(34,197,94,.08);}
-    .chgDown{ color: rgba(248,113,113,.96); border-color: rgba(248,113,113,.22); background: rgba(248,113,113,.08);}
-
-    .coinBottom{
-      margin-top:12px;
-      border-top:1px solid rgba(255,255,255,.10);
-      padding-top:12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      color:rgba(234,240,255,.65);
-      font-size:12.5px;
-      font-weight:900;
-    }
-    .spark{
-      width:96px;
-      height:30px;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.22);
-      overflow:hidden;
-      position:relative;
-    }
-    .spark canvas{ width:100%; height:100%; display:block; }
-
-    /* ✅ Testimonials */
-    .testGrid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:16px;
-      margin-top:18px;
-    }
-    .testCard{
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      box-shadow: 0 18px 70px rgba(0,0,0,.35);
-      padding:18px 16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .testCard::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,.20), transparent 62%);
-      filter: blur(18px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .testCard > *{position:relative; z-index:1;}
-    .stars{
-      display:flex;
-      gap:4px;
-      margin-bottom:10px;
-    }
-    .stars svg{width:16px;height:16px; opacity:.95;}
-    .testText{
-      color:rgba(234,240,255,.74);
-      font-size:14px;
-      line-height:1.65;
-      font-weight:900;
-    }
-    .testUser{
-      margin-top:14px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .avatar{
-      width:42px;height:42px;border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.30);
-      display:grid;
-      place-items:center;
-      font-weight:1200;
-      color:#eaf0ff;
-    }
-    .userMeta{
-      line-height:1.1;
-    }
-    .userMeta strong{
-      display:block;
-      font-weight:1200;
-      font-size:13.5px;
-    }
-    .userMeta span{
-      display:block;
-      font-weight:900;
-      font-size:12px;
-      color:rgba(234,240,255,.62);
-      margin-top:4px;
-    }
-
-    /* ✅ CTA band */
-    .ctaBand{padding:0;}
-    .ctaBox{
-      border-radius:28px;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(59,130,246,.18), rgba(2,6,23,.22));
-      box-shadow: 0 30px 130px rgba(0,0,0,.65);
-      padding:28px 20px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      overflow:hidden;
-      position:relative;
-    }
-    .ctaBox::before{
-      content:"";
-      position:absolute;
-      inset:-70px;
-      background: radial-gradient(circle at 20% 20%, rgba(96,165,250,.28), transparent 65%);
-      filter: blur(26px);
-      opacity:.9;
-      pointer-events:none;
-    }
-    .ctaBox .left{position:relative; z-index:1; max-width:760px;}
-    .ctaBox h4{
-      margin:0;
-      font-size:22px;
-      font-weight:1300;
-      letter-spacing:-.35px;
-      color:#eaf0ff;
-    }
-    .ctaBox p{
-      margin:8px 0 0;
-      color:rgba(234,240,255,.70);
-      line-height:1.65;
-      font-size:14px;
-    }
-    .ctaBox .right{
-      position:relative;
-      z-index:1;
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-
-    /* ✅ Footer */
-    footer{
-      padding:26px 0 34px;
-      border-top:1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.26);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      position:relative;
-      z-index:2;
-    }
-
-    /* ✅ NEW footer layout with logo left */
-    .footGrid{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:18px;
-      flex-wrap:wrap;
-    }
-    .footBrand{
-      display:flex;
-      align-items:flex-start;
-      gap:14px;
-      min-width:260px;
-    }
-    .footerLogoImg{
-      height:26px;
-      width:auto;
-      max-width:210px;
-      object-fit:contain;
-      filter:
-        drop-shadow(0 10px 28px rgba(0,0,0,.55))
-        drop-shadow(0 0 20px rgba(59,130,246,.22));
-      transform: translateY(2px) scale(1.55);
-      transform-origin:left top;
-    }
-
-    .footInner{
-      text-align:center;
-      font-size:12px;
-      color:rgba(234,240,255,.66);
-      line-height:1.6;
-      flex:1;
-      min-width: 320px;
-    }
-
-    .footer-links{
-      margin-top:12px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:center;
-    }
-    .footer-links a{
-      color:#9cc7ff;
-      font-weight:1100;
-      text-decoration:none;
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .footer-links a:hover{background: rgba(255,255,255,.06);}
-    .risk{
-      margin-top:12px;
-      max-width:920px;
-      margin-left:auto;
-      margin-right:auto;
-      color: rgba(234,240,255,.55);
-      font-size:11.5px;
-    }
-
-    /* ✅ Responsive */
-    @media(max-width: 1100px){
-      .heroGrid{grid-template-columns: 1fr; gap:18px;}
-      .hero h2{font-size:44px;}
-      .chartCard{max-width:600px;}
-      .statsGrid{grid-template-columns: 1fr 1fr;}
-      .stepsGrid{grid-template-columns: 1fr 1fr;}
-      .calcGrid{grid-template-columns: 1fr;}
-      .planGrid{grid-template-columns: 1fr 1fr;}
-      .refGrid{grid-template-columns: 1fr 1fr;}
-      .testGrid{grid-template-columns: 1fr;}
-    }
-    @media(max-width: 560px){
-      nav{display:none;}
-
-      .topbarInner{
-        justify-content:space-between;
-      }
-
-      .hero{padding:56px 0 18px;}
-      .hero h2{font-size:36px;}
-
-      .brand{
-        min-width:auto;
-        max-width: 52%;
-      }
-
-      .navCTA{
-        min-width:auto;
-        gap:8px;
-      }
-
-      /* Logo smaller scaling so it doesn't hit buttons */
-      .brandLogoImg{
-        height:28px;
-        max-width:200px;
-        transform: translateY(1px) scale(2.15);
-        transform-origin:left center;
-      }
-
-      .coinCard{min-width: 310px; max-width:310px;}
-      .planGrid{grid-template-columns: 1fr;}
-      .statsGrid{grid-template-columns: 1fr;}
-      .stepsGrid{grid-template-columns: 1fr;}
-
-      /* ✅ Testimonials slider on mobile */
-      .testGrid{
-        display:flex !important;
-        overflow-x:auto;
-        gap:14px;
-        padding: 6px 2px 12px;
-        scroll-snap-type:x mandatory;
-        -webkit-overflow-scrolling:touch;
-        scroll-behavior:smooth;
-      }
-      .testCard{
-        min-width: 86%;
-        scroll-snap-align:center;
-      }
-      .testGrid::-webkit-scrollbar{ height: 8px; }
-      .testGrid::-webkit-scrollbar-thumb{
-        background: rgba(255,255,255,.10);
-        border-radius: 999px;
-      }
-
-      /* ✅ Footer stack nicely */
-      .footGrid{flex-direction:column; align-items:center;}
-      .footBrand{justify-content:center;}
-      .footerLogoImg{transform: translateY(2px) scale(1.45);}
-      .footInner{text-align:center;}
-    }
-
-    /* ✅ Hide Google default translate banner */
-    .goog-te-banner-frame.skiptranslate { display: none !important; }
-    body { top: 0px !important; }
-    #goog-gt-tt, .goog-te-balloon-frame { display:none !important; }
-  </style>
-</head>
-
-<body>
-
-<canvas id="bgCanvas"></canvas>
 <!-- ✅ Top bar -->
 <div class="topbar">
   <div class="container">
@@ -3674,6 +2205,288 @@
     </div>
   </div>
 </section>
+<!-- ✅ Footer -->
+<footer class="reveal touchHighlight">
+  <div class="container">
+
+    <!-- ✅ footer top brand (logo left like sticky bar, but NOT sticky) -->
+    <div class="footerTopBrand">
+      <a class="footerBrand" href="index.html" aria-label="Veloci Global Markets footer logo">
+        <img class="footerLogoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets"
+             onerror="this.style.display='none';" />
+      </a>
+    </div>
+
+    <div class="footInner">
+
+      <div class="footer-links">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="risk.html">Risk Disclosure</a>
+        <a href="contact.html">Contact</a>
+      </div>
+
+      <!-- ✅ NEW FOOTER DISCLAIMER (exact text you provided) -->
+      <div class="risk">
+        This website may use automated translations for your convenience. However, the English version is the definitive version and will prevail in the event of any discrepancy.
+        <br/><br/>
+        Trade responsibly: Trading CFDs is risky and may lead to permanent capital loss. Make sure you understand the risks before trading.
+        <br/><br/>
+        Veloci Global Markets is a registered trademark utilised under an approved licensing agreement. All rights reserved.
+        <br/><br/>
+        Veloci Global Markets does not offer Contracts for Difference to residents of certain jurisdictions including the Yemen and Iran
+      </div>
+
+      <div style="margin-top:16px;">
+        © 2026 Veloci Global Markets. All rights reserved.
+      </div>
+
+    </div>
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   ✅ MENU BUTTON DROPDOWN
+========================================================= */
+(function initMenu(){
+  const btn = document.getElementById("menuBtn");
+  const dd  = document.getElementById("menuDropdown");
+  if(!btn || !dd) return;
+
+  function close(){
+    dd.style.display = "none";
+    btn.setAttribute("aria-expanded","false");
+  }
+  function open(){
+    dd.style.display = "block";
+    btn.setAttribute("aria-expanded","true");
+  }
+
+  btn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    const openNow = dd.style.display === "block";
+    if(openNow) close();
+    else open();
+  });
+
+  document.addEventListener("click", ()=> close());
+  dd.addEventListener("click", (e)=> e.stopPropagation());
+})();
+
+/* =========================================================
+   ✅ TRANSLATOR
+========================================================= */
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'en', autoDisplay: false}, 'google_translate_element');
+}
+
+function setGoogleTranslateLang(lang){
+  const combo = document.querySelector("select.goog-te-combo");
+  if(combo){
+    combo.value = lang;
+    combo.dispatchEvent(new Event("change"));
+    return true;
+  }
+  return false;
+}
+
+(function initTranslator(){
+  const select = document.getElementById("langSelect");
+  if(!select) return;
+
+  select.addEventListener("change", ()=>{
+    const lang = select.value;
+    if(!lang) return;
+
+    if(setGoogleTranslateLang(lang)) return;
+
+    let tries = 0;
+    const interval = setInterval(()=>{
+      tries++;
+      if(setGoogleTranslateLang(lang) || tries > 25){
+        clearInterval(interval);
+      }
+    }, 200);
+  });
+})();
+
+/* =========================================================
+   ✅ Scroll reveal
+========================================================= */
+(function initReveal(){
+  const items = document.querySelectorAll(".reveal");
+  if(!items.length) return;
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add("show");
+        io.unobserve(entry.target);
+      }
+    });
+  }, {threshold: 0.12});
+
+  items.forEach(el => io.observe(el));
+})();
+
+/* =========================================================
+   ✅ Touch highlight per SECTION
+========================================================= */
+(function initTouchHighlight(){
+  const blocks = document.querySelectorAll(".touchHighlight");
+  if(!blocks.length) return;
+
+  function activate(el){
+    blocks.forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+    setTimeout(()=> el.classList.remove("active"), 700);
+  }
+
+  blocks.forEach(el=>{
+    el.addEventListener("touchstart", ()=> activate(el), {passive:true});
+    el.addEventListener("mousedown", ()=> activate(el));
+  });
+})();
+
+/* =========================================================
+   ✅ INDIVIDUAL BOX highlight (tapHighlight)
+========================================================= */
+(function initTapHighlight(){
+  const nodes = document.querySelectorAll(".tapHighlight");
+  if(!nodes.length) return;
+
+  function removeAll(){
+    nodes.forEach(n=>{
+      n.classList.remove("tapActive","starterGlow","popularGlow","proGlow","eliteGlow");
+    });
+  }
+
+  nodes.forEach(el=>{
+    el.addEventListener("click", ()=>{
+      removeAll();
+      el.classList.add("tapActive");
+
+      // If it's a plan card, apply matching glow
+      const plan = el.getAttribute("data-plan");
+      if(plan){
+        if(plan === "silver") el.classList.add("starterGlow");
+        if(plan === "gold") el.classList.add("popularGlow");
+        if(plan === "diamond") el.classList.add("proGlow");
+        if(plan === "platinum") el.classList.add("eliteGlow");
+      }
+
+      setTimeout(()=>{
+        el.classList.remove("tapActive","starterGlow","popularGlow","proGlow","eliteGlow");
+      }, 900);
+    });
+
+    el.addEventListener("touchstart", ()=>{
+      removeAll();
+      el.classList.add("tapActive");
+
+      const plan = el.getAttribute("data-plan");
+      if(plan){
+        if(plan === "silver") el.classList.add("starterGlow");
+        if(plan === "gold") el.classList.add("popularGlow");
+        if(plan === "diamond") el.classList.add("proGlow");
+        if(plan === "platinum") el.classList.add("eliteGlow");
+      }
+
+      setTimeout(()=>{
+        el.classList.remove("tapActive","starterGlow","popularGlow","proGlow","eliteGlow");
+      }, 900);
+    }, {passive:true});
+  });
+})();
+
+/* =========================================================
+   ✅ Twinkling Dots Background
+========================================================= */
+(function initTwinklingBackground(){
+  const canvas = document.getElementById("bgCanvas");
+  if(!canvas) return;
+  const ctx = canvas.getContext("2d");
+  let w=0,h=0, dpr=1;
+  const particles=[];
+  const PCOUNT = 130;
+
+  function resize(){
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w*dpr);
+    canvas.height = Math.floor(h*dpr);
+    canvas.style.width = w+"px";
+    canvas.style.height = h+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+
+  function spawn(){
+    particles.length = 0;
+    for(let i=0;i<PCOUNT;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: rand(0.8, 2.2),
+        a: rand(0.12, 0.85),
+        tw: rand(0.003, 0.012),
+        vx: rand(-0.08, 0.08),
+        vy: rand(-0.06, 0.06),
+        hue: (Math.random() < 0.55) ? 210 : 240
+      });
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+
+    const grd = ctx.createRadialGradient(w*0.2, h*0.2, 0, w*0.2, h*0.2, 650);
+    grd.addColorStop(0, "rgba(59,130,246,0.10)");
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0,0,w,h);
+
+    for(const p of particles){
+      p.x += p.vx;
+      p.y += p.vy;
+      if(p.x < -50) p.x = w+50;
+      if(p.x > w+50) p.x = -50;
+      if(p.y < -50) p.y = h+50;
+      if(p.y > h+50) p.y = -50;
+
+      p.a += p.tw * (Math.random() > 0.5 ? 1 : -1);
+      p.a = Math.max(0.06, Math.min(0.95, p.a));
+
+      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r*12);
+      glow.addColorStop(0, `hsla(${p.hue}, 92%, 65%, ${p.a})`);
+      glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r*12, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255,255,255,${p.a})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  spawn();
+  draw();
+
+  window.addEventListener("resize", () => {
+    resize();
+    spawn();
+  });
+})();
+</script>
 <script>
 /* =========================================================
    ✅ 3D Realistic Trading Chart Animation
