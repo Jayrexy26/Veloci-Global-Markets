@@ -289,6 +289,7 @@
     }
 
     /* ===== HELLO CARD ===== */
+    /* ✅ FIXED: keep right side aligned (ID/date), chips stay on top */
     .helloCard{
       border-radius:20px;
       padding:16px 16px;
@@ -299,19 +300,13 @@
       color:white;
       box-shadow:0 22px 70px rgba(109,87,255,.22);
 
-      /* ✅ FIX: lock left & right into stable columns */
       display:grid;
       grid-template-columns: 1fr auto;
-      align-items:center;
       gap:12px;
+      align-items:center;
     }
 
-    .helloLeft{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0; /* ✅ IMPORTANT: allow ellipsis + prevent pushing right side */
-    }
+    .helloLeft{display:flex;align-items:flex-start;gap:12px;}
 
     /* ✅ shield verified icon */
     .helloLogo{
@@ -321,18 +316,17 @@
       display:grid;place-items:center;
       font-weight:1000;
       font-size:22px;
-      flex:0 0 auto;
     }
 
-    /* ✅ FIX: chips must stay on ONE LINE (no wrap) */
-    .chips{
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+
+    /* ✅ NEW: chips row (active + country side-by-side, no wrap) */
+    .chipsRow{
       display:flex;
-      gap:8px;
-      flex-wrap:nowrap;        /* ✅ no wrap */
       align-items:center;
+      gap:10px;
       margin-bottom:6px;
-      overflow:hidden;         /* ✅ prevents breaking layout */
-      min-width:0;
+      flex-wrap:nowrap;
     }
 
     .miniChip{
@@ -341,27 +335,14 @@
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       display:flex;gap:6px;align-items:center;
-
-      white-space:nowrap;      /* ✅ keep pill in one line */
-      flex:0 0 auto;
+      white-space:nowrap;
     }
-
-    /* ✅ FIX: country chip can be long -> ellipsis */
-    #countryChip{
-      max-width:190px;         /* adjust if you want longer/shorter */
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
     .helloTitle{font-weight:1000;font-size:18px}
     .helloSub{font-size:12px;font-weight:900;opacity:.92}
 
     .helloRight{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      gap:8px;
-      flex:0 0 auto;
+      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+      justify-self:end;
     }
     .helloRightTop{display:flex;align-items:center;gap:10px}
     .idChip{
@@ -386,13 +367,6 @@
       font-weight:1000;font-size:12px;
       color:#fff;
       white-space:nowrap;
-    }
-
-    /* ✅ Optional safety for VERY small screens: stack right under, still neat */
-    @media(max-width:420px){
-      .helloCard{ grid-template-columns: 1fr; }
-      .helloRight{ align-items:flex-start; }
-      #countryChip{ max-width:100%; }
     }
 
     /* ============================================================
@@ -1158,19 +1132,22 @@
       </div>
     </div>
 
+    <!-- ✅ FIXED HELLO CARD MARKUP: chipsRow used so country chip sits beside active without breaking right side -->
     <div class="helloCard">
       <div class="helloLeft">
         <div class="helloLogo" title="Verified & Secure">🛡️</div>
 
-        <div style="min-width:0;">
-          <div class="chips">
+        <div>
+          <div class="chipsRow">
             <div class="miniChip">🟢 active</div>
             <div class="miniChip" id="countryChip" style="display:none"></div>
           </div>
+
           <div class="helloTitle" id="greetingTitle">Greetings…</div>
           <div class="helloSub" id="helloName">Loading…</div>
         </div>
       </div>
+
       <div class="helloRight">
         <div class="helloRightTop">
           <div class="idChip" id="userIdChip">ID:</div>
@@ -1253,6 +1230,7 @@
         </div>
       </div>
     </div>
+
     <div class="box">
       <h2>Fiat Currency Converter</h2>
       <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
@@ -1375,7 +1353,8 @@
     })();
 
     /* ============================================================
-      ✅ AUTH GUARD
+      ✅ AUTH GUARD + EMAIL VERIFICATION (SUPABASE)
+      (Already present in this file: user-dashboard.html)
     ============================================================ */
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
