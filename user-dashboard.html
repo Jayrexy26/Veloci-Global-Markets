@@ -300,7 +300,28 @@
       box-shadow:0 22px 70px rgba(109,87,255,.22);
       display:flex;align-items:center;justify-content:space-between;gap:12px;
     }
-    .helloLeft{display:flex;align-items:center;gap:12px;}
+
+    /* ✅ FIX: allow left side to shrink properly (prevents overlap) */
+    .helloLeft{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex:1;
+      min-width:0;
+    }
+    /* the text block inside helloLeft must be allowed to shrink */
+    .helloLeft > div{
+      flex:1;
+      min-width:0;
+    }
+    /* right side should not get squashed */
+    .helloRight{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:8px;
+      flex:0 0 auto;
+    }
 
     /* ✅ shield verified icon */
     .helloLogo{
@@ -310,19 +331,18 @@
       display:grid;place-items:center;
       font-weight:1000;
       font-size:22px;
+      flex:0 0 auto;
     }
 
-    /* ✅ CHANGE #1: chips become one single top row (active left, country right)
-       - NO wrapping (prevents extra height)
-       - country truncates with ellipsis instead of dropping line */
+    /* ✅ FIX: chips row stays top, country pushed right, but NEVER overflows */
     .chips{
       display:flex;
       align-items:center;
-      justify-content:flex-start;
       gap:8px;
-      flex-wrap:nowrap;        /* IMPORTANT: keep in one row */
+      flex-wrap:nowrap;
+      width:100%;
       margin-bottom:6px;
-      min-width:0;             /* allow ellipsis to work inside flex */
+      min-width:0;
     }
     .miniChip{
       font-size:12px;font-weight:1000;
@@ -330,36 +350,40 @@
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       display:flex;gap:6px;align-items:center;
-      flex:0 0 auto;
-      max-width:100%;
-    }
-    /* ✅ country chip pushed to the right of active */
-    #countryChip{
-      margin-left:auto;        /* pushes to the right */
-      min-width:0;             /* allow truncation */
-      max-width:62vw;          /* safety on small phones */
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      min-width:0;
     }
 
-    /* ✅ CHANGE #2: move greeting up a bit to align with shield */
+    /* ✅ this is the key: push it to the right AND clamp width so it doesn’t overlap */
+    #countryChip{
+      margin-left:auto;
+      max-width:180px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    @media(max-width:420px){
+      #countryChip{ max-width:140px; }
+    }
+    @media(max-width:360px){
+      #countryChip{ max-width:110px; }
+    }
+
+    /* ✅ move greeting slightly up to align with shield */
     .helloTitle{
       font-weight:1000;
       font-size:18px;
-      margin-top:-4px;         /* moved up slightly */
+      line-height:1.12;
+      transform: translateY(-3px);
     }
-    .helloSub{font-size:12px;font-weight:900;opacity:.92}
+    .helloSub{font-size:12px;font-weight:900;opacity:.92; transform: translateY(-3px);}
 
-    .helloRight{
-      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
-    }
     .helloRightTop{display:flex;align-items:center;gap:10px}
     .idChip{
       padding:8px 12px;border-radius:999px;
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       font-weight:1000;font-size:12px;
+      white-space:nowrap;
     }
     .logoutBtn{
       width:46px;height:46px;border-radius:999px;border:none;
@@ -898,14 +922,14 @@
       backdrop-filter: blur(14px);
       display:flex;
       align-items:center;
-      justify-content:space-around; /* ✅ FIX: equal spacing so Profile never spills out */
-      padding:10px 18px;           /* ✅ FIX: a bit more inner space */
-      gap:12px;                    /* ✅ FIX: stable spacing */
-      overflow:visible;            /* keep floating home visible */
+      justify-content:space-around;
+      padding:10px 18px;
+      gap:12px;
+      overflow:visible;
     }
     .dockItem{
-      flex:1 1 0;                  /* ✅ FIX: true equal distribution */
-      min-width:56px;              /* ✅ FIX: prevents overflow on small phones */
+      flex:1 1 0;
+      min-width:56px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -924,7 +948,6 @@
     .dockItem:hover{background:rgba(255,255,255,.06)}
     .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
 
-    /* ✅ home button stays HOME icon */
     .dockHome{
       width:78px;height:78px;border-radius:26px;
       background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
@@ -960,7 +983,6 @@
       border:1px solid rgba(255,255,255,.18);
     }
 
-    /* ✅ extra safety on very small screens */
     @media (max-width:360px){
       .dockBar{ padding:10px 14px; gap:10px; }
       .dockItem{ min-width:52px; font-size:11px; }
@@ -1145,7 +1167,7 @@
       <div class="helloLeft">
         <div class="helloLogo" title="Verified & Secure">🛡️</div>
 
-        <div style="min-width:0;">
+        <div>
           <div class="chips">
             <div class="miniChip">🟢 active</div>
             <div class="miniChip" id="countryChip" style="display:none"></div>
@@ -2493,7 +2515,6 @@
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
-      /* ✅ Loading screen stays 3 seconds longer */
       setTimeout(()=>hideGate(), 3000);
 
       loadDashboardIdentity();
@@ -2515,11 +2536,6 @@
       });
     }
 
-    /* ============================================================
-      ✅ FIX FOR "STUCK ON LOADING LOGO"
-      If any API/network fails, we STILL hide authGate after 3 sec.
-      So you never get trapped here again.
-    ============================================================ */
     (function safetyAutoHideGate(){
       setTimeout(()=>hideGate(), 3500);
     })();
@@ -2529,7 +2545,7 @@
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         if(!session){
-          hideGate(); /* ✅ allow UI to show if session missing */
+          hideGate();
           window.location.replace("login.html");
           return;
         }
