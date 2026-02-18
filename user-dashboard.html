@@ -298,9 +298,20 @@
         linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
       color:white;
       box-shadow:0 22px 70px rgba(109,87,255,.22);
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
+
+      /* ✅ FIX: lock left & right into stable columns */
+      display:grid;
+      grid-template-columns: 1fr auto;
+      align-items:center;
+      gap:12px;
     }
-    .helloLeft{display:flex;align-items:center;gap:12px;}
+
+    .helloLeft{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0; /* ✅ IMPORTANT: allow ellipsis + prevent pushing right side */
+    }
 
     /* ✅ shield verified icon */
     .helloLogo{
@@ -310,18 +321,18 @@
       display:grid;place-items:center;
       font-weight:1000;
       font-size:22px;
+      flex:0 0 auto;
     }
 
-    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-
-    /* ✅ NEW: Active (left) + Country chip (right) on SAME TOP ROW */
-    .chipsTop{
+    /* ✅ FIX: chips must stay on ONE LINE (no wrap) */
+    .chips{
       display:flex;
+      gap:8px;
+      flex-wrap:nowrap;        /* ✅ no wrap */
       align-items:center;
-      justify-content:space-between; /* active left, country right */
-      gap:10px;
       margin-bottom:6px;
-      width:100%;
+      overflow:hidden;         /* ✅ prevents breaking layout */
+      min-width:0;
     }
 
     .miniChip{
@@ -330,21 +341,27 @@
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       display:flex;gap:6px;align-items:center;
+
+      white-space:nowrap;      /* ✅ keep pill in one line */
+      flex:0 0 auto;
     }
 
-    /* ✅ prevent country chip from forcing a wrap */
+    /* ✅ FIX: country chip can be long -> ellipsis */
     #countryChip{
-      max-width:52%;
+      max-width:190px;         /* adjust if you want longer/shorter */
       overflow:hidden;
       text-overflow:ellipsis;
-      white-space:nowrap;
     }
 
     .helloTitle{font-weight:1000;font-size:18px}
     .helloSub{font-size:12px;font-weight:900;opacity:.92}
 
     .helloRight{
-      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:8px;
+      flex:0 0 auto;
     }
     .helloRightTop{display:flex;align-items:center;gap:10px}
     .idChip{
@@ -352,6 +369,7 @@
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       font-weight:1000;font-size:12px;
+      white-space:nowrap;
     }
     .logoutBtn{
       width:46px;height:46px;border-radius:999px;border:none;
@@ -368,6 +386,13 @@
       font-weight:1000;font-size:12px;
       color:#fff;
       white-space:nowrap;
+    }
+
+    /* ✅ Optional safety for VERY small screens: stack right under, still neat */
+    @media(max-width:420px){
+      .helloCard{ grid-template-columns: 1fr; }
+      .helloRight{ align-items:flex-start; }
+      #countryChip{ max-width:100%; }
     }
 
     /* ============================================================
@@ -1137,13 +1162,11 @@
       <div class="helloLeft">
         <div class="helloLogo" title="Verified & Secure">🛡️</div>
 
-        <div>
-          <!-- ✅ CHANGED: chips -> chipsTop so Active & Country are on same top row -->
-          <div class="chipsTop">
+        <div style="min-width:0;">
+          <div class="chips">
             <div class="miniChip">🟢 active</div>
             <div class="miniChip" id="countryChip" style="display:none"></div>
           </div>
-
           <div class="helloTitle" id="greetingTitle">Greetings…</div>
           <div class="helloSub" id="helloName">Loading…</div>
         </div>
