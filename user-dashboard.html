@@ -300,28 +300,7 @@
       box-shadow:0 22px 70px rgba(109,87,255,.22);
       display:flex;align-items:center;justify-content:space-between;gap:12px;
     }
-
-    /* ✅ FIX: allow left side to shrink properly (prevents overlap) */
-    .helloLeft{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      flex:1;
-      min-width:0;
-    }
-    /* the text block inside helloLeft must be allowed to shrink */
-    .helloLeft > div{
-      flex:1;
-      min-width:0;
-    }
-    /* right side should not get squashed */
-    .helloRight{
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      gap:8px;
-      flex:0 0 auto;
-    }
+    .helloLeft{display:flex;align-items:center;gap:12px;}
 
     /* ✅ shield verified icon */
     .helloLogo{
@@ -331,59 +310,28 @@
       display:grid;place-items:center;
       font-weight:1000;
       font-size:22px;
-      flex:0 0 auto;
     }
 
-    /* ✅ FIX: chips row stays top, country pushed right, but NEVER overflows */
-    .chips{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:nowrap;
-      width:100%;
-      margin-bottom:6px;
-      min-width:0;
-    }
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
     .miniChip{
       font-size:12px;font-weight:1000;
       padding:6px 10px;border-radius:999px;
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       display:flex;gap:6px;align-items:center;
-      min-width:0;
     }
+    .helloTitle{font-weight:1000;font-size:18px}
+    .helloSub{font-size:12px;font-weight:900;opacity:.92}
 
-    /* ✅ this is the key: push it to the right AND clamp width so it doesn’t overlap */
-    #countryChip{
-      margin-left:auto;
-      max-width:180px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
+    .helloRight{
+      display:flex;flex-direction:column;align-items:flex-end;gap:8px;
     }
-    @media(max-width:420px){
-      #countryChip{ max-width:140px; }
-    }
-    @media(max-width:360px){
-      #countryChip{ max-width:110px; }
-    }
-
-    /* ✅ move greeting slightly up to align with shield */
-    .helloTitle{
-      font-weight:1000;
-      font-size:18px;
-      line-height:1.12;
-      transform: translateY(-3px);
-    }
-    .helloSub{font-size:12px;font-weight:900;opacity:.92; transform: translateY(-3px);}
-
     .helloRightTop{display:flex;align-items:center;gap:10px}
     .idChip{
       padding:8px 12px;border-radius:999px;
       background:rgba(255,255,255,.18);
       border:1px solid rgba(255,255,255,.22);
       font-weight:1000;font-size:12px;
-      white-space:nowrap;
     }
     .logoutBtn{
       width:46px;height:46px;border-radius:999px;border:none;
@@ -922,14 +870,14 @@
       backdrop-filter: blur(14px);
       display:flex;
       align-items:center;
-      justify-content:space-around;
-      padding:10px 18px;
-      gap:12px;
-      overflow:visible;
+      justify-content:space-around; /* ✅ FIX: equal spacing so Profile never spills out */
+      padding:10px 18px;           /* ✅ FIX: a bit more inner space */
+      gap:12px;                    /* ✅ FIX: stable spacing */
+      overflow:visible;            /* keep floating home visible */
     }
     .dockItem{
-      flex:1 1 0;
-      min-width:56px;
+      flex:1 1 0;                  /* ✅ FIX: true equal distribution */
+      min-width:56px;              /* ✅ FIX: prevents overflow on small phones */
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -948,6 +896,7 @@
     .dockItem:hover{background:rgba(255,255,255,.06)}
     .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
 
+    /* ✅ home button stays HOME icon */
     .dockHome{
       width:78px;height:78px;border-radius:26px;
       background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
@@ -983,6 +932,7 @@
       border:1px solid rgba(255,255,255,.18);
     }
 
+    /* ✅ extra safety on very small screens */
     @media (max-width:360px){
       .dockBar{ padding:10px 14px; gap:10px; }
       .dockItem{ min-width:52px; font-size:11px; }
@@ -2515,6 +2465,7 @@
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
+      /* ✅ Loading screen stays 3 seconds longer */
       setTimeout(()=>hideGate(), 3000);
 
       loadDashboardIdentity();
@@ -2536,6 +2487,11 @@
       });
     }
 
+    /* ============================================================
+      ✅ FIX FOR "STUCK ON LOADING LOGO"
+      If any API/network fails, we STILL hide authGate after 3 sec.
+      So you never get trapped here again.
+    ============================================================ */
     (function safetyAutoHideGate(){
       setTimeout(()=>hideGate(), 3500);
     })();
@@ -2545,7 +2501,7 @@
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         if(!session){
-          hideGate();
+          hideGate(); /* ✅ allow UI to show if session missing */
           window.location.replace("login.html");
           return;
         }
