@@ -7,6 +7,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <style>
 :root{
@@ -429,6 +430,90 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 
 .ok{color:var(--ok);font-weight:1000}
 .err{color:var(--err);font-weight:1000}
+
+/* ============================================================
+   ✅ INDUSTRY STANDARD DEPOSIT HEADER (LOGOS + QR)
+============================================================ */
+.depHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.assetLine{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.assetLogo{
+  width:34px;height:34px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+}
+.assetLogo img{width:100%;height:100%;object-fit:cover;display:block}
+.assetMeta{min-width:0}
+.assetMeta .t1{font-weight:1000;font-size:14px;line-height:1.1}
+.assetMeta .t2{margin-top:4px;color:rgba(234,240,255,.65);font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badges{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.18);
+  font-weight:1000;
+  font-size:12px;
+}
+.badge img{
+  width:18px;height:18px;border-radius:999px;object-fit:cover;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+}
+.qrWrap{
+  margin-top:12px;
+  display:grid;
+  place-items:center;
+  padding:14px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.18);
+}
+.qrHint{
+  margin-top:10px;
+  color:rgba(234,240,255,.65);
+  font-weight:900;
+  font-size:12px;
+  text-align:center;
+}
+.qrBox{
+  width:196px;
+  height:196px;
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.95);
+  display:grid;
+  place-items:center;
+}
+.qrBox img, .qrBox canvas{
+  max-width:100%;
+  max-height:100%;
+  display:block;
+}
 </style>
 </head>
 
@@ -563,8 +648,38 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
       </div>
 
       <div class="copyBox">
+        <!-- ✅ upgraded header with logos -->
+        <div class="depHead">
+          <div class="assetLine">
+            <div class="assetLogo" title="Asset">
+              <img id="assetLogoImg" alt="Asset Logo" />
+            </div>
+            <div class="assetMeta">
+              <div class="t1" id="assetTitle">Deposit Address</div>
+              <div class="t2" id="assetSubtitle">Select asset + network</div>
+            </div>
+          </div>
+
+          <div class="badges">
+            <div class="badge" title="Selected Asset">
+              <img id="assetBadgeImg" alt="Asset" />
+              <span id="assetBadgeTxt">--</span>
+            </div>
+            <div class="badge" title="Selected Network">
+              <img id="networkBadgeImg" alt="Network" />
+              <span id="networkBadgeTxt">--</span>
+            </div>
+          </div>
+        </div>
+
         <div class="small">Deposit Address</div>
         <div class="addr" id="depAddress">Loading…</div>
+
+        <!-- ✅ QR -->
+        <div class="qrWrap">
+          <div class="qrBox" id="qrBox"></div>
+          <div class="qrHint" id="qrHint">Scan to copy address safely</div>
+        </div>
 
         <div class="btnRow">
           <button class="btn" onclick="goDashboard()">← Dashboard</button>
@@ -671,14 +786,52 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 </div>
 
 <script>
+/* ============================================================
+  ✅ COINLUXORA AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
+  - Requires active session
+  - Requires verified email
+  - Redirects safely
+============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+(async function coinluxoraAuthGuard(){
+  try{
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){
+      window.location.replace("login.html");
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.getUser();
+    const user = data?.user;
+    if(error || !user){
+      window.location.replace("login.html");
+      return;
+    }
+
+    const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+    if(!confirmed){
+      await supabaseClient.auth.signOut();
+      window.location.replace("verify.html?status=unverified");
+      return;
+    }
+
+    window.COINLUXORA_USER = user;
+    initWithUser(user);
+  }catch(e){
+    window.location.replace("login.html");
+  }
+})();
+
+/* ============================================================ */
 
 const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 
 const BUCKET_NAME="proofs";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
 let filter="all";
@@ -689,6 +842,25 @@ let searchTerm="";
 let currentDetails=null;
 
 let depositAddresses=[];
+
+/* ✅ Logo sources (fast + reliable via jsDelivr GitHub CDN) */
+function assetLogoUrl(asset){
+  const a=String(asset||"").toLowerCase();
+  const map={
+    btc:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
+    eth:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
+    usdt:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
+    trx:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png"
+  };
+  return map[a] || "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/generic.png";
+}
+function networkLogoUrl(network){
+  const n=String(network||"").toUpperCase();
+  if(n==="BTC") return assetLogoUrl("btc");
+  if(n==="ERC20") return assetLogoUrl("eth");
+  if(n==="TRC20") return assetLogoUrl("trx");
+  return assetLogoUrl("generic");
+}
 
 /* ✅ Premium menu functions */
 function openMenu(){
@@ -737,14 +909,71 @@ async function loadDepositAddresses(){
   if(error){ document.getElementById("depAddress").innerText="Failed to load addresses"; return; }
   depositAddresses=data||[];
 }
+
+/* ✅ QR generator (re-usable) */
+let qrInstance=null;
+function setQR(text){
+  const qrBox=document.getElementById("qrBox");
+  const hint=document.getElementById("qrHint");
+  if(!qrBox) return;
+
+  qrBox.innerHTML="";
+  qrInstance=null;
+
+  const clean=(text||"").trim();
+  if(!clean || clean==="Loading…" || clean==="No address configured"){
+    hint.textContent="No QR available (address not set)";
+    // Keep the box clean / white, looks premium
+    return;
+  }
+
+  hint.textContent="Scan to copy address safely";
+
+  try{
+    qrInstance = new QRCode(qrBox, {
+      text: clean,
+      width: 190,
+      height: 190,
+      colorDark: "#0b1225",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }catch(e){
+    hint.textContent="QR unavailable on this device";
+  }
+}
+
 function renderDepositAddress(){
   const asset=document.getElementById("depAsset").value.toLowerCase();
   const network=document.getElementById("depNetwork").value.toUpperCase();
+
   const found=depositAddresses.find(d =>
     (d.asset||"").toLowerCase()===asset &&
     (d.network||"").toUpperCase()===network
   );
-  document.getElementById("depAddress").innerText = found ? found.address : "No address configured";
+
+  const address = found ? String(found.address||"").trim() : "";
+  document.getElementById("depAddress").innerText = address ? address : "No address configured";
+
+  /* ✅ UI Logos + labels */
+  const assetTitle=document.getElementById("assetTitle");
+  const assetSubtitle=document.getElementById("assetSubtitle");
+  const assetLogoImg=document.getElementById("assetLogoImg");
+  const assetBadgeImg=document.getElementById("assetBadgeImg");
+  const networkBadgeImg=document.getElementById("networkBadgeImg");
+  const assetBadgeTxt=document.getElementById("assetBadgeTxt");
+  const networkBadgeTxt=document.getElementById("networkBadgeTxt");
+
+  if(assetTitle) assetTitle.textContent = "Deposit Address";
+  if(assetSubtitle) assetSubtitle.textContent = "Send only on the selected network";
+  if(assetLogoImg) assetLogoImg.src = assetLogoUrl(asset);
+  if(assetBadgeImg) assetBadgeImg.src = assetLogoUrl(asset);
+  if(networkBadgeImg) networkBadgeImg.src = networkLogoUrl(network);
+  if(assetBadgeTxt) assetBadgeTxt.textContent = String(asset||"").toUpperCase();
+  if(networkBadgeTxt) networkBadgeTxt.textContent = String(network||"").toUpperCase();
+
+  /* ✅ QR */
+  setQR(address);
 }
 
 /* ✅ Copy Address (no alert, green button + text change) */
@@ -828,6 +1057,7 @@ function renderRows(){
   if(!rows.length){
     setMsg(`<span class="err">No deposits found.</span>`);
     tbody.innerHTML="";
+    updateStats();
     return;
   }
 
@@ -1015,14 +1245,16 @@ document.getElementById("clearSearch").onclick=()=>{
 document.getElementById("refreshBtn").onclick=()=>loadHistory(true);
 document.getElementById("loadMore").onclick=()=>loadHistory(false);
 
-/* Init */
-(async()=>{
-  const { data:userData } = await supabaseClient.auth.getUser();
-  if(!userData.user){
-    document.body.innerHTML="<h2 style='color:white'>Login required</h2>";
-    return;
-  }
-  currentUserEmail=userData.user.email;
+/* logout for sidebar */
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
+}
+
+/* ✅ init after guard passes */
+async function initWithUser(user){
+  currentUserEmail=user.email;
+
   document.getElementById("topEmail").innerText=currentUserEmail;
   document.getElementById("sideEmail").innerText=currentUserEmail;
 
@@ -1031,12 +1263,6 @@ document.getElementById("loadMore").onclick=()=>loadHistory(false);
   renderDepositAddress();
   await loadHistory(true);
   initRealtime();
-})();
-
-/* logout for sidebar */
-async function logout(){
-  await supabaseClient.auth.signOut();
-  window.location.href="login.html";
 }
 </script>
 
