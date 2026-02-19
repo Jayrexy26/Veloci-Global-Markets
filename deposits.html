@@ -7,7 +7,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<!-- ✅ QR generator (lightweight, reliable) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
 <style>
 :root{
@@ -19,6 +21,8 @@
   --muted:rgba(234,240,255,.65);
   --ok:#34d399;
   --err:#f87171;
+  --blue:#5b6cff;
+  --shadow:0 26px 90px rgba(0,0,0,.55);
 }
 *{box-sizing:border-box}
 body{
@@ -71,7 +75,8 @@ body{
 }
 .menuBtn:hover{background:rgba(255,255,255,.10)}
 
-/* ✅ PREMIUM MENU (same as Support) */
+/* ✅ PREMIUM MENU (kept as your current one)
+   NOTE: When you re-upload user-dashboard.html, I’ll swap this sidebar to match it 1:1. */
 .overlay{
   position:fixed; inset:0;
   background:rgba(0,0,0,.65);
@@ -158,7 +163,6 @@ body{
   letter-spacing:.5px;
   color:rgba(234,240,255,.55);
 }
-
 .sideItem{
   position:relative;
   display:flex;
@@ -187,7 +191,6 @@ body{
   background:rgba(255,255,255,.08);
 }
 .sideItem:hover:before{opacity:1}
-
 .sideIcon{
   width:38px;height:38px;border-radius:14px;
   display:flex;align-items:center;justify-content:center;
@@ -202,7 +205,6 @@ body{
   font-weight:1000;
   position:relative;
 }
-
 .activeLink{
   border:1px solid rgba(56,189,248,.55);
   background:rgba(56,189,248,0.10);
@@ -218,7 +220,6 @@ body{
   background:linear-gradient(180deg, #5b6cff, #34d399);
   opacity:.95;
 }
-
 .sideLogout{
   width:100%;
   padding:15px 14px;
@@ -258,7 +259,6 @@ body{
 @media(min-width:720px){
   .statsGrid{grid-template-columns:repeat(4,1fr)}
 }
-
 .statCard{
   border:1px solid rgba(255,255,255,.14);
   border-radius:18px;
@@ -296,7 +296,7 @@ body{
   border:1px solid var(--border);
   border-radius:22px;
   background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  box-shadow:var(--shadow);
   backdrop-filter: blur(12px);
   padding:18px;
   margin-bottom:14px;
@@ -304,6 +304,9 @@ body{
 .section h2{margin:0;font-size:26px;font-weight:1000}
 .small{color:var(--muted);font-size:13px;margin-top:8px}
 .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+@media(min-width:900px){
+  .grid.twoCol{grid-template-columns: 1fr 1fr;}
+}
 
 label{display:block;font-weight:900;margin-top:6px;margin-bottom:8px;color:rgba(255,255,255,.85)}
 input,select{
@@ -345,14 +348,6 @@ input:focus,select:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px 
 .btn:hover{background:rgba(255,255,255,.08)}
 .rightBtn{margin-left:auto}
 
-.copyBox{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:18px;
-  background:rgba(0,0,0,.22);
-  padding:14px;
-}
-.addr{font-weight:1000;margin-top:8px;word-break:break-all;font-size:14px}
-
 /* ✅ Copy button green effect */
 .copyGreen{
   background: linear-gradient(90deg, rgba(34,197,94,1), rgba(16,185,129,1)) !important;
@@ -360,7 +355,202 @@ input:focus,select:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px 
   box-shadow: 0 14px 40px rgba(34,197,94,.18) !important;
 }
 
-/* Chips */
+/* ====== NEW: INDUSTRY STANDARD DEPOSIT CARD ====== */
+.depositCard{
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  background:
+    radial-gradient(700px 240px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(700px 240px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+    rgba(0,0,0,.22);
+  box-shadow:0 22px 80px rgba(0,0,0,.55);
+  padding:16px;
+}
+.depositTop{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.assetPill{
+  display:inline-flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  font-weight:1000;
+}
+.assetLogo{
+  width:26px; height:26px; border-radius:999px;
+  display:grid; place-items:center;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  overflow:hidden;
+}
+.assetLogo svg{display:block}
+.netPill{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.20);
+  font-weight:1000;
+  color:rgba(234,240,255,.86);
+  font-size:12px;
+}
+.netDot{
+  width:9px; height:9px; border-radius:999px;
+  background:rgba(56,189,248,1);
+  box-shadow:0 0 18px rgba(56,189,248,.35);
+}
+.depositMid{
+  display:grid;
+  grid-template-columns: 148px 1fr;
+  gap:14px;
+  margin-top:14px;
+}
+@media(max-width:520px){
+  .depositMid{ grid-template-columns: 1fr; }
+}
+.qrBox{
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  padding:12px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.qrCanvas{
+  width:130px; height:130px;
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.10);
+  display:grid; place-items:center;
+  overflow:hidden;
+}
+.qrHint{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:900;
+  color:rgba(234,240,255,.65);
+  text-align:center;
+}
+.addrBox{
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.22);
+  padding:14px;
+  overflow:hidden;
+}
+.addrLabelRow{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.addrLabelRow .small{margin:0}
+.addrMono{
+  margin-top:10px;
+  font-weight:1000;
+  font-size:14px;
+  word-break:break-all;
+  line-height:1.35;
+}
+.addrActions{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.actionMini{
+  flex:1;
+  min-width:130px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06);
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+}
+.actionMini:hover{background:rgba(255,255,255,.10)}
+.actionMini.primary{
+  background:linear-gradient(90deg, rgba(91,108,255,1), rgba(52,211,153,1));
+  border:none;
+}
+.actionMini.primary:hover{filter:brightness(1.05)}
+
+/* ====== NEW: LOGO SELECT (dropdown with icons) ====== */
+.logoSelect{position:relative}
+.logoBtn{
+  width:100%;
+  height:56px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.32);
+  color:var(--text);
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.logoLeft{display:flex;align-items:center;gap:10px;min-width:0}
+.logoIcon{
+  width:34px;height:34px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  display:grid;place-items:center;
+  overflow:hidden;
+  flex:0 0 auto;
+}
+.logoName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:1000}
+.logoCaret{opacity:.8;font-weight:1000}
+.logoPanel{
+  position:absolute;
+  top:62px; left:0; right:0;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(2,6,23,.96);
+  box-shadow:0 26px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(16px);
+  overflow:hidden;
+  display:none;
+  z-index:50;
+}
+.logoPanel.show{display:block;}
+.logoSearch{
+  width:100%;
+  height:46px;
+  border:none; outline:none;
+  padding:0 12px;
+  font-weight:1000;
+  color:#fff;
+  background:rgba(0,0,0,.20);
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.logoList{max-height:300px;overflow:auto;}
+.logoItem{
+  padding:12px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  color:rgba(234,240,255,.90);
+  font-weight:1000;
+}
+.logoItem:hover{background:rgba(255,255,255,.06)}
+.logoItem small{color:rgba(234,240,255,.55);font-weight:900}
+.logoItem .left{display:flex;align-items:center;gap:10px;min-width:0}
+.logoItem .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logoTag{
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  font-size:12px;
+  font-weight:1000;
+  color:rgba(234,240,255,.80);
+}
+
+/* Table */
 .tabs{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .chip{
   padding:9px 14px;border-radius:999px;
@@ -369,8 +559,6 @@ input:focus,select:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px 
   font-weight:1000;cursor:pointer;font-size:13px
 }
 .chip.active{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.55)}
-
-/* Table */
 .tableWrap{
   margin-top:16px;overflow:auto;
   border-radius:18px;border:1px solid rgba(255,255,255,.12);
@@ -383,7 +571,6 @@ th,td{
   font-size:14px;
 }
 th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
-
 .pill{
   display:inline-block;padding:7px 12px;border-radius:999px;
   font-weight:1000;font-size:12px;border:1px solid rgba(255,255,255,.12)
@@ -391,7 +578,6 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 .pPending{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.38);color:#facc15}
 .pApproved{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.38);color:#22c55e}
 .pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
-
 .actionBtn{
   padding:10px 12px;border-radius:14px;font-weight:1000;cursor:pointer;
   background:rgba(255,255,255,.06);
@@ -431,89 +617,8 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 .ok{color:var(--ok);font-weight:1000}
 .err{color:var(--err);font-weight:1000}
 
-/* ============================================================
-   ✅ INDUSTRY STANDARD DEPOSIT HEADER (LOGOS + QR)
-============================================================ */
-.depHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-  margin-bottom:10px;
-}
-.assetLine{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
-}
-.assetLogo{
-  width:34px;height:34px;border-radius:14px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.06);
-  overflow:hidden;
-  display:grid;
-  place-items:center;
-  flex:0 0 auto;
-}
-.assetLogo img{width:100%;height:100%;object-fit:cover;display:block}
-.assetMeta{min-width:0}
-.assetMeta .t1{font-weight:1000;font-size:14px;line-height:1.1}
-.assetMeta .t2{margin-top:4px;color:rgba(234,240,255,.65);font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.badges{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.18);
-  font-weight:1000;
-  font-size:12px;
-}
-.badge img{
-  width:18px;height:18px;border-radius:999px;object-fit:cover;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
-}
-.qrWrap{
-  margin-top:12px;
-  display:grid;
-  place-items:center;
-  padding:14px;
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.18);
-}
-.qrHint{
-  margin-top:10px;
-  color:rgba(234,240,255,.65);
-  font-weight:900;
-  font-size:12px;
-  text-align:center;
-}
-.qrBox{
-  width:196px;
-  height:196px;
-  border-radius:16px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.95);
-  display:grid;
-  place-items:center;
-}
-.qrBox img, .qrBox canvas{
-  max-width:100%;
-  max-height:100%;
-  display:block;
-}
+/* hide native selects (we keep them for compatibility with your existing JS) */
+.nativeHidden{display:none !important;}
 </style>
 </head>
 
@@ -626,64 +731,68 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
   <!-- Deposit -->
   <div class="section">
     <h2>Deposit</h2>
-    <div class="small">Select asset + network to view your deposit wallet address.</div>
+    <div class="small">Select asset + network to view your deposit wallet address and scan the QR.</div>
 
-    <div class="grid">
+    <!-- native selects kept for your existing logic -->
+    <select id="depAsset" class="nativeHidden" onchange="renderDepositAddress()">
+      <option value="btc">BTC</option>
+      <option value="eth">ETH</option>
+      <option value="usdt">USDT</option>
+    </select>
+    <select id="depNetwork" class="nativeHidden" onchange="renderDepositAddress()">
+      <option value="BTC">BTC</option>
+      <option value="ERC20">ERC20</option>
+      <option value="TRC20">TRC20</option>
+    </select>
+
+    <div class="grid twoCol">
       <div>
         <label>Asset</label>
-        <select id="depAsset" onchange="renderDepositAddress()">
-          <option value="btc">BTC</option>
-          <option value="eth">ETH</option>
-          <option value="usdt">USDT</option>
-        </select>
+        <div id="depAssetPick" class="logoSelect"></div>
       </div>
 
       <div>
         <label>Network</label>
-        <select id="depNetwork" onchange="renderDepositAddress()">
-          <option value="BTC">BTC</option>
-          <option value="ERC20">ERC20</option>
-          <option value="TRC20">TRC20</option>
-        </select>
+        <div id="depNetworkPick" class="logoSelect"></div>
+      </div>
+    </div>
+
+    <div class="depositCard" style="margin-top:14px">
+      <div class="depositTop">
+        <div class="assetPill" title="Selected asset">
+          <div class="assetLogo" id="assetLogoMini"></div>
+          <div id="assetNameMini">BTC</div>
+        </div>
+        <div class="netPill" title="Selected network">
+          <span class="netDot"></span>
+          <span id="networkNameMini">BTC</span>
+        </div>
       </div>
 
-      <div class="copyBox">
-        <!-- ✅ upgraded header with logos -->
-        <div class="depHead">
-          <div class="assetLine">
-            <div class="assetLogo" title="Asset">
-              <img id="assetLogoImg" alt="Asset Logo" />
-            </div>
-            <div class="assetMeta">
-              <div class="t1" id="assetTitle">Deposit Address</div>
-              <div class="t2" id="assetSubtitle">Select asset + network</div>
-            </div>
-          </div>
-
-          <div class="badges">
-            <div class="badge" title="Selected Asset">
-              <img id="assetBadgeImg" alt="Asset" />
-              <span id="assetBadgeTxt">--</span>
-            </div>
-            <div class="badge" title="Selected Network">
-              <img id="networkBadgeImg" alt="Network" />
-              <span id="networkBadgeTxt">--</span>
-            </div>
-          </div>
+      <div class="depositMid">
+        <div class="qrBox">
+          <div class="qrCanvas" id="qrCanvasWrap" aria-label="Deposit QR code"></div>
+          <div class="qrHint">Scan to copy address</div>
         </div>
 
-        <div class="small">Deposit Address</div>
-        <div class="addr" id="depAddress">Loading…</div>
+        <div class="addrBox">
+          <div class="addrLabelRow">
+            <div class="small" style="font-weight:1000">Deposit Address</div>
+            <div class="small" id="addrStatus" style="margin:0;opacity:.9"></div>
+          </div>
 
-        <!-- ✅ QR -->
-        <div class="qrWrap">
-          <div class="qrBox" id="qrBox"></div>
-          <div class="qrHint" id="qrHint">Scan to copy address safely</div>
-        </div>
+          <div class="addrMono" id="depAddress">Loading…</div>
 
-        <div class="btnRow">
-          <button class="btn" onclick="goDashboard()">← Dashboard</button>
-          <button class="btn rightBtn" id="copyBtn" onclick="copyAddress()">Copy Address</button>
+          <div class="addrActions">
+            <button class="actionMini primary" id="copyBtn" onclick="copyAddress()">Copy Address</button>
+            <button class="actionMini" onclick="shareAddress()">Share</button>
+            <button class="actionMini" onclick="goDashboard()">← Dashboard</button>
+          </div>
+
+          <div class="small" style="margin-top:12px;line-height:1.45">
+            Send only <strong id="warnAsset">BTC</strong> via <strong id="warnNetwork">BTC</strong> to this address.
+            Sending the wrong asset/network may result in permanent loss.
+          </div>
         </div>
       </div>
     </div>
@@ -694,25 +803,31 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
     <h2>Submit Deposit Proof</h2>
     <div class="small">After sending your deposit, upload proof for verification.</div>
 
-    <div class="grid">
+    <!-- native selects (kept) -->
+    <select id="confAsset" class="nativeHidden">
+      <option value="btc">BTC</option>
+      <option value="eth">ETH</option>
+      <option value="usdt">USDT</option>
+    </select>
+    <select id="confNetwork" class="nativeHidden">
+      <option value="BTC">BTC</option>
+      <option value="ERC20">ERC20</option>
+      <option value="TRC20">TRC20</option>
+    </select>
+
+    <div class="grid twoCol">
       <div>
         <label>Asset</label>
-        <select id="confAsset">
-          <option value="btc">BTC</option>
-          <option value="eth">ETH</option>
-          <option value="usdt">USDT</option>
-        </select>
+        <div id="confAssetPick" class="logoSelect"></div>
       </div>
 
       <div>
         <label>Network</label>
-        <select id="confNetwork">
-          <option value="BTC">BTC</option>
-          <option value="ERC20">ERC20</option>
-          <option value="TRC20">TRC20</option>
-        </select>
+        <div id="confNetworkPick" class="logoSelect"></div>
       </div>
+    </div>
 
+    <div class="grid">
       <div>
         <label>Amount</label>
         <input id="confAmount" type="number" step="0.01" placeholder="Enter amount"/>
@@ -787,51 +902,16 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 
 <script>
 /* ============================================================
-  ✅ COINLUXORA AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
-  - Requires active session
-  - Requires verified email
-  - Redirects safely
+  ✅ SUPABASE + EDGES
 ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-
-(async function coinluxoraAuthGuard(){
-  try{
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const session = sessionData?.session;
-    if(!session){
-      window.location.replace("login.html");
-      return;
-    }
-
-    const { data, error } = await supabaseClient.auth.getUser();
-    const user = data?.user;
-    if(error || !user){
-      window.location.replace("login.html");
-      return;
-    }
-
-    const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
-    if(!confirmed){
-      await supabaseClient.auth.signOut();
-      window.location.replace("verify.html?status=unverified");
-      return;
-    }
-
-    window.COINLUXORA_USER = user;
-    initWithUser(user);
-  }catch(e){
-    window.location.replace("login.html");
-  }
-})();
-
-/* ============================================================ */
 
 const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
 
 const BUCKET_NAME="proofs";
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
 let filter="all";
@@ -843,26 +923,9 @@ let currentDetails=null;
 
 let depositAddresses=[];
 
-/* ✅ Logo sources (fast + reliable via jsDelivr GitHub CDN) */
-function assetLogoUrl(asset){
-  const a=String(asset||"").toLowerCase();
-  const map={
-    btc:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/btc.png",
-    eth:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/eth.png",
-    usdt:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/usdt.png",
-    trx:"https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/trx.png"
-  };
-  return map[a] || "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/generic.png";
-}
-function networkLogoUrl(network){
-  const n=String(network||"").toUpperCase();
-  if(n==="BTC") return assetLogoUrl("btc");
-  if(n==="ERC20") return assetLogoUrl("eth");
-  if(n==="TRC20") return assetLogoUrl("trx");
-  return assetLogoUrl("generic");
-}
-
-/* ✅ Premium menu functions */
+/* ============================================================
+  ✅ MENU
+============================================================ */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
@@ -878,8 +941,11 @@ function closeMenu(){
 document.addEventListener("keydown",(e)=>{
   if(e.key==="Escape") closeMenu();
 });
-
 function goDashboard(){ window.location.href="user-dashboard.html"; }
+
+/* ============================================================
+  ✅ HELPERS
+============================================================ */
 function setMsg(html){ document.getElementById("msg").innerHTML = html; }
 function showDepMsg(html){ document.getElementById("depMsg").innerHTML = html; }
 
@@ -903,77 +969,222 @@ function updateStats(){
   document.getElementById("statRejected").innerText = rejected;
 }
 
-/* Deposit address */
+/* ============================================================
+  ✅ CURRENCY LOGOS (inline SVG — no external requests)
+============================================================ */
+function svgBTC(){
+  return `
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color="#f59e0b"/><stop offset="1" stop-color="#f97316"/>
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="10" fill="url(#g1)"></circle>
+    <path fill="#0b1024" d="M13.4 6.1c1.7.2 2.7 1.2 2.5 2.6-.1.8-.6 1.4-1.3 1.7.9.4 1.4 1.2 1.3 2.2-.2 1.7-1.6 2.8-3.8 2.7V19h-1.2v-1.7H9.8V19H8.6v-1.8H7.2v-1.1h1.4V7.9H7.2V6.8h1.4V5h1.2v1.8h1.1V5h1.2v1.7h1.3Zm-3.6 1.8v2.1h1.9c1 0 1.6-.4 1.7-1.1.1-.7-.4-1-1.4-1h-2.2Zm0 3.2v2.4h2.2c1.2 0 2-.4 2.1-1.2.1-.8-.5-1.2-1.8-1.2H9.8Z"/>
+  </svg>`;
+}
+function svgETH(){
+  return `
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+    <defs>
+      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/>
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="10" fill="url(#g2)"></circle>
+    <path fill="#0b1024" d="M12 5.4 7.8 12 12 10.2 16.2 12 12 5.4Zm0 6.1-4.2 1.9L12 18.6l4.2-5.2L12 11.5Z"/>
+  </svg>`;
+}
+function svgUSDT(){
+  return `
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+    <defs>
+      <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/>
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="10" fill="url(#g3)"></circle>
+    <path fill="#0b1024" d="M7 7.8h10v1.4h-4v1.1c2.6.2 4.5.8 4.5 1.7S15.6 15 13 15.2V18h-2v-2.8c-2.6-.2-4.5-.8-4.5-1.7S8.4 11.3 11 11.1V10.1H7V7.8Zm4 4.6c-1.8.1-3 .4-3 .7s1.2.6 3 .7c.3 0 .6 0 1 0s.7 0 1 0c1.8-.1 3-.4 3-.7s-1.2-.6-3-.7c-.3 0-.6 0-1 0s-.7 0-1 0Z"/>
+  </svg>`;
+}
+function assetLogo(asset){
+  const a=String(asset||"").toLowerCase();
+  if(a==="btc") return svgBTC();
+  if(a==="eth") return svgETH();
+  if(a==="usdt") return svgUSDT();
+  return `<span style="font-weight:1000">◈</span>`;
+}
+
+/* ============================================================
+  ✅ LOGO SELECT COMPONENT
+============================================================ */
+function mountLogoSelect(rootId, options, initialValue, onPick){
+  const root=document.getElementById(rootId);
+  if(!root) return;
+
+  root.innerHTML = `
+    <button class="logoBtn" type="button" aria-haspopup="listbox">
+      <div class="logoLeft">
+        <div class="logoIcon" aria-hidden="true"></div>
+        <div class="logoName">Select</div>
+      </div>
+      <div class="logoCaret">▾</div>
+    </button>
+    <div class="logoPanel" role="listbox">
+      <input class="logoSearch" placeholder="Search..." />
+      <div class="logoList"></div>
+    </div>
+  `;
+
+  const btn=root.querySelector(".logoBtn");
+  const panel=root.querySelector(".logoPanel");
+  const list=root.querySelector(".logoList");
+  const search=root.querySelector(".logoSearch");
+  const icon=root.querySelector(".logoIcon");
+  const name=root.querySelector(".logoName");
+
+  let filtered=[...options];
+  let selected = options.find(x=>x.value===initialValue) || options[0];
+
+  function render(q=""){
+    const t=(q||"").trim().toLowerCase();
+    filtered = !t ? [...options] : options.filter(x => (x.search||"").toLowerCase().includes(t) || (x.label||"").toLowerCase().includes(t));
+    list.innerHTML = filtered.map(x=>`
+      <div class="logoItem" data-val="${x.value}">
+        <div class="left">
+          <div class="logoIcon" style="width:30px;height:30px;border-radius:12px">${x.icon||""}</div>
+          <div class="name">${x.label}</div>
+        </div>
+        ${x.tag ? `<span class="logoTag">${x.tag}</span>` : `<small>tap</small>`}
+      </div>
+    `).join("") || `<div class="logoItem"><div class="left"><div class="name">No results</div></div></div>`;
+  }
+
+  function setSelected(v){
+    const found = options.find(x=>x.value===v) || options[0];
+    selected = found;
+    icon.innerHTML = found.icon || "";
+    name.textContent = found.label;
+    if(typeof onPick === "function") onPick(found);
+  }
+
+  render("");
+  setSelected(selected.value);
+
+  btn.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    panel.classList.toggle("show");
+    if(panel.classList.contains("show")){
+      search.value="";
+      render("");
+      setTimeout(()=>search.focus(),40);
+    }
+  });
+
+  search.addEventListener("input",()=>render(search.value));
+
+  list.addEventListener("click",(e)=>{
+    const item=e.target.closest(".logoItem");
+    if(!item) return;
+    const v=item.getAttribute("data-val");
+    if(!v) return;
+    setSelected(v);
+    panel.classList.remove("show");
+  });
+
+  document.addEventListener("click",(e)=>{
+    if(!root.contains(e.target)) panel.classList.remove("show");
+  });
+}
+
+/* ============================================================
+  ✅ Deposit address
+============================================================ */
 async function loadDepositAddresses(){
   const { data, error } = await supabaseClient.from("deposit_addresses").select("asset,network,address");
-  if(error){ document.getElementById("depAddress").innerText="Failed to load addresses"; return; }
-  depositAddresses=data||[];
-}
-
-/* ✅ QR generator (re-usable) */
-let qrInstance=null;
-function setQR(text){
-  const qrBox=document.getElementById("qrBox");
-  const hint=document.getElementById("qrHint");
-  if(!qrBox) return;
-
-  qrBox.innerHTML="";
-  qrInstance=null;
-
-  const clean=(text||"").trim();
-  if(!clean || clean==="Loading…" || clean==="No address configured"){
-    hint.textContent="No QR available (address not set)";
-    // Keep the box clean / white, looks premium
+  if(error){
+    document.getElementById("depAddress").innerText="Failed to load addresses";
+    document.getElementById("addrStatus").innerText="Offline";
     return;
   }
-
-  hint.textContent="Scan to copy address safely";
-
-  try{
-    qrInstance = new QRCode(qrBox, {
-      text: clean,
-      width: 190,
-      height: 190,
-      colorDark: "#0b1225",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  }catch(e){
-    hint.textContent="QR unavailable on this device";
-  }
+  depositAddresses=data||[];
 }
+function getCurrentDepAsset(){ return document.getElementById("depAsset").value.toLowerCase(); }
+function getCurrentDepNetwork(){ return document.getElementById("depNetwork").value.toUpperCase(); }
 
-function renderDepositAddress(){
-  const asset=document.getElementById("depAsset").value.toLowerCase();
-  const network=document.getElementById("depNetwork").value.toUpperCase();
+async function renderDepositAddress(){
+  const asset=getCurrentDepAsset();
+  const network=getCurrentDepNetwork();
+
+  // mini header visuals
+  document.getElementById("assetLogoMini").innerHTML = assetLogo(asset);
+  document.getElementById("assetNameMini").textContent = String(asset).toUpperCase();
+  document.getElementById("networkNameMini").textContent = network;
+  document.getElementById("warnAsset").textContent = String(asset).toUpperCase();
+  document.getElementById("warnNetwork").textContent = network;
 
   const found=depositAddresses.find(d =>
     (d.asset||"").toLowerCase()===asset &&
     (d.network||"").toUpperCase()===network
   );
 
+  const addrEl=document.getElementById("depAddress");
+  const statusEl=document.getElementById("addrStatus");
+
   const address = found ? String(found.address||"").trim() : "";
-  document.getElementById("depAddress").innerText = address ? address : "No address configured";
+  addrEl.innerText = address ? address : "No address configured";
+  statusEl.innerText = address ? "Ready" : "Not configured";
 
-  /* ✅ UI Logos + labels */
-  const assetTitle=document.getElementById("assetTitle");
-  const assetSubtitle=document.getElementById("assetSubtitle");
-  const assetLogoImg=document.getElementById("assetLogoImg");
-  const assetBadgeImg=document.getElementById("assetBadgeImg");
-  const networkBadgeImg=document.getElementById("networkBadgeImg");
-  const assetBadgeTxt=document.getElementById("assetBadgeTxt");
-  const networkBadgeTxt=document.getElementById("networkBadgeTxt");
+  await updateQR(address, asset, network);
+}
 
-  if(assetTitle) assetTitle.textContent = "Deposit Address";
-  if(assetSubtitle) assetSubtitle.textContent = "Send only on the selected network";
-  if(assetLogoImg) assetLogoImg.src = assetLogoUrl(asset);
-  if(assetBadgeImg) assetBadgeImg.src = assetLogoUrl(asset);
-  if(networkBadgeImg) networkBadgeImg.src = networkLogoUrl(network);
-  if(assetBadgeTxt) assetBadgeTxt.textContent = String(asset||"").toUpperCase();
-  if(networkBadgeTxt) networkBadgeTxt.textContent = String(network||"").toUpperCase();
+/* ============================================================
+  ✅ QR
+============================================================ */
+async function updateQR(address, asset, network){
+  const wrap=document.getElementById("qrCanvasWrap");
+  if(!wrap) return;
+  wrap.innerHTML = "";
 
-  /* ✅ QR */
-  setQR(address);
+  const a = String(address||"").trim();
+  if(!a || a==="No address configured" || a==="Loading…"){
+    wrap.innerHTML = `<div class="small" style="text-align:center;padding:10px">QR unavailable</div>`;
+    return;
+  }
+
+  // Use a standard URI where possible
+  let payload = a;
+  // common crypto URI format — wallets understand these
+  const sym = String(asset||"").toLowerCase();
+  if(sym==="btc") payload = `bitcoin:${a}`;
+  else if(sym==="eth") payload = `ethereum:${a}`;
+  else if(sym==="usdt"){
+    // USDT varies by chain; safest is raw address but we add context
+    payload = `${a}`;
+  }
+
+  const canvas=document.createElement("canvas");
+  canvas.style.width="130px";
+  canvas.style.height="130px";
+  canvas.width=260;  // crisp on retina
+  canvas.height=260;
+
+  wrap.appendChild(canvas);
+
+  try{
+    await QRCode.toCanvas(canvas, payload, {
+      errorCorrectionLevel:"M",
+      margin:1,
+      width:260,
+      color:{
+        dark:"#0b1024",
+        light:"#ffffff"
+      }
+    });
+  }catch(e){
+    wrap.innerHTML = `<div class="small" style="text-align:center;padding:10px">QR failed</div>`;
+  }
 }
 
 /* ✅ Copy Address (no alert, green button + text change) */
@@ -1018,6 +1229,24 @@ async function copyAddress(){
       copyBtn.classList.remove("copyGreen");
     }, 2000);
   }
+}
+
+/* ✅ Share (mobile-friendly) */
+async function shareAddress(){
+  const addr=document.getElementById("depAddress").innerText.trim();
+  const asset=getCurrentDepAsset().toUpperCase();
+  const network=getCurrentDepNetwork();
+  const text=`Coinluxora Deposit Address\nAsset: ${asset}\nNetwork: ${network}\nAddress: ${addr}`;
+  if(!addr || addr==="Loading…" || addr==="No address configured") return;
+
+  try{
+    if(navigator.share){
+      await navigator.share({ title:"Deposit Address", text });
+      return;
+    }
+  }catch(e){}
+  // fallback: copy
+  await navigator.clipboard.writeText(text).catch(()=>{});
 }
 
 /* Clear badge */
@@ -1186,7 +1415,7 @@ function openModal(dep){
     <div class="modalRow"><span>Status:</span> ${statusPill(dep.status)}</div>
     <div class="modalRow"><span>Date:</span> ${new Date(dep.created_at).toLocaleString()}</div>
     ${dep.admin_note ? `<div class="modalRow"><span>Admin Note:</span> ${dep.admin_note}</div>` : ""}
-    ${proofLink ? `<div class="modalRow"><span>Proof:</span> <a href="${proofLink}" target="_blank" style="color:#9bdcff;font-weight:1000">Open proof</a></div>` : ""}
+    ${proofLink ? `<div class="modalRow"><span>Proof:</span> <a href="${proofLink}" target="_blank" rel="noopener" style="color:#9bdcff;font-weight:1000">Open proof</a></div>` : ""}
   `;
   document.getElementById("detailsModal").style.display="flex";
 }
@@ -1232,7 +1461,6 @@ document.getElementById("tabs").onclick=(e)=>{
   filter=chip.dataset.status;
   loadHistory(true);
 };
-
 document.getElementById("searchInput").addEventListener("input",(e)=>{
   searchTerm=e.target.value||"";
   renderRows();
@@ -1245,24 +1473,73 @@ document.getElementById("clearSearch").onclick=()=>{
 document.getElementById("refreshBtn").onclick=()=>loadHistory(true);
 document.getElementById("loadMore").onclick=()=>loadHistory(false);
 
-/* logout for sidebar */
-async function logout(){
-  await supabaseClient.auth.signOut();
-  window.location.href="login.html";
+/* ============================================================
+  ✅ INIT: Mount pickers + sync to native selects
+============================================================ */
+function setNativeSelect(id, value){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.value = value;
+  el.dispatchEvent(new Event("change"));
 }
 
-/* ✅ init after guard passes */
-async function initWithUser(user){
-  currentUserEmail=user.email;
+function mountPickers(){
+  // assets
+  const ASSETS = [
+    { value:"btc", label:"BTC (Bitcoin)", icon: assetLogo("btc"), search:"btc bitcoin", tag:"BTC" },
+    { value:"eth", label:"ETH (Ethereum)", icon: assetLogo("eth"), search:"eth ethereum", tag:"ETH" },
+    { value:"usdt", label:"USDT (Tether)", icon: assetLogo("usdt"), search:"usdt tether", tag:"USDT" }
+  ];
 
+  const NETWORKS = [
+    { value:"BTC",  label:"BTC Network",  icon:`<span style="font-weight:1000">₿</span>`, search:"btc bitcoin network", tag:"BTC" },
+    { value:"ERC20",label:"ERC20 (Ethereum)", icon:`<span style="font-weight:1000">Ξ</span>`, search:"erc20 ethereum network eth", tag:"ERC20" },
+    { value:"TRC20",label:"TRC20 (Tron)", icon:`<span style="font-weight:1000">T</span>`, search:"trc20 tron network", tag:"TRC20" }
+  ];
+
+  // deposit
+  mountLogoSelect("depAssetPick", ASSETS, document.getElementById("depAsset").value, (opt)=>{
+    setNativeSelect("depAsset", opt.value);
+  });
+  mountLogoSelect("depNetworkPick", NETWORKS, document.getElementById("depNetwork").value, (opt)=>{
+    setNativeSelect("depNetwork", opt.value);
+  });
+
+  // confirmation
+  mountLogoSelect("confAssetPick", ASSETS, document.getElementById("confAsset").value, (opt)=>{
+    document.getElementById("confAsset").value = opt.value;
+  });
+  mountLogoSelect("confNetworkPick", NETWORKS, document.getElementById("confNetwork").value, (opt)=>{
+    document.getElementById("confNetwork").value = opt.value;
+  });
+}
+
+/* Init */
+(async()=>{
+  const { data:userData } = await supabaseClient.auth.getUser();
+  if(!userData.user){
+    document.body.innerHTML="<h2 style='color:white'>Login required</h2>";
+    return;
+  }
+  currentUserEmail=userData.user.email;
   document.getElementById("topEmail").innerText=currentUserEmail;
   document.getElementById("sideEmail").innerText=currentUserEmail;
 
   await clearDepositBadge();
+
+  mountPickers();
+
   await loadDepositAddresses();
-  renderDepositAddress();
+  await renderDepositAddress();
+
   await loadHistory(true);
   initRealtime();
+})();
+
+/* logout for sidebar */
+async function logout(){
+  await supabaseClient.auth.signOut();
+  window.location.href="login.html";
 }
 </script>
 
