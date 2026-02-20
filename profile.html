@@ -10,17 +10,18 @@
 <style>
   :root{
     --bg:#050a18;
+    --border:rgba(255,255,255,.12);
+    --stroke:rgba(255,255,255,.12);
     --text:#eaf0ff;
-    --muted: rgba(234,240,255,.65);
+    --muted:rgba(234,240,255,.65);
     --ok:#22c55e;
     --err:#f87171;
-
-    --stroke: rgba(255,255,255,0.12);
-    --shadow: 0 26px 90px rgba(0,0,0,.55);
 
     --blue:#5b6cff;
     --purple:#7c4dff;
     --green:#34d399;
+
+    --shadow: 0 26px 90px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
 
@@ -29,86 +30,45 @@
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     color:var(--text);
     min-height:100vh;
+    padding:16px;
     padding-bottom:110px;
-    background: var(--bg);
-    overflow-x:hidden;
-  }
-
-  /* ===== FLOWING PREMIUM BACKGROUND ===== */
-  .bgFlow{
-    position:fixed; inset:0; z-index:-3;
     background:
       radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.28), transparent 55%),
       radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.18), transparent 55%),
       radial-gradient(900px 520px at 40% 90%, rgba(124,77,255,.20), transparent 60%),
       linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+    overflow-x:hidden;
   }
-  .blob{
-    position:fixed;
-    width:520px;height:520px;border-radius:999px;
-    filter: blur(70px);
-    opacity:.55;
-    z-index:-2;
-    mix-blend-mode: screen;
-    will-change: transform;
-  }
-  .blob.b1{ background: rgba(91,108,255,.75); left:-140px; top:-140px; animation: drift1 14s ease-in-out infinite; }
-  .blob.b2{ background: rgba(124,77,255,.70); right:-190px; top:10%; animation: drift2 16s ease-in-out infinite; }
-  .blob.b3{ background: rgba(52,211,153,.55); left:15%; bottom:-220px; animation: drift3 18s ease-in-out infinite; }
-  @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(220px,120px) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
-  @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-240px,160px) scale(1.12)}100%{transform:translate(0,0) scale(1)}}
-  @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(180px,-170px) scale(1.06)}100%{transform:translate(0,0) scale(1)}}
-  .shimmer{
-    position:fixed; inset:0; z-index:-1;
-    opacity:.25;
-    background:
-      radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.08), transparent 60%),
-      radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.06), transparent 60%);
-    animation: shimmerMove 10s ease-in-out infinite alternate;
-    pointer-events:none;
-  }
-  @keyframes shimmerMove{from{transform:translateY(0px)}to{transform:translateY(30px)}}
 
-  /* ===== TOP BAR ===== */
+  .container{max-width:980px;margin:0 auto}
+
+  /* ✅ TOP BAR (logo left, menu right) */
   .topbar{
-    position:sticky; top:0; z-index:20;
-    padding:12px 14px;
-    background:rgba(2,6,23,0.55);
-    backdrop-filter: blur(14px);
-    border-bottom:1px solid rgba(255,255,255,0.10);
+    position:sticky; top:10px; z-index:500;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:12px;
   }
-  .toprow{
-    max-width:980px;margin:0 auto;
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-  }
-
-  /* ✅ Top-left logo (replaces "COIN") — NO BOX */
   .brandLogo{
     display:flex;align-items:center;
-    cursor:pointer;
-    user-select:none;
+    cursor:pointer;user-select:none;
   }
   .brandLogo img{
-    height:42px; width:auto;
-    display:block;
+    height:46px;width:auto;display:block;
     filter: drop-shadow(0 14px 30px rgba(0,0,0,.35));
   }
-
-  .circleBtn{
-    width:44px;height:44px;border-radius:999px;
+  .menuBtn{
+    width:48px;height:48px;border-radius:999px;
     border:1px solid rgba(255,255,255,.14);
-    background:rgba(0,0,0,.18);
-    display:grid;place-items:center;
-    box-shadow:0 16px 40px rgba(0,0,0,.35);
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    box-shadow:0 20px 70px rgba(0,0,0,.55);
+    backdrop-filter: blur(12px);
     cursor:pointer;
-    color:rgba(234,240,255,.85);
+    font-weight:1000;
+    color:white;
   }
-  .circleBtn:hover{background:rgba(255,255,255,.08)}
-  .circleBtn svg{width:22px;height:22px}
+  .menuBtn:hover{background:rgba(255,255,255,.10)}
 
-  /* =========================================================
-     ✅ UPGRADED SIDEBAR (MATCH USER DASHBOARD / DEPOSIT STYLE)
-     ========================================================= */
+  /* ✅ USER DASHBOARD-STYLE SIDEBAR (RIGHT SLIDE-IN) */
   .overlay{
     position:fixed; inset:0;
     background:rgba(0,0,0,.65);
@@ -116,23 +76,18 @@
     z-index:99998;
     backdrop-filter: blur(6px);
   }
-  .overlay.show{ display:block; }
-
   .sidebar{
     position:fixed; top:0; right:-340px;
     width:300px; height:100vh;
-    background:
-      radial-gradient(900px 520px at 10% 0%, rgba(83,113,255,.10), transparent 55%),
-      radial-gradient(900px 520px at 90% 0%, rgba(52,211,153,.08), transparent 55%),
-      rgba(5,10,24,0.98);
+    background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
     border-left:1px solid rgba(255,255,255,.12);
     padding:16px;
     transition:.28s ease;
     z-index:99999;
     box-shadow:0 20px 90px rgba(0,0,0,.75);
-    backdrop-filter: blur(14px);
   }
   .sidebar.open{ right:0; }
+  .overlay.show{ display:block; }
 
   .sideTop{
     display:flex;
@@ -141,25 +96,19 @@
     margin-bottom:14px;
   }
 
-  /* ✅ Sidebar logo large (no box) */
+  /* ✅ Logo big & standing alone (NOT inside a box) */
   .sideLogo{
-    display:flex;
-    align-items:center;
-    cursor:pointer;
-    user-select:none;
+    display:flex;align-items:center;
+    cursor:pointer;user-select:none;
   }
   .sideLogo img{
-    height:46px;
-    width:auto;
-    display:block;
-    filter: drop-shadow(0 16px 40px rgba(0,0,0,.40));
+    height:52px;width:auto;display:block;
+    filter: drop-shadow(0 16px 40px rgba(0,0,0,.42));
   }
 
   .closeBtn{
     width:44px;height:44px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex;align-items:center;justify-content:center;
     border-radius:14px;
     border:1px solid rgba(255,255,255,.14);
     background:rgba(0,0,0,.25);
@@ -177,40 +126,18 @@
     margin-bottom:14px;
   }
   .sideSmall{color:var(--muted);font-size:13px;margin-top:0}
-
-  .menuHeader{
-    margin:14px 0 10px 0;
-    font-weight:1000;
-    font-size:12px;
-    letter-spacing:1px;
-    color:rgba(234,240,255,.55);
-  }
-
   .sideItem{
-    display:flex;gap:12px;align-items:center;
-    padding:12px 12px;
+    display:flex;gap:10px;align-items:center;
+    padding:12px;
     border:1px solid rgba(255,255,255,.12);
-    border-radius:18px;margin-bottom:10px;
+    border-radius:16px;margin-bottom:10px;
     color:var(--text);
     background:rgba(0,0,0,.22);
     font-weight:1000;
     text-decoration:none;
-    position:relative;
   }
   .sideItem:hover{background:rgba(255,255,255,.08)}
-  .sideIcon{
-    width:40px;height:40px;border-radius:14px;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.10);
-  }
-  .sideArrow{margin-left:auto;opacity:.55}
-  .activeLink{
-    border:1px solid rgba(56,189,248,.55);
-    background:rgba(56,189,248,0.12);
-    box-shadow:0 18px 60px rgba(56,189,248,.10);
-  }
-
+  .activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
   .sideLogout{
     width:100%;
     padding:14px;
@@ -221,12 +148,10 @@
     color:white;
     background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
     box-shadow:0 20px 70px rgba(239,68,68,.15);
-    margin-top:10px;
   }
 
   /* ===== CONTENT ===== */
-  .wrap{max-width:980px;margin:0 auto;padding:14px;}
-  .pageTitle{font-size:30px;font-weight:1000;margin:12px 0 14px;}
+  .pageTitle{font-size:30px;font-weight:1000;margin:10px 0 14px;}
   .card{
     border:1px solid rgba(255,255,255,.12);
     background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
@@ -234,6 +159,7 @@
     box-shadow:var(--shadow);
     padding:16px;
     backdrop-filter: blur(12px);
+    margin-bottom:14px;
   }
 
   /* ===== Avatar ===== */
@@ -334,7 +260,6 @@
     box-shadow:0 18px 55px rgba(91,108,255,.22);
     display:flex;align-items:center;justify-content:center;gap:10px;
   }
-  .pinBtn:hover{filter:brightness(1.04)}
 
   /* ===== PIN Modal ===== */
   .pinOverlay{
@@ -373,12 +298,7 @@
     position:relative; z-index:2;
     display:flex;align-items:center;justify-content:space-between;gap:12px;
   }
-  .pinTitle{
-    font-weight:1000;
-    font-size:1.35rem;
-    letter-spacing:.2px;
-    color:#eaf0ff;
-  }
+  .pinTitle{font-weight:1000;font-size:1.35rem;letter-spacing:.2px;color:#eaf0ff;}
   .pinCloseBtn{
     width:42px;height:42px;border-radius:12px;
     border:1px solid rgba(255,255,255,.12);
@@ -387,89 +307,38 @@
     cursor:pointer;font-weight:1000;
   }
 
-  .pinSub{
-    position:relative; z-index:2;
-    margin-top:8px;
-    color:rgba(234,240,255,.70);
-    font-size:.98rem;
-  }
+  .pinSub{position:relative; z-index:2;margin-top:8px;color:rgba(234,240,255,.70);font-size:.98rem;}
 
-  .pinInputs{
-    position:relative; z-index:2;
-    margin-top:14px;
-    display:grid;
-    gap:12px;
-  }
+  .pinInputs{position:relative; z-index:2;margin-top:14px;display:grid;gap:12px;}
   .pinInput{
-    width:100%;
-    height:52px;
-    border-radius:14px;
+    width:100%;height:52px;border-radius:14px;
     border:1px solid rgba(255,255,255,.12);
     background:rgba(2,6,23,.38);
-    color:#eaf0ff;
-    padding:12px 14px;
-    outline:none;
-    font-size:16px;
-    letter-spacing:3px;
-    font-weight:1000;
+    color:#eaf0ff;padding:12px 14px;outline:none;
+    font-size:16px;letter-spacing:3px;font-weight:1000;
   }
-  .pinInput::placeholder{
-    letter-spacing:0px;
-    color:rgba(234,240,255,.55);
-    font-weight:900;
-  }
-  .pinInput:focus{
-    border-color:rgba(139,211,255,.35);
-    box-shadow:0 0 0 4px rgba(139,211,255,.14);
-  }
+  .pinInput::placeholder{letter-spacing:0px;color:rgba(234,240,255,.55);font-weight:900;}
+  .pinInput:focus{border-color:rgba(139,211,255,.35);box-shadow:0 0 0 4px rgba(139,211,255,.14);}
 
-  .pinMsg{
-    position:relative; z-index:2;
-    margin-top:10px;
-    min-height:18px;
-    font-size:14px;
-    color:rgba(234,240,255,.72);
-    font-weight:900;
-  }
+  .pinMsg{position:relative; z-index:2;margin-top:10px;min-height:18px;font-size:14px;color:rgba(234,240,255,.72);font-weight:900;}
   .pinMsg.err{ color:#f87171; }
   .pinMsg.ok{ color:#22c55e; font-weight:1000; }
 
-  .pinBtns{
-    position:relative; z-index:2;
-    display:flex;
-    gap:12px;
-    margin-top:14px;
-  }
-  .pinSaveBtn{
-    flex:1;height:50px;border-radius:999px;
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.16);
-    color:#eaf0ff;font-weight:1000;cursor:pointer;
-  }
-  .pinCancelBtn{
-    flex:1;height:50px;border-radius:999px;
-    border:1px solid rgba(255,255,255,.10);
-    background:rgba(255,255,255,.06);
-    color:rgba(234,240,255,.85);font-weight:1000;cursor:pointer;
-  }
+  .pinBtns{position:relative; z-index:2;display:flex;gap:12px;margin-top:14px;}
+  .pinSaveBtn{flex:1;height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.16);color:#eaf0ff;font-weight:1000;cursor:pointer;}
+  .pinCancelBtn{flex:1;height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:rgba(234,240,255,.85);font-weight:1000;cursor:pointer;}
 
-  /* =========================================================
-     ✅ POPUP (SAME STYLE AS VERIFIED ✔️)
-     ========================================================= */
+  /* ✅ POPUP */
   .popOverlay{
-    position:fixed;
-    inset:0;
+    position:fixed; inset:0;
     background:rgba(0,0,0,.55);
-    display:none;
-    align-items:center;
-    justify-content:center;
+    display:none; align-items:center; justify-content:center;
     z-index:9999999;
     padding:18px;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
   .popOverlay.show{ display:flex; }
-
   .popModal{
     width:min(420px, 100%);
     border-radius:18px;
@@ -488,14 +357,9 @@
     background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.12), transparent 60%);
     pointer-events:none;
   }
-  .popInner{
-    position:relative;
-    z-index:2;
-    text-align:center;
-  }
+  .popInner{position:relative;z-index:2;text-align:center;}
   .popCircle{
-    width:66px;height:66px;
-    border-radius:999px;
+    width:66px;height:66px;border-radius:999px;
     margin:6px auto 12px;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 16px 55px rgba(0,0,0,.25);
@@ -508,21 +372,10 @@
     box-shadow:0 16px 55px rgba(34,197,94,.18);
   }
   .popCircle svg{width:34px;height:34px;}
-  .popTitle{
-    margin:0;
-    font-weight:1000;
-    font-size:1.5rem;
-    letter-spacing:.2px;
-  }
-  .popSub{
-    margin:10px 0 0;
-    color:rgba(234,240,255,.72);
-    font-size:1.02rem;
-  }
+  .popTitle{margin:0;font-weight:1000;font-size:1.5rem;letter-spacing:.2px;}
+  .popSub{margin:10px 0 0;color:rgba(234,240,255,.72);font-size:1.02rem;}
 
-  /* =========================================================
-     ✅ ADVANCED BOTTOM NAV
-     ========================================================= */
+  /* ✅ Bottom nav (kept same) */
   .dock{
     position:fixed;
     left:0; right:0; bottom:14px;
@@ -559,25 +412,18 @@
     cursor:pointer;user-select:none;
   }
   .dockHome span{font-size:28px;color:white}
-  .dockHome:hover{filter:brightness(1.05)}
 </style>
 </head>
 
 <body>
 
-<div class="bgFlow"></div>
-<div class="blob b1"></div>
-<div class="blob b2"></div>
-<div class="blob b3"></div>
-<div class="shimmer"></div>
-
-<!-- ✅ OVERLAY + SIDEBAR -->
+<!-- ✅ OVERLAY + SIDEBAR (USER DASHBOARD STYLE) -->
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
 <div id="sidebar" class="sidebar" aria-hidden="true">
   <div class="sideTop">
     <div class="sideLogo" onclick="goDashboard()" title="Dashboard">
-      <!-- ✅ Put your dashboard logo file here -->
+      <!-- ✅ Put your dashboard logo path here (same used on user-dashboard) -->
       <img src="assets/vgm-logo.png" alt="Coinluxora Logo"/>
     </div>
     <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
@@ -585,79 +431,38 @@
 
   <div class="userTag">
     <div class="sideSmall">Logged in as</div>
-    <!-- ✅ Shows NAME (falls back to email) -->
-    <div id="sideEmail" style="font-weight:1000;margin-top:6px;">---</div>
-    <div id="sideEmailSmall" class="sideSmall" style="margin-top:6px;opacity:.8;"></div>
+    <!-- ✅ NAME shown here -->
+    <div id="sideName" style="font-weight:1000;margin-top:6px;">---</div>
+    <!-- ✅ email small under name -->
+    <div id="sideEmailSmall" class="sideSmall" style="margin-top:6px;opacity:.85;"></div>
   </div>
 
-  <div class="menuHeader">MAIN MENU</div>
+  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
+  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
+  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
+  <a class="sideItem" href="deposits.html">💳 Deposit</a>
+  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
+  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
+  <a class="sideItem activeLink" href="profile.html">👤 Profile / Settings</a>
 
-  <a class="sideItem" href="user-dashboard.html">
-    <div class="sideIcon">🏠</div>
-    <div>Dashboard</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="portfolio.html">
-    <div class="sideIcon">📊</div>
-    <div>Portfolio</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="plans.html">
-    <div class="sideIcon">💼</div>
-    <div>Investment Plans</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="deposits.html">
-    <div class="sideIcon">💳</div>
-    <div>Deposit</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="withdraw.html">
-    <div class="sideIcon">➡</div>
-    <div>Withdraw Funds</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="support.html">
-    <div class="sideIcon">🧑‍💻</div>
-    <div>Support / Contact</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem activeLink" href="profile.html">
-    <div class="sideIcon">👤</div>
-    <div>Profile / Settings</div>
-    <div class="sideArrow">›</div>
-  </a>
-
+  <div style="height:12px"></div>
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
-<div class="topbar">
-  <div class="toprow">
-    <!-- ✅ Replaced COIN text with dashboard logo -->
+<div class="container">
+
+  <!-- ✅ Topbar (logo left, menu right) -->
+  <div class="topbar">
     <div class="brandLogo" onclick="goDashboard()" title="Dashboard">
       <img src="assets/vgm-logo.png" alt="Coinluxora Logo"/>
     </div>
-
-    <button class="circleBtn" title="Menu" onclick="openMenu()">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-    </button>
+    <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
   </div>
-</div>
 
-<div class="wrap">
   <div class="pageTitle">User Profile</div>
 
   <div class="card">
     <div class="profileHead">
-
       <div class="avatarWrap">
         <div id="avatarEmoji" class="avatarEmoji">👤</div>
         <img id="avatarImg" class="avatarImg" alt="Avatar"/>
@@ -724,8 +529,6 @@
     <div id="msg" class="msg"></div>
   </div>
 
-  <div style="height:18px"></div>
-
   <div class="card">
     <div class="sectionTitle">Change Password</div>
 
@@ -762,6 +565,7 @@
       </ul>
     </div>
   </div>
+
 </div>
 
 <!-- ✅ Change PIN Modal -->
@@ -826,7 +630,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
 
-/* ✅ AUTH + EMAIL VERIFIED GUARD (kept + enforced) */
+/* ✅ AUTH + EMAIL VERIFIED GUARD */
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -834,12 +638,14 @@ let currentUser = null;
       window.location.replace("login.html");
       return;
     }
+
     const { data, error } = await supabaseClient.auth.getUser();
     const user = data?.user;
     if(error || !user){
       window.location.replace("login.html");
       return;
     }
+
     if(!user.email_confirmed_at){
       await supabaseClient.auth.signOut();
       window.location.replace("verify.html?status=unverified");
@@ -848,27 +654,31 @@ let currentUser = null;
 
     currentUser = user;
 
-    // ✅ show NAME instead of email in sidebar (fallback to email)
+    // ✅ Show NAME instead of email in sidebar
     const md = currentUser.user_metadata || {};
     let dbRow = null;
+
     const { data: urow, error: uerr } = await supabaseClient
       .from("users")
       .select("full_name")
       .eq("email", currentUser.email)
       .maybeSingle();
+
     if(!uerr && urow) dbRow = urow;
 
     const fullName = (dbRow?.full_name || md.full_name || "").trim();
-    document.getElementById("sideEmail").innerText = fullName || currentUser.email;
+
+    document.getElementById("sideName").innerText = fullName || currentUser.email;
     document.getElementById("sideEmailSmall").innerText = fullName ? currentUser.email : "";
 
     await loadProfile();
+
   }catch(e){
     window.location.replace("login.html");
   }
 })();
 
-/* ✅ SIDEBAR */
+/* ✅ Sidebar open/close (same behavior as your dashboard pages) */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
@@ -1081,9 +891,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
   }
 });
 
-/* ============================================================
-   ✅ POPUP helpers (Verified-style)
-   ============================================================ */
+/* ✅ POPUP helpers */
 const popOverlay = document.getElementById("popOverlay");
 const popTitle = document.getElementById("popTitle");
 const popSub = document.getElementById("popSub");
@@ -1095,9 +903,7 @@ function showPopup(title, sub){
   setTimeout(()=> popOverlay.classList.remove("show"), 1150);
 }
 
-/* ============================================================
-   ✅ CHANGE PIN (SECURE - user_pins table)
-   ============================================================ */
+/* ✅ CHANGE PIN (user_pins table) */
 const changePinBtn = document.getElementById("changePinBtn");
 const pinOverlayEl = document.getElementById("pinOverlay");
 const savePinBtn = document.getElementById("savePinBtn");
