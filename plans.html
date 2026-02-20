@@ -21,6 +21,8 @@
 
   --pending:#9e6816;
   --forexGreen:#0bd07c;
+
+  --shadow: 0 26px 90px rgba(0,0,0,.55);
 }
 *{box-sizing:border-box}
 body{
@@ -33,6 +35,7 @@ body{
   color:var(--text);
   padding:16px;
   padding-bottom:34px;
+  overflow-x:hidden;
 }
 .container{max-width:980px;margin:0 auto}
 
@@ -40,7 +43,7 @@ body{
 .topFloatNav{
   position:sticky;
   top:10px;
-  z-index:500; /* ✅ lower than sidebar */
+  z-index:500; /* below sidebar */
   display:flex;
   justify-content:space-between;
   align-items:center;
@@ -73,166 +76,166 @@ body{
 }
 .menuBtn:hover{background:rgba(255,255,255,.10)}
 
-/* ✅ PREMIUM MENU (match user-dashboard/deposits style) */
+/* ============================================================
+  ✅ SIDEBAR — MATCH USER DASHBOARD STYLE (LEFT SLIDE)
+============================================================ */
 .overlay{
   position:fixed; inset:0;
   background:rgba(0,0,0,.65);
-  display:none;
-  z-index:99998;
-  backdrop-filter: blur(6px);
+  display:none; z-index:999;
+  backdrop-filter: blur(4px);
 }
+.overlay.show{display:block;}
+
 .sidebar{
-  position:fixed; top:0; right:-340px;
-  width:310px; height:100vh;
-  background:
-    radial-gradient(900px 520px at 10% 0%, rgba(83,113,255,.10), transparent 55%),
-    radial-gradient(900px 520px at 90% 0%, rgba(52,211,153,.08), transparent 55%),
-    rgba(5,10,24,0.98);
-  border-left:1px solid rgba(255,255,255,.12);
+  position:fixed; top:0; left:-315px;
+  width:292px; height:100vh;
   padding:16px;
-  transition:.28s ease;
-  z-index:99999;
-  box-shadow:0 20px 90px rgba(0,0,0,.75);
-  backdrop-filter: blur(14px);
+  z-index:1000;
+  transition: .28s ease;
+  border-right:1px solid rgba(255,255,255,.10);
+  background:
+    radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+    linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+  box-shadow:0 26px 90px rgba(0,0,0,.60);
+  backdrop-filter: blur(16px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
 }
-.sidebar.open{ right:0; }
-.overlay.show{ display:block; }
+.sidebar::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,0);
+  background-clip:padding-box;
+}
+.sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+.sidebar.open{ left:0; }
 
 .sideTop{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:12px;
+}
+
+/* wide logo (no box) */
+.sideBrand{
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  margin-bottom:14px;
+  gap:0;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  min-width:unset;
 }
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight:1000;
-  font-size:16px;
-  letter-spacing:.9px;
+.sideLogoWide{
+  height:128px;
+  width:auto;
+  max-width:230px;
+  display:block;
+  object-fit:contain;
+  filter:
+    drop-shadow(0 18px 35px rgba(0,0,0,.55))
+    drop-shadow(0 0 22px rgba(91,108,255,.18));
 }
-.brandLogo{
-  width:38px;height:38px;border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(135deg, rgba(91,108,255,.35), rgba(52,211,153,.20));
-  box-shadow:0 14px 50px rgba(0,0,0,.45);
-}
-.brandText{line-height:1.0}
-.brandText .sub{display:block;font-size:11px;color:rgba(234,240,255,.55);font-weight:900;margin-top:4px}
 
 .closeBtn{
-  width:44px;height:44px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:14px;
+  background:rgba(0,0,0,.22);
   border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.25);
-  color:white;
-  font-weight:1000;
+  color:rgba(234,240,255,.95);
+  border-radius:14px;
+  width:44px;height:44px;
   cursor:pointer;
-  font-size:18px;
+  display:grid;place-items:center;
+  font-weight:1000;
 }
 .closeBtn:hover{background:rgba(255,255,255,.08)}
 
 .userTag{
-  padding:12px;border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(0,0,0,.18));
-  box-shadow:0 18px 60px rgba(0,0,0,.50);
-  margin-bottom:14px;
-}
-.sideSmall{color:var(--muted);font-size:12px;margin-top:0;font-weight:1000}
-.userEmail{
-  font-weight:1000;
-  margin-top:8px;
-  font-size:14px;
-  color:rgba(234,240,255,.92);
-  word-break:break-word;
-}
-
-.menuSectionTitle{
-  margin:12px 0 10px 0;
-  font-size:12px;
-  font-weight:1000;
-  letter-spacing:.5px;
-  color:rgba(234,240,255,.55);
-}
-
-.sideItem{
-  position:relative;
-  display:flex;
-  gap:12px;
-  align-items:center;
-  padding:13px 14px;
-  border:1px solid rgba(255,255,255,.12);
+  padding:12px 12px;
   border-radius:18px;
-  margin-bottom:10px;
-  color:var(--text);
-  background:rgba(0,0,0,.22);
-  font-weight:1000;
-  text-decoration:none;
-  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 18px 55px rgba(0,0,0,.35);
+  margin:14px 0 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
 }
-.sideItem:before{
-  content:"";
-  position:absolute;
-  inset:-1px;
-  opacity:0;
-  transition:.25s ease;
-  background:radial-gradient(700px 220px at 10% 0%, rgba(91,108,255,.25), transparent 55%);
+.userTagLeft{min-width:0}
+.userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
+.userTag .t2{
+  margin-top:6px;font-weight:1000;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:180px;
 }
-.sideItem:hover{
-  transform:translateY(-1px);
-  background:rgba(255,255,255,.08);
-}
-.sideItem:hover:before{opacity:1}
 
-.sideIcon{
-  width:38px;height:38px;border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(255,255,255,.06);
+.sideAvatar{
+  width:46px;height:46px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.25);
+  display:grid;place-items:center;
+  position:relative;overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  flex:0 0 auto;
+}
+.sideAvatar span{font-size:18px}
+.sideAvatar img{
+  position:absolute; inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  display:none;
+}
+
+.menuGroupTitle{
+  margin:10px 0 8px;
+  font-size:12px;font-weight:1000;
+  color:rgba(234,240,255,.50);
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.sideItem{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 12px;border-radius:18px;
+  color:rgba(234,240,255,.82);
+  text-decoration:none;
+  font-weight:1000;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.sideItem:hover{background:rgba(255,255,255,.08)}
+.sideItem .i{
+  width:42px;height:42px;border-radius:16px;
+  display:grid;place-items:center;
   border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
   font-size:18px;
 }
-.sideLabel{position:relative}
-.sideArrow{
-  margin-left:auto;
-  opacity:.55;
-  font-weight:1000;
-  position:relative;
-}
-
+.sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
 .activeLink{
   border:1px solid rgba(56,189,248,.55);
-  background:rgba(56,189,248,0.10);
+  background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
+  color:#cfefff;
 }
-.activeLink .sideIcon{
-  background:rgba(56,189,248,0.16);
-  border-color:rgba(56,189,248,0.35);
+.activeLink::after{
+  content:"";
+  position:absolute; inset:0;
+  background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
+  pointer-events:none;
 }
-.activeBar{
-  position:absolute;
-  left:0;top:10px;bottom:10px;
-  width:4px;border-radius:999px;
-  background:linear-gradient(180deg, #5b6cff, #34d399);
-  opacity:.95;
-}
-
 .sideLogout{
-  width:100%;
-  padding:15px 14px;
-  border-radius:18px;
-  border:none;
-  cursor:pointer;
-  font-weight:1000;
-  color:white;
+  margin-top:10px;
   background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
-  box-shadow:0 20px 70px rgba(239,68,68,.15);
+  color:#020617;border:none;width:100%;
+  padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
+  box-shadow:0 18px 55px rgba(239,68,68,.18);
 }
-.sideLogout:hover{filter:brightness(1.05)}
+.sideLogout:hover{filter:brightness(1.03)}
 
 /* HEADER BOX */
 .topBar{
@@ -346,7 +349,6 @@ body{
 .chip.blue{background:rgba(91,108,255,.18);border-color:rgba(91,108,255,.40)}
 .chip.green{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.38)}
 .chip.orange{background:rgba(250,204,21,.14);border-color:rgba(250,204,21,.35)}
-.chip.red{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35)}
 
 .startBtn{
   width:100%;margin-top:12px;padding:16px 14px;border:none;border-radius:16px;
@@ -386,7 +388,7 @@ body{
 a{color:#9bdcff;text-decoration:none;font-weight:1000}
 a:hover{text-decoration:underline}
 
-/* Modal */
+/* Modal (Plan Details) */
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.75);
   display:none;align-items:center;justify-content:center;z-index:9999;
@@ -422,72 +424,128 @@ a:hover{text-decoration:underline}
 .pActive{background:rgba(11,208,124,.16);border-color:rgba(11,208,124,.38);color:var(--forexGreen)}
 .pCompleted{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.35);color:#38bdf8}
 .pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
+
+/* ============================================================
+  ✅ POP MESSAGE MODAL (replaces bottom message)
+============================================================ */
+.popModal{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center; justify-content:center;
+  z-index:100000;
+  background:rgba(0,0,0,.72);
+  backdrop-filter: blur(10px);
+}
+.popBox{
+  width:min(520px, 92vw);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.16);
+  background:
+    radial-gradient(900px 260px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(900px 260px at 90% 0%, rgba(52,211,153,.12), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 30px 110px rgba(0,0,0,.70);
+  padding:16px;
+}
+.popTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.popIcon{
+  width:44px;height:44px;border-radius:16px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  font-size:20px;
+}
+.popTitle{
+  font-weight:1000;
+  font-size:16px;
+  letter-spacing:.2px;
+}
+.popClose{
+  width:42px;height:42px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  color:#fff;
+  cursor:pointer;
+  font-weight:1000;
+}
+.popClose:hover{background:rgba(255,255,255,.08)}
+.popMsg{
+  margin-top:12px;
+  color:rgba(234,240,255,.82);
+  font-weight:900;
+  line-height:1.35;
+  font-size:14px;
+}
+.popActions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+.popBtn{
+  border:none;
+  padding:12px 14px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+}
+.popBtn:hover{background:rgba(255,255,255,.10)}
+.popBtnPrimary{
+  background:linear-gradient(90deg, #5b6cff, #34d399);
+  border:none;
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+}
+.popHint{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:900;
+  color:rgba(234,240,255,.55);
+}
 </style>
 </head>
 
 <body>
 
-<!-- ✅ OVERLAY + SIDEBAR -->
+<!-- ✅ OVERLAY + SIDEBAR (User Dashboard style) -->
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
 <div id="sidebar" class="sidebar" aria-hidden="true">
   <div class="sideTop">
-    <div class="brand">
-      <div class="brandLogo">⬡</div>
-      <div class="brandText">
-        COINLUXORA
-        <span class="sub">Premium Dashboard</span>
-      </div>
+    <div class="sideBrand">
+      <img class="sideLogoWide" src="assets/vgm-logo.png" alt="Coinluxora Logo">
     </div>
     <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
   </div>
 
   <div class="userTag">
-    <div class="sideSmall">Logged in as</div>
-    <div id="sideName" class="userEmail">---</div>
+    <div class="userTagLeft">
+      <div class="t1">Logged in as</div>
+      <div id="sideName" class="t2">---</div>
+    </div>
+    <div class="sideAvatar" title="Profile photo">
+      <span id="sideAvatarFallback">👤</span>
+      <img id="sideAvatarImg" alt="Avatar"/>
+    </div>
   </div>
 
-  <div class="menuSectionTitle">MAIN MENU</div>
-
-  <a class="sideItem" href="user-dashboard.html">
-    <div class="sideIcon">🏠</div>
-    <div class="sideLabel">Dashboard</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="portfolio.html">
-    <div class="sideIcon">📊</div>
-    <div class="sideLabel">Portfolio</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem activeLink" href="plans.html">
-    <div class="activeBar"></div>
-    <div class="sideIcon">💼</div>
-    <div class="sideLabel">Investment Plans</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="support.html">
-    <div class="sideIcon">🧑‍💻</div>
-    <div class="sideLabel">Support / Contact</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="deposits.html">
-    <div class="sideIcon">💳</div>
-    <div class="sideLabel">Deposit</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <a class="sideItem" href="withdraw.html">
-    <div class="sideIcon">➡</div>
-    <div class="sideLabel">Withdraw Funds</div>
-    <div class="sideArrow">›</div>
-  </a>
-
-  <div style="height:10px"></div>
-
+  <div class="menuGroupTitle">Navigation</div>
+  <a class="sideItem" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+  <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+  <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+  <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
+  <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
+  <a class="sideItem activeLink" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+  <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
@@ -553,12 +611,13 @@ a:hover{text-decoration:underline}
 
     <div class="grid" id="plansList"></div>
 
-    <div id="msg" class="small" style="margin-top:14px"></div>
+    <!-- (kept but not used anymore) -->
+    <div id="msg" class="small" style="display:none;margin-top:14px"></div>
   </div>
 
 </div>
 
-<!-- Modal -->
+<!-- Modal: Plan Details -->
 <div class="modal" id="planModal">
   <div class="modalBox">
     <h3 class="modalTitle">Plan Details</h3>
@@ -569,6 +628,25 @@ a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- ✅ POP MESSAGE MODAL (for Start button messages) -->
+<div class="popModal" id="popModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="popBox">
+    <div class="popTop">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="popIcon" id="popIcon">ℹ️</div>
+        <div class="popTitle" id="popTitle">Message</div>
+      </div>
+      <button class="popClose" onclick="closePop()" aria-label="Close">✕</button>
+    </div>
+    <div class="popMsg" id="popMsg">...</div>
+    <div class="popHint" id="popHint" style="display:none"></div>
+    <div class="popActions">
+      <button class="popBtn" onclick="closePop()">Close</button>
+      <button class="popBtn popBtnPrimary" id="popPrimaryBtn" style="display:none">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -576,18 +654,12 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
 let currentUserName="User";
+let currentAvatarUrl="";
 let plansCache=[];
 let currentPlanDetails=null;
 let plansChannel=null;
 
-/* ✅ Updated plans:
-  - Add Diamond before Platinum
-  - Remove max prices
-  - Minimums: Gold $700, Diamond $1,500, Platinum $5,000
-  - ROI shown as X amount: Silver X10, Gold X13, Diamond X15, Platinum X18
-  - Duration: all 5 days
-  - Remove amount input (plan starts at minimum)
-*/
+/* ✅ Updated plans (as you requested) */
 const PLANS = [
   {name:"Silver",   roiX:10, duration:5, min:100,  desc:"Entry plan for steady ROI."},
   {name:"Gold",     roiX:13, duration:5, min:700,  desc:"Mid-tier growth strategy."},
@@ -597,7 +669,7 @@ const PLANS = [
 
 init();
 
-/* ✅ Premium menu functions */
+/* ✅ Sidebar open/close (left slide) */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
@@ -611,7 +683,11 @@ function closeMenu(){
   document.body.style.overflow="";
 }
 document.addEventListener("keydown",(e)=>{
-  if(e.key==="Escape") closeMenu();
+  if(e.key==="Escape"){
+    closePop();
+    closeMenu();
+    closeModal();
+  }
 });
 
 /* NAV */
@@ -626,6 +702,60 @@ function statusPill(status){
   if(s==="rejected") return `<span class="pill pRejected">REJECTED</span>`;
   return `<span class="pill pPending">PENDING</span>`;
 }
+
+/* ============================================================
+  ✅ POP MODAL (replaces bottom message)
+============================================================ */
+function showPop({type="info", title="Message", message="", hint="", primaryText="", onPrimary=null}){
+  const modal=document.getElementById("popModal");
+  const icon=document.getElementById("popIcon");
+  const t=document.getElementById("popTitle");
+  const msg=document.getElementById("popMsg");
+  const hintEl=document.getElementById("popHint");
+  const pBtn=document.getElementById("popPrimaryBtn");
+
+  // icon by type
+  if(type==="ok"){ icon.textContent="✅"; }
+  else if(type==="err"){ icon.textContent="⛔"; }
+  else if(type==="warn"){ icon.textContent="⚠️"; }
+  else { icon.textContent="ℹ️"; }
+
+  t.textContent = title;
+  msg.textContent = message;
+
+  if(hint){
+    hintEl.style.display="block";
+    hintEl.textContent = hint;
+  }else{
+    hintEl.style.display="none";
+    hintEl.textContent="";
+  }
+
+  // primary
+  if(primaryText){
+    pBtn.style.display="inline-block";
+    pBtn.textContent = primaryText;
+    pBtn.onclick = ()=>{
+      try{ if(typeof onPrimary==="function") onPrimary(); }catch(e){}
+      closePop();
+    };
+  }else{
+    pBtn.style.display="none";
+    pBtn.textContent="";
+    pBtn.onclick = null;
+  }
+
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+}
+function closePop(){
+  const modal=document.getElementById("popModal");
+  modal.style.display="none";
+  modal.setAttribute("aria-hidden","true");
+}
+document.getElementById("popModal").addEventListener("click",(e)=>{
+  if(e.target && e.target.id==="popModal") closePop();
+});
 
 /* Stats */
 function updateStats(){
@@ -711,8 +841,6 @@ async function loadActivePlan(){
   const plan=data[0];
   const amount = Number(plan.amount||0);
   const roiX = Number(plan.roi_percent||0);
-
-  /* ✅ With ROI as X, expected return = amount * X */
   const expectedReturn = amount * (roiX || 1);
 
   activePlan.innerHTML=`
@@ -750,45 +878,72 @@ async function loadActivePlan(){
 }
 
 async function startPlan(index){
-  const msg=document.getElementById("msg");
-  msg.innerHTML="Starting plan…";
-
   const plan=PLANS[index];
 
-  /* ✅ amount input removed: always start at minimum */
+  // ✅ amount input removed: always start at minimum
   const amount = Number(plan.min || 0);
   if(!amount || amount <= 0){
-    msg.innerHTML=`<span class="err">Invalid plan minimum.</span>`;
+    showPop({type:"err", title:"Error", message:"Invalid plan minimum."});
     return;
   }
 
-  const { data:existing } = await supabaseClient
+  // show starting modal immediately
+  showPop({
+    type:"info",
+    title:"Starting Plan…",
+    message:`Creating your ${plan.name} plan with minimum ${money(amount)}.`,
+    hint:"Please keep this page open while we submit your plan.",
+    primaryText:"OK"
+  });
+
+  const { data:existing, error:existingErr } = await supabaseClient
     .from("investment_plans")
     .select("id,status")
     .eq("user_email", currentUserEmail)
     .in("status", ["active","pending"]);
 
-  if(existing && existing.length>0){
-    msg.innerHTML="<span class='err'>You already have an active plan. Contact support to upgrade.</span>";
+  if(existingErr){
+    showPop({type:"err", title:"Failed", message:existingErr.message});
     return;
   }
 
-  /* ✅ Store roiX in roi_percent column (no DB change needed) */
+  if(existing && existing.length>0){
+    showPop({
+      type:"warn",
+      title:"Plan Already Active",
+      message:"You already have an active/pending plan. Contact support to upgrade.",
+      primaryText:"Go to Support",
+      onPrimary: ()=>{ window.location.href="support.html"; }
+    });
+    return;
+  }
+
+  // ✅ Store roiX in roi_percent column (no DB change needed)
   const { error } = await supabaseClient.from("investment_plans").insert([{
     user_email: currentUserEmail,
     plan_name: plan.name,
     amount: amount,
-    roi_percent: plan.roiX,       // ✅ now means X10, X13, X15, X18
-    duration_days: plan.duration, // ✅ 5 days
+    roi_percent: plan.roiX,       // means X10/X13/X15/X18
+    duration_days: plan.duration, // 5 days
     status: "pending"
   }]);
 
   if(error){
-    msg.innerHTML="<span class='err'>"+error.message+"</span>";
+    showPop({type:"err", title:"Couldn’t Start Plan", message:error.message});
     return;
   }
 
-  msg.innerHTML="<span class='ok'>Plan started ✅ Waiting for admin approval</span>";
+  showPop({
+    type:"ok",
+    title:"Plan Started ✅",
+    message:`Your ${plan.name} plan has been created and is now waiting for admin approval.`,
+    hint:"You can view it in “My Active Plan” on this page.",
+    primaryText:"View My Active Plan",
+    onPrimary: ()=>{
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+  });
+
   await loadPlansForStats();
   loadActivePlan();
 }
@@ -813,7 +968,7 @@ function initRealtimePlans(){
     .subscribe();
 }
 
-/* Modal */
+/* Modal: Plan Details */
 function openModal(plan){
   currentPlanDetails=plan;
 
@@ -873,47 +1028,68 @@ document.getElementById("downloadPlanPdfBtn").addEventListener("click", ()=>{
   doc.save(`coinluxora-plan-${currentPlanDetails.id}.pdf`);
 });
 
-/* ✅ Load name (display name instead of email) */
-async function loadUserName(){
+/* ✅ Avatar + Name (same approach as your user-dashboard) */
+function setSideAvatar(avatarUrl){
+  const fb=document.getElementById("sideAvatarFallback");
+  const img=document.getElementById("sideAvatarImg");
+  if(avatarUrl){
+    img.src=avatarUrl+"?t="+Date.now();
+    img.style.display="block";
+    fb.style.display="none";
+  }else{
+    img.style.display="none";
+    fb.style.display="block";
+  }
+}
+
+async function loadUserIdentity(){
   try{
     let fullName="";
+    let avatarUrl="";
 
-    /* from users table */
+    // users table first
     const { data: row, error } = await supabaseClient
       .from("users")
-      .select("full_name")
+      .select("full_name, avatar_url")
       .eq("email", currentUserEmail)
       .maybeSingle();
 
-    if(!error && row && row.full_name) fullName = row.full_name;
-
-    /* fallback to auth metadata */
-    if(!fullName){
-      const md = (window.COINLUXORA_USER?.user_metadata || {});
-      fullName = md.full_name || md.name || "";
+    if(!error && row){
+      fullName = row.full_name || "";
+      avatarUrl = row.avatar_url || "";
     }
 
+    // auth metadata fallback
+    const md = (window.COINLUXORA_USER?.user_metadata || {});
+    if(!fullName) fullName = md.full_name || md.name || "";
+    if(!avatarUrl) avatarUrl = md.avatar_url || "";
+
     currentUserName = (fullName && String(fullName).trim()) ? String(fullName).trim() : "User";
+    currentAvatarUrl = avatarUrl || "";
+
+    document.getElementById("topName").innerText = currentUserName;
+    document.getElementById("sideName").innerText = currentUserName;
+
+    setSideAvatar(currentAvatarUrl);
   }catch(e){
     currentUserName = "User";
+    document.getElementById("topName").innerText = currentUserName;
+    document.getElementById("sideName").innerText = currentUserName;
+    setSideAvatar("");
   }
-
-  document.getElementById("topName").innerText = currentUserName;
-  document.getElementById("sideName").innerText = currentUserName;
 }
 
 async function init(){
-  const { data:userData } = await supabaseClient.auth.getUser();
-  if(!userData.user){
+  const { data:userData, error } = await supabaseClient.auth.getUser();
+  if(error || !userData.user){
     document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
     return;
   }
 
   window.COINLUXORA_USER = userData.user;
+  currentUserEmail = userData.user.email;
 
-  currentUserEmail=userData.user.email;
-
-  await loadUserName();
+  await loadUserIdentity();
 
   renderPlans();
   await loadPlansForStats();
