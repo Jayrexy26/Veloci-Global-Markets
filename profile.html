@@ -116,7 +116,6 @@
 
   /* =========================================================
      ✅ SIDEBAR MATCHING DASHBOARD STYLE (RIGHT SLIDE IN)
-     ✅ + SCROLLABLE
      ========================================================= */
   .overlay{
     position:fixed; inset:0;
@@ -140,34 +139,14 @@
     z-index:99999;
     box-shadow:0 20px 90px rgba(0,0,0,.75);
     backdrop-filter: blur(14px);
-
-    /* ✅ SCROLL */
-    overflow-y:auto;
-    -webkit-overflow-scrolling: touch;
   }
   .sidebar.open{ right:0; }
-
-  /* ✅ nicer scrollbar (optional) */
-  .sidebar::-webkit-scrollbar{ width:10px; }
-  .sidebar::-webkit-scrollbar-thumb{
-    background:rgba(255,255,255,.14);
-    border-radius:999px;
-    border:2px solid rgba(0,0,0,.25);
-  }
-  .sidebar::-webkit-scrollbar-track{ background:rgba(0,0,0,.10); }
 
   .sideTop{
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin-bottom:14px;
-    position:sticky;
-    top:0;
-    z-index:2;
-    padding-top:4px;
-    padding-bottom:10px;
-    background:linear-gradient(180deg, rgba(5,10,24,0.98), rgba(5,10,24,0.72));
-    backdrop-filter: blur(12px);
   }
   .brandText{font-weight:1000;font-size:18px;letter-spacing:.6px;}
   .closeBtn{
@@ -196,6 +175,13 @@
     font-weight:1000;
     margin-top:6px;
     line-height:1.25;
+  }
+  .sideEmailSmall{
+    margin-top:6px;
+    font-size:12px;
+    font-weight:900;
+    opacity:.65;
+    word-break:break-all;
   }
 
   .menuHeader{
@@ -606,6 +592,7 @@
   <div class="userTag">
     <div class="sideSmall">Logged in as</div>
     <div id="sideName" class="sideName">Loading…</div>
+    <div id="sideEmail" class="sideEmailSmall">—</div>
   </div>
 
   <div class="menuHeader">MAIN MENU</div>
@@ -844,14 +831,14 @@ const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ✅ Set your logo path here */
+/* ✅ Set your logo path here if needed */
 const LOGO_PATH = "logo.png";
 document.getElementById("topLogo").src = LOGO_PATH;
 
 let currentUser = null;
 
 /* ============================================================
-   ✅ ONE-BLOCK AUTH + EMAIL VERIFICATION GUARD
+   ✅ ONE-BLOCK AUTH + EMAIL VERIFICATION GUARD (Coinluxora standard)
    ============================================================ */
 (async function authGuard(){
   try{
@@ -876,6 +863,8 @@ let currentUser = null;
     }
 
     currentUser = user;
+
+    // Load profile + set sidebar/top identity
     await loadProfile();
 
   }catch(e){
@@ -883,7 +872,9 @@ let currentUser = null;
   }
 })();
 
-/* MENU */
+/* ============================================================
+   ✅ MENU (Dashboard style)
+   ============================================================ */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
@@ -924,7 +915,9 @@ function setMsg(type, text){
   else el.textContent = text;
 }
 
-/* POPUP */
+/* ============================================================
+   ✅ POPUP helpers (Verified-style)
+   ============================================================ */
 const popOverlay = document.getElementById("popOverlay");
 const popTitle = document.getElementById("popTitle");
 const popSub = document.getElementById("popSub");
@@ -936,7 +929,9 @@ function showPopup(title, sub){
   setTimeout(()=> popOverlay.classList.remove("show"), 1150);
 }
 
-/* Load profile */
+/* ============================================================
+   ✅ Load profile (name + email + sidebar name)
+   ============================================================ */
 async function loadProfile(){
   if(!currentUser) return;
 
@@ -955,17 +950,21 @@ async function loadProfile(){
   const country   = (dbRow?.country || md.country || "");
   const avatarUrl = (dbRow?.avatar_url || md.avatar_url || "");
 
+  // Main display
   document.getElementById("bigName").textContent = full_name;
   document.getElementById("bigEmail").textContent = currentUser.email;
 
+  // Inputs
   document.getElementById("name").value = full_name;
   document.getElementById("email").value = currentUser.email;
   document.getElementById("phone").value = phone;
   document.getElementById("country").value = country;
 
-  /* ✅ Sidebar shows ONLY NAME */
+  // Sidebar identity (✅ name instead of email)
   document.getElementById("sideName").textContent = full_name;
+  document.getElementById("sideEmail").textContent = currentUser.email;
 
+  // Avatar
   if(avatarUrl){
     document.getElementById("avatarEmoji").style.display="none";
     const img=document.getElementById("avatarImg");
@@ -974,7 +973,9 @@ async function loadProfile(){
   }
 }
 
-/* save profile */
+/* ============================================================
+   ✅ save profile
+   ============================================================ */
 async function saveProfile(){
   if(!currentUser){
     setMsg("err","Session missing. Please login again.");
@@ -1014,6 +1015,7 @@ async function saveProfile(){
     return;
   }
 
+  // Update UI (and sidebar name)
   document.getElementById("bigName").textContent = full_name;
   document.getElementById("sideName").textContent = full_name;
 
@@ -1023,7 +1025,9 @@ async function saveProfile(){
   showPopup("Updated ✔️", "Your profile has been saved.");
 }
 
-/* change password */
+/* ============================================================
+   ✅ change password
+   ============================================================ */
 async function changePassword(){
   const newPassword = document.getElementById("newPassword").value;
   const confirmNew  = document.getElementById("confirmNewPassword").value;
@@ -1049,13 +1053,17 @@ async function changePassword(){
   showPopup("Success ✔️", "Your password has been changed.");
 }
 
-/* logout */
+/* ============================================================
+   ✅ logout
+   ============================================================ */
 async function logout(){
   await supabaseClient.auth.signOut();
   window.location.replace("login.html");
 }
 
-/* AVATAR UPLOAD */
+/* ============================================================
+   ✅ AVATAR UPLOAD
+   ============================================================ */
 document.getElementById("avatarInput").addEventListener("change", async (e)=>{
   try{
     const file = e.target.files?.[0];
@@ -1118,7 +1126,9 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
   }
 });
 
-/* CHANGE PIN */
+/* ============================================================
+   ✅ CHANGE PIN (user_pins table)
+   ============================================================ */
 const changePinBtn = document.getElementById("changePinBtn");
 const pinOverlayEl = document.getElementById("pinOverlay");
 const savePinBtn = document.getElementById("savePinBtn");
@@ -1134,6 +1144,7 @@ function setPinMsg(text, type=""){
   pinMsgEl.classList.remove("err","ok");
   if(type) pinMsgEl.classList.add(type);
 }
+
 function openPinModal(){
   pinOverlayEl.classList.add("show");
   pinOverlayEl.setAttribute("aria-hidden","false");
@@ -1147,6 +1158,7 @@ function closePinModal(){
   pinOverlayEl.classList.remove("show");
   pinOverlayEl.setAttribute("aria-hidden","true");
 }
+
 changePinBtn.addEventListener("click", openPinModal);
 cancelPinBtn.addEventListener("click", closePinModal);
 closePinBtn.addEventListener("click", closePinModal);
@@ -1157,17 +1169,20 @@ pinOverlayEl.addEventListener("click", (e)=>{
 document.addEventListener("keydown", (e)=>{
   if(e.key === "Escape" && pinOverlayEl.classList.contains("show")) closePinModal();
 });
+
 [oldPinEl,newPinEl,confirmPinEl].forEach(el=>{
   el.addEventListener("input", ()=>{
     el.value = el.value.replace(/\D/g,"").slice(0,4);
   });
 });
+
 async function sha256(str){
   const data = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
+
 savePinBtn.addEventListener("click", async ()=>{
   setPinMsg("Updating PIN...");
 
