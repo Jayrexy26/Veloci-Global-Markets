@@ -1,297 +1,1294 @@
-<!-- FULL UPGRADED VERSION – NO CUTS -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Withdraw - Coinluxora</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Withdraw - Coinluxora</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<style>
-:root{
-  --bg:#050a18;
-  --stroke:rgba(255,255,255,.12);
-  --text:#eaf0ff;
-  --muted:rgba(234,240,255,.65);
-  --ok:#34d399;
-  --err:#fb7185;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui;
-  background:
-    radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.20), transparent 55%),
-    radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.16), transparent 55%),
-    var(--bg);
-  color:var(--text);
-  padding:16px;
-}
-.container{max-width:980px;margin:0 auto}
+  <style>
+    :root{
+      --bg:#050a18;
+      --border:rgba(255,255,255,.12);
+      --text:#eaf0ff;
+      --muted:rgba(234,240,255,.65);
+      --ok:#34d399;
+      --err:#fb7185;
+      --blue:#5b6cff;
+      --purple:#7c4dff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.20), transparent 55%),
+        radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.16), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      padding:16px;
+      padding-bottom:34px;
+    }
+    .container{max-width:980px;margin:0 auto}
 
-/* ===================== */
-/* PREMIUM SIDEBAR STYLE */
-/* ===================== */
-.overlay{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.65);
-  display:none;
-  z-index:999;
-}
-.overlay.show{display:block;}
+    /* ✅ TOP FLOAT NAV */
+    .topFloatNav{
+      position:sticky;
+      top:10px;
+      z-index:500;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .backBtn{
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      color:white;
+      font-weight:1000;
+      cursor:pointer;
+      backdrop-filter: blur(12px);
+      box-shadow:0 20px 70px rgba(0,0,0,.55);
+    }
+    .backBtn:hover{background:rgba(255,255,255,.08)}
+    .menuBtn{
+      width:48px;
+      height:48px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow:0 20px 70px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      cursor:pointer;
+      font-weight:1000;
+      color:white;
+    }
+    .menuBtn:hover{background:rgba(255,255,255,.10)}
 
-.sidebar{
-  position:fixed; top:0; left:-310px;
-  width:290px; height:100vh;
-  background:linear-gradient(180deg,#040816,#020617);
-  border-right:1px solid rgba(255,255,255,.12);
-  padding:16px;
-  transition:.3s ease;
-  z-index:1000;
-}
-.sidebar.open{left:0;}
+    /* ============================================================
+      ✅ SIDEBAR (MATCH USER DASHBOARD STRUCTURE)
+    ============================================================ */
+    .overlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.65);
+      display:none; z-index:999;
+      backdrop-filter: blur(4px);
+    }
+    .overlay.show{display:block;}
+    .sidebar{
+      position:fixed; top:0; left:-315px;
+      width:292px; height:100vh;
+      padding:16px;
+      z-index:1000;
+      transition: .28s ease;
+      border-right:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+        linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+      box-shadow:0 26px 90px rgba(0,0,0,.60);
+      backdrop-filter: blur(16px);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
+    }
+    .sidebar::-webkit-scrollbar{width:8px}
+    .sidebar::-webkit-scrollbar-track{background:transparent}
+    .sidebar::-webkit-scrollbar-thumb{
+      background:rgba(255,255,255,.16);
+      border-radius:999px;
+      border:2px solid rgba(0,0,0,0);
+      background-clip:padding-box;
+    }
+    .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+    .sidebar.open{ left:0; }
 
-.sideBrand{
-  font-weight:1000;
-  font-size:18px;
-  margin-bottom:14px;
-}
-.userTag{
-  padding:12px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.05);
-  margin-bottom:14px;
-}
-.userTag small{opacity:.6}
-.sideItem{
-  display:flex;gap:10px;align-items:center;
-  padding:12px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.25);
-  margin-bottom:10px;
-  text-decoration:none;
-  color:var(--text);
-  font-weight:1000;
-}
-.sideItem:hover{background:rgba(255,255,255,.08)}
-.activeLink{
-  border-color:#6366f1;
-  background:rgba(99,102,241,.15);
-}
-.sideLogout{
-  width:100%;
-  padding:14px;
-  border-radius:16px;
-  border:none;
-  font-weight:1000;
-  background:linear-gradient(90deg,#f43f5e,#ef4444);
-  color:white;
-  cursor:pointer;
-}
+    .sideTop{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:12px;
+    }
+    .sideBrand{
+      display:flex;
+      align-items:center;
+      gap:0;
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      min-width:unset;
+    }
+    .sideLogoWide{
+      height:92px;
+      width:auto;
+      max-width:230px;
+      display:block;
+      object-fit:contain;
+      filter:
+        drop-shadow(0 18px 35px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(91,108,255,.18));
+    }
+    .closeBtn{
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(234,240,255,.95);
+      border-radius:14px;
+      width:44px;height:44px;
+      cursor:pointer;
+      display:grid;place-items:center;
+      font-weight:1000;
+    }
+    .closeBtn:hover{background:rgba(255,255,255,.08)}
 
-/* ===================== */
-/* FORM + CARDS */
-/* ===================== */
-.card{
-  margin-bottom:14px;
-  padding:18px;
-  border-radius:22px;
-  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
-}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.full{grid-column:1/-1;}
+    .userTag{
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow:0 18px 55px rgba(0,0,0,.35);
+      margin:14px 0 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .userTagLeft{min-width:0}
+    .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
+    .userTag .t2{
+      margin-top:6px;font-weight:1000;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:180px;
+    }
+    .sideAvatar{
+      width:46px;height:46px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      display:grid;place-items:center;
+      position:relative;overflow:hidden;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .sideAvatar span{font-size:18px}
+    .sideAvatar img{
+      position:absolute; inset:0;
+      width:100%;height:100%;
+      object-fit:cover;
+      display:none;
+    }
 
-input,select{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.35);
-  color:white;
-}
+    .menuGroupTitle{
+      margin:10px 0 8px;
+      font-size:12px;font-weight:1000;
+      color:rgba(234,240,255,.50);
+      letter-spacing:.8px;
+      text-transform:uppercase;
+    }
+    .sideItem{
+      display:flex;align-items:center;gap:12px;
+      padding:12px 12px;border-radius:18px;
+      color:rgba(234,240,255,.82);
+      text-decoration:none;
+      font-weight:1000;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      margin-bottom:10px;
+      position:relative;overflow:hidden;
+    }
+    .sideItem:hover{background:rgba(255,255,255,.08)}
+    .sideItem .i{
+      width:42px;height:42px;border-radius:16px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      font-size:18px;
+    }
+    .sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
+    .activeLink{
+      border:1px solid rgba(56,189,248,.55);
+      background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
+      color:#cfefff;
+    }
+    .activeLink::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
+      pointer-events:none;
+    }
+    .sideLogout{
+      margin-top:10px;
+      background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+      color:#020617;border:none;width:100%;
+      padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
+      box-shadow:0 18px 55px rgba(239,68,68,.18);
+    }
+    .sideLogout:hover{filter:brightness(1.03)}
 
-button{
-  padding:14px;
-  border-radius:14px;
-  border:none;
-  font-weight:1000;
-  cursor:pointer;
-  background:linear-gradient(90deg,#6366f1,#22c55e);
-  color:white;
-}
+    /* Top header glass bar */
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:16px 18px;
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 20px 80px rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      margin-bottom:14px;
+    }
+    .topbar h2{ margin:0; font-size:18px; font-weight:1000; letter-spacing:.2px; }
+    .topbar .who{
+      opacity:.90;font-weight:1000;font-size:13px;
+      max-width:60%; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      color:rgba(234,240,255,.85);
+    }
+    .mutedTiny{ color:rgba(234,240,255,.55); font-weight:900; font-size:12px; }
 
-.msg{margin-top:10px;font-weight:900}
-.ok{color:#4ade80}
-.err{color:#fb7185}
-</style>
+    .card{
+      max-width:980px;
+      margin:0 auto 14px auto;
+      padding:18px;
+      border-radius:22px;
+      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 26px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+    }
+    .card h3{ margin:0 0 8px 0; font-size:24px; font-weight:1000; }
+    .card .sub{ margin-top:6px; color:var(--muted); font-weight:900; font-size:13px; }
+
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+    label{ display:block; font-size:13px; font-weight:900; margin-bottom:8px; color:rgba(255,255,255,0.85); }
+    .req{ color:#fda4af; font-weight:1000; margin-left:6px; }
+
+    input,select{
+      width:100%;
+      padding:16px 14px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.32);
+      color:var(--text);
+      outline:none;
+      box-sizing:border-box;
+      font-size:15px;
+    }
+    input::placeholder{ color:rgba(255,255,255,.35); }
+    input:focus,select:focus{
+      border-color:rgba(99,102,241,.55);
+      box-shadow:0 0 0 4px rgba(99,102,241,.18);
+    }
+    .full{ grid-column:1 / -1; }
+
+    button{
+      padding:16px 14px;
+      border:0;
+      border-radius:16px;
+      background:linear-gradient(90deg,#6366f1,#22c55e);
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+      font-size:15px;
+      box-shadow:0 18px 60px rgba(0,0,0,.45);
+    }
+    button:active{transform:translateY(1px)}
+    button:disabled{ opacity:0.6; cursor:not-allowed; }
+
+    .msg{
+      margin-top:14px;
+      padding:12px;
+      border-radius:16px;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.08);
+      font-weight:900;
+      font-size:14px;
+      display:none;
+      white-space:pre-wrap;
+    }
+    .msg.ok{ color:#4ade80; display:block; }
+    .msg.err{ color:#fb7185; display:block; }
+
+    /* Method switch */
+    .methodSwitch{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .mBtn{
+      padding:10px 12px;
+      border-radius:999px;
+      font-weight:1000;
+      font-size:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.06);
+      color:rgba(234,240,255,0.92);
+      user-select:none;
+    }
+    .mBtn.active{
+      border-color:rgba(99,102,241,0.55);
+      background:rgba(99,102,241,0.22);
+    }
+
+    /* History header */
+    .historyHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    .historyHead h4{ margin:0; font-size:16px; font-weight:1000; }
+
+    /* Tabs */
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+    .tab{
+      padding:9px 12px;
+      border-radius:999px;
+      font-weight:1000;
+      font-size:12px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.05);
+      color:rgba(255,255,255,0.9);
+      user-select:none;
+    }
+    .tab.active{
+      border-color:rgba(99,102,241,0.55);
+      background:rgba(99,102,241,0.22);
+    }
+
+    /* History table */
+    .tableWrap{
+      overflow:auto;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.22);
+    }
+    table{ width:100%; border-collapse:collapse; min-width:860px; }
+    th,td{
+      text-align:left; padding:13px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      font-size:13px;
+      vertical-align:middle;
+    }
+    th{ font-size:12px; color:rgba(255,255,255,0.75); font-weight:1000; }
+    tr:hover td{ background:rgba(255,255,255,0.03); }
+
+    .pill{
+      display:inline-block;
+      padding:7px 12px;
+      border-radius:999px;
+      font-weight:1000;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    .pending{ background:rgba(250,204,21,0.10); color:#fde047; border-color:rgba(250,204,21,0.25); }
+    .approved{ background:rgba(34,197,94,0.10); color:#4ade80; border-color:rgba(34,197,94,0.25); }
+    .rejected{ background:rgba(244,63,94,0.10); color:#fb7185; border-color:rgba(244,63,94,0.25); }
+    .cancelled{ background:rgba(148,163,184,0.10); color:#cbd5e1; border-color:rgba(148,163,184,0.25); }
+
+    .miniBtn{
+      padding:11px 13px;
+      border-radius:14px;
+      font-size:13px;
+      font-weight:1000;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.25);
+      color:#fff;
+      box-shadow:none;
+    }
+    .miniBtn:hover{ background:rgba(255,255,255,0.10); }
+
+    .dangerBtn{
+      padding:9px 12px;
+      border-radius:12px;
+      font-size:12px;
+      font-weight:1000;
+      cursor:pointer;
+      border:1px solid rgba(244,63,94,0.35);
+      background:rgba(244,63,94,0.12);
+      color:#fb7185;
+      box-shadow:none;
+    }
+    .dangerBtn:hover{ background:rgba(244,63,94,0.18); }
+    .dangerBtn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+    .empty{
+      padding:14px;
+      border-radius:18px;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.08);
+      font-weight:1000;
+      opacity:0.9;
+    }
+    .footerActions{
+      display:flex;
+      justify-content:center;
+      margin-top:14px;
+    }
+
+    /* Small screens */
+    @media (max-width: 900px){
+      .grid{ grid-template-columns:1fr; }
+      th:nth-child(4), td:nth-child(4){ display:none; } /* hide destination column */
+      th:nth-child(6), td:nth-child(6){ display:none; } /* hide method column */
+    }
+
+    /* ===== Loading Gate (same pattern) ===== */
+    #authGate{
+      position:fixed; inset:0; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      background:
+        radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+        radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+        var(--bg);
+    }
+    .gateCard{
+      width:min(520px,92vw);
+      border:none;
+      background:transparent;
+      border-radius:0;
+      padding:0;
+      box-shadow:none;
+      text-align:center;
+    }
+    .gateLogo{
+      width:180px;height:180px;border-radius:0;
+      margin:0 auto 14px;
+      display:grid;place-items:center;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      overflow:visible;
+      animation: premiumPulse 2.4s ease-in-out infinite;
+      filter:
+        drop-shadow(0 18px 45px rgba(0,0,0,.55))
+        drop-shadow(0 0 36px rgba(91,108,255,.45));
+    }
+    .logoImg{ width:100%; height:100%; object-fit:contain; display:block; }
+    @keyframes premiumPulse{
+      0%{transform:scale(1);opacity:.90}
+      50%{transform:scale(1.08);opacity:1}
+      100%{transform:scale(1);opacity:.90}
+    }
+    .gateTxt{ font-weight:1000; font-size:18px; letter-spacing:.2px; }
+    .gateSub{ margin-top:8px; color:rgba(234,240,255,.70); font-weight:900; font-size:13px; }
+  </style>
 </head>
 
 <body>
 
-<div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-<div id="sidebar" class="sidebar">
-  <div class="sideBrand">COINLUXORA</div>
-
-  <div class="userTag">
-    <small>Logged in as</small>
-    <div id="sideName" style="font-weight:1000;margin-top:6px;">---</div>
+  <!-- Loading -->
+  <div id="authGate">
+    <div class="gateCard">
+      <div class="gateLogo">
+        <img class="logoImg" src="assets/vgm-logo.png" alt="Coinluxora Logo">
+      </div>
+      <div class="gateTxt">Coinluxora</div>
+      <div class="gateSub">Secure withdrawals • Fast processing</div>
+    </div>
   </div>
 
-  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
-  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
-  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
-  <a class="sideItem" href="support.html">🧑‍💻 Support</a>
-  <a class="sideItem" href="deposits.html">💳 Deposit</a>
-  <a class="sideItem activeLink" href="withdraw.html">➡ Withdraw</a>
+  <!-- ✅ OVERLAY + SIDEBAR -->
+  <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-  <button class="sideLogout" onclick="logout()">Logout</button>
-</div>
-
-<div class="container">
-
-<h2>Withdraw Funds</h2>
-
-<div class="card">
-  <div class="grid">
-
-    <div>
-      <label>Withdrawal Method</label>
-      <select id="method" onchange="toggleMethod()">
-        <option value="crypto">Crypto</option>
-        <option value="bank">Bank Transfer</option>
-      </select>
+  <div id="sidebar" class="sidebar" aria-hidden="true">
+    <div class="sideTop">
+      <div class="sideBrand">
+        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="Coinluxora Logo">
+      </div>
+      <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
     </div>
 
-    <div>
-      <label>Amount</label>
-      <input type="number" id="amount" placeholder="Enter amount"/>
+    <div class="userTag">
+      <div class="userTagLeft">
+        <div class="t1">Logged in as</div>
+        <div id="sideName" class="t2">---</div>
+      </div>
+      <div class="sideAvatar" title="Profile photo">
+        <span id="sideAvatarFallback">👤</span>
+        <img id="sideAvatarImg" alt="Avatar"/>
+      </div>
     </div>
 
-    <!-- CRYPTO -->
-    <div id="cryptoFields" class="full">
-      <label>Wallet Address</label>
-      <input type="text" id="wallet"/>
+    <div class="menuGroupTitle">Navigation</div>
+    <a class="sideItem" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+    <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+    <a class="sideItem activeLink" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
+    <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
+    <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+    <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
+
+    <button class="sideLogout" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ✅ Sticky top nav -->
+    <div class="topFloatNav">
+      <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+      <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
     </div>
 
-    <!-- BANK -->
-    <div id="bankFields" class="full" style="display:none;">
-      <label>Bank Name</label>
-      <input type="text" id="bank_name"/>
-
-      <label>Account Name</label>
-      <input type="text" id="account_name"/>
-
-      <label>Account Number</label>
-      <input type="text" id="account_number"/>
-
-      <label>Country</label>
-      <input type="text" id="country"/>
-
-      <label>SWIFT (Optional)</label>
-      <input type="text" id="swift"/>
+    <div class="topbar">
+      <div>
+        <h2>Withdrawals</h2>
+        <div class="mutedTiny">Choose method: Crypto or Bank</div>
+      </div>
+      <div id="userWho" class="who">Loading…</div>
     </div>
 
-    <div class="full">
-      <button onclick="submitWithdrawal()">Submit Withdrawal</button>
-      <div id="msg" class="msg"></div>
+    <!-- ✅ Withdraw form -->
+    <div class="card">
+      <h3>Request Withdrawal</h3>
+      <div class="sub">Make sure your details are correct. Pending withdrawals can be cancelled.</div>
+
+      <!-- Method switch -->
+      <div class="methodSwitch" id="methodSwitch">
+        <div class="mBtn active" data-method="crypto">Crypto Withdrawal</div>
+        <div class="mBtn" data-method="bank">Bank Withdrawal</div>
+      </div>
+
+      <div class="grid">
+
+        <div>
+          <label>Amount <span class="req">*</span></label>
+          <input type="number" id="amount" placeholder="Enter amount"/>
+        </div>
+
+        <div>
+          <label>Asset <span class="req">*</span></label>
+          <select id="asset">
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="ETH">ETH</option>
+            <option value="BTC">BTC</option>
+            <option value="USDT">USDT</option>
+          </select>
+        </div>
+
+        <!-- =========================
+             CRYPTO FIELDS
+        ========================== -->
+        <div class="full" id="cryptoBlock">
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:14px; margin-top:0;">
+            <div class="full">
+              <label>Network <span class="req">*</span></label>
+              <select id="network">
+                <option value="TRC20">TRC20</option>
+                <option value="ERC20">ERC20</option>
+                <option value="BEP20">BEP20</option>
+                <option value="BTC">BTC</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label>Wallet Address <span class="req">*</span></label>
+              <input type="text" id="wallet_address" placeholder="Enter your wallet address"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================
+             BANK FIELDS
+        ========================== -->
+        <div class="full" id="bankBlock" style="display:none;">
+          <div class="grid" style="grid-template-columns:1fr 1fr; gap:14px; margin-top:0;">
+            <div>
+              <label>Bank Country / Region <span class="req">*</span></label>
+              <select id="bank_region">
+                <option value="NG">Nigeria</option>
+                <option value="US">United States</option>
+                <option value="UK">United Kingdom</option>
+                <option value="EU">Europe (IBAN)</option>
+                <option value="INTL">International (SWIFT)</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Bank Name <span class="req">*</span></label>
+              <input id="bank_name" placeholder="Example: Access Bank / Chase / Barclays"/>
+            </div>
+
+            <div>
+              <label>Account Holder Name <span class="req">*</span></label>
+              <input id="account_name" placeholder="Account name exactly as bank records"/>
+            </div>
+
+            <div>
+              <label>Account Number <span class="req">*</span></label>
+              <input id="account_number" placeholder="Enter account number"/>
+            </div>
+
+            <div id="ngBankCodeWrap" style="display:none;">
+              <label>Bank Code (Nigeria) <span class="req">*</span></label>
+              <input id="bank_code" placeholder="Example: 044 (optional if unknown)"/>
+            </div>
+
+            <div id="usRoutingWrap" style="display:none;">
+              <label>Routing Number (US) <span class="req">*</span></label>
+              <input id="routing_number" placeholder="9-digit routing number"/>
+            </div>
+
+            <div id="ukSortWrap" style="display:none;">
+              <label>Sort Code (UK) <span class="req">*</span></label>
+              <input id="sort_code" placeholder="Example: 12-34-56"/>
+            </div>
+
+            <div id="ibanWrap" style="display:none;">
+              <label>IBAN <span class="req">*</span></label>
+              <input id="iban" placeholder="International Bank Account Number"/>
+            </div>
+
+            <div id="swiftWrap" style="display:none;">
+              <label>SWIFT / BIC <span class="req">*</span></label>
+              <input id="swift_bic" placeholder="Example: ABCDUS33XXX"/>
+            </div>
+
+            <div class="full">
+              <label>Bank Address (Optional)</label>
+              <input id="bank_address" placeholder="Optional: bank branch address"/>
+            </div>
+
+            <div class="full">
+              <label>Reference / Note (Optional)</label>
+              <input id="bank_reference" placeholder="Optional: reference for bank transfer"/>
+            </div>
+          </div>
+
+          <div class="sub" style="margin-top:12px">
+            Bank withdrawals require accurate details. Incorrect data may cause delays or rejection.
+          </div>
+        </div>
+
+        <div class="full">
+          <button id="submitBtn" type="button" style="width:100%;">Submit Withdrawal</button>
+          <div id="msg" class="msg"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ History -->
+    <div class="card">
+      <div class="historyHead">
+        <h4>Withdrawal History</h4>
+
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-status="all">All</div>
+          <div class="tab" data-status="pending">Pending</div>
+          <div class="tab" data-status="approved">Approved</div>
+          <div class="tab" data-status="rejected">Rejected</div>
+          <div class="tab" data-status="cancelled">Cancelled</div>
+        </div>
+
+        <button id="refreshHistoryBtn" class="miniBtn" type="button">Refresh</button>
+      </div>
+
+      <div id="historyContainer"></div>
+
+      <div class="footerActions">
+        <button id="loadMoreBtn" class="miniBtn" type="button" style="display:none;">Load More</button>
+      </div>
     </div>
 
   </div>
-</div>
-
-</div>
 
 <script>
-const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY="YOUR_ANON_KEY";
-const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  /* ============================================================
+    ✅ SUPABASE
+  ============================================================ */
+  const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let currentUser=null;
+  /* ============================================================
+    ✅ SIDEBAR MENU
+  ============================================================ */
+  function openMenu(){
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("overlay").classList.add("show");
+    document.getElementById("sidebar").setAttribute("aria-hidden","false");
+    document.body.style.overflow="hidden";
+  }
+  function closeMenu(){
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("overlay").classList.remove("show");
+    document.getElementById("sidebar").setAttribute("aria-hidden","true");
+    document.body.style.overflow="";
+  }
+  document.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape") closeMenu();
+  });
 
-function openMenu(){
-  document.getElementById("sidebar").classList.add("open");
-  document.getElementById("overlay").classList.add("show");
-}
-function closeMenu(){
-  document.getElementById("sidebar").classList.remove("open");
-  document.getElementById("overlay").classList.remove("show");
-}
-
-function toggleMethod(){
-  const method=document.getElementById("method").value;
-  document.getElementById("cryptoFields").style.display= method==="crypto"?"block":"none";
-  document.getElementById("bankFields").style.display= method==="bank"?"block":"none";
-}
-
-function showMsg(text, ok=false){
-  const m=document.getElementById("msg");
-  m.textContent=text;
-  m.className="msg "+(ok?"ok":"err");
-}
-
-async function submitWithdrawal(){
-  const method=document.getElementById("method").value;
-  const amount=Number(document.getElementById("amount").value);
-
-  if(!amount||amount<=0){
-    showMsg("Enter valid amount");
-    return;
+  function goDashboard(){
+    window.location.href="user-dashboard.html";
   }
 
-  let payload={amount,method};
-
-  if(method==="crypto"){
-    const wallet=document.getElementById("wallet").value.trim();
-    if(!wallet){showMsg("Wallet required");return;}
-    payload.wallet_address=wallet;
+  function hideGate(){
+    const g=document.getElementById("authGate");
+    if(g) g.style.display="none";
   }
 
-  if(method==="bank"){
-    payload.bank_name=document.getElementById("bank_name").value.trim();
-    payload.account_name=document.getElementById("account_name").value.trim();
-    payload.account_number=document.getElementById("account_number").value.trim();
-    payload.country=document.getElementById("country").value.trim();
-    payload.swift=document.getElementById("swift").value.trim();
+  /* ============================================================
+    ✅ UI Helpers
+  ============================================================ */
+  const msg = document.getElementById("msg");
+  const submitBtn = document.getElementById("submitBtn");
+  const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
+  const historyContainer = document.getElementById("historyContainer");
+  const loadMoreBtn = document.getElementById("loadMoreBtn");
+  const tabsEl = document.getElementById("tabs");
 
-    if(!payload.bank_name||!payload.account_name||!payload.account_number||!payload.country){
-      showMsg("Fill all required bank fields");
-      return;
+  const userWho = document.getElementById("userWho");
+  const sideName = document.getElementById("sideName");
+
+  const sideAvatarFallback = document.getElementById("sideAvatarFallback");
+  const sideAvatarImg = document.getElementById("sideAvatarImg");
+
+  let currentUserEmail = null;
+  let currentUserId = null;
+  let currentFilter = "all";
+  let pageSize = 10;
+  let currentOffset = 0;
+  let historyCache = [];
+
+  let currentMethod = "crypto"; // "crypto" | "bank"
+
+  function showMessage(text, ok=false) {
+    msg.textContent = text;
+    msg.className = "msg " + (ok ? "ok" : "err");
+    msg.style.display = "block";
+  }
+
+  function escapeHtml(str="") {
+    return String(str).replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function formatDate(iso){
+    try { return new Date(iso).toLocaleString(); }
+    catch { return iso; }
+  }
+
+  function statusPill(status){
+    const s = (status || "pending").toLowerCase();
+    if (s === "approved") return `<span class="pill approved">APPROVED</span>`;
+    if (s === "rejected") return `<span class="pill rejected">REJECTED</span>`;
+    if (s === "cancelled") return `<span class="pill cancelled">CANCELLED</span>`;
+    return `<span class="pill pending">PENDING</span>`;
+  }
+
+  function setSideAvatar(avatarUrl){
+    if(avatarUrl){
+      sideAvatarImg.src = avatarUrl + "?t=" + Date.now();
+      sideAvatarImg.style.display="block";
+      sideAvatarFallback.style.display="none";
+    }else{
+      sideAvatarImg.style.display="none";
+      sideAvatarFallback.style.display="block";
     }
   }
 
-  const {error}=await supabaseClient.from("withdrawals").insert([{
-    user_email:currentUser.email,
-    ...payload,
-    status:"pending"
-  }]);
-
-  if(error){
-    showMsg(error.message);
-    return;
+  function setNameEverywhere(fullName){
+    const nice = (fullName && String(fullName).trim()) ? String(fullName).trim() : "User";
+    userWho.textContent = nice;
+    sideName.textContent = nice;
   }
 
-  showMsg("Withdrawal submitted successfully ✅",true);
-}
+  /* ============================================================
+    ✅ Method Switch + Bank Requirements
+  ============================================================ */
+  const methodSwitch = document.getElementById("methodSwitch");
+  const cryptoBlock = document.getElementById("cryptoBlock");
+  const bankBlock = document.getElementById("bankBlock");
 
-async function init(){
-  const {data}=await supabaseClient.auth.getUser();
-  if(!data.user){window.location.href="login.html";return;}
-  currentUser=data.user;
-  document.getElementById("sideName").textContent=currentUser.email;
-}
+  const bankRegion = document.getElementById("bank_region");
+  const ngBankCodeWrap = document.getElementById("ngBankCodeWrap");
+  const usRoutingWrap = document.getElementById("usRoutingWrap");
+  const ukSortWrap = document.getElementById("ukSortWrap");
+  const ibanWrap = document.getElementById("ibanWrap");
+  const swiftWrap = document.getElementById("swiftWrap");
 
-async function logout(){
-  await supabaseClient.auth.signOut();
-  window.location.href="login.html";
-}
+  function applyBankFieldRules(){
+    const r = (bankRegion.value || "NG").toUpperCase();
 
-init();
+    ngBankCodeWrap.style.display = (r === "NG") ? "block" : "none";
+    usRoutingWrap.style.display  = (r === "US") ? "block" : "none";
+    ukSortWrap.style.display     = (r === "UK") ? "block" : "none";
+
+    // EU -> IBAN + SWIFT required
+    if(r === "EU"){
+      ibanWrap.style.display = "block";
+      swiftWrap.style.display = "block";
+    }else if(r === "INTL"){
+      // INTL -> SWIFT required, IBAN optional but shown
+      ibanWrap.style.display = "block";
+      swiftWrap.style.display = "block";
+    }else{
+      // NG/US/UK -> SWIFT optional hidden, IBAN hidden
+      ibanWrap.style.display = "none";
+      swiftWrap.style.display = "none";
+    }
+  }
+
+  methodSwitch.addEventListener("click",(e)=>{
+    const btn = e.target.closest(".mBtn");
+    if(!btn) return;
+
+    document.querySelectorAll(".mBtn").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active");
+
+    currentMethod = btn.getAttribute("data-method") || "crypto";
+
+    if(currentMethod === "bank"){
+      cryptoBlock.style.display = "none";
+      bankBlock.style.display = "block";
+      applyBankFieldRules();
+    }else{
+      bankBlock.style.display = "none";
+      cryptoBlock.style.display = "block";
+    }
+  });
+
+  bankRegion.addEventListener("change", applyBankFieldRules);
+
+  function required(val){ return !!(val && String(val).trim().length); }
+
+  function validateBankPayload(bank){
+    if(!required(bank.bank_region)) return "Bank country/region is required.";
+    if(!required(bank.bank_name)) return "Bank name is required.";
+    if(!required(bank.account_name)) return "Account holder name is required.";
+    if(!required(bank.account_number)) return "Account number is required.";
+
+    const r = bank.bank_region;
+
+    if(r === "NG"){
+      // bank_code can be unknown, but if shown, we accept blank; still recommended
+      // no hard fail
+    }
+    if(r === "US"){
+      if(!required(bank.routing_number)) return "Routing number is required for US bank withdrawal.";
+      const rn = String(bank.routing_number).replace(/\D/g,"");
+      if(rn.length !== 9) return "Routing number must be 9 digits.";
+    }
+    if(r === "UK"){
+      if(!required(bank.sort_code)) return "Sort code is required for UK bank withdrawal.";
+      // allow formats 12-34-56 or 123456
+      const sc = String(bank.sort_code).replace(/\D/g,"");
+      if(sc.length !== 6) return "Sort code must be 6 digits (example: 12-34-56).";
+    }
+    if(r === "EU"){
+      if(!required(bank.iban)) return "IBAN is required for Europe (IBAN) withdrawals.";
+      if(!required(bank.swift_bic)) return "SWIFT/BIC is required for Europe (IBAN) withdrawals.";
+    }
+    if(r === "INTL"){
+      if(!required(bank.swift_bic)) return "SWIFT/BIC is required for International withdrawals.";
+      // IBAN optional but if present, ok
+    }
+
+    return "";
+  }
+
+  /* ============================================================
+    ✅ History Rendering (keeps your structure)
+  ============================================================ */
+  function renderHistoryTable(records){
+    if (!records || records.length === 0) {
+      historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+      return;
+    }
+
+    const rows = records.map((w) => {
+      const method = (w.method || "crypto").toLowerCase();
+      const status = (w.status || "pending").toLowerCase();
+      const canCancel = status === "pending";
+
+      let destination = "";
+      if(method === "bank"){
+        destination = w.wallet_address || "Bank transfer";
+      }else{
+        const wa = (w.wallet_address || "");
+        destination = wa ? (wa.slice(0, 10) + (wa.length > 10 ? "..." : "")) : "-";
+      }
+
+      return `
+        <tr>
+          <td>${escapeHtml(w.asset || "")}</td>
+          <td>${escapeHtml(String(w.amount || ""))}</td>
+          <td>${escapeHtml(w.network || "")}</td>
+          <td title="${escapeHtml(w.wallet_address || "")}">
+            ${escapeHtml(destination)}
+          </td>
+          <td>${statusPill(w.status)}</td>
+          <td>${escapeHtml(method)}</td>
+          <td>${escapeHtml(formatDate(w.created_at))}</td>
+          <td>
+            ${canCancel
+              ? `<button class="dangerBtn" data-cancel-id="${escapeHtml(w.id)}">Cancel</button>`
+              : `<span style="opacity:0.55;font-weight:900;">—</span>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    historyContainer.innerHTML = `
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Amount</th>
+              <th>Network</th>
+              <th>Destination</th>
+              <th>Status</th>
+              <th>Method</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+
+    document.querySelectorAll("[data-cancel-id]").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const withdrawalId = e.currentTarget.getAttribute("data-cancel-id");
+        await cancelWithdrawal(withdrawalId, e.currentTarget);
+      });
+    });
+  }
+
+  async function fetchWithdrawals({ reset=false } = {}) {
+    if (!currentUserEmail) return;
+
+    if (reset) {
+      currentOffset = 0;
+      historyCache = [];
+      loadMoreBtn.style.display = "none";
+      historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
+    }
+
+    let query = supabaseClient
+      .from("withdrawals")
+      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
+      .eq("user_email", currentUserEmail)
+      .order("created_at", { ascending: false })
+      .range(currentOffset, currentOffset + pageSize - 1);
+
+    if (currentFilter !== "all") query = query.eq("status", currentFilter);
+
+    const { data, error } = await query;
+
+    if (error) {
+      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      if (historyCache.length === 0) {
+        historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+      }
+      loadMoreBtn.style.display = "none";
+      return;
+    }
+
+    historyCache = historyCache.concat(data);
+    renderHistoryTable(historyCache);
+
+    if (data.length === pageSize) {
+      loadMoreBtn.style.display = "inline-block";
+      currentOffset += pageSize;
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  async function cancelWithdrawal(withdrawalId, btnEl) {
+    try {
+      btnEl.disabled = true;
+      btnEl.textContent = "Cancelling...";
+
+      const ok = confirm("Cancel this pending withdrawal request?");
+      if (!ok) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("withdrawals")
+        .update({ status: "cancelled" })
+        .eq("id", withdrawalId)
+        .eq("user_email", currentUserEmail)
+        .eq("status", "pending");
+
+      if (error) {
+        showMessage("Cancel failed: " + error.message);
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      showMessage("Withdrawal cancelled ✅", true);
+      await fetchWithdrawals({ reset:true });
+
+    } catch (e) {
+      showMessage("Cancel error: " + (e?.message || String(e)));
+    }
+  }
+
+  tabsEl.addEventListener("click", async (e) => {
+    const tab = e.target.closest(".tab");
+    if (!tab) return;
+
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    currentFilter = tab.getAttribute("data-status") || "all";
+    await fetchWithdrawals({ reset:true });
+  });
+
+  refreshHistoryBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:true });
+  });
+
+  loadMoreBtn.addEventListener("click", async () => {
+    await fetchWithdrawals({ reset:false });
+  });
+
+  /* ============================================================
+    ✅ Submit Withdrawal (CRYPTO + BANK) — uses EDGE FUNCTION
+  ============================================================ */
+  submitBtn.addEventListener("click", async () => {
+    try {
+      showMessage("Submitting withdrawal request...");
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session;
+
+      if (!session) {
+        showMessage("You are not logged in. Please login again.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      const amountVal = Number(document.getElementById("amount").value);
+
+      if (!amountVal || amountVal <= 0) {
+        showMessage("Enter a valid amount.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      const basePayload = {
+        amount: amountVal,
+        asset: document.getElementById("asset").value,
+        method: currentMethod
+      };
+
+      let payload = {};
+
+      if(currentMethod === "bank"){
+        const bank = {
+          bank_region: String(document.getElementById("bank_region").value || "").toUpperCase(),
+          bank_name: document.getElementById("bank_name").value.trim(),
+          account_name: document.getElementById("account_name").value.trim(),
+          account_number: document.getElementById("account_number").value.trim(),
+          bank_code: (document.getElementById("bank_code").value || "").trim(),
+          routing_number: (document.getElementById("routing_number").value || "").trim(),
+          sort_code: (document.getElementById("sort_code").value || "").trim(),
+          iban: (document.getElementById("iban").value || "").trim(),
+          swift_bic: (document.getElementById("swift_bic").value || "").trim(),
+          bank_address: (document.getElementById("bank_address").value || "").trim(),
+          reference: (document.getElementById("bank_reference").value || "").trim()
+        };
+
+        const bankErr = validateBankPayload(bank);
+        if(bankErr){
+          showMessage(bankErr);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Withdrawal";
+          return;
+        }
+
+        // Mask for destination (so we don't store full sensitive details in wallet_address)
+        const acctDigits = bank.account_number.replace(/\s+/g,"");
+        const last4 = acctDigits.length >= 4 ? acctDigits.slice(-4) : acctDigits;
+        const maskedDestination = `${bank.bank_name} • ****${last4}`;
+
+        payload = {
+          ...basePayload,
+          network: "BANK",
+          wallet_address: maskedDestination,
+          bank_details: bank
+        };
+      }else{
+        const wallet = document.getElementById("wallet_address").value.trim();
+        const network = document.getElementById("network").value;
+
+        if (!wallet) {
+          showMessage("Wallet address is required.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Withdrawal";
+          return;
+        }
+
+        payload = {
+          ...basePayload,
+          network,
+          wallet_address: wallet
+        };
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(()=> ({}));
+
+      if (!res.ok || data?.error) {
+        console.error("Withdraw error:", data);
+        showMessage(data?.details || data?.error || "Withdrawal failed.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
+      showMessage("Withdrawal request submitted successfully ✅", true);
+
+      // Reset fields
+      document.getElementById("amount").value = "";
+      if(currentMethod === "crypto"){
+        document.getElementById("wallet_address").value = "";
+      }else{
+        document.getElementById("bank_name").value = "";
+        document.getElementById("account_name").value = "";
+        document.getElementById("account_number").value = "";
+        document.getElementById("bank_code").value = "";
+        document.getElementById("routing_number").value = "";
+        document.getElementById("sort_code").value = "";
+        document.getElementById("iban").value = "";
+        document.getElementById("swift_bic").value = "";
+        document.getElementById("bank_address").value = "";
+        document.getElementById("bank_reference").value = "";
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Withdrawal";
+
+      await fetchWithdrawals({ reset:true });
+
+    } catch (err) {
+      console.error(err);
+      showMessage("Unexpected error occurred.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit Withdrawal";
+    }
+  });
+
+  async function logout(){
+    await supabaseClient.auth.signOut();
+    window.location.href="login.html";
+  }
+
+  /* ============================================================
+    ✅ LOAD USER (Name instead of email)
+  ============================================================ */
+  async function loadIdentity(user){
+    try{
+      currentUserEmail = user.email || "";
+      currentUserId = user.id || "";
+
+      // Prefer DB users table name + avatar
+      let fullName = "";
+      let avatarUrl = "";
+
+      try{
+        const { data: row } = await supabaseClient
+          .from("users")
+          .select("full_name, avatar_url")
+          .eq("email", currentUserEmail)
+          .maybeSingle();
+
+        if(row){
+          fullName = row.full_name || "";
+          avatarUrl = row.avatar_url || "";
+        }
+      }catch(e){}
+
+      const md = user.user_metadata || {};
+      if(!fullName) fullName = md.full_name || "User";
+      if(!avatarUrl) avatarUrl = md.avatar_url || "";
+
+      setNameEverywhere(fullName);
+      setSideAvatar(avatarUrl);
+    }catch(e){
+      setNameEverywhere("User");
+      setSideAvatar("");
+    }
+  }
+
+  /* ============================================================
+    ✅ COINLUXORA AUTH + EMAIL VERIFICATION GUARD (ONE BLOCK)
+  ============================================================ */
+  (async function authGuard(){
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session;
+
+      if(!session){
+        hideGate();
+        window.location.replace("login.html");
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.getUser();
+      const user = data?.user;
+
+      if(error || !user){
+        hideGate();
+        window.location.replace("login.html");
+        return;
+      }
+
+      const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+
+      if(!confirmed){
+        await supabaseClient.auth.signOut();
+        hideGate();
+        window.location.replace("verify.html?status=unverified");
+        return;
+      }
+
+      // set globals
+      await loadIdentity(user);
+
+      hideGate();
+
+      // init history
+      await fetchWithdrawals({ reset:true });
+
+    }catch(e){
+      hideGate();
+      window.location.replace("login.html");
+    }
+  })();
 </script>
 
 </body>
