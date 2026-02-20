@@ -17,9 +17,6 @@
       --ok:#22c55e;
       --err:#f87171;
       --warn:#fbbf24;
-      --blue:#5b6cff;
-      --purple:#7c4dff;
-      --shadow: 0 26px 90px rgba(0,0,0,.55);
       --shadow2: 0 14px 50px rgba(0,0,0,.45);
     }
     *{box-sizing:border-box}
@@ -57,7 +54,6 @@
       outline:none;
       font-size:14px;
     }
-    input:focus{border-color: rgba(91,108,255,.45); box-shadow: 0 0 0 4px rgba(91,108,255,.12)}
     .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
     .btn{
       border:1px solid rgba(255,255,255,.12);
@@ -90,27 +86,14 @@
     .ok{color:var(--ok);font-weight:950}
     .err{color:var(--err);font-weight:950}
     .warn{color:var(--warn);font-weight:950}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 10px;border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
-      color: var(--muted);
-      font-size:12px;
-      font-weight:900;
-    }
-    .dot{width:8px;height:8px;border-radius:99px;background: rgba(34,197,94,.85); box-shadow: 0 0 0 4px rgba(34,197,94,.12)}
-    code{color:#c7d2fe}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Admin API Test</h1>
-      <p class="sub">
-        This page confirms: <b>auth session</b> ✅, <b>email verified</b> ✅, and <b>admins table check</b> ✅.
-      </p>
-      <div style="margin-top:10px" class="pill"><span class="dot"></span> Edge Function: <code>/functions/v1/admin-api</code></div>
+      <p class="sub">This page confirms: <b>auth session</b> ✅, <b>email verified</b> ✅, and <b>admins table check</b> ✅.</p>
+      <p class="sub" style="margin-top:8px">Edge Function endpoint: <b>/functions/v1/admin-api</b></p>
     </div>
 
     <div class="grid">
@@ -143,23 +126,23 @@
 
 <script>
   const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4
+";
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const ADMIN_API_URL = SUPABASE_URL + "/functions/v1/admin-api";
-
   let SESSION = null;
 
   function setAuth(html){ document.getElementById("authBox").innerHTML = html; }
   function setApi(html){ document.getElementById("apiBox").innerHTML = html; }
 
-  function safe(obj){
+  function pretty(obj){
     try{ return JSON.stringify(obj, null, 2); }catch(e){ return String(obj); }
   }
 
   // ===== Supabase Auth + Email Verification Guard (ONE BLOCK) =====
   (async function authGuard(){
-    await check(); // initial check
+    await check();
   })();
   // ===== End Guard =====
 
@@ -177,13 +160,13 @@
 
       const user = data.session.user;
       const verified = !!user.email_confirmed_at;
+      SESSION = data.session;
+
       if(!verified){
-        SESSION = data.session;
         setAuth('<span class="err">Email not verified.</span> Verify your email, then refresh.');
         return;
       }
 
-      SESSION = data.session;
       setAuth(
         '<span class="ok">Session OK ✅</span>\n' +
         'Email: ' + (user.email || "-") + '\n' +
@@ -228,26 +211,33 @@
       method: "POST",
       headers:{
         "Content-Type":"application/json",
+        // ✅ REQUIRED FOR DIRECT FETCH CALLS
+        "apikey": SUPABASE_ANON_KEY,
         "Authorization":"Bearer " + SESSION.access_token
       },
       body: JSON.stringify({ action, payload })
     });
 
-    const text = await res.text();
-    let json;
-    try{ json = JSON.parse(text); }catch(e){ throw new Error("Bad JSON from API: " + text); }
+    const raw = await res.text();
 
-    if(!res.ok || json?.error){
-      throw new Error(json?.error || ("HTTP " + res.status));
+    // Try JSON parse; if it fails, show raw text (super helpful for debugging)
+    let json = null;
+    try{ json = JSON.parse(raw); }catch(e){}
+
+    if(!res.ok){
+      if(json?.error) throw new Error(json.error + " (HTTP " + res.status + ")");
+      throw new Error((raw || "HTTP " + res.status) + " (HTTP " + res.status + ")");
     }
-    return json.data;
+
+    if(json?.error) throw new Error(json.error);
+    return json?.data ?? json ?? raw;
   }
 
   async function callPing(){
     try{
       setApi("Calling ping…");
       const data = await callAdmin("ping", {});
-      setApi('<span class="ok">ping ✅</span>\n' + safe(data));
+      setApi('<span class="ok">ping ✅</span>\n' + pretty(data));
     }catch(e){
       setApi('<span class="err">ping ❌</span>\n' + (e.message || e));
     }
@@ -257,7 +247,7 @@
     try{
       setApi("Calling admin_me…");
       const data = await callAdmin("admin_me", {});
-      setApi('<span class="ok">admin_me ✅</span>\n' + safe(data));
+      setApi('<span class="ok">admin_me ✅</span>\n' + pretty(data));
     }catch(e){
       setApi('<span class="err">admin_me ❌</span>\n' + (e.message || e));
     }
