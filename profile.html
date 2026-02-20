@@ -10,18 +10,17 @@
 <style>
   :root{
     --bg:#050a18;
-    --border:rgba(255,255,255,.12);
-    --stroke:rgba(255,255,255,.12);
     --text:#eaf0ff;
-    --muted:rgba(234,240,255,.65);
+    --muted: rgba(234,240,255,.65);
     --ok:#22c55e;
     --err:#f87171;
+
+    --stroke: rgba(255,255,255,0.12);
+    --shadow: 0 26px 90px rgba(0,0,0,.55);
 
     --blue:#5b6cff;
     --purple:#7c4dff;
     --green:#34d399;
-
-    --shadow: 0 26px 90px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
 
@@ -30,45 +29,95 @@
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     color:var(--text);
     min-height:100vh;
-    padding:16px;
     padding-bottom:110px;
+    background: var(--bg);
+    overflow-x:hidden;
+  }
+
+  /* ===== FLOWING PREMIUM BACKGROUND ===== */
+  .bgFlow{
+    position:fixed; inset:0; z-index:-3;
     background:
       radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.28), transparent 55%),
       radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.18), transparent 55%),
       radial-gradient(900px 520px at 40% 90%, rgba(124,77,255,.20), transparent 60%),
       linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
-    overflow-x:hidden;
   }
+  .blob{
+    position:fixed;
+    width:520px;height:520px;border-radius:999px;
+    filter: blur(70px);
+    opacity:.55;
+    z-index:-2;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+  .blob.b1{ background: rgba(91,108,255,.75); left:-140px; top:-140px; animation: drift1 14s ease-in-out infinite; }
+  .blob.b2{ background: rgba(124,77,255,.70); right:-190px; top:10%; animation: drift2 16s ease-in-out infinite; }
+  .blob.b3{ background: rgba(52,211,153,.55); left:15%; bottom:-220px; animation: drift3 18s ease-in-out infinite; }
+  @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(220px,120px) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-240px,160px) scale(1.12)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(180px,-170px) scale(1.06)}100%{transform:translate(0,0) scale(1)}}
+  .shimmer{
+    position:fixed; inset:0; z-index:-1;
+    opacity:.25;
+    background:
+      radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.08), transparent 60%),
+      radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.06), transparent 60%);
+    animation: shimmerMove 10s ease-in-out infinite alternate;
+    pointer-events:none;
+  }
+  @keyframes shimmerMove{from{transform:translateY(0px)}to{transform:translateY(30px)}}
 
-  .container{max-width:980px;margin:0 auto}
-
-  /* ✅ TOP BAR (logo left, menu right) */
+  /* ===== TOP BAR ===== */
   .topbar{
-    position:sticky; top:10px; z-index:500;
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-    margin-bottom:12px;
+    position:sticky; top:0; z-index:20;
+    padding:12px 14px;
+    background:rgba(2,6,23,0.55);
+    backdrop-filter: blur(14px);
+    border-bottom:1px solid rgba(255,255,255,0.10);
   }
-  .brandLogo{
-    display:flex;align-items:center;
-    cursor:pointer;user-select:none;
+  .toprow{
+    max-width:980px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
   }
-  .brandLogo img{
-    height:46px;width:auto;display:block;
-    filter: drop-shadow(0 14px 30px rgba(0,0,0,.35));
-  }
-  .menuBtn{
-    width:48px;height:48px;border-radius:999px;
+
+  /* ✅ Logo like dashboard (image) */
+  .brandLogoBtn{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 12px;
+    border-radius:16px;
     border:1px solid rgba(255,255,255,.14);
     background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-    box-shadow:0 20px 70px rgba(0,0,0,.55);
-    backdrop-filter: blur(12px);
+    box-shadow:0 18px 55px rgba(0,0,0,.35);
     cursor:pointer;
-    font-weight:1000;
-    color:white;
+    user-select:none;
   }
-  .menuBtn:hover{background:rgba(255,255,255,.10)}
+  .brandLogoBtn:hover{background:rgba(255,255,255,.08)}
+  .brandLogo{
+    height:34px;
+    width:auto;
+    display:block;
+    object-fit:contain;
+    filter: drop-shadow(0 10px 22px rgba(0,0,0,.35));
+  }
 
-  /* ✅ USER DASHBOARD-STYLE SIDEBAR (RIGHT SLIDE-IN) */
+  .circleBtn{
+    width:44px;height:44px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.18);
+    display:grid;place-items:center;
+    box-shadow:0 16px 40px rgba(0,0,0,.35);
+    cursor:pointer;
+    color:rgba(234,240,255,.85);
+  }
+  .circleBtn:hover{background:rgba(255,255,255,.08)}
+  .circleBtn svg{width:22px;height:22px}
+
+  /* =========================================================
+     ✅ SIDEBAR MATCHING DASHBOARD STYLE (RIGHT SLIDE IN)
+     ✅ + SCROLLABLE
+     ========================================================= */
   .overlay{
     position:fixed; inset:0;
     background:rgba(0,0,0,.65);
@@ -76,39 +125,56 @@
     z-index:99998;
     backdrop-filter: blur(6px);
   }
+  .overlay.show{display:block;}
+
   .sidebar{
     position:fixed; top:0; right:-340px;
     width:300px; height:100vh;
-    background:linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+    background:
+      radial-gradient(900px 520px at 10% 0%, rgba(83,113,255,.10), transparent 55%),
+      radial-gradient(900px 520px at 90% 0%, rgba(52,211,153,.08), transparent 55%),
+      rgba(5,10,24,0.98);
     border-left:1px solid rgba(255,255,255,.12);
     padding:16px;
     transition:.28s ease;
     z-index:99999;
     box-shadow:0 20px 90px rgba(0,0,0,.75);
+    backdrop-filter: blur(14px);
+
+    /* ✅ SCROLL */
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
   }
   .sidebar.open{ right:0; }
-  .overlay.show{ display:block; }
+
+  /* ✅ nicer scrollbar (optional) */
+  .sidebar::-webkit-scrollbar{ width:10px; }
+  .sidebar::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.14);
+    border-radius:999px;
+    border:2px solid rgba(0,0,0,.25);
+  }
+  .sidebar::-webkit-scrollbar-track{ background:rgba(0,0,0,.10); }
 
   .sideTop{
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin-bottom:14px;
+    position:sticky;
+    top:0;
+    z-index:2;
+    padding-top:4px;
+    padding-bottom:10px;
+    background:linear-gradient(180deg, rgba(5,10,24,0.98), rgba(5,10,24,0.72));
+    backdrop-filter: blur(12px);
   }
-
-  /* ✅ Logo big & standing alone (NOT inside a box) */
-  .sideLogo{
-    display:flex;align-items:center;
-    cursor:pointer;user-select:none;
-  }
-  .sideLogo img{
-    height:52px;width:auto;display:block;
-    filter: drop-shadow(0 16px 40px rgba(0,0,0,.42));
-  }
-
+  .brandText{font-weight:1000;font-size:18px;letter-spacing:.6px;}
   .closeBtn{
     width:44px;height:44px;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     border-radius:14px;
     border:1px solid rgba(255,255,255,.14);
     background:rgba(0,0,0,.25);
@@ -126,18 +192,45 @@
     margin-bottom:14px;
   }
   .sideSmall{color:var(--muted);font-size:13px;margin-top:0}
+  .sideName{
+    font-weight:1000;
+    margin-top:6px;
+    line-height:1.25;
+  }
+
+  .menuHeader{
+    margin:14px 0 10px 0;
+    font-weight:1000;
+    font-size:12px;
+    letter-spacing:1px;
+    color:rgba(234,240,255,.55);
+  }
+
   .sideItem{
-    display:flex;gap:10px;align-items:center;
-    padding:12px;
+    display:flex;gap:12px;align-items:center;
+    padding:12px 12px;
     border:1px solid rgba(255,255,255,.12);
-    border-radius:16px;margin-bottom:10px;
+    border-radius:18px;margin-bottom:10px;
     color:var(--text);
     background:rgba(0,0,0,.22);
     font-weight:1000;
     text-decoration:none;
+    position:relative;
   }
   .sideItem:hover{background:rgba(255,255,255,.08)}
-  .activeLink{border:1px solid rgba(56,189,248,.55);background:rgba(56,189,248,0.12);}
+  .sideIcon{
+    width:40px;height:40px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.10);
+  }
+  .sideArrow{margin-left:auto;opacity:.55}
+  .activeLink{
+    border:1px solid rgba(56,189,248,.55);
+    background:rgba(56,189,248,0.12);
+    box-shadow:0 18px 60px rgba(56,189,248,.10);
+  }
+
   .sideLogout{
     width:100%;
     padding:14px;
@@ -148,10 +241,12 @@
     color:white;
     background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
     box-shadow:0 20px 70px rgba(239,68,68,.15);
+    margin-top:10px;
   }
 
   /* ===== CONTENT ===== */
-  .pageTitle{font-size:30px;font-weight:1000;margin:10px 0 14px;}
+  .wrap{max-width:980px;margin:0 auto;padding:14px;}
+  .pageTitle{font-size:30px;font-weight:1000;margin:12px 0 14px;}
   .card{
     border:1px solid rgba(255,255,255,.12);
     background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
@@ -159,7 +254,6 @@
     box-shadow:var(--shadow);
     padding:16px;
     backdrop-filter: blur(12px);
-    margin-bottom:14px;
   }
 
   /* ===== Avatar ===== */
@@ -260,6 +354,7 @@
     box-shadow:0 18px 55px rgba(91,108,255,.22);
     display:flex;align-items:center;justify-content:center;gap:10px;
   }
+  .pinBtn:hover{filter:brightness(1.04)}
 
   /* ===== PIN Modal ===== */
   .pinOverlay{
@@ -298,7 +393,12 @@
     position:relative; z-index:2;
     display:flex;align-items:center;justify-content:space-between;gap:12px;
   }
-  .pinTitle{font-weight:1000;font-size:1.35rem;letter-spacing:.2px;color:#eaf0ff;}
+  .pinTitle{
+    font-weight:1000;
+    font-size:1.35rem;
+    letter-spacing:.2px;
+    color:#eaf0ff;
+  }
   .pinCloseBtn{
     width:42px;height:42px;border-radius:12px;
     border:1px solid rgba(255,255,255,.12);
@@ -307,38 +407,89 @@
     cursor:pointer;font-weight:1000;
   }
 
-  .pinSub{position:relative; z-index:2;margin-top:8px;color:rgba(234,240,255,.70);font-size:.98rem;}
+  .pinSub{
+    position:relative; z-index:2;
+    margin-top:8px;
+    color:rgba(234,240,255,.70);
+    font-size:.98rem;
+  }
 
-  .pinInputs{position:relative; z-index:2;margin-top:14px;display:grid;gap:12px;}
+  .pinInputs{
+    position:relative; z-index:2;
+    margin-top:14px;
+    display:grid;
+    gap:12px;
+  }
   .pinInput{
-    width:100%;height:52px;border-radius:14px;
+    width:100%;
+    height:52px;
+    border-radius:14px;
     border:1px solid rgba(255,255,255,.12);
     background:rgba(2,6,23,.38);
-    color:#eaf0ff;padding:12px 14px;outline:none;
-    font-size:16px;letter-spacing:3px;font-weight:1000;
+    color:#eaf0ff;
+    padding:12px 14px;
+    outline:none;
+    font-size:16px;
+    letter-spacing:3px;
+    font-weight:1000;
   }
-  .pinInput::placeholder{letter-spacing:0px;color:rgba(234,240,255,.55);font-weight:900;}
-  .pinInput:focus{border-color:rgba(139,211,255,.35);box-shadow:0 0 0 4px rgba(139,211,255,.14);}
+  .pinInput::placeholder{
+    letter-spacing:0px;
+    color:rgba(234,240,255,.55);
+    font-weight:900;
+  }
+  .pinInput:focus{
+    border-color:rgba(139,211,255,.35);
+    box-shadow:0 0 0 4px rgba(139,211,255,.14);
+  }
 
-  .pinMsg{position:relative; z-index:2;margin-top:10px;min-height:18px;font-size:14px;color:rgba(234,240,255,.72);font-weight:900;}
+  .pinMsg{
+    position:relative; z-index:2;
+    margin-top:10px;
+    min-height:18px;
+    font-size:14px;
+    color:rgba(234,240,255,.72);
+    font-weight:900;
+  }
   .pinMsg.err{ color:#f87171; }
   .pinMsg.ok{ color:#22c55e; font-weight:1000; }
 
-  .pinBtns{position:relative; z-index:2;display:flex;gap:12px;margin-top:14px;}
-  .pinSaveBtn{flex:1;height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.16);color:#eaf0ff;font-weight:1000;cursor:pointer;}
-  .pinCancelBtn{flex:1;height:50px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:rgba(234,240,255,.85);font-weight:1000;cursor:pointer;}
+  .pinBtns{
+    position:relative; z-index:2;
+    display:flex;
+    gap:12px;
+    margin-top:14px;
+  }
+  .pinSaveBtn{
+    flex:1;height:50px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.16);
+    color:#eaf0ff;font-weight:1000;cursor:pointer;
+  }
+  .pinCancelBtn{
+    flex:1;height:50px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.10);
+    background:rgba(255,255,255,.06);
+    color:rgba(234,240,255,.85);font-weight:1000;cursor:pointer;
+  }
 
-  /* ✅ POPUP */
+  /* =========================================================
+     ✅ POPUP (Verified-style)
+     ========================================================= */
   .popOverlay{
-    position:fixed; inset:0;
+    position:fixed;
+    inset:0;
     background:rgba(0,0,0,.55);
-    display:none; align-items:center; justify-content:center;
+    display:none;
+    align-items:center;
+    justify-content:center;
     z-index:9999999;
     padding:18px;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
   .popOverlay.show{ display:flex; }
+
   .popModal{
     width:min(420px, 100%);
     border-radius:18px;
@@ -357,9 +508,14 @@
     background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.12), transparent 60%);
     pointer-events:none;
   }
-  .popInner{position:relative;z-index:2;text-align:center;}
+  .popInner{
+    position:relative;
+    z-index:2;
+    text-align:center;
+  }
   .popCircle{
-    width:66px;height:66px;border-radius:999px;
+    width:66px;height:66px;
+    border-radius:999px;
     margin:6px auto 12px;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 16px 55px rgba(0,0,0,.25);
@@ -372,10 +528,21 @@
     box-shadow:0 16px 55px rgba(34,197,94,.18);
   }
   .popCircle svg{width:34px;height:34px;}
-  .popTitle{margin:0;font-weight:1000;font-size:1.5rem;letter-spacing:.2px;}
-  .popSub{margin:10px 0 0;color:rgba(234,240,255,.72);font-size:1.02rem;}
+  .popTitle{
+    margin:0;
+    font-weight:1000;
+    font-size:1.5rem;
+    letter-spacing:.2px;
+  }
+  .popSub{
+    margin:10px 0 0;
+    color:rgba(234,240,255,.72);
+    font-size:1.02rem;
+  }
 
-  /* ✅ Bottom nav (kept same) */
+  /* =========================================================
+     ✅ ADVANCED BOTTOM NAV
+     ========================================================= */
   .dock{
     position:fixed;
     left:0; right:0; bottom:14px;
@@ -412,53 +579,98 @@
     cursor:pointer;user-select:none;
   }
   .dockHome span{font-size:28px;color:white}
+  .dockHome:hover{filter:brightness(1.05)}
 </style>
 </head>
 
 <body>
 
-<!-- ✅ OVERLAY + SIDEBAR (USER DASHBOARD STYLE) -->
+<div class="bgFlow"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="shimmer"></div>
+
+<!-- ✅ OVERLAY + SIDEBAR -->
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
 <div id="sidebar" class="sidebar" aria-hidden="true">
   <div class="sideTop">
-    <div class="sideLogo" onclick="goDashboard()" title="Dashboard">
-      <!-- ✅ Put your dashboard logo path here (same used on user-dashboard) -->
-      <img src="assets/vgm-logo.png" alt="Coinluxora Logo"/>
+    <div>
+      <div class="brandText">COINLUXORA</div>
+      <div style="opacity:.55;font-weight:900;font-size:12px;margin-top:2px">Premium Dashboard</div>
     </div>
     <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
   </div>
 
   <div class="userTag">
     <div class="sideSmall">Logged in as</div>
-    <!-- ✅ NAME shown here -->
-    <div id="sideName" style="font-weight:1000;margin-top:6px;">---</div>
-    <!-- ✅ email small under name -->
-    <div id="sideEmailSmall" class="sideSmall" style="margin-top:6px;opacity:.85;"></div>
+    <div id="sideName" class="sideName">Loading…</div>
   </div>
 
-  <a class="sideItem" href="user-dashboard.html">🏠 Dashboard</a>
-  <a class="sideItem" href="portfolio.html">📊 Portfolio</a>
-  <a class="sideItem" href="plans.html">💼 Investment Plans</a>
-  <a class="sideItem" href="deposits.html">💳 Deposit</a>
-  <a class="sideItem" href="withdraw.html">➡ Withdraw Funds</a>
-  <a class="sideItem" href="support.html">🧑‍💻 Support / Contact</a>
-  <a class="sideItem activeLink" href="profile.html">👤 Profile / Settings</a>
+  <div class="menuHeader">MAIN MENU</div>
 
-  <div style="height:12px"></div>
+  <a class="sideItem" href="user-dashboard.html">
+    <div class="sideIcon">🏠</div>
+    <div>Dashboard</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem" href="portfolio.html">
+    <div class="sideIcon">📊</div>
+    <div>Portfolio</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem" href="plans.html">
+    <div class="sideIcon">💼</div>
+    <div>Investment Plans</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem" href="deposits.html">
+    <div class="sideIcon">💳</div>
+    <div>Deposit</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem" href="withdraw.html">
+    <div class="sideIcon">➡</div>
+    <div>Withdraw Funds</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem" href="support.html">
+    <div class="sideIcon">🧑‍💻</div>
+    <div>Support / Contact</div>
+    <div class="sideArrow">›</div>
+  </a>
+
+  <a class="sideItem activeLink" href="profile.html">
+    <div class="sideIcon">👤</div>
+    <div>Profile / Settings</div>
+    <div class="sideArrow">›</div>
+  </a>
+
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
-<div class="container">
-
-  <!-- ✅ Topbar (logo left, menu right) -->
-  <div class="topbar">
-    <div class="brandLogo" onclick="goDashboard()" title="Dashboard">
-      <img src="assets/vgm-logo.png" alt="Coinluxora Logo"/>
+<!-- ✅ TOP BAR -->
+<div class="topbar">
+  <div class="toprow">
+    <div class="brandLogoBtn" onclick="goDashboard()" title="Go to Dashboard">
+      <img id="topLogo" class="brandLogo" src="logo.png" alt="Coinluxora Logo"/>
     </div>
-    <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
-  </div>
 
+    <button class="circleBtn" title="Menu" onclick="openMenu()">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="wrap">
   <div class="pageTitle">User Profile</div>
 
   <div class="card">
@@ -529,6 +741,8 @@
     <div id="msg" class="msg"></div>
   </div>
 
+  <div style="height:18px"></div>
+
   <div class="card">
     <div class="sectionTitle">Change Password</div>
 
@@ -565,7 +779,6 @@
       </ul>
     </div>
   </div>
-
 </div>
 
 <!-- ✅ Change PIN Modal -->
@@ -624,13 +837,22 @@
 </div>
 
 <script>
+/* ============================================================
+   ✅ CONFIG
+   ============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ✅ Set your logo path here */
+const LOGO_PATH = "logo.png";
+document.getElementById("topLogo").src = LOGO_PATH;
+
 let currentUser = null;
 
-/* ✅ AUTH + EMAIL VERIFIED GUARD */
+/* ============================================================
+   ✅ ONE-BLOCK AUTH + EMAIL VERIFICATION GUARD
+   ============================================================ */
 (async function authGuard(){
   try{
     const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -641,6 +863,7 @@ let currentUser = null;
 
     const { data, error } = await supabaseClient.auth.getUser();
     const user = data?.user;
+
     if(error || !user){
       window.location.replace("login.html");
       return;
@@ -653,24 +876,6 @@ let currentUser = null;
     }
 
     currentUser = user;
-
-    // ✅ Show NAME instead of email in sidebar
-    const md = currentUser.user_metadata || {};
-    let dbRow = null;
-
-    const { data: urow, error: uerr } = await supabaseClient
-      .from("users")
-      .select("full_name")
-      .eq("email", currentUser.email)
-      .maybeSingle();
-
-    if(!uerr && urow) dbRow = urow;
-
-    const fullName = (dbRow?.full_name || md.full_name || "").trim();
-
-    document.getElementById("sideName").innerText = fullName || currentUser.email;
-    document.getElementById("sideEmailSmall").innerText = fullName ? currentUser.email : "";
-
     await loadProfile();
 
   }catch(e){
@@ -678,7 +883,7 @@ let currentUser = null;
   }
 })();
 
-/* ✅ Sidebar open/close (same behavior as your dashboard pages) */
+/* MENU */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
@@ -719,6 +924,18 @@ function setMsg(type, text){
   else el.textContent = text;
 }
 
+/* POPUP */
+const popOverlay = document.getElementById("popOverlay");
+const popTitle = document.getElementById("popTitle");
+const popSub = document.getElementById("popSub");
+
+function showPopup(title, sub){
+  popTitle.textContent = title;
+  popSub.textContent = sub;
+  popOverlay.classList.add("show");
+  setTimeout(()=> popOverlay.classList.remove("show"), 1150);
+}
+
 /* Load profile */
 async function loadProfile(){
   if(!currentUser) return;
@@ -729,6 +946,7 @@ async function loadProfile(){
     .select("full_name, phone, country, avatar_url")
     .eq("email", currentUser.email)
     .maybeSingle();
+
   if(!error && data) dbRow = data;
 
   const md = currentUser.user_metadata || {};
@@ -744,6 +962,9 @@ async function loadProfile(){
   document.getElementById("email").value = currentUser.email;
   document.getElementById("phone").value = phone;
   document.getElementById("country").value = country;
+
+  /* ✅ Sidebar shows ONLY NAME */
+  document.getElementById("sideName").textContent = full_name;
 
   if(avatarUrl){
     document.getElementById("avatarEmoji").style.display="none";
@@ -794,9 +1015,12 @@ async function saveProfile(){
   }
 
   document.getElementById("bigName").textContent = full_name;
+  document.getElementById("sideName").textContent = full_name;
+
   ["name","phone","country"].forEach(id => document.getElementById(id).disabled = true);
 
   setMsg("ok","Profile updated successfully ✅");
+  showPopup("Updated ✔️", "Your profile has been saved.");
 }
 
 /* change password */
@@ -822,6 +1046,7 @@ async function changePassword(){
   document.getElementById("newPassword").value = "";
   document.getElementById("confirmNewPassword").value = "";
   setMsg("ok","Password changed successfully ✅");
+  showPopup("Success ✔️", "Your password has been changed.");
 }
 
 /* logout */
@@ -886,24 +1111,14 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     }
 
     setMsg("ok","Profile photo updated ✅");
+    showPopup("Uploaded ✔️", "Your profile photo has been updated.");
+
   }catch(err){
     setMsg("err","Upload failed.");
   }
 });
 
-/* ✅ POPUP helpers */
-const popOverlay = document.getElementById("popOverlay");
-const popTitle = document.getElementById("popTitle");
-const popSub = document.getElementById("popSub");
-
-function showPopup(title, sub){
-  popTitle.textContent = title;
-  popSub.textContent = sub;
-  popOverlay.classList.add("show");
-  setTimeout(()=> popOverlay.classList.remove("show"), 1150);
-}
-
-/* ✅ CHANGE PIN (user_pins table) */
+/* CHANGE PIN */
 const changePinBtn = document.getElementById("changePinBtn");
 const pinOverlayEl = document.getElementById("pinOverlay");
 const savePinBtn = document.getElementById("savePinBtn");
@@ -919,7 +1134,6 @@ function setPinMsg(text, type=""){
   pinMsgEl.classList.remove("err","ok");
   if(type) pinMsgEl.classList.add(type);
 }
-
 function openPinModal(){
   pinOverlayEl.classList.add("show");
   pinOverlayEl.setAttribute("aria-hidden","false");
@@ -933,7 +1147,6 @@ function closePinModal(){
   pinOverlayEl.classList.remove("show");
   pinOverlayEl.setAttribute("aria-hidden","true");
 }
-
 changePinBtn.addEventListener("click", openPinModal);
 cancelPinBtn.addEventListener("click", closePinModal);
 closePinBtn.addEventListener("click", closePinModal);
@@ -944,20 +1157,17 @@ pinOverlayEl.addEventListener("click", (e)=>{
 document.addEventListener("keydown", (e)=>{
   if(e.key === "Escape" && pinOverlayEl.classList.contains("show")) closePinModal();
 });
-
 [oldPinEl,newPinEl,confirmPinEl].forEach(el=>{
   el.addEventListener("input", ()=>{
     el.value = el.value.replace(/\D/g,"").slice(0,4);
   });
 });
-
 async function sha256(str){
   const data = new TextEncoder().encode(str);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
-
 savePinBtn.addEventListener("click", async ()=>{
   setPinMsg("Updating PIN...");
 
