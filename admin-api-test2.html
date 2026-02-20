@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VGM Admin API | Test 2</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#050a18; --text:#eaf0ff; --muted: rgba(234,240,255,.65);
+      --stroke: rgba(255,255,255,0.12); --panel: rgba(255,255,255,0.06);
+      --ok:#22c55e; --err:#f87171; --warn:#fbbf24;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(900px 600px at 20% -10%, rgba(91,108,255,.18), transparent 60%),
+        radial-gradient(900px 600px at 90% 0%, rgba(124,77,255,.14), transparent 55%),
+        radial-gradient(900px 600px at 50% 110%, rgba(56,189,248,.10), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      padding:18px;
+    }
+    .wrap{max-width:980px;margin:0 auto;display:grid;gap:14px}
+    .card{border:1px solid var(--stroke);background:rgba(255,255,255,0.05);border-radius:18px;padding:14px}
+    h1{margin:0 0 8px;font-size:20px}
+    .sub{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    label{font-size:12px;color:var(--muted);font-weight:900;letter-spacing:.04em}
+    input{
+      width:100%;padding:12px;border-radius:14px;border:1px solid var(--stroke);
+      background:rgba(255,255,255,0.03);color:var(--text);outline:none;font-size:14px
+    }
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,0.05);
+      color:var(--text);padding:11px 12px;border-radius:14px;font-weight:950;cursor:pointer;
+    }
+    .btn.primary{background:linear-gradient(135deg, rgba(91,108,255,.22), rgba(124,77,255,.14))}
+    .btn.danger{border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.10)}
+    .status{
+      border:1px solid rgba(255,255,255,0.10);background:rgba(255,255,255,0.04);
+      border-radius:14px;padding:10px 12px;color:var(--muted);font-size:13px;line-height:1.45;
+      white-space:pre-wrap;overflow:auto;max-height:360px
+    }
+    .ok{color:var(--ok);font-weight:950}
+    .err{color:var(--err);font-weight:950}
+    .warn{color:var(--warn);font-weight:950}
+    code{color:#c7d2fe}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Admin API Test 2</h1>
+      <p class="sub">This page will show errors on-screen if anything fails (library load, auth, function call).</p>
+      <p class="sub" style="margin-top:8px">Function: <code>admin-api</code> (via <code>supabase.functions.invoke</code>)</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div style="font-weight:950;margin-bottom:8px">Auth</div>
+
+        <div style="display:grid;gap:8px">
+          <label>Email</label>
+          <input id="email" type="email" placeholder="admin@email.com" autocomplete="email">
+          <label>Password</label>
+          <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <div class="btnRow">
+          <button class="btn primary" id="btnLogin">Sign in</button>
+          <button class="btn" id="btnCheck">Check Session</button>
+          <button class="btn danger" id="btnLogout">Logout</button>
+        </div>
+
+        <div style="margin-top:10px" class="status" id="authBox">Booting…</div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:950;margin-bottom:8px">Admin API Calls</div>
+        <div class="btnRow">
+          <button class="btn primary" id="btnPing">Ping</button>
+          <button class="btn" id="btnMe">Admin Me</button>
+        </div>
+        <div style="margin-top:10px" class="status" id="apiBox">—</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Show ANY JS errors on screen
+  window.addEventListener("error", (e) => {
+    const box = document.getElementById("authBox");
+    if(box) box.innerHTML = `<span class="err">JS Error:</span>\n${e.message}\n${e.filename || ""}:${e.lineno || ""}`;
+  });
+
+  const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE"; // <-- MUST replace
+
+  const authBox = document.getElementById("authBox");
+  const apiBox = document.getElementById("apiBox");
+
+  function setAuth(t){ authBox.textContent = t; }
+  function setApi(t){ apiBox.textContent = t; }
+  function pretty(obj){ try{return JSON.stringify(obj,null,2)}catch(e){return String(obj)} }
+
+  // 1) Confirm library loaded
+  if(typeof supabase === "undefined"){
+    authBox.innerHTML = `<span class="err">Supabase library failed to load.</span>\nCDN blocked or offline.`;
+    throw new Error("supabase is undefined");
+  }
+
+  // 2) Create client
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ===== Supabase Auth + Email Verification Guard (ONE BLOCK) =====
+  async function check(){
+    try{
+      setAuth("Checking session…");
+      const { data, error } = await supabaseClient.auth.getSession();
+      if(error) throw error;
+
+      if(!data.session){
+        setAuth("No session. Please sign in.");
+        return null;
+      }
+      const user = data.session.user;
+      if(!user.email_confirmed_at){
+        setAuth("Email not verified. Verify your email then refresh.");
+        return data.session;
+      }
+
+      setAuth(
+        "Session OK ✅\n" +
+        "Email: " + (user.email || "-") + "\n" +
+        "Verified: true\n" +
+        "Token present: " + (!!data.session.access_token)
+      );
+      return data.session;
+    }catch(e){
+      authBox.innerHTML = `<span class="err">Auth Error:</span>\n${e.message || e}`;
+      return null;
+    }
+  }
+  // ===== End Guard =====
+
+  async function login(){
+    try{
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("pass").value;
+      if(!email || !password){
+        authBox.innerHTML = `<span class="warn">Missing:</span> email + password`;
+        return;
+      }
+      setAuth("Signing in…");
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      await check();
+    }catch(e){
+      authBox.innerHTML = `<span class="err">Login failed:</span>\n${e.message || e}`;
+    }
+  }
+
+  async function logout(){
+    try{
+      await supabaseClient.auth.signOut();
+      setApi("—");
+      await check();
+    }catch(e){
+      authBox.innerHTML = `<span class="err">Logout error:</span>\n${e.message || e}`;
+    }
+  }
+
+  async function callFn(action){
+    try{
+      setApi("Calling " + action + "…");
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      if(!sessionData.session) throw new Error("No session. Sign in first.");
+      if(!sessionData.session.user.email_confirmed_at) throw new Error("Email not verified.");
+
+      // ✅ Invoke through supabase-js (handles apikey etc.)
+      const { data, error } = await supabaseClient.functions.invoke("admin-api", {
+        body: { action, payload: {} }
+      });
+      if(error) throw error;
+
+      setApi(action + " ✅\n" + pretty(data));
+    }catch(e){
+      apiBox.innerHTML = `<span class="err">${action} ❌</span>\n${e.message || e}`;
+    }
+  }
+
+  // Wire buttons (so we KNOW clicks are attached)
+  document.getElementById("btnLogin").addEventListener("click", login);
+  document.getElementById("btnCheck").addEventListener("click", check);
+  document.getElementById("btnLogout").addEventListener("click", logout);
+  document.getElementById("btnPing").addEventListener("click", () => callFn("ping"));
+  document.getElementById("btnMe").addEventListener("click", () => callFn("admin_me"));
+
+  // Boot
+  check();
+</script>
+</body>
+</html>
