@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin API Test | Credit, Debit, Withdrawals</title>
+  <title>Admin API Test | Atomic Finance</title>
 
   <style>
     body{margin:0;background:#050a18;color:#eaf0ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:20px}
-    .ui{position:relative;z-index:2147483647;pointer-events:auto;max-width:980px}
+    .ui{position:relative;z-index:2147483647;pointer-events:auto;max-width:1050px}
     .ui *{pointer-events:auto}
     h2{margin:0 0 14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
@@ -19,14 +19,15 @@
     .alt{background:#38bdf8}
     .danger{background:#f87171}
     .ok{background:#22c55e}
-    pre{margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04);white-space:pre-wrap;word-break:break-word;min-height:160px}
+    .pink{background:#ff4da6}
+    pre{margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04);white-space:pre-wrap;word-break:break-word;min-height:180px}
     .small{opacity:.75;font-size:12px;margin-top:6px}
   </style>
 </head>
 
 <body>
   <div class="ui">
-    <h2>Admin API Test (Atomic)</h2>
+    <h2>Admin API Test (Atomic Finance)</h2>
 
     <div class="row">
       <button id="btnPing" type="button">Ping</button>
@@ -34,7 +35,7 @@
     </div>
 
     <div class="row">
-      <input id="email" placeholder="User email (for credit/debit)" />
+      <input id="email" placeholder="User email (credit/debit)" />
       <input id="amount" type="number" step="0.01" placeholder="Amount" />
       <input id="note" placeholder="Admin note (optional)" />
     </div>
@@ -42,6 +43,11 @@
     <div class="row">
       <button id="btnCredit" type="button">Credit</button>
       <button id="btnDebit" type="button" class="danger">Debit</button>
+    </div>
+
+    <div class="row">
+      <input id="depositId" placeholder="Deposit ID (uuid)" />
+      <button id="btnApproveDep" type="button" class="pink">Approve Deposit</button>
     </div>
 
     <div class="row">
@@ -99,6 +105,12 @@
     const amount = Number(document.getElementById("amount").value || 0);
     const note = document.getElementById("note").value.trim();
     call("user_debit", { email, amount, note });
+  });
+
+  document.getElementById("btnApproveDep").addEventListener("click", () => {
+    const deposit_id = document.getElementById("depositId").value.trim();
+    const note = document.getElementById("note").value.trim();
+    call("deposit_approve", { deposit_id, note });
   });
 
   document.getElementById("btnApproveWd").addEventListener("click", () => {
