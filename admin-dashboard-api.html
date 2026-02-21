@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Veloci Admin Dashboard (API Controlled)</title>
+
+  <style>
+    body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+    button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;color:#020617}
+    .logout{background:#94a3b8}
+    .primary{background:#38bdf8}
+    .credit{background:#22c55e;margin-right:8px}
+    .debit{background:#f87171}
+    .approve{background:#22c55e;margin-right:8px}
+    .reject{background:#f87171}
+    .save{background:#22c55e}
+    .danger{background:#f87171}
+    .edit{background:#facc15;margin-right:8px}
+    .box{border:1px solid #1e293b;border-radius:12px;padding:12px;margin-bottom:16px;background:#020617}
+    .ok{color:#22c55e}
+    .error{color:#f87171}
+    .small{font-size:12px;color:#94a3b8;margin-top:6px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-word;vertical-align:top}
+    th{background:#0b1224}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb;font-size:13px;margin-bottom:8px}
+    textarea{min-height:70px;resize:none}
+    .pill{padding:5px 10px;border-radius:999px;font-weight:900;font-size:12px;display:inline-block}
+    .pending{background:#facc15;color:#020617}
+    .active{background:#38bdf8;color:#020617}
+    .completed{background:#22c55e;color:#020617}
+    .rejected{background:#f87171;color:#020617}
+    .open{background:#facc15;color:#020617}
+    .closed{background:#22c55e;color:#020617}
+    .errBox{border:1px solid #7f1d1d;background:#1f0a0a;padding:12px;border-radius:12px;margin-bottom:14px}
+    a{color:#38bdf8;font-weight:900;text-decoration:none}
+    .gridTop{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .keyBox{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .keyBox input{min-width:260px;margin-bottom:0}
+    .muted{opacity:.8}
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div>
+    <strong>Veloci Admin Dashboard</strong>
+    <div class="small">API-Controlled (Edge Function) ✅</div>
+  </div>
+
+  <div class="keyBox">
+    <input id="adminId" placeholder="Admin ID (e.g. Carl-Admin)" />
+    <input id="adminSecret" placeholder="Admin Secret (x-admin-secret)" type="password" />
+    <button class="primary" onclick="connectAdmin()">Connect</button>
+    <button class="logout" onclick="disconnectAdmin()">Disconnect</button>
+  </div>
+</header>
+
+<!-- ERROR VIEWER -->
+<div class="errBox">
+  <strong>System Status</strong>
+  <div class="small">If any section fails, it will show here 👇</div>
+  <div id="sys" class="small">Not connected.</div>
+</div>
+
+<!-- SUPPORT TICKETS -->
+<div class="box">
+  <strong>Support Tickets</strong>
+  <div class="small">Reply to user issues and mark closed</div>
+  <div id="ticketStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Subject</th>
+        <th>Message</th>
+        <th>Status</th>
+        <th>Admin Reply</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="ticketRows"></tbody>
+  </table>
+</div>
+
+<!-- USERS -->
+<div class="box">
+  <strong>Users</strong>
+  <div class="small">Credit or debit balances instantly (Atomic)</div>
+  <div id="usersStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Balance</th>
+        <th>Amount</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userRows"></tbody>
+  </table>
+</div>
+
+<!-- INVESTMENT PLANS -->
+<div class="box">
+  <strong>Investment Plans</strong>
+  <div class="small">Approve / complete plans and auto-credit ROI profit</div>
+  <div id="planStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Plan</th>
+        <th>Amount</th>
+        <th>ROI</th>
+        <th>Duration</th>
+        <th>Status</th>
+        <th>Admin Note</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="planRows"></tbody>
+  </table>
+</div>
+
+<!-- DEPOSITS -->
+<div class="box">
+  <strong>Deposits</strong>
+  <div class="small">Approve deposit and balance auto-credits (Atomic)</div>
+  <div id="depStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Asset</th>
+        <th>Network</th>
+        <th>Amount</th>
+        <th>TX Hash</th>
+        <th>Proof</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="depRows"></tbody>
+  </table>
+</div>
+
+<!-- WITHDRAWALS -->
+<div class="box">
+  <strong>Withdrawals</strong>
+  <div class="small">Approve or reject withdrawals (Approve auto-debits user balance)</div>
+  <div id="wdStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Asset</th>
+        <th>Network</th>
+        <th>Amount</th>
+        <th>Wallet Address</th>
+        <th>Status</th>
+        <th>Admin Note</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="wdRows"></tbody>
+  </table>
+</div>
+
+<!-- PORTFOLIO MANAGER -->
+<div class="box">
+  <strong>Portfolio Manager</strong>
+  <div class="small">Add / edit holdings with buy price + notes</div>
+  <div id="pfStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <input id="pfEmail" placeholder="Search by user email" oninput="loadPortfolios()"/>
+
+  <form onsubmit="savePortfolio(event)">
+    <input type="hidden" id="pfId">
+    <input id="pfUserEmail" placeholder="User Email" required>
+
+    <select id="pfAsset" required>
+      <option value="btc">BTC</option>
+      <option value="eth">ETH</option>
+      <option value="usdt">USDT</option>
+    </select>
+
+    <input id="pfAmount" type="number" step="0.00000001" placeholder="Amount" required>
+    <input id="pfBuyPrice" type="number" step="0.01" placeholder="Buy Price in USD" required>
+    <input id="pfNotes" placeholder="Notes">
+
+    <button class="save" type="submit">Save Holding</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>User Email</th>
+        <th>Asset</th>
+        <th>Amount</th>
+        <th>Buy Price</th>
+        <th>Notes</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="pfRows"></tbody>
+  </table>
+</div>
+
+<!-- WALLET ADDRESS MANAGER -->
+<div class="box">
+  <strong>Wallet Address Manager</strong>
+  <div class="small">Add / edit / delete deposit addresses</div>
+  <div id="addrStatus" style="margin-top:8px;">Not loaded.</div>
+
+  <form onsubmit="saveAddress(event)">
+    <input type="hidden" id="editId">
+    <input id="asset" placeholder="Asset (btc/eth/usdt)" required>
+    <input id="network" placeholder="Network (BTC/ERC20/TRC20)" required>
+    <input id="address" placeholder="Wallet Address" required>
+    <button class="save" type="submit">Save Wallet</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Asset</th>
+        <th>Network</th>
+        <th>Address</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="addrRows"></tbody>
+  </table>
+</div>
+
+<script>
+/**
+ * IMPORTANT:
+ * - Replace ANON_KEY with your Supabase anon key (public).
+ * - DO NOT hardcode ADMIN_SECRET on public pages. Enter it in the input box above.
+ * - Keep this admin page private (not publicly linked).
+ */
+const API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+
+let ADMIN_SECRET = "";
+let ADMIN_ID = "admin";
+
+function setSys(msg, ok=true){
+  document.getElementById("sys").innerHTML = ok ? `<span class="ok">${msg}</span>` : `<span class="error">${msg}</span>`;
+}
+
+function badgeStatus(status){
+  const s=(status||"pending").toLowerCase();
+  return `<span class="pill ${s}">${s}</span>`;
+}
+
+function connectAdmin(){
+  const sid = document.getElementById("adminId").value.trim();
+  const ssec = document.getElementById("adminSecret").value.trim();
+  if(!ssec){ setSys("Enter Admin Secret to connect.", false); return; }
+
+  ADMIN_ID = sid || "admin";
+  ADMIN_SECRET = ssec;
+
+  setSys("Connected ✅ Loading dashboard…");
+  loadAll();
+}
+
+function disconnectAdmin(){
+  ADMIN_SECRET = "";
+  setSys("Disconnected.");
+}
+
+async function apiCall(action, payload={}){
+  if(!ADMIN_SECRET) throw new Error("Admin not connected. Enter secret and connect.");
+
+  const res = await fetch(API_URL, {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey": ANON_KEY,
+      "x-admin-secret": ADMIN_SECRET,
+      "x-admin-id": ADMIN_ID
+    },
+    body: JSON.stringify({ action, payload })
+  });
+
+  const text = await res.text();
+  let data;
+  try{ data = JSON.parse(text); } catch(e){ data = { success:false, error:text }; }
+
+  if(!res.ok || !data.success){
+    throw new Error(data.error || ("HTTP " + res.status));
+  }
+  return data;
+}
+
+async function safeLoad(fn){
+  try{ await fn(); }
+  catch(e){ setSys("Error: " + e.message, false); }
+}
+
+function loadAll(){
+  safeLoad(loadUsers);
+  safeLoad(loadTickets);
+  safeLoad(loadPlans);
+  safeLoad(loadDeposits);
+  safeLoad(loadWithdrawals);
+  safeLoad(loadPortfolios);
+  safeLoad(loadAddresses);
+}
+
+/* SUPPORT */
+async function loadTickets(){
+  const status=document.getElementById("ticketStatus");
+  const tbody=document.getElementById("ticketRows");
+
+  status.textContent="Loading tickets…";
+  const res = await apiCall("tickets_list");
+
+  const data = res.data || [];
+  if(data.length===0){status.innerHTML=`<span class="error">No tickets yet</span>`;tbody.innerHTML="";return;}
+  status.innerHTML=`<span class="ok">Loaded ${data.length} ticket(s) ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(t=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${t.user_email||""}</td>
+        <td><strong>${t.subject||""}</strong></td>
+        <td>${t.message||""}</td>
+        <td>${badgeStatus(t.status)}</td>
+        <td><textarea id="reply-${t.id}">${t.admin_reply||""}</textarea></td>
+        <td>
+          <button class="approve" onclick="replyTicket('${t.id}')">Save Reply</button>
+          <button class="save" onclick="closeTicket('${t.id}')">Close</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function replyTicket(ticketId){
+  const reply=document.getElementById(`reply-${ticketId}`).value.trim();
+  await apiCall("ticket_reply", { ticket_id: ticketId, reply });
+  alert("✅ Reply saved!");
+  loadTickets();
+}
+
+async function closeTicket(ticketId){
+  const reply=document.getElementById(`reply-${ticketId}`).value.trim();
+  await apiCall("ticket_close", { ticket_id: ticketId, reply });
+  alert("✅ Ticket closed!");
+  loadTickets();
+}
+
+/* USERS */
+async function loadUsers(){
+  const status=document.getElementById("usersStatus");
+  const tbody=document.getElementById("userRows");
+
+  status.textContent="Loading users…";
+  const res = await apiCall("users_list");
+
+  const data=res.data||[];
+  if(data.length===0){status.innerHTML=`<span class="error">No users found</span>`;tbody.innerHTML="";return;}
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} user(s) ✅</span>`;
+  tbody.innerHTML="";
+  data.forEach(u=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${u.email||""}</td>
+        <td><strong>${Number(u.balance||0).toFixed(2)}</strong></td>
+        <td><input type="number" step="0.01" id="amt-${u.id}"></td>
+        <td><input id="note-${u.id}" value="${(u.notes||"").replace(/"/g,"&quot;")}"></td>
+        <td>
+          <button class="credit" onclick="credit('${u.email}','${u.id}')">Credit</button>
+          <button class="debit" onclick="debit('${u.email}','${u.id}')">Debit</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function credit(email, id){
+  const amt=Number(document.getElementById(`amt-${id}`).value||0);
+  const notes=document.getElementById(`note-${id}`).value;
+  if(amt<=0){alert("Enter amount");return;}
+  const res = await apiCall("user_credit", { email, amount: amt, note: notes });
+  alert("✅ Credited. New Balance: " + res.data.new_balance);
+  loadUsers();
+}
+
+async function debit(email, id){
+  const amt=Number(document.getElementById(`amt-${id}`).value||0);
+  const notes=document.getElementById(`note-${id}`).value;
+  if(amt<=0){alert("Enter amount");return;}
+  const res = await apiCall("user_debit", { email, amount: amt, note: notes });
+  alert("✅ Debited. New Balance: " + res.data.new_balance);
+  loadUsers();
+}
+
+/* PLANS */
+async function loadPlans(){
+  const status=document.getElementById("planStatus");
+  const tbody=document.getElementById("planRows");
+
+  status.textContent="Loading plans…";
+  const res = await apiCall("plans_list");
+  const data=res.data||[];
+
+  if(data.length===0){status.innerHTML=`<span class="error">No plans yet</span>`;tbody.innerHTML="";return;}
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} plan(s) ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(p=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${p.user_email||""}</td>
+        <td><strong>${p.plan_name||""}</strong></td>
+        <td>$${Number(p.amount||0).toFixed(2)}</td>
+        <td>${Number(p.roi_percent||0)}%</td>
+        <td>${Number(p.duration_days||0)} days</td>
+        <td>${badgeStatus(p.status)}</td>
+        <td><input id="plan-note-${p.id}" value="${(p.admin_note||"").replace(/"/g,"&quot;")}"></td>
+        <td>
+          <button class="approve" onclick="approvePlan('${p.id}')">Approve</button>
+          <button class="approve" onclick="completePlan('${p.id}')">Complete</button>
+          <button class="reject" onclick="rejectPlan('${p.id}')">Reject</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function approvePlan(planId){
+  const note=document.getElementById(`plan-note-${planId}`).value;
+  await apiCall("plan_approve", { plan_id: planId, note });
+  alert("✅ Approved");
+  loadPlans();
+}
+
+async function rejectPlan(planId){
+  const note=document.getElementById(`plan-note-${planId}`).value;
+  await apiCall("plan_reject", { plan_id: planId, note });
+  alert("✅ Rejected");
+  loadPlans();
+}
+
+async function completePlan(planId){
+  const note=document.getElementById(`plan-note-${planId}`).value;
+  if(!confirm("Complete plan and credit ROI profit?")) return;
+  const res = await apiCall("plan_complete", { plan_id: planId, note });
+  alert("✅ Completed. Profit credited: " + res.data.profit);
+  loadPlans(); loadUsers();
+}
+
+/* DEPOSITS */
+async function loadDeposits(){
+  const status=document.getElementById("depStatus");
+  const tbody=document.getElementById("depRows");
+
+  status.textContent="Loading deposits…";
+  const res = await apiCall("deposits_list");
+  const data=res.data||[];
+
+  if(data.length===0){status.innerHTML=`<span class="error">No deposits</span>`;tbody.innerHTML="";return;}
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} deposits ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(d=>{
+    const proofText = d.proof_url ? `<a href="${d.proof_url}" target="_blank">View</a>` : "-";
+    tbody.innerHTML+=`
+      <tr>
+        <td>${d.user_email||"-"}</td>
+        <td>${d.asset||"-"}</td>
+        <td>${d.network||"-"}</td>
+        <td>${d.amount||"-"}</td>
+        <td>${d.tx_hash||"-"}</td>
+        <td>${proofText}</td>
+        <td>${badgeStatus(d.status||"pending")}</td>
+        <td>
+          <button class="approve" onclick="approveDeposit('${d.id}')">Approve</button>
+          <button class="reject" onclick="rejectDeposit('${d.id}')">Reject</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function approveDeposit(depositId){
+  if(!confirm("Approve deposit and credit user balance?")) return;
+  await apiCall("deposit_approve", { deposit_id: depositId, note: "" });
+  alert("✅ Approved + credited");
+  loadDeposits(); loadUsers();
+}
+
+async function rejectDeposit(depositId){
+  if(!confirm("Reject deposit?")) return;
+  await apiCall("deposit_reject", { deposit_id: depositId, note: "" });
+  alert("✅ Deposit rejected");
+  loadDeposits();
+}
+
+/* WITHDRAWALS */
+async function loadWithdrawals(){
+  const status=document.getElementById("wdStatus");
+  const tbody=document.getElementById("wdRows");
+
+  status.textContent="Loading withdrawals…";
+  const res = await apiCall("withdrawals_list");
+  const data=res.data||[];
+
+  if(data.length===0){status.innerHTML=`<span class="error">No withdrawals</span>`;tbody.innerHTML="";return;}
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} withdrawals ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(w=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${w.user_email||""}</td>
+        <td>${w.asset||""}</td>
+        <td>${w.network||""}</td>
+        <td>${w.amount||""}</td>
+        <td>${w.wallet_address||""}</td>
+        <td>${badgeStatus(w.status||"pending")}</td>
+        <td><input id="wd-note-${w.id}" value="${(w.admin_note||"").replace(/"/g,"&quot;")}"></td>
+        <td>
+          <button class="approve" onclick="approveWithdrawal('${w.id}')">Approve</button>
+          <button class="reject" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+        </td>
+      </tr>`;
+  });
+}
+
+async function approveWithdrawal(withdrawalId){
+  const note=document.getElementById(`wd-note-${withdrawalId}`).value;
+  if(!confirm("Approve withdrawal & debit user?")) return;
+  await apiCall("withdrawal_approve", { withdrawal_id: withdrawalId, note });
+  alert("✅ Approved + debited");
+  loadWithdrawals(); loadUsers();
+}
+
+async function rejectWithdrawal(withdrawalId){
+  const note=document.getElementById(`wd-note-${withdrawalId}`).value;
+  if(!confirm("Reject withdrawal?")) return;
+  await apiCall("withdrawal_reject", { withdrawal_id: withdrawalId, note });
+  alert("✅ Rejected");
+  loadWithdrawals();
+}
+
+/* PORTFOLIO */
+async function loadPortfolios(){
+  const status=document.getElementById("pfStatus");
+  const tbody=document.getElementById("pfRows");
+  const search=document.getElementById("pfEmail").value.trim();
+
+  status.textContent="Loading portfolio…";
+  const res = await apiCall("portfolios_list", { search });
+  const data=res.data||[];
+
+  if(data.length===0){status.innerHTML=`<span class="error">No holdings found</span>`;tbody.innerHTML="";return;}
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} holding(s) ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(p=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${p.user_email||""}</td>
+        <td>${(p.asset||"").toUpperCase()}</td>
+        <td>${p.amount||""}</td>
+        <td>$${Number(p.buy_price||0).toFixed(2)}</td>
+        <td>${p.notes||"-"}</td>
+        <td>
+          <button class="edit" onclick="editPortfolio('${p.id}','${p.user_email}','${p.asset}','${p.amount}','${p.buy_price}','${(p.notes||"").replace(/'/g,"")}')">Edit</button>
+          <button class="danger" onclick="deletePortfolio('${p.id}')">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+function editPortfolio(id,email,asset,amount,buy,notes){
+  document.getElementById("pfId").value=id;
+  document.getElementById("pfUserEmail").value=email;
+  document.getElementById("pfAsset").value=(asset||"").toLowerCase();
+  document.getElementById("pfAmount").value=amount;
+  document.getElementById("pfBuyPrice").value=buy;
+  document.getElementById("pfNotes").value=notes||"";
+}
+
+async function savePortfolio(e){
+  e.preventDefault();
+  const id=document.getElementById("pfId").value;
+  const user_email=document.getElementById("pfUserEmail").value.trim();
+  const asset=document.getElementById("pfAsset").value.trim().toLowerCase();
+  const amount=Number(document.getElementById("pfAmount").value||0);
+  const buy_price=Number(document.getElementById("pfBuyPrice").value||0);
+  const notes=document.getElementById("pfNotes").value.trim();
+
+  await apiCall("portfolio_save", { id, user_email, asset, amount, buy_price, notes });
+  alert("✅ Holding saved");
+  document.getElementById("pfId").value="";
+  e.target.reset();
+  loadPortfolios();
+}
+
+async function deletePortfolio(id){
+  if(!confirm("Delete holding?")) return;
+  await apiCall("portfolio_delete", { id });
+  alert("✅ Deleted");
+  loadPortfolios();
+}
+
+/* WALLETS */
+async function loadAddresses(){
+  const status=document.getElementById("addrStatus");
+  const tbody=document.getElementById("addrRows");
+
+  status.textContent="Loading wallet addresses…";
+  const res = await apiCall("addresses_list");
+  const data=res.data||[];
+
+  status.innerHTML=`<span class="ok">Loaded ${data.length} wallet(s) ✅</span>`;
+  tbody.innerHTML="";
+
+  data.forEach(a=>{
+    tbody.innerHTML+=`
+      <tr>
+        <td>${a.id}</td>
+        <td>${a.asset}</td>
+        <td>${a.network}</td>
+        <td>${a.address}</td>
+        <td>
+          <button class="edit" onclick="editAddress('${a.id}','${a.asset}','${a.network}','${a.address}')">Edit</button>
+          <button class="danger" onclick="deleteAddress('${a.id}')">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+function editAddress(id,asset,network,address){
+  document.getElementById("editId").value=id;
+  document.getElementById("asset").value=asset;
+  document.getElementById("network").value=network;
+  document.getElementById("address").value=address;
+}
+
+async function saveAddress(e){
+  e.preventDefault();
+  const id=document.getElementById("editId").value;
+  const asset=document.getElementById("asset").value.trim().toLowerCase();
+  const network=document.getElementById("network").value.trim().toUpperCase();
+  const address=document.getElementById("address").value.trim();
+
+  await apiCall("address_save", { id, asset, network, address });
+  alert("✅ Wallet saved");
+  document.getElementById("editId").value="";
+  e.target.reset();
+  loadAddresses();
+}
+
+async function deleteAddress(id){
+  if(!confirm("Delete wallet?")) return;
+  await apiCall("address_delete", { id });
+  alert("✅ Deleted");
+  loadAddresses();
+}
+</script>
+
+</body>
+</html>
