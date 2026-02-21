@@ -6,243 +6,828 @@
   <title>Veloci Admin Dashboard (API Controlled)</title>
 
   <style>
-    body{margin:0;font-family:system-ui;background:#020617;color:#e5e7eb;padding:16px}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #1e293b;margin-bottom:12px;gap:10px;flex-wrap:wrap}
-    button{border:none;padding:10px 14px;border-radius:10px;font-weight:900;cursor:pointer;color:#020617}
-    .logout{background:#94a3b8}
-    .primary{background:#38bdf8}
-    .credit{background:#22c55e;margin-right:8px}
-    .debit{background:#f87171}
-    .approve{background:#22c55e;margin-right:8px}
-    .reject{background:#f87171}
-    .save{background:#22c55e}
-    .danger{background:#f87171}
-    .edit{background:#facc15;margin-right:8px}
-    .box{border:1px solid #1e293b;border-radius:12px;padding:12px;margin-bottom:16px;background:#020617}
-    .ok{color:#22c55e}
-    .error{color:#f87171}
-    .small{font-size:12px;color:#94a3b8;margin-top:6px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border:1px solid #1e293b;padding:10px;font-size:13px;word-break:break-word;vertical-align:top}
-    th{background:#0b1224}
-    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #1e293b;background:#020617;color:#e5e7eb;font-size:13px;margin-bottom:8px}
-    textarea{min-height:70px;resize:none}
-    .pill{padding:5px 10px;border-radius:999px;font-weight:900;font-size:12px;display:inline-block}
-    .pending{background:#facc15;color:#020617}
-    .active{background:#38bdf8;color:#020617}
-    .completed{background:#22c55e;color:#020617}
-    .rejected{background:#f87171;color:#020617}
-    .open{background:#facc15;color:#020617}
-    .closed{background:#22c55e;color:#020617}
-    .errBox{border:1px solid #7f1d1d;background:#1f0a0a;padding:12px;border-radius:12px;margin-bottom:14px}
-    a{color:#38bdf8;font-weight:900;text-decoration:none}
-    .gridTop{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .keyBox{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .keyBox input{min-width:260px;margin-bottom:0}
-    .muted{opacity:.8}
+    :root{
+      --bg0:#020617;
+      --bg1:#030a1a;
+      --panel: rgba(2,6,23,.72);
+      --panel2: rgba(10,18,36,.55);
+      --stroke: rgba(148,163,184,.18);
+      --stroke2: rgba(148,163,184,.10);
+      --text:#e5e7eb;
+      --muted: rgba(229,231,235,.62);
+      --muted2: rgba(148,163,184,.78);
+      --shadow: 0 26px 90px rgba(0,0,0,.55);
+      --shadow2: 0 12px 40px rgba(0,0,0,.45);
+      --ok:#22c55e;
+      --err:#f87171;
+      --warn:#facc15;
+      --blue:#38bdf8;
+      --cyan:#22d3ee;
+      --purple:#a78bfa;
+      --pink:#fb7185;
+
+      --radius:16px;
+      --radius2:22px;
+
+      --pad:16px;
+      --pad2:14px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(56,189,248,.15), transparent 55%),
+        radial-gradient(900px 500px at 80% 0%, rgba(167,139,250,.14), transparent 55%),
+        radial-gradient(800px 500px at 50% 110%, rgba(34,211,238,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      padding:18px;
+      overflow-x:hidden;
+    }
+
+    /* subtle animated sheen */
+    .bgSheen{
+      position:fixed;
+      inset:-120px -120px auto -120px;
+      height:240px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
+      transform: rotate(8deg);
+      filter: blur(0px);
+      pointer-events:none;
+      animation: sheen 9s ease-in-out infinite;
+      opacity:.55;
+      z-index:0;
+    }
+    @keyframes sheen{
+      0%{transform: translateX(-35%) rotate(8deg); opacity:.35}
+      50%{transform: translateX(35%) rotate(8deg); opacity:.55}
+      100%{transform: translateX(-35%) rotate(8deg); opacity:.35}
+    }
+
+    .app{
+      position:relative;
+      z-index:1;
+      max-width:1400px;
+      margin:0 auto;
+    }
+
+    /* Header (Command Center) */
+    header{
+      position:sticky;
+      top:14px;
+      z-index:50;
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 14px;
+      border:1px solid var(--stroke);
+      border-radius: var(--radius2);
+      background: linear-gradient(180deg, rgba(2,6,23,.68), rgba(2,6,23,.40));
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow2);
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+      min-width:240px;
+    }
+    .brandTop{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .logoDot{
+      width:12px;height:12px;border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, white, rgba(255,255,255,.15));
+      box-shadow: 0 0 0 4px rgba(56,189,248,.12), 0 0 40px rgba(56,189,248,.25);
+    }
+    .title{
+      font-weight:950;
+      letter-spacing:.2px;
+      font-size:14px;
+      text-transform:uppercase;
+      opacity:.95;
+    }
+    .sub{
+      font-size:12px;
+      color:var(--muted2);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .sub .chip{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke2);
+      background: rgba(15,23,42,.45);
+      font-size:11px;
+      font-weight:900;
+      color:rgba(226,232,240,.88);
+    }
+
+    /* Controls */
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .fieldRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    input,select,textarea{
+      width:100%;
+      padding:11px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background: rgba(2,6,23,.55);
+      color:var(--text);
+      font-size:13px;
+      outline:none;
+      transition: .18s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    input:focus,select:focus,textarea:focus{
+      border-color: rgba(56,189,248,.55);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.12);
+    }
+    textarea{min-height:74px; resize:none}
+
+    .keyBox input{
+      min-width:250px;
+      margin-bottom:0;
+    }
+
+    /* Buttons */
+    button{
+      border:none;
+      padding:11px 14px;
+      border-radius:14px;
+      font-weight:950;
+      cursor:pointer;
+      color:#020617;
+      transition: transform .08s ease, filter .2s ease, opacity .2s ease;
+      letter-spacing:.2px;
+      user-select:none;
+    }
+    button:active{transform: translateY(1px)}
+    button:hover{filter:brightness(1.03)}
+    button:disabled{opacity:.5; cursor:not-allowed}
+
+    .primary{background: linear-gradient(180deg, #38bdf8, #22d3ee)}
+    .logout{background: linear-gradient(180deg, #94a3b8, #64748b)}
+    .ghost{
+      color: var(--text);
+      background: rgba(148,163,184,.10);
+      border:1px solid var(--stroke);
+    }
+
+    .credit{background: linear-gradient(180deg, #22c55e, #16a34a); margin-right:8px}
+    .debit{background: linear-gradient(180deg, #fb7185, #f87171)}
+    .approve{background: linear-gradient(180deg, #22c55e, #16a34a); margin-right:8px}
+    .reject{background: linear-gradient(180deg, #fb7185, #f87171)}
+    .save{background: linear-gradient(180deg, #22c55e, #16a34a)}
+    .danger{background: linear-gradient(180deg, #fb7185, #f87171)}
+    .edit{background: linear-gradient(180deg, #fde047, #facc15); margin-right:8px}
+
+    .miniBtn{
+      padding:9px 12px;
+      border-radius:12px;
+      font-size:12px;
+    }
+
+    /* Layout */
+    .topGrid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin:14px 0 14px;
+      align-items:stretch;
+    }
+
+    .statusCard{
+      flex: 1 1 360px;
+      border:1px solid rgba(127,29,29,.55);
+      background: linear-gradient(180deg, rgba(31,10,10,.75), rgba(31,10,10,.35));
+      padding:14px;
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(12px);
+    }
+    .statusCard strong{display:flex; align-items:center; gap:10px}
+    .statusDot{
+      width:10px;height:10px;border-radius:999px;
+      background: rgba(148,163,184,.65);
+      box-shadow: 0 0 0 4px rgba(148,163,184,.10);
+    }
+    .statusDot.ok{
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12), 0 0 40px rgba(34,197,94,.18);
+    }
+    .statusDot.err{
+      background: var(--err);
+      box-shadow: 0 0 0 4px rgba(248,113,113,.12), 0 0 40px rgba(248,113,113,.18);
+    }
+
+    .small{font-size:12px; color:var(--muted2); margin-top:6px}
+    .muted{opacity:.85}
+
+    .panel{
+      border:1px solid var(--stroke);
+      border-radius: var(--radius2);
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(2,6,23,.74), rgba(2,6,23,.44));
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow2);
+      margin-bottom:14px;
+      overflow:hidden;
+    }
+
+    .panelHeader{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      padding-bottom:10px;
+      border-bottom:1px solid var(--stroke2);
+    }
+    .panelTitle{
+      font-weight:950;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .panelTitle .icon{
+      width:34px;height:34px;border-radius:14px;
+      display:grid; place-items:center;
+      background: rgba(56,189,248,.10);
+      border:1px solid rgba(56,189,248,.18);
+      color: rgba(226,232,240,.95);
+      font-weight:950;
+      box-shadow: 0 0 0 4px rgba(56,189,248,.06);
+    }
+
+    .panelTools{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .divider{height:1px; background: var(--stroke2); margin:12px 0}
+
+    /* Tabs */
+    .tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .tab{
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(148,163,184,.08);
+      color: rgba(226,232,240,.90);
+      font-weight:950;
+      font-size:12px;
+      cursor:pointer;
+      transition: .2s ease;
+      user-select:none;
+    }
+    .tab:hover{background: rgba(148,163,184,.12)}
+    .tab.active{
+      background: linear-gradient(180deg, rgba(56,189,248,.25), rgba(34,211,238,.12));
+      border-color: rgba(56,189,248,.50);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.08);
+    }
+
+    /* Tables */
+    .tableWrap{
+      overflow:auto;
+      border-radius: 16px;
+      border:1px solid var(--stroke2);
+      margin-top:12px;
+      background: rgba(2,6,23,.35);
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width: 980px;
+    }
+    th,td{
+      padding: 12px 12px;
+      font-size:13px;
+      vertical-align:top;
+      border-bottom:1px solid rgba(148,163,184,.12);
+    }
+    th{
+      text-align:left;
+      font-size:12px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      color: rgba(226,232,240,.85);
+      background: rgba(11,18,36,.55);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    tr:hover td{
+      background: rgba(56,189,248,.04);
+    }
+
+    .mono{font-family:var(--mono)}
+    .nowrap{white-space:nowrap}
+
+    /* Pills */
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:950;
+      font-size:12px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      line-height:1;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(148,163,184,.10);
+      color: rgba(226,232,240,.90);
+    }
+    .pill::before{
+      content:"";
+      width:7px;height:7px;border-radius:999px;
+      background: rgba(148,163,184,.70);
+      box-shadow: 0 0 0 4px rgba(148,163,184,.10);
+    }
+    .pill.pending{background: rgba(250,204,21,.12); color: rgba(254,240,138,.98); border-color: rgba(250,204,21,.20)}
+    .pill.pending::before{background: var(--warn); box-shadow: 0 0 0 4px rgba(250,204,21,.10)}
+    .pill.active{background: rgba(56,189,248,.12); color: rgba(125,211,252,.98); border-color: rgba(56,189,248,.20)}
+    .pill.active::before{background: var(--blue); box-shadow: 0 0 0 4px rgba(56,189,248,.10)}
+    .pill.completed{background: rgba(34,197,94,.12); color: rgba(134,239,172,.98); border-color: rgba(34,197,94,.20)}
+    .pill.completed::before{background: var(--ok); box-shadow: 0 0 0 4px rgba(34,197,94,.10)}
+    .pill.rejected{background: rgba(248,113,113,.12); color: rgba(254,202,202,.98); border-color: rgba(248,113,113,.20)}
+    .pill.rejected::before{background: var(--err); box-shadow: 0 0 0 4px rgba(248,113,113,.10)}
+    .pill.open{background: rgba(250,204,21,.12); color: rgba(254,240,138,.98); border-color: rgba(250,204,21,.20)}
+    .pill.open::before{background: var(--warn); box-shadow: 0 0 0 4px rgba(250,204,21,.10)}
+    .pill.closed{background: rgba(34,197,94,.12); color: rgba(134,239,172,.98); border-color: rgba(34,197,94,.20)}
+    .pill.closed::before{background: var(--ok); box-shadow: 0 0 0 4px rgba(34,197,94,.10)}
+
+    /* Toast */
+    .toasts{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      z-index:999;
+      width:min(420px, calc(100vw - 36px));
+      pointer-events:none;
+    }
+    .toast{
+      pointer-events:none;
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(2,6,23,.80), rgba(2,6,23,.55));
+      border-radius: 18px;
+      padding: 12px 12px;
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(14px);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      animation: toastIn .24s ease;
+    }
+    @keyframes toastIn{
+      from{transform: translateY(10px); opacity:.3}
+      to{transform: translateY(0); opacity:1}
+    }
+    .toastIcon{
+      width:34px;height:34px;border-radius:14px;
+      display:grid;place-items:center;
+      font-weight:950;
+      border:1px solid var(--stroke2);
+      background: rgba(148,163,184,.10);
+      flex:0 0 auto;
+    }
+    .toastIcon.ok{background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.25)}
+    .toastIcon.err{background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.25)}
+    .toastIcon.warn{background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.25)}
+    .toastBody{
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .toastTitle{
+      font-weight:950;
+      font-size:13px;
+      letter-spacing:.1px;
+      color: rgba(226,232,240,.95);
+    }
+    .toastMsg{
+      font-size:12px;
+      color: rgba(148,163,184,.92);
+      word-break:break-word;
+    }
+
+    /* Spinner */
+    .spin{
+      display:inline-block;
+      width:14px;height:14px;
+      border-radius:999px;
+      border:2px solid rgba(148,163,184,.35);
+      border-top-color: rgba(56,189,248,.85);
+      animation: spin 0.8s linear infinite;
+      vertical-align:middle;
+      margin-right:8px;
+    }
+    @keyframes spin{to{transform: rotate(360deg)}}
+
+    /* Hide panels by tab */
+    .section{display:none}
+    .section.active{display:block}
+
+    /* Inline forms */
+    .inlineForm{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      margin-top:10px;
+    }
+    .inlineForm .grow{flex: 1 1 260px}
+    .inlineForm .btns{display:flex; gap:10px; flex-wrap:wrap}
+
+    /* Links */
+    a{color: var(--blue); font-weight:950; text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    /* Footer note */
+    .footNote{
+      text-align:center;
+      padding:18px 10px;
+      color: rgba(148,163,184,.72);
+      font-size:12px;
+    }
+
+    @media (max-width:720px){
+      body{padding:12px}
+      header{top:10px}
+      .brand{min-width:auto}
+      .keyBox input{min-width: 190px}
+      table{min-width: 900px}
+    }
   </style>
 </head>
 
 <body>
+  <div class="bgSheen"></div>
 
-<header>
-  <div>
-    <strong>Veloci Admin Dashboard</strong>
-    <div class="small">API-Controlled (Edge Function) ✅</div>
+  <div class="app">
+
+    <header>
+      <div class="brand">
+        <div class="brandTop">
+          <div class="logoDot"></div>
+          <div class="title">Veloci Admin Command Center</div>
+        </div>
+        <div class="sub">
+          <span class="chip">API-Controlled Edge Function ✅</span>
+          <span class="chip mono" id="connChip">DISCONNECTED</span>
+          <span class="chip" id="autoChip">AUTO: OFF</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="fieldRow keyBox">
+          <input id="adminId" placeholder="Admin ID (e.g. Carl-Admin)" />
+          <input id="adminSecret" placeholder="Admin Secret (x-admin-secret)" type="password" />
+          <button class="primary" onclick="connectAdmin()">Connect</button>
+          <button class="logout" onclick="disconnectAdmin()">Disconnect</button>
+        </div>
+
+        <div class="fieldRow">
+          <input id="globalSearch" placeholder="Global quick search (email / asset / tx / wallet)" style="min-width: 320px;">
+          <button class="ghost miniBtn" onclick="refreshAll()">Refresh All</button>
+          <button class="ghost miniBtn" onclick="toggleAutoRefresh()">Auto Refresh</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- STATUS + TABS -->
+    <div class="topGrid">
+      <div class="statusCard">
+        <strong>
+          <span id="statusDot" class="statusDot"></span>
+          System Status
+        </strong>
+        <div class="small">If any section fails, it will show here.</div>
+        <div id="sys" class="small">Not connected.</div>
+      </div>
+
+      <div class="panel" style="flex: 2 1 520px; margin-bottom:0;">
+        <div class="panelHeader" style="border-bottom:none; padding-bottom:0;">
+          <div>
+            <div class="panelTitle">
+              <span class="icon">⚡</span>
+              Operator Console
+            </div>
+            <div class="small">Navigate modules. Everything is routed through the Edge Function actions.</div>
+          </div>
+
+          <div class="tabs" id="tabs">
+            <div class="tab active" data-tab="tickets" onclick="switchTab('tickets')">Support</div>
+            <div class="tab" data-tab="users" onclick="switchTab('users')">Users</div>
+            <div class="tab" data-tab="plans" onclick="switchTab('plans')">Plans</div>
+            <div class="tab" data-tab="deposits" onclick="switchTab('deposits')">Deposits</div>
+            <div class="tab" data-tab="withdrawals" onclick="switchTab('withdrawals')">Withdrawals</div>
+            <div class="tab" data-tab="portfolio" onclick="switchTab('portfolio')">Portfolio</div>
+            <div class="tab" data-tab="wallets" onclick="switchTab('wallets')">Wallets</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPPORT TICKETS -->
+    <section id="section-tickets" class="panel section active">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">🎫</span>Support Tickets</div>
+          <div class="small">Reply to user issues and mark closed • <span class="mono" id="ticketsRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="ticketStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadTickets)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Status</th>
+              <th>Admin Reply</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ticketRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section id="section-users" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">👤</span>Users</div>
+          <div class="small">Credit or debit balances instantly (Atomic) • <span class="mono" id="usersRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="usersStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadUsers)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Balance</th>
+              <th>Amount</th>
+              <th>Notes</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PLANS -->
+    <section id="section-plans" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">📈</span>Investment Plans</div>
+          <div class="small">Approve / complete plans and auto-credit ROI profit • <span class="mono" id="plansRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="planStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadPlans)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>ROI</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Admin Note</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="planRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DEPOSITS -->
+    <section id="section-deposits" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">➕</span>Deposits</div>
+          <div class="small">Approve deposit and balance auto-credits (Atomic) • <span class="mono" id="depsRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="depStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadDeposits)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>Asset</th>
+              <th>Network</th>
+              <th>Amount</th>
+              <th>TX Hash</th>
+              <th>Proof</th>
+              <th>Status</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="depRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- WITHDRAWALS -->
+    <section id="section-withdrawals" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">➖</span>Withdrawals</div>
+          <div class="small">Approve or reject withdrawals (Approve auto-debits user balance) • <span class="mono" id="wdsRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="wdStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadWithdrawals)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>Asset</th>
+              <th>Network</th>
+              <th>Amount</th>
+              <th>Wallet Address</th>
+              <th>Status</th>
+              <th>Admin Note</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="wdRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PORTFOLIO -->
+    <section id="section-portfolio" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">💼</span>Portfolio Manager</div>
+          <div class="small">Add / edit holdings with buy price + notes • <span class="mono" id="pfRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="pfStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadPortfolios)">Refresh</button>
+        </div>
+      </div>
+
+      <div class="inlineForm">
+        <input id="pfEmail" class="grow" placeholder="Search by user email" oninput="debouncedPFSearch()"/>
+      </div>
+
+      <div class="divider"></div>
+
+      <form onsubmit="savePortfolio(event)">
+        <input type="hidden" id="pfId">
+        <div class="inlineForm">
+          <input id="pfUserEmail" class="grow" placeholder="User Email" required>
+          <select id="pfAsset" style="min-width:160px" required>
+            <option value="btc">BTC</option>
+            <option value="eth">ETH</option>
+            <option value="usdt">USDT</option>
+          </select>
+          <input id="pfAmount" style="min-width:160px" type="number" step="0.00000001" placeholder="Amount" required>
+          <input id="pfBuyPrice" style="min-width:180px" type="number" step="0.01" placeholder="Buy Price (USD)" required>
+          <input id="pfNotes" class="grow" placeholder="Notes">
+          <div class="btns">
+            <button class="save" type="submit">Save Holding</button>
+            <button class="ghost" type="button" onclick="resetPortfolioForm()">Clear</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>User Email</th>
+              <th>Asset</th>
+              <th>Amount</th>
+              <th>Buy Price</th>
+              <th>Notes</th>
+              <th class="nowrap">Action</th>
+            </tr>
+          </thead>
+          <tbody id="pfRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- WALLETS -->
+    <section id="section-wallets" class="panel section">
+      <div class="panelHeader">
+        <div>
+          <div class="panelTitle"><span class="icon">🏦</span>Wallet Address Manager</div>
+          <div class="small">Add / edit / delete deposit addresses • <span class="mono" id="addrRef">Last: —</span></div>
+        </div>
+        <div class="panelTools">
+          <div id="addrStatus" class="small muted">Not loaded.</div>
+          <button class="ghost miniBtn" onclick="safeLoad(loadAddresses)">Refresh</button>
+        </div>
+      </div>
+
+      <form onsubmit="saveAddress(event)">
+        <input type="hidden" id="editId">
+        <div class="inlineForm">
+          <input id="asset" style="min-width:180px" placeholder="Asset (btc/eth/usdt)" required>
+          <input id="network" style="min-width:220px" placeholder="Network (BTC/ERC20/TRC20)" required>
+          <input id="address" class="grow" placeholder="Wallet Address" required>
+          <div class="btns">
+            <button class="save" type="submit">Save Wallet</button>
+            <button class="ghost" type="button" onclick="resetWalletForm()">Clear</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Asset</th>
+              <th>Network</th>
+              <th>Address</th>
+              <th class="nowrap">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="addrRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="footNote">
+      Veloci Admin • Edge Function Controlled • Keep this page private.
+    </div>
+
   </div>
 
-  <div class="keyBox">
-    <input id="adminId" placeholder="Admin ID (e.g. Carl-Admin)" />
-    <input id="adminSecret" placeholder="Admin Secret (x-admin-secret)" type="password" />
-    <button class="primary" onclick="connectAdmin()">Connect</button>
-    <button class="logout" onclick="disconnectAdmin()">Disconnect</button>
-  </div>
-</header>
-
-<!-- ERROR VIEWER -->
-<div class="errBox">
-  <strong>System Status</strong>
-  <div class="small">If any section fails, it will show here 👇</div>
-  <div id="sys" class="small">Not connected.</div>
-</div>
-
-<!-- SUPPORT TICKETS -->
-<div class="box">
-  <strong>Support Tickets</strong>
-  <div class="small">Reply to user issues and mark closed</div>
-  <div id="ticketStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Subject</th>
-        <th>Message</th>
-        <th>Status</th>
-        <th>Admin Reply</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="ticketRows"></tbody>
-  </table>
-</div>
-
-<!-- USERS -->
-<div class="box">
-  <strong>Users</strong>
-  <div class="small">Credit or debit balances instantly (Atomic)</div>
-  <div id="usersStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Email</th>
-        <th>Balance</th>
-        <th>Amount</th>
-        <th>Notes</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="userRows"></tbody>
-  </table>
-</div>
-
-<!-- INVESTMENT PLANS -->
-<div class="box">
-  <strong>Investment Plans</strong>
-  <div class="small">Approve / complete plans and auto-credit ROI profit</div>
-  <div id="planStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Plan</th>
-        <th>Amount</th>
-        <th>ROI</th>
-        <th>Duration</th>
-        <th>Status</th>
-        <th>Admin Note</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="planRows"></tbody>
-  </table>
-</div>
-
-<!-- DEPOSITS -->
-<div class="box">
-  <strong>Deposits</strong>
-  <div class="small">Approve deposit and balance auto-credits (Atomic)</div>
-  <div id="depStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Asset</th>
-        <th>Network</th>
-        <th>Amount</th>
-        <th>TX Hash</th>
-        <th>Proof</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="depRows"></tbody>
-  </table>
-</div>
-
-<!-- WITHDRAWALS -->
-<div class="box">
-  <strong>Withdrawals</strong>
-  <div class="small">Approve or reject withdrawals (Approve auto-debits user balance)</div>
-  <div id="wdStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Asset</th>
-        <th>Network</th>
-        <th>Amount</th>
-        <th>Wallet Address</th>
-        <th>Status</th>
-        <th>Admin Note</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="wdRows"></tbody>
-  </table>
-</div>
-
-<!-- PORTFOLIO MANAGER -->
-<div class="box">
-  <strong>Portfolio Manager</strong>
-  <div class="small">Add / edit holdings with buy price + notes</div>
-  <div id="pfStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <input id="pfEmail" placeholder="Search by user email" oninput="loadPortfolios()"/>
-
-  <form onsubmit="savePortfolio(event)">
-    <input type="hidden" id="pfId">
-    <input id="pfUserEmail" placeholder="User Email" required>
-
-    <select id="pfAsset" required>
-      <option value="btc">BTC</option>
-      <option value="eth">ETH</option>
-      <option value="usdt">USDT</option>
-    </select>
-
-    <input id="pfAmount" type="number" step="0.00000001" placeholder="Amount" required>
-    <input id="pfBuyPrice" type="number" step="0.01" placeholder="Buy Price in USD" required>
-    <input id="pfNotes" placeholder="Notes">
-
-    <button class="save" type="submit">Save Holding</button>
-  </form>
-
-  <table>
-    <thead>
-      <tr>
-        <th>User Email</th>
-        <th>Asset</th>
-        <th>Amount</th>
-        <th>Buy Price</th>
-        <th>Notes</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="pfRows"></tbody>
-  </table>
-</div>
-
-<!-- WALLET ADDRESS MANAGER -->
-<div class="box">
-  <strong>Wallet Address Manager</strong>
-  <div class="small">Add / edit / delete deposit addresses</div>
-  <div id="addrStatus" style="margin-top:8px;">Not loaded.</div>
-
-  <form onsubmit="saveAddress(event)">
-    <input type="hidden" id="editId">
-    <input id="asset" placeholder="Asset (btc/eth/usdt)" required>
-    <input id="network" placeholder="Network (BTC/ERC20/TRC20)" required>
-    <input id="address" placeholder="Wallet Address" required>
-    <button class="save" type="submit">Save Wallet</button>
-  </form>
-
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Asset</th>
-        <th>Network</th>
-        <th>Address</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="addrRows"></tbody>
-  </table>
-</div>
+  <div class="toasts" id="toasts"></div>
 
 <script>
 /**
@@ -257,30 +842,110 @@ const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 let ADMIN_SECRET = "";
 let ADMIN_ID = "admin";
 
+let ACTIVE_TAB = "tickets";
+let AUTO_REFRESH = false;
+let AUTO_TIMER = null;
+
+let PF_SEARCH_TIMER = null;
+
+function escHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+function nowStamp(){
+  const d = new Date();
+  return d.toLocaleString();
+}
+
+function toast(type, title, msg){
+  const wrap = document.getElementById("toasts");
+  const t = document.createElement("div");
+  t.className = "toast";
+  const icon = type === "ok" ? "✓" : (type === "warn" ? "!" : "×");
+  t.innerHTML = `
+    <div class="toastIcon ${type}">${icon}</div>
+    <div class="toastBody">
+      <div class="toastTitle">${escHtml(title)}</div>
+      <div class="toastMsg">${escHtml(msg)}</div>
+    </div>
+  `;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity = "0"; t.style.transform="translateY(8px)"; }, 3400);
+  setTimeout(()=>{ try{ wrap.removeChild(t); }catch(e){} }, 3800);
+}
+
+function setConnChip(connected){
+  const chip = document.getElementById("connChip");
+  chip.textContent = connected ? "CONNECTED" : "DISCONNECTED";
+  chip.style.borderColor = connected ? "rgba(34,197,94,.45)" : "rgba(148,163,184,.22)";
+}
+
+function setAutoChip(){
+  const chip = document.getElementById("autoChip");
+  chip.textContent = "AUTO: " + (AUTO_REFRESH ? "ON" : "OFF");
+  chip.style.borderColor = AUTO_REFRESH ? "rgba(56,189,248,.45)" : "rgba(148,163,184,.22)";
+}
+
 function setSys(msg, ok=true){
-  document.getElementById("sys").innerHTML = ok ? `<span class="ok">${msg}</span>` : `<span class="error">${msg}</span>`;
+  const sys = document.getElementById("sys");
+  const dot = document.getElementById("statusDot");
+  sys.innerHTML = ok ? `<span style="color:var(--ok);font-weight:950">${escHtml(msg)}</span>`
+                     : `<span style="color:var(--err);font-weight:950">${escHtml(msg)}</span>`;
+  dot.className = "statusDot " + (ok ? "ok" : "err");
 }
 
 function badgeStatus(status){
-  const s=(status||"pending").toLowerCase();
-  return `<span class="pill ${s}">${s}</span>`;
+  const s = (status || "pending").toLowerCase();
+  return `<span class="pill ${escHtml(s)}">${escHtml(s)}</span>`;
+}
+
+function getGlobalSearch(){
+  return (document.getElementById("globalSearch").value || "").trim().toLowerCase();
+}
+
+function filterMatch(haystack){
+  const q = getGlobalSearch();
+  if(!q) return true;
+  return String(haystack || "").toLowerCase().includes(q);
+}
+
+function switchTab(tab){
+  ACTIVE_TAB = tab;
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.classList.toggle("active", t.getAttribute("data-tab") === tab);
+  });
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  const el = document.getElementById("section-" + tab);
+  if(el) el.classList.add("active");
 }
 
 function connectAdmin(){
   const sid = document.getElementById("adminId").value.trim();
   const ssec = document.getElementById("adminSecret").value.trim();
-  if(!ssec){ setSys("Enter Admin Secret to connect.", false); return; }
+  if(!ssec){ setSys("Enter Admin Secret to connect.", false); toast("warn","Connect blocked","Admin secret is required."); return; }
 
   ADMIN_ID = sid || "admin";
   ADMIN_SECRET = ssec;
 
+  setConnChip(true);
   setSys("Connected ✅ Loading dashboard…");
+  toast("ok","Connected","Loading all modules…");
   loadAll();
 }
 
 function disconnectAdmin(){
   ADMIN_SECRET = "";
+  setConnChip(false);
+  if(AUTO_TIMER){ clearInterval(AUTO_TIMER); AUTO_TIMER=null; }
+  AUTO_REFRESH=false;
+  setAutoChip();
   setSys("Disconnected.");
+  toast("warn","Disconnected","Admin secret cleared.");
 }
 
 async function apiCall(action, payload={}){
@@ -309,10 +974,45 @@ async function apiCall(action, payload={}){
 
 async function safeLoad(fn){
   try{ await fn(); }
-  catch(e){ setSys("Error: " + e.message, false); }
+  catch(e){
+    setSys("Error: " + e.message, false);
+    toast("err","Request failed", e.message);
+  }
 }
 
-function loadAll(){
+function refreshAll(){
+  if(!ADMIN_SECRET){ toast("warn","Not connected","Enter admin secret and connect first."); return; }
+  toast("ok","Refreshing","Reloading all modules…");
+  loadAll();
+}
+
+function toggleAutoRefresh(){
+  if(!ADMIN_SECRET){
+    toast("warn","Not connected","Connect first, then enable auto refresh.");
+    return;
+  }
+  AUTO_REFRESH = !AUTO_REFRESH;
+  setAutoChip();
+  if(AUTO_REFRESH){
+    toast("ok","Auto Refresh ON","Refreshing every 30 seconds.");
+    AUTO_TIMER = setInterval(()=>loadAll(true), 30000);
+  } else {
+    toast("warn","Auto Refresh OFF","Stopped background refresh.");
+    if(AUTO_TIMER){ clearInterval(AUTO_TIMER); AUTO_TIMER=null; }
+  }
+}
+
+function setRef(id){
+  const el = document.getElementById(id);
+  if(el) el.textContent = "Last: " + nowStamp();
+}
+
+function withSpinner(statusEl, msg){
+  statusEl.innerHTML = `<span class="spin"></span><span class="muted">${escHtml(msg)}</span>`;
+}
+
+function loadAll(silent=false){
+  if(!silent) setSys("Loading…");
   safeLoad(loadUsers);
   safeLoad(loadTickets);
   safeLoad(loadPlans);
@@ -320,6 +1020,7 @@ function loadAll(){
   safeLoad(loadWithdrawals);
   safeLoad(loadPortfolios);
   safeLoad(loadAddresses);
+  if(!silent) setSys("Loaded ✅");
 }
 
 /* SUPPORT */
@@ -327,43 +1028,55 @@ async function loadTickets(){
   const status=document.getElementById("ticketStatus");
   const tbody=document.getElementById("ticketRows");
 
-  status.textContent="Loading tickets…";
+  withSpinner(status, "Loading tickets…");
   const res = await apiCall("tickets_list");
 
   const data = res.data || [];
-  if(data.length===0){status.innerHTML=`<span class="error">No tickets yet</span>`;tbody.innerHTML="";return;}
-  status.innerHTML=`<span class="ok">Loaded ${data.length} ticket(s) ✅</span>`;
+  const filtered = data.filter(t=>{
+    return filterMatch([t.user_email,t.subject,t.message,t.status,t.admin_reply].join(" "));
+  });
+
+  if(filtered.length===0){
+    status.innerHTML = `<span style="color:var(--muted2)">No tickets found.</span>`;
+    tbody.innerHTML = "";
+    setRef("ticketsRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} ticket(s) ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(t=>{
+  filtered.forEach(t=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${t.user_email||""}</td>
-        <td><strong>${t.subject||""}</strong></td>
-        <td>${t.message||""}</td>
+        <td>${escHtml(t.user_email||"")}</td>
+        <td><strong>${escHtml(t.subject||"")}</strong></td>
+        <td>${escHtml(t.message||"")}</td>
         <td>${badgeStatus(t.status)}</td>
-        <td><textarea id="reply-${t.id}">${t.admin_reply||""}</textarea></td>
-        <td>
-          <button class="approve" onclick="replyTicket('${t.id}')">Save Reply</button>
-          <button class="save" onclick="closeTicket('${t.id}')">Close</button>
+        <td><textarea id="reply-${escHtml(t.id)}">${escHtml(t.admin_reply||"")}</textarea></td>
+        <td class="nowrap">
+          <button class="approve miniBtn" onclick="replyTicket('${escHtml(t.id)}')">Save Reply</button>
+          <button class="save miniBtn" onclick="closeTicket('${escHtml(t.id)}')">Close</button>
         </td>
       </tr>
     `;
   });
+
+  setRef("ticketsRef");
 }
 
 async function replyTicket(ticketId){
   const reply=document.getElementById(`reply-${ticketId}`).value.trim();
   await apiCall("ticket_reply", { ticket_id: ticketId, reply });
-  alert("✅ Reply saved!");
-  loadTickets();
+  toast("ok","Reply saved","Ticket reply updated.");
+  safeLoad(loadTickets);
 }
 
 async function closeTicket(ticketId){
   const reply=document.getElementById(`reply-${ticketId}`).value.trim();
   await apiCall("ticket_close", { ticket_id: ticketId, reply });
-  alert("✅ Ticket closed!");
-  loadTickets();
+  toast("ok","Ticket closed","Ticket marked as closed.");
+  safeLoad(loadTickets);
 }
 
 /* USERS */
@@ -371,45 +1084,54 @@ async function loadUsers(){
   const status=document.getElementById("usersStatus");
   const tbody=document.getElementById("userRows");
 
-  status.textContent="Loading users…";
+  withSpinner(status, "Loading users…");
   const res = await apiCall("users_list");
 
   const data=res.data||[];
-  if(data.length===0){status.innerHTML=`<span class="error">No users found</span>`;tbody.innerHTML="";return;}
+  const filtered = data.filter(u=> filterMatch([u.email,u.balance,u.notes].join(" ")));
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} user(s) ✅</span>`;
+  if(filtered.length===0){
+    status.innerHTML=`<span style="color:var(--muted2)">No users found.</span>`;
+    tbody.innerHTML="";
+    setRef("usersRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} user(s) ✅</span>`;
   tbody.innerHTML="";
-  data.forEach(u=>{
+  filtered.forEach(u=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${u.email||""}</td>
+        <td>${escHtml(u.email||"")}</td>
         <td><strong>${Number(u.balance||0).toFixed(2)}</strong></td>
-        <td><input type="number" step="0.01" id="amt-${u.id}"></td>
-        <td><input id="note-${u.id}" value="${(u.notes||"").replace(/"/g,"&quot;")}"></td>
-        <td>
-          <button class="credit" onclick="credit('${u.email}','${u.id}')">Credit</button>
-          <button class="debit" onclick="debit('${u.email}','${u.id}')">Debit</button>
+        <td><input type="number" step="0.01" id="amt-${escHtml(u.id)}"></td>
+        <td><input id="note-${escHtml(u.id)}" value="${escHtml(u.notes||"")}"></td>
+        <td class="nowrap">
+          <button class="credit miniBtn" onclick="credit('${escHtml(u.email)}','${escHtml(u.id)}')">Credit</button>
+          <button class="debit miniBtn" onclick="debit('${escHtml(u.email)}','${escHtml(u.id)}')">Debit</button>
         </td>
       </tr>`;
   });
+
+  setRef("usersRef");
 }
 
 async function credit(email, id){
   const amt=Number(document.getElementById(`amt-${id}`).value||0);
   const notes=document.getElementById(`note-${id}`).value;
-  if(amt<=0){alert("Enter amount");return;}
+  if(amt<=0){ toast("warn","Invalid amount","Enter a positive amount."); return; }
   const res = await apiCall("user_credit", { email, amount: amt, note: notes });
-  alert("✅ Credited. New Balance: " + res.data.new_balance);
-  loadUsers();
+  toast("ok","Credited", "New Balance: " + res.data.new_balance);
+  safeLoad(loadUsers);
 }
 
 async function debit(email, id){
   const amt=Number(document.getElementById(`amt-${id}`).value||0);
   const notes=document.getElementById(`note-${id}`).value;
-  if(amt<=0){alert("Enter amount");return;}
+  if(amt<=0){ toast("warn","Invalid amount","Enter a positive amount."); return; }
   const res = await apiCall("user_debit", { email, amount: amt, note: notes });
-  alert("✅ Debited. New Balance: " + res.data.new_balance);
-  loadUsers();
+  toast("ok","Debited", "New Balance: " + res.data.new_balance);
+  safeLoad(loadUsers);
 }
 
 /* PLANS */
@@ -417,54 +1139,64 @@ async function loadPlans(){
   const status=document.getElementById("planStatus");
   const tbody=document.getElementById("planRows");
 
-  status.textContent="Loading plans…";
+  withSpinner(status, "Loading plans…");
   const res = await apiCall("plans_list");
   const data=res.data||[];
 
-  if(data.length===0){status.innerHTML=`<span class="error">No plans yet</span>`;tbody.innerHTML="";return;}
+  const filtered = data.filter(p=> filterMatch([p.user_email,p.plan_name,p.amount,p.roi_percent,p.duration_days,p.status,p.admin_note].join(" ")));
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} plan(s) ✅</span>`;
+  if(filtered.length===0){
+    status.innerHTML=`<span style="color:var(--muted2)">No plans found.</span>`;
+    tbody.innerHTML="";
+    setRef("plansRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} plan(s) ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(p=>{
+  filtered.forEach(p=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${p.user_email||""}</td>
-        <td><strong>${p.plan_name||""}</strong></td>
+        <td>${escHtml(p.user_email||"")}</td>
+        <td><strong>${escHtml(p.plan_name||"")}</strong></td>
         <td>$${Number(p.amount||0).toFixed(2)}</td>
         <td>${Number(p.roi_percent||0)}%</td>
         <td>${Number(p.duration_days||0)} days</td>
         <td>${badgeStatus(p.status)}</td>
-        <td><input id="plan-note-${p.id}" value="${(p.admin_note||"").replace(/"/g,"&quot;")}"></td>
-        <td>
-          <button class="approve" onclick="approvePlan('${p.id}')">Approve</button>
-          <button class="approve" onclick="completePlan('${p.id}')">Complete</button>
-          <button class="reject" onclick="rejectPlan('${p.id}')">Reject</button>
+        <td><input id="plan-note-${escHtml(p.id)}" value="${escHtml(p.admin_note||"")}"></td>
+        <td class="nowrap">
+          <button class="approve miniBtn" onclick="approvePlan('${escHtml(p.id)}')">Approve</button>
+          <button class="approve miniBtn" onclick="completePlan('${escHtml(p.id)}')">Complete</button>
+          <button class="reject miniBtn" onclick="rejectPlan('${escHtml(p.id)}')">Reject</button>
         </td>
       </tr>`;
   });
+
+  setRef("plansRef");
 }
 
 async function approvePlan(planId){
   const note=document.getElementById(`plan-note-${planId}`).value;
   await apiCall("plan_approve", { plan_id: planId, note });
-  alert("✅ Approved");
-  loadPlans();
+  toast("ok","Plan approved","Status updated.");
+  safeLoad(loadPlans);
 }
 
 async function rejectPlan(planId){
   const note=document.getElementById(`plan-note-${planId}`).value;
   await apiCall("plan_reject", { plan_id: planId, note });
-  alert("✅ Rejected");
-  loadPlans();
+  toast("ok","Plan rejected","Status updated.");
+  safeLoad(loadPlans);
 }
 
 async function completePlan(planId){
   const note=document.getElementById(`plan-note-${planId}`).value;
   if(!confirm("Complete plan and credit ROI profit?")) return;
   const res = await apiCall("plan_complete", { plan_id: planId, note });
-  alert("✅ Completed. Profit credited: " + res.data.profit);
-  loadPlans(); loadUsers();
+  toast("ok","Plan completed", "Profit credited: " + res.data.profit);
+  safeLoad(loadPlans);
+  safeLoad(loadUsers);
 }
 
 /* DEPOSITS */
@@ -472,46 +1204,56 @@ async function loadDeposits(){
   const status=document.getElementById("depStatus");
   const tbody=document.getElementById("depRows");
 
-  status.textContent="Loading deposits…";
+  withSpinner(status, "Loading deposits…");
   const res = await apiCall("deposits_list");
   const data=res.data||[];
 
-  if(data.length===0){status.innerHTML=`<span class="error">No deposits</span>`;tbody.innerHTML="";return;}
+  const filtered = data.filter(d=> filterMatch([d.user_email,d.asset,d.network,d.amount,d.tx_hash,d.proof_url,d.status].join(" ")));
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} deposits ✅</span>`;
+  if(filtered.length===0){
+    status.innerHTML=`<span style="color:var(--muted2)">No deposits found.</span>`;
+    tbody.innerHTML="";
+    setRef("depsRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} deposits ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(d=>{
-    const proofText = d.proof_url ? `<a href="${d.proof_url}" target="_blank">View</a>` : "-";
+  filtered.forEach(d=>{
+    const proofText = d.proof_url ? `<a href="${escHtml(d.proof_url)}" target="_blank" rel="noopener">View</a>` : "-";
     tbody.innerHTML+=`
       <tr>
-        <td>${d.user_email||"-"}</td>
-        <td>${d.asset||"-"}</td>
-        <td>${d.network||"-"}</td>
-        <td>${d.amount||"-"}</td>
-        <td>${d.tx_hash||"-"}</td>
+        <td>${escHtml(d.user_email||"-")}</td>
+        <td>${escHtml(d.asset||"-")}</td>
+        <td>${escHtml(d.network||"-")}</td>
+        <td>${escHtml(d.amount||"-")}</td>
+        <td class="mono">${escHtml(d.tx_hash||"-")}</td>
         <td>${proofText}</td>
         <td>${badgeStatus(d.status||"pending")}</td>
-        <td>
-          <button class="approve" onclick="approveDeposit('${d.id}')">Approve</button>
-          <button class="reject" onclick="rejectDeposit('${d.id}')">Reject</button>
+        <td class="nowrap">
+          <button class="approve miniBtn" onclick="approveDeposit('${escHtml(d.id)}')">Approve</button>
+          <button class="reject miniBtn" onclick="rejectDeposit('${escHtml(d.id)}')">Reject</button>
         </td>
       </tr>`;
   });
+
+  setRef("depsRef");
 }
 
 async function approveDeposit(depositId){
   if(!confirm("Approve deposit and credit user balance?")) return;
   await apiCall("deposit_approve", { deposit_id: depositId, note: "" });
-  alert("✅ Approved + credited");
-  loadDeposits(); loadUsers();
+  toast("ok","Deposit approved","User credited.");
+  safeLoad(loadDeposits);
+  safeLoad(loadUsers);
 }
 
 async function rejectDeposit(depositId){
   if(!confirm("Reject deposit?")) return;
   await apiCall("deposit_reject", { deposit_id: depositId, note: "" });
-  alert("✅ Deposit rejected");
-  loadDeposits();
+  toast("ok","Deposit rejected","Status updated.");
+  safeLoad(loadDeposits);
 }
 
 /* WITHDRAWALS */
@@ -519,79 +1261,112 @@ async function loadWithdrawals(){
   const status=document.getElementById("wdStatus");
   const tbody=document.getElementById("wdRows");
 
-  status.textContent="Loading withdrawals…";
+  withSpinner(status, "Loading withdrawals…");
   const res = await apiCall("withdrawals_list");
   const data=res.data||[];
 
-  if(data.length===0){status.innerHTML=`<span class="error">No withdrawals</span>`;tbody.innerHTML="";return;}
+  const filtered = data.filter(w=> filterMatch([w.user_email,w.asset,w.network,w.amount,w.wallet_address,w.status,w.admin_note].join(" ")));
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} withdrawals ✅</span>`;
+  if(filtered.length===0){
+    status.innerHTML=`<span style="color:var(--muted2)">No withdrawals found.</span>`;
+    tbody.innerHTML="";
+    setRef("wdsRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} withdrawals ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(w=>{
+  filtered.forEach(w=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${w.user_email||""}</td>
-        <td>${w.asset||""}</td>
-        <td>${w.network||""}</td>
-        <td>${w.amount||""}</td>
-        <td>${w.wallet_address||""}</td>
+        <td>${escHtml(w.user_email||"")}</td>
+        <td>${escHtml(w.asset||"")}</td>
+        <td>${escHtml(w.network||"")}</td>
+        <td>${escHtml(w.amount||"")}</td>
+        <td class="mono">${escHtml(w.wallet_address||"")}</td>
         <td>${badgeStatus(w.status||"pending")}</td>
-        <td><input id="wd-note-${w.id}" value="${(w.admin_note||"").replace(/"/g,"&quot;")}"></td>
-        <td>
-          <button class="approve" onclick="approveWithdrawal('${w.id}')">Approve</button>
-          <button class="reject" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+        <td><input id="wd-note-${escHtml(w.id)}" value="${escHtml(w.admin_note||"")}"></td>
+        <td class="nowrap">
+          <button class="approve miniBtn" onclick="approveWithdrawal('${escHtml(w.id)}')">Approve</button>
+          <button class="reject miniBtn" onclick="rejectWithdrawal('${escHtml(w.id)}')">Reject</button>
         </td>
       </tr>`;
   });
+
+  setRef("wdsRef");
 }
 
 async function approveWithdrawal(withdrawalId){
   const note=document.getElementById(`wd-note-${withdrawalId}`).value;
   if(!confirm("Approve withdrawal & debit user?")) return;
   await apiCall("withdrawal_approve", { withdrawal_id: withdrawalId, note });
-  alert("✅ Approved + debited");
-  loadWithdrawals(); loadUsers();
+  toast("ok","Withdrawal approved","User debited.");
+  safeLoad(loadWithdrawals);
+  safeLoad(loadUsers);
 }
 
 async function rejectWithdrawal(withdrawalId){
   const note=document.getElementById(`wd-note-${withdrawalId}`).value;
   if(!confirm("Reject withdrawal?")) return;
   await apiCall("withdrawal_reject", { withdrawal_id: withdrawalId, note });
-  alert("✅ Rejected");
-  loadWithdrawals();
+  toast("ok","Withdrawal rejected","Status updated.");
+  safeLoad(loadWithdrawals);
 }
 
 /* PORTFOLIO */
+function debouncedPFSearch(){
+  if(PF_SEARCH_TIMER) clearTimeout(PF_SEARCH_TIMER);
+  PF_SEARCH_TIMER = setTimeout(()=>safeLoad(loadPortfolios), 250);
+}
+
+function resetPortfolioForm(){
+  document.getElementById("pfId").value="";
+  document.getElementById("pfUserEmail").value="";
+  document.getElementById("pfAsset").value="btc";
+  document.getElementById("pfAmount").value="";
+  document.getElementById("pfBuyPrice").value="";
+  document.getElementById("pfNotes").value="";
+}
+
 async function loadPortfolios(){
   const status=document.getElementById("pfStatus");
   const tbody=document.getElementById("pfRows");
   const search=document.getElementById("pfEmail").value.trim();
 
-  status.textContent="Loading portfolio…";
+  withSpinner(status, "Loading portfolio…");
   const res = await apiCall("portfolios_list", { search });
   const data=res.data||[];
 
-  if(data.length===0){status.innerHTML=`<span class="error">No holdings found</span>`;tbody.innerHTML="";return;}
+  const filtered = data.filter(p=> filterMatch([p.user_email,p.asset,p.amount,p.buy_price,p.notes].join(" ")));
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} holding(s) ✅</span>`;
+  if(filtered.length===0){
+    status.innerHTML=`<span style="color:var(--muted2)">No holdings found.</span>`;
+    tbody.innerHTML="";
+    setRef("pfRef");
+    return;
+  }
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} holding(s) ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(p=>{
+  filtered.forEach(p=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${p.user_email||""}</td>
-        <td>${(p.asset||"").toUpperCase()}</td>
-        <td>${p.amount||""}</td>
+        <td>${escHtml(p.user_email||"")}</td>
+        <td><strong>${escHtml((p.asset||"").toUpperCase())}</strong></td>
+        <td>${escHtml(p.amount||"")}</td>
         <td>$${Number(p.buy_price||0).toFixed(2)}</td>
-        <td>${p.notes||"-"}</td>
-        <td>
-          <button class="edit" onclick="editPortfolio('${p.id}','${p.user_email}','${p.asset}','${p.amount}','${p.buy_price}','${(p.notes||"").replace(/'/g,"")}')">Edit</button>
-          <button class="danger" onclick="deletePortfolio('${p.id}')">Delete</button>
+        <td>${escHtml(p.notes||"-")}</td>
+        <td class="nowrap">
+          <button class="edit miniBtn" onclick="editPortfolio('${escHtml(p.id)}','${escHtml(p.user_email)}','${escHtml(p.asset)}','${escHtml(p.amount)}','${escHtml(p.buy_price)}','${escHtml(p.notes||"")}')">Edit</button>
+          <button class="danger miniBtn" onclick="deletePortfolio('${escHtml(p.id)}')">Delete</button>
         </td>
       </tr>
     `;
   });
+
+  setRef("pfRef");
 }
 
 function editPortfolio(id,email,asset,amount,buy,notes){
@@ -601,6 +1376,7 @@ function editPortfolio(id,email,asset,amount,buy,notes){
   document.getElementById("pfAmount").value=amount;
   document.getElementById("pfBuyPrice").value=buy;
   document.getElementById("pfNotes").value=notes||"";
+  toast("ok","Edit mode","Holding loaded into form.");
 }
 
 async function savePortfolio(e){
@@ -613,44 +1389,54 @@ async function savePortfolio(e){
   const notes=document.getElementById("pfNotes").value.trim();
 
   await apiCall("portfolio_save", { id, user_email, asset, amount, buy_price, notes });
-  alert("✅ Holding saved");
-  document.getElementById("pfId").value="";
-  e.target.reset();
-  loadPortfolios();
+  toast("ok","Holding saved","Portfolio updated.");
+  resetPortfolioForm();
+  safeLoad(loadPortfolios);
 }
 
 async function deletePortfolio(id){
   if(!confirm("Delete holding?")) return;
   await apiCall("portfolio_delete", { id });
-  alert("✅ Deleted");
-  loadPortfolios();
+  toast("ok","Deleted","Holding removed.");
+  safeLoad(loadPortfolios);
 }
 
 /* WALLETS */
+function resetWalletForm(){
+  document.getElementById("editId").value="";
+  document.getElementById("asset").value="";
+  document.getElementById("network").value="";
+  document.getElementById("address").value="";
+}
+
 async function loadAddresses(){
   const status=document.getElementById("addrStatus");
   const tbody=document.getElementById("addrRows");
 
-  status.textContent="Loading wallet addresses…";
+  withSpinner(status, "Loading wallet addresses…");
   const res = await apiCall("addresses_list");
   const data=res.data||[];
 
-  status.innerHTML=`<span class="ok">Loaded ${data.length} wallet(s) ✅</span>`;
+  const filtered = data.filter(a=> filterMatch([a.id,a.asset,a.network,a.address].join(" ")));
+
+  status.innerHTML=`<span style="color:var(--ok);font-weight:950">Loaded ${filtered.length} wallet(s) ✅</span>`;
   tbody.innerHTML="";
 
-  data.forEach(a=>{
+  filtered.forEach(a=>{
     tbody.innerHTML+=`
       <tr>
-        <td>${a.id}</td>
-        <td>${a.asset}</td>
-        <td>${a.network}</td>
-        <td>${a.address}</td>
-        <td>
-          <button class="edit" onclick="editAddress('${a.id}','${a.asset}','${a.network}','${a.address}')">Edit</button>
-          <button class="danger" onclick="deleteAddress('${a.id}')">Delete</button>
+        <td class="mono">${escHtml(a.id)}</td>
+        <td><strong>${escHtml(a.asset)}</strong></td>
+        <td>${escHtml(a.network)}</td>
+        <td class="mono">${escHtml(a.address)}</td>
+        <td class="nowrap">
+          <button class="edit miniBtn" onclick="editAddress('${escHtml(a.id)}','${escHtml(a.asset)}','${escHtml(a.network)}','${escHtml(a.address)}')">Edit</button>
+          <button class="danger miniBtn" onclick="deleteAddress('${escHtml(a.id)}')">Delete</button>
         </td>
       </tr>`;
   });
+
+  setRef("addrRef");
 }
 
 function editAddress(id,asset,network,address){
@@ -658,6 +1444,7 @@ function editAddress(id,asset,network,address){
   document.getElementById("asset").value=asset;
   document.getElementById("network").value=network;
   document.getElementById("address").value=address;
+  toast("ok","Edit mode","Wallet loaded into form.");
 }
 
 async function saveAddress(e){
@@ -668,18 +1455,21 @@ async function saveAddress(e){
   const address=document.getElementById("address").value.trim();
 
   await apiCall("address_save", { id, asset, network, address });
-  alert("✅ Wallet saved");
-  document.getElementById("editId").value="";
-  e.target.reset();
-  loadAddresses();
+  toast("ok","Wallet saved","Address book updated.");
+  resetWalletForm();
+  safeLoad(loadAddresses);
 }
 
 async function deleteAddress(id){
   if(!confirm("Delete wallet?")) return;
   await apiCall("address_delete", { id });
-  alert("✅ Deleted");
-  loadAddresses();
+  toast("ok","Deleted","Wallet removed.");
+  safeLoad(loadAddresses);
 }
+
+/* Initial UI state */
+setConnChip(false);
+setAutoChip();
 </script>
 
 </body>
