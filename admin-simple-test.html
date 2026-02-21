@@ -43,7 +43,7 @@
       <button id="btnDebit" type="button" class="danger">Debit</button>
     </div>
 
-    <div class="small">Protected by <b>x-admin-secret</b>. Logs saved in <b>admin_actions_log</b>.</div>
+    <div class="small">Protected by <b>x-admin-secret</b>. Atomic logs saved in <b>admin_actions_log</b>.</div>
 
     <pre id="out">Ready…</pre>
   </div>
@@ -53,11 +53,10 @@
   const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
   const ADMIN_SECRET = "VGM_ADMIN_2026_qazxswedcvfrtgbnhyuj";
 
-  const out = document.getElementById("out");
+  // ✅ This will be stored in admin_actions_log.admin_identifier
+  const ADMIN_ID = "Carl-Admin";
 
-  function prettyText(status, text){
-    return "HTTP " + status + "\n\n" + text;
-  }
+  const out = document.getElementById("out");
 
   async function call(action, payload={}){
     out.textContent = "Sending: " + action + " …";
@@ -67,12 +66,13 @@
         headers: {
           "Content-Type": "application/json",
           "apikey": ANON_KEY,
-          "x-admin-secret": ADMIN_SECRET
+          "x-admin-secret": ADMIN_SECRET,
+          "x-admin-id": ADMIN_ID
         },
         body: JSON.stringify({ action, payload })
       });
       const text = await res.text();
-      out.textContent = prettyText(res.status, text);
+      out.textContent = "HTTP " + res.status + "\n\n" + text;
     }catch(err){
       out.textContent = "Fetch failed:\n" + (err.message || err);
     }
