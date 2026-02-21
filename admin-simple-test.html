@@ -1,38 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Admin Simple Test</title>
+
+  <style>
+    body{
+      margin:0;
+      background:#050a18;
+      color:#eaf0ff;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      padding:20px;
+    }
+
+    /* ✅ Make sure UI is above any site overlays */
+    .ui{
+      position: relative;
+      z-index: 2147483647; /* max */
+      pointer-events: auto;
+    }
+
+    /* ✅ If an overlay exists, this helps prevent it from blocking clicks */
+    .ui *{
+      pointer-events: auto;
+    }
+
+    h2{margin:0 0 14px}
+
+    button{
+      border:none;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:900;
+      cursor:pointer;
+      margin-right:8px;
+      background:#5b6cff;
+      color:#050a18;
+    }
+
+    button:nth-child(2){background:#38bdf8}
+
+    pre{
+      margin-top:16px;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      white-space:pre-wrap;
+      word-break:break-word;
+      min-height:120px;
+    }
+
+    .small{opacity:.75;font-size:12px;margin-top:10px}
+  </style>
 </head>
-<body style="background:#0b0f1a;color:white;font-family:Arial;padding:20px">
 
-<h2>Admin API Simple Test</h2>
+<body>
+  <div class="ui">
+    <h2>Admin API Simple Test</h2>
 
-<button onclick="ping()">Ping</button>
-<button onclick="users()">Users Count</button>
+    <button id="btnPing" type="button">Ping</button>
+    <button id="btnUsers" type="button">Users Count</button>
 
-<pre id="out"></pre>
+    <div class="small">If you click and nothing changes, your site has an overlay blocking clicks. This page forces UI above it.</div>
+
+    <pre id="out">Ready…</pre>
+  </div>
 
 <script>
-const FUNCTION_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-
-async function call(action){
-  const res = await fetch(FUNCTION_URL,{
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey":ANON_KEY
-    },
-    body:JSON.stringify({action})
+  // ✅ Show ANY JS errors
+  window.addEventListener("error", (e) => {
+    document.getElementById("out").textContent =
+      "JS Error:\n" + e.message + "\n" + (e.filename || "") + ":" + (e.lineno || "");
   });
 
-  const text = await res.text();
-  document.getElementById("out").textContent =
-    "HTTP " + res.status + "\n\n" + text;
-}
+  const FUNCTION_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
+  const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-function ping(){ call("ping"); }
-function users(){ call("users_count"); }
+  const out = document.getElementById("out");
+
+  async function call(action){
+    out.textContent = "Clicked: " + action + "\nSending request…";
+
+    try{
+      const res = await fetch(FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": ANON_KEY
+        },
+        body: JSON.stringify({ action })
+      });
+
+      const text = await res.text();
+      out.textContent = "HTTP " + res.status + "\n\n" + text;
+    }catch(err){
+      out.textContent = "Fetch failed:\n" + (err.message || err);
+    }
+  }
+
+  // ✅ Use addEventListener (more reliable than inline onclick if hosting injects stuff)
+  document.getElementById("btnPing").addEventListener("click", () => call("ping"));
+  document.getElementById("btnUsers").addEventListener("click", () => call("users_count"));
+
+  // ✅ Prove clicks are working (writes instantly)
+  document.getElementById("btnPing").addEventListener("mousedown", () => {
+    out.textContent = "Mouse down detected on Ping ✅";
+  });
 </script>
 
 </body>
