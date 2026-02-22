@@ -249,13 +249,23 @@
       border-radius: 16px;padding: 10px;max-height: 240px;overflow:auto;
     }
 
+    /* ✅ Auto-hide topbar on scroll */
     .topbar{
       position: sticky;top:0;z-index:30;
       padding: 12px;border-radius: var(--r);border: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(180deg, rgba(2,6,23,.58), rgba(2,6,23,.22));
       backdrop-filter: blur(16px);box-shadow: var(--shadow2);
       display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0;
+      transition: transform .18s ease, opacity .18s ease;
+      transform: translateY(0);
+      opacity: 1;
     }
+    .topbar.hide{
+      transform: translateY(-130%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .chips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .chip{
       padding: 7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.10);
@@ -264,20 +274,37 @@
     }
     .chip.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10)}
 
-    /* ✅ Fit better on desktop: give main table area more space */
+    /* ✅ Grid with named areas so we can move OPS to top for certain views */
     .grid{
       display:grid;
-      grid-template-columns: 1.55fr .45fr;
       gap:14px;
       margin-top:14px;
       align-items:start;
       min-width:0;
+
+      grid-template-columns: 1.55fr .45fr;
+      grid-template-areas: "main ops";
     }
+    .gridMain{grid-area: main; min-width:0;}
+    .gridOps{grid-area: ops; min-width:0;}
+
     @media (max-width:1300px){
       .grid{grid-template-columns: 1.35fr .65fr;}
     }
     @media (max-width:1100px){
-      .grid{grid-template-columns:1fr}
+      .grid{grid-template-columns:1fr; grid-template-areas: "main" "ops";}
+    }
+
+    /* ✅ Move OPS to the TOP for: users/plans/support/deposits/withdrawals */
+    #appView[data-view="users"] .grid,
+    #appView[data-view="plans"] .grid,
+    #appView[data-view="support"] .grid,
+    #appView[data-view="deposits"] .grid,
+    #appView[data-view="withdrawals"] .grid{
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "ops"
+        "main";
     }
 
     .card{
@@ -371,10 +398,7 @@
     .modalFoot{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
 
     /* ✅ Proof viewer */
-    .proofWrap{
-      display:grid;
-      gap:10px;
-    }
+    .proofWrap{display:grid;gap:10px;}
     .proofFrame{
       width: 100%;
       height: min(72vh, 720px);
@@ -383,17 +407,8 @@
       background: rgba(2,6,23,.35);
       overflow:hidden;
     }
-    .proofFrame iframe{
-      width:100%;
-      height:100%;
-      border:0;
-    }
-    .proofHint{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
+    .proofFrame iframe{width:100%;height:100%;border:0;}
+    .proofHint{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 
     /* ✅ Username pill */
     .namePill{
@@ -485,7 +500,7 @@
 
   <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
-  <div id="appView" class="app">
+  <div id="appView" class="app" data-view="overview">
     <div class="shell">
 
       <aside id="sidebar" class="sidebar">
@@ -554,14 +569,14 @@
         </div>
       </aside>
 
-      <main class="main">
+      <main class="main" id="mainScroll">
 
         <div class="mobileTop">
           <button class="burger" onclick="openSidebar()">☰</button>
           <div class="chip ok">CONNECTED</div>
         </div>
 
-        <div class="topbar">
+        <div class="topbar" id="topbar">
           <div class="chips">
             <span class="chip ok" id="connChip">CONNECTED</span>
             <span class="chip" id="autoChip">AUTO: OFF</span>
@@ -578,7 +593,7 @@
         </div>
 
         <div class="grid">
-          <div>
+          <div class="gridMain">
 
             <section id="view-overview" class="card">
               <div class="cardHead">
@@ -858,7 +873,7 @@
 
           </div>
 
-          <div class="card">
+          <div class="card gridOps" id="opsCard">
             <div class="cardHead">
               <div>
                 <div class="cardTitle">🧠 Ops Intelligence</div>
@@ -945,12 +960,9 @@ function userPillHtml(email){
 function openProof(url){
   const u = String(url||"").trim();
   if(!u){ modalShow("No proof", "No proof URL attached."); return; }
-  const safe = u; // already an URL string coming from your DB
-  modalShow(
-    "Uploaded Proof",
-    ""
-  );
+  const safe = u;
 
+  modalShow("Uploaded Proof", "");
   const body = document.getElementById("modalBody");
   body.innerHTML = `
     <div class="proofWrap">
@@ -1001,6 +1013,8 @@ function closeSidebar(){
 
 function switchView(view){
   ACTIVE_VIEW = view;
+  document.getElementById("appView").setAttribute("data-view", view);
+
   const views = ["overview","users","plans","wallets","support","deposits","withdrawals","portfolio"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
@@ -1008,7 +1022,18 @@ function switchView(view){
     const sec = document.getElementById("view-" + v);
     if(sec) sec.classList.toggle("hidden", v !== view);
   });
+
   closeSidebar();
+  scrollTopMain();
+}
+
+function scrollTopMain(){
+  const main = document.getElementById("mainScroll");
+  if(main && main.scrollTo){
+    main.scrollTo({ top: 0, behavior: "smooth" });
+  }else{
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 function getSearch(){
@@ -1211,7 +1236,6 @@ async function loadUsers(){
   const res = await apiCall("users_list");
   CACHE.users = res.data || [];
 
-  // Build username map (best-effort)
   CACHE.users.forEach(u=>{
     const email = String(u.email||"").trim().toLowerCase();
     const name =
@@ -1723,10 +1747,58 @@ async function savePortfolio(e){
   safeLoad(loadPortfolios);
 }
 
+/* ✅ Auto disappear on scroll:
+   - Hide topbar when scrolling down; show when scrolling up
+   - Close mobile sidebar if it’s open while scrolling
+*/
+let lastScrollTop = 0;
+let topbarHidden = false;
+
+function handleScroll(currentTop){
+  const topbar = document.getElementById("topbar");
+  const sidebar = document.getElementById("sidebar");
+
+  // Always close sidebar if open when user scrolls
+  if(sidebar && sidebar.classList.contains("open")){
+    closeSidebar();
+  }
+
+  // Small jitter guard
+  const delta = currentTop - lastScrollTop;
+  if(Math.abs(delta) < 6){
+    return;
+  }
+
+  if(delta > 0){
+    // scrolling down -> hide
+    if(!topbarHidden){
+      topbar.classList.add("hide");
+      topbarHidden = true;
+    }
+  }else{
+    // scrolling up -> show
+    if(topbarHidden){
+      topbar.classList.remove("hide");
+      topbarHidden = false;
+    }
+  }
+
+  lastScrollTop = currentTop;
+}
+
+function attachScrollHandlers(){
+  const main = document.getElementById("mainScroll");
+  if(main){
+    main.addEventListener("scroll", ()=>handleScroll(main.scrollTop), { passive:true });
+  }
+  window.addEventListener("scroll", ()=>handleScroll(window.scrollY || 0), { passive:true });
+}
+
 /* Boot */
 document.getElementById("appView").style.display = "none";
 document.getElementById("loginView").style.display = "grid";
 switchView("overview");
+attachScrollHandlers();
 </script>
 
 </body>
