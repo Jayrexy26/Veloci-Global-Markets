@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VGM | KYC Verification</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{
+      --bg:#050a18;
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.65);
+      --ok:#22c55e;
+      --err:#f87171;
+      --blue:#5b6cff;
+      --purple:#7c4dff;
+      --shadow: 0 26px 90px rgba(0,0,0,.55);
+
+      --stroke: rgba(255,255,255,0.12);
+      --card: rgba(0,0,0,.22);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background: var(--bg);
+      padding:16px;
+      padding-bottom:60px;
+      overflow-x:hidden;
+    }
+
+    .bgFlow{
+      position:fixed; inset:0; z-index:-4;
+      background:
+        radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
+        radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.20), transparent 55%),
+        radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
+        linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+    }
+    .blob{
+      position:fixed;
+      width:520px;height:520px;border-radius:999px;
+      filter: blur(72px);
+      opacity:.60;
+      z-index:-3;
+      mix-blend-mode: screen;
+      will-change: transform;
+    }
+    .blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
+    .blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
+    .blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
+    .blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
+
+    @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
+
+    .shimmer{
+      position:fixed; inset:-30px; z-index:-2;
+      opacity:.28;
+      background:
+        radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
+        linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
+      animation: shimmerMove 6s ease-in-out infinite alternate;
+      pointer-events:none;
+    }
+    @keyframes shimmerMove{
+      from{transform:translateY(0px) translateX(0px)}
+      to{transform:translateY(42px) translateX(22px)}
+    }
+
+    .container{max-width:920px;margin:0 auto}
+    @media (min-width: 1100px){ .container{max-width:1100px;} }
+
+    /* ===== Loading Gate ===== */
+    #authGate{
+      position:fixed; inset:0; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      background:
+        radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+        radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+        var(--bg);
+    }
+    .gateCard{
+      width:min(520px,92vw);
+      border:none;
+      background:transparent;
+      text-align:center;
+      padding:0;
+    }
+    .logoImg{width:100%;height:100%;object-fit:contain;display:block}
+    .gateLogo{
+      width:240px;height:240px;
+      margin:0 auto 14px;
+      display:grid;place-items:center;
+      filter:
+        drop-shadow(0 18px 45px rgba(0,0,0,.55))
+        drop-shadow(0 0 36px rgba(91,108,255,.45));
+      animation: premiumPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes premiumPulse{
+      0%{transform: scale(1); opacity:.90;}
+      50%{transform: scale(1.10); opacity:1;}
+      100%{transform: scale(1); opacity:.90;}
+    }
+    .gateTxt{font-weight:1000;font-size:18px}
+    .gateSub{margin-top:8px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px}
+
+    .topRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:14px;
+      position:sticky;
+      top:12px;
+      z-index:3000;
+      padding:10px 10px;
+      border-radius:22px;
+      background:rgba(5,10,24,.56);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 18px 70px rgba(0,0,0,.45);
+      backdrop-filter: blur(16px);
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:0;
+      border:none; background:transparent; padding:0;
+    }
+    .brandLogoWide{
+      height:40px;
+      width:auto;
+      max-width:280px;
+      object-fit:contain;
+      display:block;
+      filter:
+        drop-shadow(0 18px 35px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(91,108,255,.22));
+    }
+
+    .btn{
+      height:44px;
+      padding:0 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.20);
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+    }
+    .btn:hover{background:rgba(255,255,255,.08)}
+    .btnPrimary{
+      border:none;
+      background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+      box-shadow:0 18px 55px rgba(91,108,255,.18);
+    }
+    .btnDanger{
+      border:none;
+      background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+      color:#020617;
+      box-shadow:0 18px 55px rgba(239,68,68,.18);
+    }
+    .btnPrimary:hover,.btnDanger:hover{filter:brightness(1.05)}
+
+    .card{
+      margin-top:14px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:24px;
+      padding:16px;
+      background:
+        radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.12), transparent 62%),
+        radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
+        rgba(0,0,0,.16);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    h1{margin:0;font-size:20px;font-weight:1000}
+    .sub{margin-top:8px;color:var(--muted);font-weight:900;font-size:13px;line-height:1.5}
+
+    .statusBanner{
+      margin-top:12px;
+      border-radius:18px;
+      padding:12px 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.20);
+      box-shadow:0 16px 40px rgba(0,0,0,.28);
+      font-weight:1000;
+    }
+    .statusOk{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.08); }
+    .statusWarn{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+    .statusBad{ border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.08); }
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      gap:12px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width:720px){
+      .row{grid-template-columns:1fr}
+    }
+
+    label{
+      display:block;
+      font-size:12px;
+      color:rgba(234,240,255,.70);
+      font-weight:1000;
+      margin-bottom:8px;
+    }
+    select,input{
+      width:100%;
+      height:50px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      color:var(--text);
+      padding:10px 12px;
+      font-weight:1000;
+      outline:none;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+    }
+
+    .hint{
+      margin-top:8px;
+      font-size:12px;
+      color:rgba(234,240,255,.55);
+      font-weight:900;
+      line-height:1.45;
+    }
+
+    .fileBox{
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:18px;
+      padding:12px;
+      background:rgba(0,0,0,.18);
+    }
+
+    .small{
+      margin-top:8px;
+      font-size:13px;
+      font-weight:900;
+      color:rgba(234,240,255,.65);
+      line-height:1.5;
+    }
+
+    .ok{color:var(--ok);font-weight:1000}
+    .err{color:var(--err);font-weight:1000}
+
+    .actions{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .divider{
+      margin-top:14px;
+      height:1px;
+      background:rgba(255,255,255,.10);
+      border-radius:999px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bgFlow"></div>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+  <div class="shimmer"></div>
+
+  <!-- Loading -->
+  <div id="authGate">
+    <div class="gateCard">
+      <div class="gateLogo">
+        <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
+      </div>
+      <div class="gateTxt">Veloci Global Markets</div>
+      <div class="gateSub">Loading verification…</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="topRow">
+      <div class="brand">
+        <img class="brandLogoWide" src="assets/vgm-logo.png" alt="VGM">
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn" onclick="goDashboard()">Dashboard</button>
+        <button class="btn btnDanger" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>KYC Verification (Government ID)</h1>
+      <div class="sub">
+        Upload the <strong>front</strong> and <strong>back</strong> of your ID (Passport, Driver’s License, National ID, etc).<br/>
+        Your account will be locked until KYC is <strong>approved</strong>.
+      </div>
+
+      <div id="statusBanner" class="statusBanner statusWarn" style="display:none"></div>
+
+      <div class="divider"></div>
+
+      <div class="grid">
+        <div class="row">
+          <div>
+            <label for="docType">Select ID Type</label>
+            <select id="docType" onchange="onDocTypeChange()">
+              <option value="passport">Passport</option>
+              <option value="driver_license">Driver’s License</option>
+              <option value="national_id">National ID</option>
+              <option value="voter_card">Voter’s Card</option>
+              <option value="residence_permit">Residence Permit</option>
+              <option value="other">Other (Specify)</option>
+            </select>
+          </div>
+
+          <div id="docTypeOtherWrap" style="display:none">
+            <label for="docTypeOther">Specify Other ID Type</label>
+            <input id="docTypeOther" placeholder="e.g. Government Staff ID"/>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="issuingCountry">Issuing Country (optional)</label>
+            <input id="issuingCountry" placeholder="e.g. Nigeria"/>
+          </div>
+
+          <div>
+            <label for="userEmail">Your Email</label>
+            <input id="userEmail" disabled />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="fileBox">
+            <label for="frontFile">Front of ID (image/pdf)</label>
+            <input id="frontFile" type="file" accept="image/*,application/pdf"/>
+            <div class="hint">Allowed: JPG/PNG/PDF. Max size depends on your bucket limits.</div>
+          </div>
+
+          <div class="fileBox">
+            <label for="backFile">Back of ID (image/pdf)</label>
+            <input id="backFile" type="file" accept="image/*,application/pdf"/>
+            <div class="hint">If your ID has no back, upload the same file again.</div>
+          </div>
+        </div>
+
+        <div id="msg" class="small"></div>
+
+        <div class="actions">
+          <button class="btn" onclick="refreshStatus()">Refresh Status</button>
+          <button class="btn btnPrimary" onclick="submitKyc()">Submit KYC</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // ✅ AUTH + EMAIL VERIFICATION GUARD (same style used across Coinluxora pages)
+    // ============================================================
+    const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+    const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser=null;
+
+    function hideGate(){
+      const g=document.getElementById("authGate");
+      if(g) g.style.display="none";
+    }
+
+    (function safetyAutoHideGate(){
+      setTimeout(()=>hideGate(), 3500);
+    })();
+
+    function esc(s){
+      return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    }
+
+    function setMsg(html){
+      const el=document.getElementById("msg");
+      if(el) el.innerHTML = html || "";
+    }
+
+    function showBanner(kind, html){
+      const el=document.getElementById("statusBanner");
+      if(!el) return;
+      el.classList.remove("statusOk","statusWarn","statusBad");
+      el.classList.add(kind);
+      el.innerHTML = html;
+      el.style.display="block";
+    }
+
+    function onDocTypeChange(){
+      const v=document.getElementById("docType").value;
+      const w=document.getElementById("docTypeOtherWrap");
+      if(w) w.style.display = (v==="other") ? "block" : "none";
+    }
+
+    function goDashboard(){
+      window.location.href="user-dashboard.html";
+    }
+
+    async function logout(){
+      try{ await supabaseClient.auth.signOut(); }catch(e){}
+      window.location.replace("login.html");
+    }
+
+    // ============================================================
+    // KYC helpers
+    // ============================================================
+    async function getMyKycStatus(userId){
+      try{
+        const { data, error } = await supabaseClient
+          .from("user_kyc")
+          .select("status, created_at, note")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if(error) return { status:"none" };
+        const status = String(data?.status || "none").toLowerCase();
+        return { status: status || "none", created_at: data?.created_at || null, note: data?.note || "" };
+      }catch(e){
+        return { status:"none" };
+      }
+    }
+
+    function friendlyStatus(status){
+      const s=String(status||"none").toLowerCase();
+      if(s==="approved") return { kind:"statusOk", text:"✅ KYC Approved — You can access your dashboard." };
+      if(s==="pending") return { kind:"statusWarn", text:"⏳ KYC Pending — We are reviewing your documents." };
+      if(s==="rejected") return { kind:"statusBad", text:"❌ KYC Rejected — Please resubmit with clear documents." };
+      return { kind:"statusWarn", text:"📝 KYC Not Submitted — Please upload your documents to proceed." };
+    }
+
+    async function refreshStatus(){
+      if(!currentUser?.id) return;
+      const res = await getMyKycStatus(currentUser.id);
+      const f = friendlyStatus(res.status);
+
+      const when = res.created_at ? ` <span style="opacity:.75">(${new Date(res.created_at).toLocaleString()})</span>` : "";
+      const note = res.note ? `<div class="small" style="margin-top:8px">Admin note: <span class="ok">${esc(res.note)}</span></div>` : "";
+
+      showBanner(f.kind, `${f.text}${when}${note}`);
+
+      if(String(res.status).toLowerCase()==="approved"){
+        setMsg(`<span class="ok">KYC is approved. You can return to dashboard.</span>`);
+      }else{
+        setMsg("");
+      }
+    }
+
+    function extFromFile(file){
+      const name=(file?.name||"").toLowerCase();
+      const parts=name.split(".");
+      if(parts.length>=2) return parts.pop();
+      const type=(file?.type||"").toLowerCase();
+      if(type.includes("png")) return "png";
+      if(type.includes("jpeg")||type.includes("jpg")) return "jpg";
+      if(type.includes("pdf")) return "pdf";
+      return "bin";
+    }
+
+    async function uploadToKycBucket(userId, file, side){
+      const ext = extFromFile(file);
+      const safeSide = side==="back" ? "back" : "front";
+      const path = `${userId}/${safeSide}_${Date.now()}.${ext}`;
+
+      const { error } = await supabaseClient
+        .storage
+        .from("kyc")
+        .upload(path, file, { upsert:false, contentType: file.type || undefined });
+
+      if(error) throw error;
+      return path;
+    }
+
+    async function submitKyc(){
+      try{
+        if(!currentUser?.id){
+          setMsg(`<span class="err">Not signed in.</span>`);
+          return;
+        }
+
+        const docType = document.getElementById("docType").value;
+        const docTypeOther = document.getElementById("docTypeOther").value.trim();
+        const issuingCountry = document.getElementById("issuingCountry").value.trim();
+
+        if(docType==="other" && !docTypeOther){
+          setMsg(`<span class="err">Please specify the ID type.</span>`);
+          return;
+        }
+
+        const frontFile = document.getElementById("frontFile").files?.[0];
+        const backFile  = document.getElementById("backFile").files?.[0];
+
+        if(!frontFile || !backFile){
+          setMsg(`<span class="err">Please upload both front and back files.</span>`);
+          return;
+        }
+
+        setMsg(`<span class="ok">Uploading… please wait.</span>`);
+
+        const frontPath = await uploadToKycBucket(currentUser.id, frontFile, "front");
+        const backPath  = await uploadToKycBucket(currentUser.id, backFile, "back");
+
+        const payload = {
+          user_id: currentUser.id,
+          doc_type: docType,
+          doc_type_other: (docType==="other") ? docTypeOther : null,
+          issuing_country: issuingCountry || null,
+          front_path: frontPath,
+          back_path: backPath,
+          status: "pending"
+        };
+
+        const { error } = await supabaseClient
+          .from("user_kyc_requests")
+          .insert(payload);
+
+        if(error){
+          setMsg(`<span class="err">Failed to submit: ${esc(error.message)}</span>`);
+          return;
+        }
+
+        setMsg(`<span class="ok">Submitted successfully. Status is now pending.</span>`);
+        await refreshStatus();
+      }catch(e){
+        const msg = (e && e.message) ? e.message : String(e||"Upload failed");
+        setMsg(`<span class="err">${esc(msg)}</span>`);
+      }
+    }
+
+    // ============================================================
+    // ✅ MAIN GUARD
+    // ============================================================
+    (async function authGuard(){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const session = sessionData?.session;
+
+        if(!session){
+          hideGate();
+          window.location.replace("login.html");
+          return;
+        }
+
+        const { data, error } = await supabaseClient.auth.getUser();
+        const user = data?.user;
+
+        if(error || !user){
+          hideGate();
+          window.location.replace("login.html");
+          return;
+        }
+
+        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+
+        if(!confirmed){
+          await supabaseClient.auth.signOut();
+          hideGate();
+          window.location.replace("verify.html?status=unverified");
+          return;
+        }
+
+        currentUser = user;
+        document.getElementById("userEmail").value = user.email || "";
+
+        hideGate();
+        onDocTypeChange();
+        await refreshStatus();
+      }catch(e){
+        hideGate();
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
+</body>
+</html>
