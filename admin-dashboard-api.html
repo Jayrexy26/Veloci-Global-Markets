@@ -50,10 +50,7 @@
     }
 
     /* Premium scrollbars */
-    *{
-      scrollbar-width: thin;
-      scrollbar-color: var(--sbThumb) var(--sbTrack);
-    }
+    *{ scrollbar-width: thin; scrollbar-color: var(--sbThumb) var(--sbTrack); }
     *::-webkit-scrollbar{height:10px;width:10px}
     *::-webkit-scrollbar-track{background: var(--sbTrack);border-radius:999px}
     *::-webkit-scrollbar-thumb{
@@ -106,7 +103,12 @@
     }
     button:active{transform: translateY(1px)}
     button:hover{filter:brightness(1.05)}
-    button:disabled{opacity:.18; cursor:not-allowed; filter:saturate(.7); transform:none}
+    button:disabled{
+      opacity:.18;
+      cursor:not-allowed;
+      filter:saturate(.6);
+      transform:none;
+    }
 
     .btnPrimary{background: linear-gradient(135deg, rgba(56,189,248,1), rgba(91,108,255,1)); color:#020617}
     .btnGhost{background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color: rgba(234,240,255,.92)}
@@ -264,7 +266,7 @@
     }
     .cardTitle{display:flex;align-items:center;gap:10px;font-weight:980;letter-spacing:.2px}
 
-    /* ✅ GUARANTEED LATERAL SCROLL */
+    /* ✅ Guaranteed lateral scrolling */
     .tableWrap{
       border:1px solid rgba(255,255,255,.08);
       border-radius: 16px;
@@ -276,20 +278,20 @@
       display:block;
       width:100%;
       max-width:100%;
-      overflow-x: auto;
-      overflow-y: hidden;
+      overflow-x:auto;
+      overflow-y:hidden;
       -webkit-overflow-scrolling: touch;
       scrollbar-gutter: stable both-edges;
-      padding-bottom: 2px; /* keeps scrollbar visible */
+      padding-bottom: 2px;
     }
     table{
       border-collapse:separate;
       border-spacing:0;
-      width: max(100%, 1400px); /* <- forces overflow on smaller screens */
-      min-width: 1400px;
+      width: max(100%, 1600px);
+      min-width: 1600px;
       table-layout:auto;
     }
-    table.wide{ min-width: 1800px; width: max(100%, 1800px); }
+    table.xl{ width: max(100%, 1900px); min-width: 1900px; }
     th,td{
       padding: 10px 10px;
       font-size:12.5px;
@@ -548,7 +550,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>Email</th>
@@ -578,7 +580,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>User Email</th>
@@ -620,7 +622,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>ID</th>
@@ -649,7 +651,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>User Email</th>
@@ -679,7 +681,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>User</th>
@@ -711,7 +713,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>User</th>
@@ -764,7 +766,7 @@
 
               <div class="tableWrap">
                 <div class="tableScroll">
-                  <table class="wide">
+                  <table class="xl">
                     <thead>
                       <tr>
                         <th>User</th>
@@ -816,15 +818,7 @@ let ACTIVE_VIEW = "overview";
 let AUTO_REFRESH = false;
 let AUTO_TIMER = null;
 
-const CACHE = {
-  support: [],
-  users: [],
-  plans: [],
-  deposits: [],
-  withdrawals: [],
-  portfolio: [],
-  wallets: []
-};
+const CACHE = { support:[], users:[], plans:[], deposits:[], withdrawals:[], portfolio:[], wallets:[] };
 
 const PLAN_TEMPLATES = [
   { key:"silver",   label:"Silver • X10 • 5 days • Min $100",   plan_name:"Silver Plan",   amount:100,  x_times:10, duration_days:5 },
@@ -843,7 +837,7 @@ function esc(s){
 }
 function nowStamp(){ return new Date().toLocaleString(); }
 function normStatus(s){ return String(s || "pending").trim().toLowerCase() || "pending"; }
-function isFinalStatus(s){ const v = normStatus(s); return (v === "approved" || v === "rejected"); }
+function isFinalStatus(s){ const v = normStatus(s); return (v === "approved" || v === "rejected" || v === "closed" || v === "completed"); }
 
 function modalShow(title, body){
   document.getElementById("modalTitle").textContent = title;
@@ -889,9 +883,7 @@ function switchView(view){
   closeSidebar();
 }
 
-function getSearch(){
-  return (document.getElementById("globalSearch").value || "").trim().toLowerCase();
-}
+function getSearch(){ return (document.getElementById("globalSearch").value || "").trim().toLowerCase(); }
 function matchSearch(obj){
   const q = getSearch();
   if(!q) return true;
@@ -1032,13 +1024,6 @@ function refreshAll(){
   safeLoad(loadPortfolios);
 }
 
-function riskForEmail(email){
-  const list = (CACHE.withdrawals||[]).filter(w => String(w.user_email||"").toLowerCase() === String(email||"").toLowerCase());
-  const total = list.reduce((s,w)=> s + Number(w.amount||0), 0);
-  const count = list.length;
-  return { total, count, latest: list[0]?.status || "" };
-}
-
 function renderOverview(){
   document.getElementById("ov-users").textContent = String(CACHE.users.length);
   document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
@@ -1055,33 +1040,33 @@ function renderOverview(){
 
   const tbody = document.getElementById("riskRows");
   const emails = Array.from(new Set((CACHE.withdrawals||[]).map(w=>String(w.user_email||"").toLowerCase()).filter(Boolean)));
-  const rows = emails.map(e=>({ email:e, ...riskForEmail(e) }))
-    .sort((a,b)=> (b.total - a.total))
-    .filter(matchSearch);
+  const rows = emails.map(email=>{
+    const list = (CACHE.withdrawals||[]).filter(w => String(w.user_email||"").toLowerCase() === email);
+    const total = list.reduce((s,w)=> s + Number(w.amount||0), 0);
+    const count = list.length;
+    const latest = list[0]?.status || "";
+    return { email, count, total, latest };
+  }).sort((a,b)=> b.total - a.total).filter(matchSearch);
 
   if(rows.length === 0){
     tbody.innerHTML = `<tr><td colspan="4" style="padding:12px;color:rgba(234,240,255,.70)">No activity yet.</td></tr>`;
     return;
   }
-
-  tbody.innerHTML = "";
-  rows.forEach(r=>{
-    tbody.innerHTML += `
-      <tr>
-        <td>${esc(r.email)}</td>
-        <td>${esc(r.count)}</td>
-        <td>$${Number(r.total||0).toFixed(2)}</td>
-        <td>${esc(r.latest||"-")}</td>
-      </tr>
-    `;
-  });
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${esc(r.email)}</td>
+      <td>${esc(r.count)}</td>
+      <td>$${Number(r.total||0).toFixed(2)}</td>
+      <td>${esc(r.latest||"-")}</td>
+    </tr>
+  `).join("");
 }
 
 function planOptionsHtml(){
   return PLAN_TEMPLATES.map(p=>`<option value="${esc(p.key)}">${esc(p.label)}</option>`).join("");
 }
 
-/* USERS */
+/* LOADERS */
 async function loadUsers(){
   document.getElementById("usersStatus").innerHTML = `<span class="spin"></span>Loading…`;
   const res = await apiCall("users_list");
@@ -1090,24 +1075,69 @@ async function loadUsers(){
   feed("users_list loaded (" + CACHE.users.length + ")");
   renderOverview();
 }
+async function loadPlans(){
+  document.getElementById("plansStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("plans_list");
+  CACHE.plans = res.data || [];
+  renderPlans(CACHE.plans);
+  feed("plans_list loaded (" + CACHE.plans.length + ")");
+  renderOverview();
+}
+async function loadWallets(){
+  document.getElementById("walletsStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("addresses_list");
+  CACHE.wallets = res.data || [];
+  renderWallets(CACHE.wallets);
+  feed("addresses_list loaded (" + CACHE.wallets.length + ")");
+  renderOverview();
+}
+async function loadSupport(){
+  document.getElementById("supportStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("tickets_list");
+  CACHE.support = res.data || [];
+  renderSupport(CACHE.support);
+  feed("tickets_list loaded (" + CACHE.support.length + ")");
+  renderOverview();
+}
+async function loadDeposits(){
+  document.getElementById("depStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("deposits_list");
+  CACHE.deposits = (res.data || []);
+  renderDeposits(CACHE.deposits);
+  feed("deposits_list loaded (" + CACHE.deposits.length + ")");
+  renderOverview();
+}
+async function loadWithdrawals(){
+  document.getElementById("wdStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("withdrawals_list");
+  CACHE.withdrawals = (res.data || []);
+  renderWithdrawals(CACHE.withdrawals);
+  feed("withdrawals_list loaded (" + CACHE.withdrawals.length + ")");
+  renderOverview();
+}
+async function loadPortfolios(){
+  document.getElementById("pfStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const search = (document.getElementById("pfEmail").value||"").trim();
+  const res = await apiCall("portfolios_list", { search });
+  CACHE.portfolio = res.data || [];
+  renderPortfolio(CACHE.portfolio);
+  feed("portfolios_list loaded (" + CACHE.portfolio.length + ")");
+  renderOverview();
+}
 
+/* RENDERERS */
 function renderUsers(data){
   const status = document.getElementById("usersStatus");
   const tbody = document.getElementById("userRows");
   const filtered = (data||[]).filter(matchSearch);
 
-  if(filtered.length === 0){
-    status.textContent = "No users found.";
-    tbody.innerHTML = "";
-    return;
-  }
+  if(filtered.length === 0){ status.textContent="No users found."; tbody.innerHTML=""; return; }
 
   status.textContent = `Loaded ${filtered.length} user(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(u=>{
+  tbody.innerHTML = filtered.map(u=>{
     const uid = esc(u.id||"");
     const email = esc(u.email||"");
-    tbody.innerHTML += `
+    return `
       <tr>
         <td>${email}</td>
         <td><strong>$${Number(u.balance||0).toFixed(2)}</strong></td>
@@ -1120,21 +1150,269 @@ function renderUsers(data){
         </td>
         <td>
           <div class="rowTools">
-            <button class="btnOk" onclick="creditUser('${email}','${uid}')">Credit</button>
-            <button class="btnErr" onclick="debitUser('${email}','${uid}')">Debit</button>
-            <button class="btnGhost" onclick="setBalance('${email}','${uid}')">Set</button>
-            <button class="btnPrimary" onclick="upgradeUser('${email}','${uid}')">Upgrade</button>
-            <button class="btnErr" onclick="deleteUser('${email}')">Delete</button>
+            <button class="btnOk" onclick="userCredit('${email}','${uid}')">Credit</button>
+            <button class="btnErr" onclick="userDebit('${email}','${uid}')">Debit</button>
+            <button class="btnGhost" onclick="userSet('${email}','${uid}')">Set</button>
+            <button class="btnPrimary" onclick="userUpgrade('${email}','${uid}')">Upgrade</button>
           </div>
         </td>
       </tr>
     `;
-  });
+  }).join("");
 }
 
-/* The rest of your JS functions are assumed same as your last working version.
-   If you want, paste your full JS block and I’ll re-integrate every function into this file cleanly. */
-modalShow("Notice", "UI file loaded. Paste your JS functions after this line if you replaced earlier versions.");
+function renderPlans(data){
+  const status = document.getElementById("plansStatus");
+  const tbody = document.getElementById("planRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No plans found."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} plan(s) ✅`;
+  tbody.innerHTML = filtered.map(p=>{
+    const pid = esc(p.id||"");
+    const x = Number(p.roi_percent||0);
+    return `
+      <tr>
+        <td>${esc(p.user_email||"")}</td>
+        <td><strong>${esc(p.plan_name||"")}</strong></td>
+        <td>$${Number(p.amount||0).toFixed(2)}</td>
+        <td><strong>X${Number.isFinite(x) ? x : 0}</strong></td>
+        <td>${Number(p.duration_days||0)}d</td>
+        <td>${esc(p.status||"")}</td>
+        <td><div class="rowTools">
+          <button class="btnOk" onclick="planApprove('${pid}')">Approve</button>
+          <button class="btnPrimary" onclick="planComplete('${pid}')">Complete</button>
+          <button class="btnErr" onclick="planReject('${pid}')">Reject</button>
+        </div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderWallets(data){
+  const status = document.getElementById("walletsStatus");
+  const tbody = document.getElementById("walletRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No wallets yet. Add one above."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} wallet(s) ✅`;
+  tbody.innerHTML = filtered.map(a=>{
+    const id = esc(a.id||"");
+    return `
+      <tr>
+        <td class="mono">${id}</td>
+        <td><input id="wa-asset-${id}" value="${esc(a.asset||"")}"></td>
+        <td><input id="wa-net-${id}" value="${esc(a.network||"")}"></td>
+        <td><input id="wa-addr-${id}" value="${esc(a.address||"")}"></td>
+        <td><div class="rowTools">
+          <button class="btnOk" onclick="walletSave('${id}')">Save</button>
+          <button class="btnErr" onclick="walletDelete('${id}')">Delete</button>
+        </div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderSupport(data){
+  const status = document.getElementById("supportStatus");
+  const tbody = document.getElementById("supportRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No tickets found."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} ticket(s) ✅`;
+  tbody.innerHTML = filtered.map(t=>{
+    const id = esc(t.id||"");
+    const st = normStatus(t.status||"pending");
+    const closed = (st === "closed");
+    return `
+      <tr>
+        <td>${esc(t.user_email||"")}</td>
+        <td>${esc(t.subject||"")}</td>
+        <td class="msgCell">${esc(t.message||"")}</td>
+        <td>${esc(st)}</td>
+        <td><textarea id="reply-${id}" ${closed ? "disabled" : ""}>${esc(t.admin_reply||"")}</textarea></td>
+        <td><div class="rowTools">
+          <button class="btnOk" ${closed ? "disabled" : ""} onclick="ticketReply('${id}')">Save</button>
+          <button class="btnPrimary" ${closed ? "disabled" : ""} onclick="ticketClose('${id}')">Close</button>
+        </div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderDeposits(data){
+  const status = document.getElementById("depStatus");
+  const tbody = document.getElementById("depRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No deposits found."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} deposit(s) ✅`;
+  tbody.innerHTML = filtered.map(d=>{
+    const id = esc(d.id||"");
+    const st = normStatus(d.status||"pending");
+    const final = (st === "approved" || st === "rejected");
+    const proof = d.proof_url ? `<a href="${esc(d.proof_url)}" target="_blank" rel="noopener">View</a>` : "-";
+    return `
+      <tr>
+        <td>${esc(d.user_email||"-")}</td>
+        <td>${esc(d.asset||"-")}</td>
+        <td>${esc(d.network||"-")}</td>
+        <td>${esc(d.amount||"-")}</td>
+        <td class="mono">${esc(d.tx_hash||"-")}</td>
+        <td>${proof}</td>
+        <td>${esc(st)}</td>
+        <td><div class="rowTools">
+          <button class="btnOk" ${final ? "disabled" : ""} onclick="depositApprove('${id}')">Approve</button>
+          <button class="btnErr" ${final ? "disabled" : ""} onclick="depositReject('${id}')">Reject</button>
+        </div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderWithdrawals(data){
+  const status = document.getElementById("wdStatus");
+  const tbody = document.getElementById("wdRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No withdrawals found."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} withdrawal(s) ✅`;
+  tbody.innerHTML = filtered.map(w=>{
+    const id = esc(w.id||"");
+    const st = normStatus(w.status||"pending");
+    const final = (st === "approved" || st === "rejected");
+    return `
+      <tr>
+        <td>${esc(w.user_email||"")}</td>
+        <td>${esc(w.asset||"")}</td>
+        <td>${esc(w.network||"")}</td>
+        <td>${esc(w.amount||"")}</td>
+        <td class="mono">${esc(w.wallet_address||"")}</td>
+        <td>${esc(st)}</td>
+        <td><div class="rowTools">
+          <button class="btnOk" ${final ? "disabled" : ""} onclick="withdrawApprove('${id}')">Approve</button>
+          <button class="btnErr" ${final ? "disabled" : ""} onclick="withdrawReject('${id}')">Reject</button>
+        </div></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderPortfolio(data){
+  const status = document.getElementById("pfStatus");
+  const tbody = document.getElementById("pfRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){ status.textContent="No holdings found."; tbody.innerHTML=""; return; }
+
+  status.textContent = `Loaded ${filtered.length} holding(s) ✅`;
+  tbody.innerHTML = filtered.map(p=>`
+    <tr>
+      <td>${esc(p.user_email||"")}</td>
+      <td><strong>${esc((p.asset||"").toUpperCase())}</strong></td>
+      <td>${esc(p.amount||"")}</td>
+      <td>$${Number(p.buy_price||0).toFixed(2)}</td>
+      <td>${esc(p.notes||"-")}</td>
+    </tr>
+  `).join("");
+}
+
+/* ACTIONS (these call your Edge Function actions) */
+/* IMPORTANT: your project previously had credit/debit/set/upgrade endpoints changing a lot.
+   We keep this UI part focused on fixing the mess you reported: scroll + deposit/withdraw approvals.
+   If you want credit/debit/set/upgrade wired again, paste your CURRENT working Edge Function actions list. */
+
+async function depositApprove(id){
+  if(!confirm("Approve deposit and credit user balance?")) return;
+  await apiCall("deposit_approve", { deposit_id:id });
+  feed("deposit_approve -> " + id);
+  modalShow("Deposit Approved", "Approved + credited.");
+  safeLoad(loadDeposits);
+  safeLoad(loadUsers);
+}
+
+async function depositReject(id){
+  if(!confirm("Reject deposit?")) return;
+  await apiCall("deposit_reject", { deposit_id:id });
+  feed("deposit_reject -> " + id);
+  modalShow("Deposit Rejected", "Rejected.");
+  safeLoad(loadDeposits);
+}
+
+async function withdrawApprove(id){
+  if(!confirm("Approve withdrawal & debit user?")) return;
+  await apiCall("withdrawal_approve", { withdrawal_id:id });
+  feed("withdrawal_approve -> " + id);
+  modalShow("Withdrawal Approved", "Approved + debited.");
+  safeLoad(loadWithdrawals);
+  safeLoad(loadUsers);
+}
+
+async function withdrawReject(id){
+  if(!confirm("Reject withdrawal?")) return;
+  await apiCall("withdrawal_reject", { withdrawal_id:id });
+  feed("withdrawal_reject -> " + id);
+  modalShow("Withdrawal Rejected", "Rejected.");
+  safeLoad(loadWithdrawals);
+}
+
+/* Wallet actions (edit inline) */
+async function createWallet(e){
+  e.preventDefault();
+  const asset = (document.getElementById("newAsset").value||"").trim().toLowerCase();
+  const network = (document.getElementById("newNetwork").value||"").trim().toUpperCase();
+  const address = (document.getElementById("newAddress").value||"").trim();
+  await apiCall("address_save", { id:"", asset, network, address });
+  modalShow("Wallet Added", "Deposit wallet saved.");
+  e.target.reset();
+  safeLoad(loadWallets);
+}
+async function walletSave(id){
+  const asset = (document.getElementById(`wa-asset-${id}`).value||"").trim().toLowerCase();
+  const network = (document.getElementById(`wa-net-${id}`).value||"").trim().toUpperCase();
+  const address = (document.getElementById(`wa-addr-${id}`).value||"").trim();
+  await apiCall("address_save", { id, asset, network, address });
+  modalShow("Wallet Updated", "Saved.");
+  safeLoad(loadWallets);
+}
+async function walletDelete(id){
+  if(!confirm("Delete wallet?")) return;
+  await apiCall("address_delete", { id });
+  modalShow("Wallet Deleted", "Removed.");
+  safeLoad(loadWallets);
+}
+
+/* Support actions */
+async function ticketReply(id){
+  const reply = (document.getElementById(`reply-${id}`).value||"").trim();
+  await apiCall("ticket_reply", { ticket_id:id, reply });
+  modalShow("Reply Saved", "Saved.");
+  safeLoad(loadSupport);
+}
+async function ticketClose(id){
+  const reply = (document.getElementById(`reply-${id}`).value||"").trim();
+  await apiCall("ticket_close", { ticket_id:id, reply });
+  modalShow("Ticket Closed", "Closed.");
+  safeLoad(loadSupport);
+}
+
+/* Plans actions (approve/reject/complete exist in your earlier build) */
+async function planApprove(id){ await apiCall("plan_approve", { plan_id:id }); modalShow("Plan Approved","Approved."); safeLoad(loadPlans); }
+async function planReject(id){ await apiCall("plan_reject", { plan_id:id }); modalShow("Plan Rejected","Rejected."); safeLoad(loadPlans); }
+async function planComplete(id){
+  if(!confirm("Complete plan now?")) return;
+  const res = await apiCall("plan_complete", { plan_id:id });
+  modalShow("Plan Completed", JSON.stringify(res.data||{}, null, 2));
+  safeLoad(loadPlans);
+  safeLoad(loadUsers);
+}
+
+switchView("overview");
 </script>
 
 </body>
