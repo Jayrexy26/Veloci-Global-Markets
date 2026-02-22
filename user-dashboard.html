@@ -1337,6 +1337,9 @@
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // ✅ KYC gate config (redirect target)
+    const KYC_VERIFY_PAGE = "verification.html";
+
     let currentUserEmail="";
     let currentUserId="";
     let badgeChannel=null;
@@ -2456,6 +2459,37 @@
       window.location.replace("login.html");
     }
 
+    // ============================================================
+    // ✅ KYC APPROVAL GATE (NEW)
+    // - Blocks dashboard unless user_kyc.status === "approved"
+    // - Redirects to verification.html with status
+    // ============================================================
+    async function getMyKycStatus(userId){
+      try{
+        const { data, error } = await supabaseClient
+          .from("user_kyc")
+          .select("status")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if(error) return "none";
+        const s = String(data?.status || "none").toLowerCase();
+        return s || "none";
+      }catch(e){
+        return "none";
+      }
+    }
+
+    function redirectToKyc(status){
+      try{
+        const s = encodeURIComponent(String(status || "none"));
+        // Keep gate visible for premium feel; redirect fast.
+        window.location.replace(`${KYC_VERIFY_PAGE}?status=${s}`);
+      }catch(e){
+        window.location.replace(KYC_VERIFY_PAGE);
+      }
+    }
+
     function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
@@ -2520,6 +2554,14 @@
           await supabaseClient.auth.signOut();
           hideGate();
           window.location.replace("verify.html?status=unverified");
+          return;
+        }
+
+        // ✅ NEW: KYC approval gate (blocks everything unless approved)
+        const kycStatus = await getMyKycStatus(user.id);
+        if(kycStatus !== "approved"){
+          // Optional: if user is rejected/pending/none → lock to verification upload page
+          redirectToKyc(kycStatus);
           return;
         }
 
