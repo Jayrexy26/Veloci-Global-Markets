@@ -42,7 +42,8 @@
         radial-gradient(900px 600px at 88% -10%, rgba(56,189,248,.16), transparent 60%),
         radial-gradient(900px 600px at 45% 110%, rgba(124,77,255,.14), transparent 60%),
         linear-gradient(180deg, var(--bg), var(--bg2));
-      overflow-x:hidden;
+      /* ✅ FIX: DO NOT KILL HORIZONTAL SCROLL GLOBALLY */
+      overflow-x:auto;
     }
 
     .mono{font-family:var(--mono)}
@@ -51,7 +52,6 @@
     .title{font-weight:980;letter-spacing:.2px}
     a{color: rgba(125,211,252,.95); text-decoration:none; font-weight:950}
 
-    /* ✅ Premium pill inputs */
     input,select,textarea{
       width:100%;
       padding: 10px 14px;
@@ -254,7 +254,7 @@
       border-radius: 18px;
       background: rgba(2,6,23,.28);
       min-width:0;
-      overflow: visible;
+      overflow:hidden; /* ✅ ensure inner scroller is the one controlling overflow */
     }
     .tableScroll{
       overflow-x:auto;
@@ -1156,7 +1156,8 @@ async function deleteUser(email){
   if(!confirm(`DELETE USER:\n${email}\n\nThis removes auth + profile.\nContinue?`)) return;
   const res = await apiCall("user_delete", { email });
   feed("user_delete -> " + email);
-  modalShow("User Deleted", `Deleted: ${email}\nAuth/User ID: ${res.data?.id ?? ""}\n`);
+  /* ✅ FIX: edge returns auth_user_id */
+  modalShow("User Deleted", `Deleted: ${email}\nAuth User ID: ${res.data?.auth_user_id ?? ""}\nAuth Deleted: ${res.data?.auth_deleted ?? ""}\n`);
   safeLoad(loadUsers);
 }
 
@@ -1222,7 +1223,7 @@ async function completePlan(id){
   if(!confirm("Complete plan now?")) return;
   const res = await apiCall("plan_complete", { plan_id:id });
   feed("plan_complete -> " + id);
-  modalShow("Plan Completed", `Completed.\nReturn: X${res.data?.x_times ?? ""}\nProfit credited (calc): ${res.data?.profit ?? ""}`);
+  modalShow("Plan Completed", `Completed.\nReturn: X${res.data?.x_times ?? ""}\nProfit credited: ${res.data?.profit ?? ""}`);
   safeLoad(loadPlans);
   safeLoad(loadUsers);
 }
