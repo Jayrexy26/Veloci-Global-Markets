@@ -33,6 +33,25 @@
     *{box-sizing:border-box}
     html,body{height:100%}
 
+    /* ✅ Premium scrollbars (global + inner scroll areas) */
+    *{
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56,189,248,.55) rgba(255,255,255,.06);
+    }
+    *::-webkit-scrollbar{ height: 10px; width: 10px; }
+    *::-webkit-scrollbar-track{
+      background: rgba(255,255,255,.06);
+      border-radius: 999px;
+    }
+    *::-webkit-scrollbar-thumb{
+      background: linear-gradient(180deg, rgba(56,189,248,.75), rgba(91,108,255,.75));
+      border-radius: 999px;
+      border: 2px solid rgba(2,6,23,.65);
+    }
+    *::-webkit-scrollbar-thumb:hover{
+      background: linear-gradient(180deg, rgba(56,189,248,.92), rgba(124,77,255,.88));
+    }
+
     body{
       margin:0;
       font-family:var(--sans);
@@ -42,8 +61,7 @@
         radial-gradient(900px 600px at 88% -10%, rgba(56,189,248,.16), transparent 60%),
         radial-gradient(900px 600px at 45% 110%, rgba(124,77,255,.14), transparent 60%),
         linear-gradient(180deg, var(--bg), var(--bg2));
-      /* ✅ FIX: DO NOT KILL HORIZONTAL SCROLL GLOBALLY */
-      overflow-x:auto;
+      overflow-x:hidden;
     }
 
     .mono{font-family:var(--mono)}
@@ -51,6 +69,7 @@
     .tiny{font-size:11px;color:var(--muted2);line-height:1.45}
     .title{font-weight:980;letter-spacing:.2px}
     a{color: rgba(125,211,252,.95); text-decoration:none; font-weight:950}
+    a:hover{filter:brightness(1.1); text-decoration:underline}
 
     input,select,textarea{
       width:100%;
@@ -91,11 +110,16 @@
       height: 38px;
     }
     button:active{transform: translateY(1px)}
-    button:hover{filter:brightness(1.05)}
-    button:disabled{opacity:.55; cursor:not-allowed}
+    button:hover{filter:brightness(1.06)}
+    button:disabled{opacity:.35; cursor:not-allowed; filter:saturate(.65) brightness(.9);}
 
+    /* ✅ Gradient actions everywhere (including ghost) */
     .btnPrimary{background: linear-gradient(135deg, rgba(56,189,248,1), rgba(91,108,255,1)); color:#020617}
-    .btnGhost{background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color: rgba(234,240,255,.92)}
+    .btnGhost{
+      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.14);
+      color: rgba(234,240,255,.92)
+    }
     .btnOk{background: linear-gradient(135deg, rgba(34,197,94,1), rgba(16,185,129,1)); color:#020617}
     .btnErr{background: linear-gradient(135deg, rgba(248,113,113,1), rgba(236,72,153,1)); color:#020617}
 
@@ -136,9 +160,9 @@
 
     .hidden{display:none !important;}
 
+    /* ✅ 100% screen fit on desktop */
     .app{display:none;min-height:100vh;width:100%;}
-    .shell{width:100%;display:flex;min-width:0;}
-
+    .shell{width:100%;display:flex;min-width:0; height:100vh;}
     .sidebar{
       width: 286px;
       flex: 0 0 286px;
@@ -151,22 +175,32 @@
       overflow:auto;
       min-width:0;
     }
-    .main{flex:1 1 auto;min-width:0;padding:16px;}
+
+    /* ✅ Main becomes scroll container (keeps everything inside 100% viewport) */
+    .main{
+      flex:1 1 auto;
+      min-width:0;
+      padding:16px;
+      height:100vh;
+      overflow:auto;
+    }
 
     .mobileTop{display:none;gap:10px;align-items:center;justify-content:space-between;padding:12px 12px 0;}
     .burger{
       display:inline-flex;align-items:center;justify-content:center;
       width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);color: rgba(234,240,255,.9);
+      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      color: rgba(234,240,255,.9);
       font-weight:980;
     }
     .overlay{display:none;position:fixed;inset:0;background: rgba(0,0,0,.55);z-index:999;}
     @media (max-width:1100px){
+      .shell{height:auto; min-height:100vh;}
+      .main{height:auto; overflow:visible; padding:12px;}
       .sidebar{position:fixed;left:0;top:0;height:100vh;transform: translateX(-102%);transition: transform .2s ease;z-index:1000;}
       .sidebar.open{transform: translateX(0);}
       .overlay.show{display:block;}
       .mobileTop{display:flex;}
-      .main{padding:12px;}
     }
 
     .brand{display:flex;gap:12px;align-items:center;padding: 10px 10px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
@@ -230,8 +264,21 @@
     }
     .chip.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10)}
 
-    .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px;margin-top:14px;align-items:start;min-width:0;}
-    @media (max-width:1100px){ .grid{grid-template-columns:1fr} }
+    /* ✅ Fit better on desktop: give main table area more space */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.55fr .45fr;
+      gap:14px;
+      margin-top:14px;
+      align-items:start;
+      min-width:0;
+    }
+    @media (max-width:1300px){
+      .grid{grid-template-columns: 1.35fr .65fr;}
+    }
+    @media (max-width:1100px){
+      .grid{grid-template-columns:1fr}
+    }
 
     .card{
       border:1px solid rgba(255,255,255,.10);
@@ -254,7 +301,7 @@
       border-radius: 18px;
       background: rgba(2,6,23,.28);
       min-width:0;
-      overflow:hidden; /* ✅ ensure inner scroller is the one controlling overflow */
+      overflow:hidden;
     }
     .tableScroll{
       overflow-x:auto;
@@ -302,7 +349,7 @@
       padding: 18px;
     }
     .modal{
-      width: min(560px, 100%);
+      width: min(860px, 100%);
       border:1px solid rgba(255,255,255,.12);
       background: linear-gradient(180deg, rgba(2,6,23,.90), rgba(2,6,23,.62));
       border-radius: 22px;
@@ -322,6 +369,60 @@
       word-break:break-word;
     }
     .modalFoot{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+
+    /* ✅ Proof viewer */
+    .proofWrap{
+      display:grid;
+      gap:10px;
+    }
+    .proofFrame{
+      width: 100%;
+      height: min(72vh, 720px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      background: rgba(2,6,23,.35);
+      overflow:hidden;
+    }
+    .proofFrame iframe{
+      width:100%;
+      height:100%;
+      border:0;
+    }
+    .proofHint{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    /* ✅ Username pill */
+    .namePill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(234,240,255,.92);
+      font-weight: 980;
+      font-size: 12px;
+      max-width: 100%;
+    }
+    .namePill .nm{
+      max-width: 220px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .namePill .em{
+      color: rgba(234,240,255,.62);
+      font-weight: 850;
+      max-width: 260px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
   </style>
 </head>
 
@@ -498,7 +599,7 @@
                   <table>
                     <thead>
                       <tr>
-                        <th>User Email</th>
+                        <th>User</th>
                         <th>Withdrawals</th>
                         <th>Total</th>
                         <th>Latest</th>
@@ -526,12 +627,12 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:260px">Email</th>
+                        <th style="width:320px">User</th>
                         <th style="width:120px">Balance</th>
                         <th style="width:160px">Set Balance</th>
                         <th style="width:140px">Amount</th>
                         <th style="width:260px">Plan Upgrade</th>
-                        <th style="width:360px">Actions</th>
+                        <th style="width:380px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="userRows"></tbody>
@@ -556,13 +657,13 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:260px">User Email</th>
+                        <th style="width:320px">User</th>
                         <th style="width:160px">Plan</th>
                         <th style="width:120px">Amount</th>
                         <th style="width:120px">Return</th>
                         <th style="width:110px">Duration</th>
                         <th style="width:120px">Status</th>
-                        <th style="width:220px">Actions</th>
+                        <th style="width:240px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="planRows"></tbody>
@@ -627,7 +728,7 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:240px">User Email</th>
+                        <th style="width:320px">User</th>
                         <th style="width:220px">Subject</th>
                         <th style="width:520px">Message</th>
                         <th style="width:120px">Status</th>
@@ -657,14 +758,14 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:240px">User</th>
+                        <th style="width:320px">User</th>
                         <th style="width:90px">Asset</th>
                         <th style="width:120px">Network</th>
                         <th style="width:120px">Amount</th>
                         <th style="width:420px">TX</th>
-                        <th style="width:90px">Proof</th>
+                        <th style="width:110px">Proof</th>
                         <th style="width:120px">Status</th>
-                        <th style="width:220px">Actions</th>
+                        <th style="width:240px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="depRows"></tbody>
@@ -689,13 +790,13 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:240px">User</th>
+                        <th style="width:320px">User</th>
                         <th style="width:90px">Asset</th>
                         <th style="width:120px">Network</th>
                         <th style="width:120px">Amount</th>
                         <th style="width:560px">Wallet</th>
                         <th style="width:120px">Status</th>
-                        <th style="width:220px">Actions</th>
+                        <th style="width:240px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="wdRows"></tbody>
@@ -742,7 +843,7 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:260px">User</th>
+                        <th style="width:320px">User</th>
                         <th style="width:90px">Asset</th>
                         <th style="width:120px">Amount</th>
                         <th style="width:120px">Buy</th>
@@ -801,6 +902,9 @@ const CACHE = {
   wallets: []
 };
 
+/* ✅ Username map (email -> display name) */
+const USERNAME_MAP = {};
+
 const PLAN_TEMPLATES = [
   { key:"silver",   label:"Silver • X10 • 5 days • Min $100",   plan_name:"Silver Plan",   amount:100,  x_times:10, duration_days:5 },
   { key:"gold",     label:"Gold • X13 • 5 days • Min $700",     plan_name:"Gold Plan",     amount:700,  x_times:13, duration_days:5 },
@@ -818,9 +922,54 @@ function esc(s){
 }
 function nowStamp(){ return new Date().toLocaleString(); }
 
+/* ✅ Username helpers */
+function inferUsernameFromEmail(email){
+  const e = String(email||"").trim().toLowerCase();
+  if(!e || !e.includes("@")) return "";
+  let u = e.split("@")[0] || "";
+  u = u.replaceAll(".", " ").replaceAll("_", " ").replaceAll("-", " ").trim();
+  if(!u) return "";
+  return u.split(" ").map(w => w ? (w[0].toUpperCase() + w.slice(1)) : "").join(" ");
+}
+function usernameForEmail(email){
+  const key = String(email||"").trim().toLowerCase();
+  return USERNAME_MAP[key] || inferUsernameFromEmail(key) || "User";
+}
+function userPillHtml(email){
+  const em = String(email||"").trim().toLowerCase();
+  const nm = usernameForEmail(em);
+  return `<span class="namePill"><span class="nm">${esc(nm)}</span><span class="em">${esc(em)}</span></span>`;
+}
+
+/* ✅ Proof viewer */
+function openProof(url){
+  const u = String(url||"").trim();
+  if(!u){ modalShow("No proof", "No proof URL attached."); return; }
+  const safe = u; // already an URL string coming from your DB
+  modalShow(
+    "Uploaded Proof",
+    ""
+  );
+
+  const body = document.getElementById("modalBody");
+  body.innerHTML = `
+    <div class="proofWrap">
+      <div class="proofHint">
+        <span class="chip">Preview</span>
+        <a href="${esc(safe)}" target="_blank" rel="noopener">Open in new tab</a>
+      </div>
+      <div class="proofFrame">
+        <iframe src="${esc(safe)}" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </div>
+      <div class="tiny">If preview is blocked by the host, use “Open in new tab”.</div>
+    </div>
+  `;
+}
+
 function modalShow(title, body){
   document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalBody").textContent = body;
+  const el = document.getElementById("modalBody");
+  el.textContent = body;
   document.getElementById("modalOverlay").style.display = "flex";
 }
 function modalClose(){ document.getElementById("modalOverlay").style.display = "none"; }
@@ -951,6 +1100,8 @@ function lockConsole(){
   document.getElementById("autoChip").textContent = "AUTO: OFF";
 
   Object.keys(CACHE).forEach(k=>CACHE[k]=[]);
+  Object.keys(USERNAME_MAP).forEach(k=>delete USERNAME_MAP[k]);
+
   setSysBox("Not connected.");
   setDebugBox("No errors yet.");
 
@@ -1041,7 +1192,7 @@ function renderOverview(){
   rows.forEach(r=>{
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(r.email)}</span></td>
+        <td>${userPillHtml(r.email)}</td>
         <td>${esc(r.count)}</td>
         <td>$${Number(r.total||0).toFixed(2)}</td>
         <td>${esc(r.latest||"-")}</td>
@@ -1059,6 +1210,16 @@ async function loadUsers(){
   document.getElementById("usersStatus").innerHTML = `<span class="spin"></span>Loading…`;
   const res = await apiCall("users_list");
   CACHE.users = res.data || [];
+
+  // Build username map (best-effort)
+  CACHE.users.forEach(u=>{
+    const email = String(u.email||"").trim().toLowerCase();
+    const name =
+      String(u.username||u.full_name||u.name||u.display_name||"").trim() ||
+      inferUsernameFromEmail(email);
+    if(email) USERNAME_MAP[email] = name || inferUsernameFromEmail(email) || "User";
+  });
+
   renderUsers(CACHE.users);
   feed("users_list loaded (" + CACHE.users.length + ")");
   renderOverview();
@@ -1079,10 +1240,10 @@ function renderUsers(data){
   tbody.innerHTML = "";
   filtered.forEach(u=>{
     const uid = esc(u.id||"");
-    const email = esc(u.email||"");
+    const email = String(u.email||"").trim().toLowerCase();
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${email}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td><strong>$${Number(u.balance||0).toFixed(2)}</strong></td>
         <td><input type="number" step="0.01" id="setbal-${uid}" placeholder="9000.00"></td>
         <td><input type="number" step="0.01" id="amt-${uid}" placeholder="50.00"></td>
@@ -1093,11 +1254,11 @@ function renderUsers(data){
         </td>
         <td>
           <div class="rowTools">
-            <button class="btnOk" onclick="creditUser('${email}','${uid}')">Credit</button>
-            <button class="btnErr" onclick="debitUser('${email}','${uid}')">Debit</button>
-            <button class="btnGhost" onclick="setBalance('${email}','${uid}')">Set</button>
-            <button class="btnPrimary" onclick="upgradeUser('${email}','${uid}')">Upgrade</button>
-            <button class="btnErr" onclick="deleteUser('${email}')">Delete</button>
+            <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
+            <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
+            <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
+            <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
+            <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -1156,7 +1317,6 @@ async function deleteUser(email){
   if(!confirm(`DELETE USER:\n${email}\n\nThis removes auth + profile.\nContinue?`)) return;
   const res = await apiCall("user_delete", { email });
   feed("user_delete -> " + email);
-  /* ✅ FIX: edge returns auth_user_id */
   modalShow("User Deleted", `Deleted: ${email}\nAuth User ID: ${res.data?.auth_user_id ?? ""}\nAuth Deleted: ${res.data?.auth_deleted ?? ""}\n`);
   safeLoad(loadUsers);
 }
@@ -1187,9 +1347,10 @@ function renderPlans(data){
   filtered.forEach(p=>{
     const pid = esc(p.id||"");
     const x = Number(p.roi_percent||0);
+    const email = String(p.user_email||"").trim().toLowerCase();
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(p.user_email||"")}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td><strong>${esc(p.plan_name||"")}</strong></td>
         <td>$${Number(p.amount||0).toFixed(2)}</td>
         <td><strong>X${Number.isFinite(x) ? x : 0}</strong></td>
@@ -1322,9 +1483,10 @@ function renderSupport(data){
   tbody.innerHTML = "";
   filtered.forEach(t=>{
     const id = esc(t.id||"");
+    const email = String(t.user_email||"").trim().toLowerCase();
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(t.user_email||"")}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td><span class="ellipsis">${esc(t.subject||"")}</span></td>
         <td><span class="ellipsisWide">${esc(t.message||"")}</span></td>
         <td>${esc(t.status||"")}</td>
@@ -1378,20 +1540,26 @@ function renderDeposits(data){
   tbody.innerHTML = "";
   filtered.forEach(d=>{
     const id = esc(d.id||"");
-    const proof = d.proof_url ? `<a href="${esc(d.proof_url)}" target="_blank" rel="noopener">View</a>` : "-";
+    const email = String(d.user_email||"-").trim().toLowerCase();
+    const st = String(d.status||"pending").toLowerCase();
+    const isDone = (st === "approved" || st === "rejected");
+    const proof = d.proof_url
+      ? `<a href="javascript:void(0)" onclick="openProof('${esc(d.proof_url)}')">View</a>`
+      : "-";
+
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(d.user_email||"-")}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td>${esc(d.asset||"-")}</td>
         <td>${esc(d.network||"-")}</td>
         <td>${esc(d.amount||"-")}</td>
         <td><span class="mono ellipsisWide">${esc(d.tx_hash||"-")}</span></td>
         <td>${proof}</td>
-        <td>${esc(d.status||"pending")}</td>
+        <td>${esc(st)}</td>
         <td>
           <div class="rowTools">
-            <button class="btnOk" onclick="approveDeposit('${id}')">Approve</button>
-            <button class="btnErr" onclick="rejectDeposit('${id}')">Reject</button>
+            <button class="btnOk" onclick="approveDeposit('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
+            <button class="btnErr" onclick="rejectDeposit('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
           </div>
         </td>
       </tr>
@@ -1399,6 +1567,13 @@ function renderDeposits(data){
   });
 }
 async function approveDeposit(id){
+  const row = (CACHE.deposits||[]).find(d => String(d.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This deposit is already " + st + ".");
+    return;
+  }
+
   if(!confirm("Approve deposit and credit user balance?")) return;
   await apiCall("deposit_approve", { deposit_id:id });
   feed("deposit_approve -> " + id);
@@ -1407,6 +1582,13 @@ async function approveDeposit(id){
   safeLoad(loadUsers);
 }
 async function rejectDeposit(id){
+  const row = (CACHE.deposits||[]).find(d => String(d.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This deposit is already " + st + ".");
+    return;
+  }
+
   if(!confirm("Reject deposit?")) return;
   await apiCall("deposit_reject", { deposit_id:id });
   feed("deposit_reject -> " + id);
@@ -1438,18 +1620,22 @@ function renderWithdrawals(data){
   tbody.innerHTML = "";
   filtered.forEach(w=>{
     const id = esc(w.id||"");
+    const email = String(w.user_email||"").trim().toLowerCase();
+    const st = String(w.status||"pending").toLowerCase();
+    const isDone = (st === "approved" || st === "rejected");
+
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(w.user_email||"")}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td>${esc(w.asset||"")}</td>
         <td>${esc(w.network||"")}</td>
         <td>${esc(w.amount||"")}</td>
         <td><span class="mono ellipsisWide">${esc(w.wallet_address||"")}</span></td>
-        <td>${esc(w.status||"pending")}</td>
+        <td>${esc(st)}</td>
         <td>
           <div class="rowTools">
-            <button class="btnOk" onclick="approveWithdrawal('${id}')">Approve</button>
-            <button class="btnErr" onclick="rejectWithdrawal('${id}')">Reject</button>
+            <button class="btnOk" onclick="approveWithdrawal('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
+            <button class="btnErr" onclick="rejectWithdrawal('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
           </div>
         </td>
       </tr>
@@ -1457,6 +1643,13 @@ function renderWithdrawals(data){
   });
 }
 async function approveWithdrawal(id){
+  const row = (CACHE.withdrawals||[]).find(w => String(w.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This withdrawal is already " + st + ".");
+    return;
+  }
+
   if(!confirm("Approve withdrawal & debit user?")) return;
   await apiCall("withdrawal_approve", { withdrawal_id:id });
   feed("withdrawal_approve -> " + id);
@@ -1465,6 +1658,13 @@ async function approveWithdrawal(id){
   safeLoad(loadUsers);
 }
 async function rejectWithdrawal(id){
+  const row = (CACHE.withdrawals||[]).find(w => String(w.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This withdrawal is already " + st + ".");
+    return;
+  }
+
   if(!confirm("Reject withdrawal?")) return;
   await apiCall("withdrawal_reject", { withdrawal_id:id });
   feed("withdrawal_reject -> " + id);
@@ -1496,9 +1696,10 @@ function renderPortfolio(data){
   status.textContent = `Loaded ${filtered.length} holding(s) ✅`;
   tbody.innerHTML = "";
   filtered.forEach(p=>{
+    const email = String(p.user_email||"").trim().toLowerCase();
     tbody.innerHTML += `
       <tr>
-        <td><span class="ellipsis">${esc(p.user_email||"")}</span></td>
+        <td>${userPillHtml(email)}</td>
         <td><strong>${esc((p.asset||"").toUpperCase())}</strong></td>
         <td>${esc(p.amount||"")}</td>
         <td>$${Number(p.buy_price||0).toFixed(2)}</td>
