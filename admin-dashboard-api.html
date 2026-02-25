@@ -293,7 +293,8 @@
     #appView[data-view="plans"] .grid,
     #appView[data-view="support"] .grid,
     #appView[data-view="deposits"] .grid,
-    #appView[data-view="withdrawals"] .grid{
+    #appView[data-view="withdrawals"] .grid,
+    #appView[data-view="kyc"] .grid{
       grid-template-columns: 1fr;
       grid-template-areas:
         "ops"
@@ -540,22 +541,22 @@
       flex: 0 0 auto;
     }
 
-    /* ✅ Support message box (no lateral scroll, wraps) */
+    /* ✅ Support message box (UPDATED: bigger) */
     .msgBox{
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(2,6,23,.32);
       border-radius: 14px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       color: rgba(234,240,255,.86);
-      line-height: 1.45;
-      max-width: 520px;
+      line-height: 1.5;
+      max-width: 880px; /* ✅ bigger */
       white-space: normal;
       word-break: break-word;
       overflow: hidden;
     }
     .msgBoxClamp{
       display: -webkit-box;
-      -webkit-line-clamp: 6;
+      -webkit-line-clamp: 10; /* ✅ more lines */
       -webkit-box-orient: vertical;
     }
   </style>
@@ -672,6 +673,12 @@
             <div class="navLeft"><div class="navIcon">💼</div><div class="navText">Portfolio</div></div>
             <div class="countPill" id="cnt-portfolio">0</div>
           </div>
+
+          <!-- ✅ NEW: KYC -->
+          <div class="navBtn" id="nav-kyc" onclick="switchView('kyc')">
+            <div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div>
+            <div class="countPill" id="cnt-kyc">0</div>
+          </div>
         </div>
 
         <div class="sideCard">
@@ -738,6 +745,7 @@
                   <span class="chip">Plans: <span class="mono" id="ov-plans">0</span></span>
                   <span class="chip">Wallets: <span class="mono" id="ov-wallets">0</span></span>
                   <span class="chip">Tickets: <span class="mono" id="ov-support">0</span></span>
+                  <span class="chip">KYC: <span class="mono" id="ov-kyc">0</span></span>
                 </div>
               </div>
 
@@ -877,7 +885,7 @@
                       <tr>
                         <th style="width:320px">User</th>
                         <th style="width:220px">Subject</th>
-                        <th style="width:560px">Message</th>
+                        <th style="width:760px">Message</th>
                         <th style="width:120px">Status</th>
                         <th style="width:380px">Reply</th>
                         <th style="width:220px">Actions</th>
@@ -1003,6 +1011,39 @@
               </div>
             </section>
 
+            <!-- ✅ NEW: KYC -->
+            <section id="view-kyc" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">🛡️ KYC Requests</div>
+                  <div class="small" id="kycStatus">Not loaded.</div>
+                </div>
+                <div class="rowTools">
+                  <button class="btnGhost" onclick="safeLoad(loadKyc)">Refresh</button>
+                </div>
+              </div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:320px">User</th>
+                        <th style="width:180px">Doc Type</th>
+                        <th style="width:200px">Country</th>
+                        <th style="width:110px">Front</th>
+                        <th style="width:110px">Back</th>
+                        <th style="width:120px">Status</th>
+                        <th style="width:220px">Submitted</th>
+                        <th style="width:280px">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="kycRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
           </div>
 
           <div class="card gridOps" id="opsCard">
@@ -1046,7 +1087,8 @@ const CACHE = {
   deposits: [],
   withdrawals: [],
   portfolio: [],
-  wallets: []
+  wallets: [],
+  kyc: [] // ✅ NEW
 };
 
 const USERNAME_MAP = {};     // email -> display name
@@ -1091,8 +1133,8 @@ function userPillHtml(email){
 /* ✅ Proof viewer */
 function openProof(url){
   const u = String(url||"").trim();
-  if(!u){ modalShow("No proof", "No proof URL attached."); return; }
-  modalShow("Uploaded Proof", "");
+  if(!u){ modalShow("No proof", "No URL attached."); return; }
+  modalShow("Preview", "");
   const body = document.getElementById("modalBody");
   body.innerHTML = `
     <div class="proofWrap">
@@ -1145,7 +1187,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","plans","wallets","support","deposits","withdrawals","portfolio"];
+  const views = ["overview","users","plans","wallets","support","deposits","withdrawals","portfolio","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1171,7 +1213,6 @@ function normalize(s){
   return String(s||"").trim().toLowerCase();
 }
 function buildUserIndex(){
-  // returns [{email,name}] unique by email
   const map = new Map();
   (CACHE.users||[]).forEach(u=>{
     const email = normalize(u.email);
@@ -1189,10 +1230,7 @@ function searchUsers(q){
   if(!query) return [];
   const index = buildUserIndex();
 
-  // ✅ prefix matches first (name startsWith or email startsWith)
   const prefix = index.filter(u => (u.name||"").startsWith(query) || (u.email||"").startsWith(query));
-
-  // ✅ contains matches after
   const contains = index.filter(u =>
     !((u.name||"").startsWith(query) || (u.email||"").startsWith(query)) &&
     (((u.name||"").includes(query)) || ((u.email||"").includes(query)))
@@ -1201,7 +1239,6 @@ function searchUsers(q){
   return prefix.concat(contains).slice(0, 24);
 }
 
-/* ✅ Global search used by tables: now includes username + email + raw row JSON */
 function getSearch(){
   return normalize(document.getElementById("globalSearch").value || "");
 }
@@ -1281,11 +1318,9 @@ function selectSuggestion(idx){
   const u = SEARCH_RESULTS[idx];
   if(!u) return;
 
-  // set search to chosen email (still allows actions on filtered rows)
   document.getElementById("globalSearch").value = u.email;
   hideSuggestions();
 
-  // jump to users and render
   switchView("users");
   refreshVisibleOnly();
 
@@ -1295,10 +1330,8 @@ function selectSuggestion(idx){
 function onSearchInput(){
   const q = getSearch();
 
-  // refresh visible tables live (so actions remain usable)
   refreshVisibleOnly();
 
-  // only show suggestions when there’s some letters and we have users loaded
   if(q.length >= 1 && (CACHE.users||[]).length > 0){
     const items = searchUsers(q);
     showSuggestions(items);
@@ -1328,7 +1361,6 @@ function onSearchKeydown(e){
   }
 }
 
-// close suggestions when clicking outside
 document.addEventListener("click", (ev)=>{
   const wrap = document.querySelector(".searchWrap");
   if(!wrap) return;
@@ -1438,6 +1470,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
   if(ACTIVE_VIEW === "portfolio") renderPortfolio(CACHE.portfolio);
+  if(ACTIVE_VIEW === "kyc") renderKyc(CACHE.kyc);
 }
 
 function toggleAutoRefresh(){
@@ -1472,6 +1505,7 @@ function refreshAll(){
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
   safeLoad(loadPortfolios);
+  safeLoad(loadKyc); // ✅ NEW
 }
 
 function riskForEmail(email){
@@ -1486,6 +1520,7 @@ function renderOverview(){
   document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
   document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
   document.getElementById("ov-support").textContent = String(CACHE.support.length);
+  document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
 
   document.getElementById("cnt-users").textContent = String(CACHE.users.filter(matchSearch).length);
   document.getElementById("cnt-plans").textContent = String(CACHE.plans.filter(matchSearch).length);
@@ -1494,6 +1529,7 @@ function renderOverview(){
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
   document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
   document.getElementById("cnt-portfolio").textContent = String(CACHE.portfolio.filter(matchSearch).length);
+  document.getElementById("cnt-kyc").textContent = String(CACHE.kyc.filter(matchSearch).length);
 
   const tbody = document.getElementById("riskRows");
   const emails = Array.from(new Set((CACHE.withdrawals||[]).map(w=>String(w.user_email||"").toLowerCase()).filter(Boolean)));
@@ -1541,7 +1577,6 @@ async function loadUsers(){
   feed("users_list loaded (" + CACHE.users.length + ")");
   renderOverview();
 
-  // If search is active, update suggestions live
   onSearchInput();
 }
 
@@ -1803,7 +1838,7 @@ function renderSupport(data){
     const id = esc(t.id||"");
     const email = String(t.user_email||"").trim().toLowerCase();
     const msg = String(t.message||"").trim();
-    const clamped = msg.length > 320 ? " msgBoxClamp" : "";
+    const clamped = msg.length > 420 ? " msgBoxClamp" : "";
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(email)}</td>
@@ -2039,6 +2074,87 @@ async function savePortfolio(e){
   safeLoad(loadPortfolios);
 }
 
+/* ✅ NEW: KYC */
+async function loadKyc(){
+  const st = document.getElementById("kycStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("kyc_list", {});
+  CACHE.kyc = res.data || [];
+  renderKyc(CACHE.kyc);
+  feed("kyc_list loaded (" + CACHE.kyc.length + ")");
+  renderOverview();
+}
+function renderKyc(data){
+  const status = document.getElementById("kycStatus");
+  const tbody = document.getElementById("kycRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){
+    if(status) status.textContent = "No KYC requests found.";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  if(status) status.textContent = `Loaded ${filtered.length} request(s) ✅`;
+  tbody.innerHTML = "";
+
+  filtered.forEach(r=>{
+    const id = esc(r.id||"");
+    const email = String(r.user_email||"").trim().toLowerCase();
+    const st = String(r.status||"pending").toLowerCase();
+    const isDone = (st === "approved" || st === "rejected");
+
+    const front = r.front_url ? `<a href="javascript:void(0)" onclick="openProof('${esc(r.front_url)}')">View</a>` : (r.front_path ? `<span class="tiny mono ellipsis">${esc(r.front_path)}</span>` : "-");
+    const back  = r.back_url  ? `<a href="javascript:void(0)" onclick="openProof('${esc(r.back_url)}')">View</a>`  : (r.back_path  ? `<span class="tiny mono ellipsis">${esc(r.back_path)}</span>`  : "-");
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><strong>${esc(r.doc_type||"-")}</strong></td>
+        <td>${esc(r.issuing_country||"-")}</td>
+        <td>${front}</td>
+        <td>${back}</td>
+        <td>${esc(st)}</td>
+        <td>${esc(r.created_at ? new Date(r.created_at).toLocaleString() : "-")}</td>
+        <td>
+          <div class="rowTools">
+            <button class="btnOk" onclick="approveKyc('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
+            <button class="btnErr" onclick="rejectKyc('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+async function approveKyc(id){
+  const row = (CACHE.kyc||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This KYC is already " + st + ".");
+    return;
+  }
+  if(!confirm("Approve this KYC request?")) return;
+  await apiCall("kyc_approve", { kyc_id: id });
+  feed("kyc_approve -> " + id);
+  modalShow("KYC Approved", "KYC marked approved.");
+  safeLoad(loadKyc);
+  safeLoad(loadUsers);
+}
+async function rejectKyc(id){
+  const row = (CACHE.kyc||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This KYC is already " + st + ".");
+    return;
+  }
+  const note = prompt("Reject reason (optional):", "") || "";
+  if(!confirm("Reject this KYC request?")) return;
+  await apiCall("kyc_reject", { kyc_id: id, note });
+  feed("kyc_reject -> " + id);
+  modalShow("KYC Rejected", "KYC marked rejected.");
+  safeLoad(loadKyc);
+}
+
 /* ✅ Auto disappear on scroll + close sidebar on scroll */
 let lastScrollTop = 0;
 let topbarHidden = false;
@@ -2086,4 +2202,3 @@ attachScrollHandlers();
 
 </body>
 </html>
-```
