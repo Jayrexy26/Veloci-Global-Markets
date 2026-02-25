@@ -294,8 +294,7 @@
     #appView[data-view="support"] .grid,
     #appView[data-view="deposits"] .grid,
     #appView[data-view="withdrawals"] .grid,
-    #appView[data-view="kyc"] .grid,
-    #appView[data-view="wallets"] .grid{
+    #appView[data-view="kyc"] .grid{
       grid-template-columns: 1fr;
       grid-template-areas:
         "ops"
@@ -542,7 +541,7 @@
       flex: 0 0 auto;
     }
 
-    /* ✅ Support message box */
+    /* ✅ Support message box (UPDATED to match “message card” look; no lateral scrolling) */
     .msgBox{
       position: relative;
       border: 1px solid rgba(255,255,255,.10);
@@ -616,8 +615,8 @@
     .msgViewBtn:hover{filter:brightness(1.06)}
     .msgText{
       padding-left: 6px;
-      max-height: 140px;
-      overflow: auto;
+      max-height: 140px; /* ✅ keeps row clean; no horizontal scroll */
+      overflow: auto;    /* ✅ vertical scroll inside the box if long */
       padding-right: 6px;
     }
     .msgText::-webkit-scrollbar{ width: 8px; height: 8px; }
@@ -742,6 +741,7 @@
             <div class="countPill" id="cnt-portfolio">0</div>
           </div>
 
+          <!-- ✅ NEW: KYC -->
           <div class="navBtn" id="nav-kyc" onclick="switchView('kyc')">
             <div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div>
             <div class="countPill" id="cnt-kyc">0</div>
@@ -779,6 +779,7 @@
           </div>
 
           <div class="inline" style="min-width:0">
+            <!-- ✅ Search with icon + autocomplete -->
             <div class="searchWrap">
               <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
               <input id="globalSearch" class="searchInput" placeholder="Search users by name/email (type letters…)" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
@@ -893,11 +894,10 @@
               </div>
             </section>
 
-            <!-- ✅ UPDATED: Wallets now managed via wallet-api + platform_wallet_addresses -->
             <section id="view-wallets" class="card hidden">
               <div class="cardHead">
                 <div>
-                  <div class="cardTitle">🏦 Deposit Wallets (Global)</div>
+                  <div class="cardTitle">🏦 Deposit Wallets</div>
                   <div class="small" id="walletsStatus">Not loaded.</div>
                 </div>
                 <div class="rowTools">
@@ -907,14 +907,10 @@
 
               <form onsubmit="createWallet(event)">
                 <div class="inline">
-                  <input id="newAssetKey" class="w200" placeholder="Asset Key (e.g. BTC, USDT_ERC20)" required>
-                  <input id="newName" class="w200" placeholder="Name (e.g. Bitcoin)" required>
-                  <input id="newNetwork" class="w200" placeholder="Network (e.g. Ethereum ERC20)" required>
-                  <input id="newAddress" class="grow" placeholder="Deposit Address" required>
-                  <input id="newMemoLabel" class="w200" placeholder="Memo Label (optional)">
-                  <input id="newMemoValue" class="w200" placeholder="Memo Value (optional)">
-                  <input id="newNote" class="grow" placeholder="Note (optional)">
-                  <button class="btnOk" type="submit">Add / Save</button>
+                  <input id="newAsset" class="w140" placeholder="Asset (btc)" required>
+                  <input id="newNetwork" class="w200" placeholder="Network (TRC20)" required>
+                  <input id="newAddress" class="grow" placeholder="Wallet Address" required>
+                  <button class="btnOk" type="submit">Add</button>
                 </div>
               </form>
 
@@ -925,12 +921,10 @@
                   <table>
                     <thead>
                       <tr>
-                        <th style="width:200px">Asset Key</th>
-                        <th style="width:180px">Name</th>
-                        <th style="width:220px">Network</th>
+                        <th style="width:240px">ID</th>
+                        <th style="width:120px">Asset</th>
+                        <th style="width:160px">Network</th>
                         <th style="width:560px">Address</th>
-                        <th style="width:240px">Memo</th>
-                        <th style="width:420px">Note</th>
                         <th style="width:220px">Actions</th>
                       </tr>
                     </thead>
@@ -1084,6 +1078,7 @@
               </div>
             </section>
 
+            <!-- ✅ NEW: KYC -->
             <section id="view-kyc" class="card hidden">
               <div class="cardHead">
                 <div>
@@ -1144,7 +1139,6 @@
 
 <script>
 const API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
-const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 let ADMIN_SECRET = "";
@@ -1161,12 +1155,12 @@ const CACHE = {
   withdrawals: [],
   portfolio: [],
   wallets: [],
-  kyc: []
+  kyc: [] // ✅ NEW
 };
 
-const USERNAME_MAP = {};
-let SEARCH_RESULTS = [];
-let SEARCH_CURSOR = -1;
+const USERNAME_MAP = {};     // email -> display name
+let SEARCH_RESULTS = [];     // current suggestions
+let SEARCH_CURSOR = -1;      // keyboard select
 
 const PLAN_TEMPLATES = [
   { key:"silver",   label:"Silver • X10 • 5 days • Min $100",   plan_name:"Silver Plan",   amount:100,  x_times:10, duration_days:5 },
@@ -1203,6 +1197,7 @@ function userPillHtml(email){
   return `<span class="namePill"><span class="nm">${esc(nm)}</span><span class="em">${esc(em)}</span></span>`;
 }
 
+/* ✅ Proof viewer */
 function openProof(url){
   const u = String(url||"").trim();
   if(!u){ modalShow("No proof", "No URL attached."); return; }
@@ -1280,6 +1275,7 @@ function scrollTopMain(){
   }
 }
 
+/* ✅ Search: matches by email OR username, with prefix-first behavior */
 function normalize(s){
   return String(s||"").trim().toLowerCase();
 }
@@ -1328,6 +1324,7 @@ function matchSearch(obj){
   }
 }
 
+/* ✅ Suggestions UI */
 function focusSearch(){
   document.getElementById("globalSearch").focus();
 }
@@ -1448,6 +1445,7 @@ async function apiCall(action, payload={}){
     headers:{
       "Content-Type":"application/json",
       "apikey": ANON_KEY,
+      "Authorization": "Bearer " + ANON_KEY,  /* ✅ FIX: required by Supabase Edge Functions */
       "x-admin-secret": ADMIN_SECRET,
       "x-admin-id": ADMIN_ID
     },
@@ -1461,32 +1459,6 @@ async function apiCall(action, payload={}){
   if(!res.ok || !data.success){
     setDebugBox(`HTTP ${res.status}\nAction: ${action}\nPayload: ${JSON.stringify(payload)}\nResponse: ${raw}`);
     feed("ERROR " + action + " -> HTTP " + res.status);
-    throw new Error(data.error || ("HTTP " + res.status));
-  }
-  return data;
-}
-
-/* ✅ Wallet API (separate edge function) */
-async function walletApiCall(action, body={}){
-  if(!ADMIN_SECRET) throw new Error("Admin not connected.");
-
-  const res = await fetch(WALLET_API_URL, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "x-admin-secret": ADMIN_SECRET,
-      "x-admin-id": ADMIN_ID
-    },
-    body: JSON.stringify({ action, ...body })
-  });
-
-  const raw = await res.text();
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
-
-  if(!res.ok || !data.success){
-    setDebugBox(`HTTP ${res.status}\nAction: ${action}\nBody: ${JSON.stringify(body)}\nResponse: ${raw}`);
-    feed("ERROR wallet-api " + action + " -> HTTP " + res.status);
     throw new Error(data.error || ("HTTP " + res.status));
   }
   return data;
@@ -1601,7 +1573,7 @@ function refreshAll(){
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
   safeLoad(loadPortfolios);
-  safeLoad(loadKyc);
+  safeLoad(loadKyc); // ✅ NEW
 }
 
 function riskForEmail(email){
@@ -1838,13 +1810,13 @@ async function completePlan(id){
   safeLoad(loadUsers);
 }
 
-/* ✅ WALLETS (wallet-api) */
+/* WALLETS */
 async function loadWallets(){
   document.getElementById("walletsStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await walletApiCall("wallets_admin_list", {});
-  CACHE.wallets = res.wallets || [];
+  const res = await apiCall("addresses_list");
+  CACHE.wallets = res.data || [];
   renderWallets(CACHE.wallets);
-  feed("wallets_admin_list loaded (" + CACHE.wallets.length + ")");
+  feed("addresses_list loaded (" + CACHE.wallets.length + ")");
   renderOverview();
 }
 function renderWallets(data){
@@ -1860,24 +1832,18 @@ function renderWallets(data){
 
   status.textContent = `Loaded ${filtered.length} wallet(s) ✅`;
   tbody.innerHTML = "";
-  filtered.forEach(w=>{
-    const k = esc(w.asset_key||"");
+  filtered.forEach(a=>{
+    const id = esc(a.id||"");
     tbody.innerHTML += `
       <tr>
-        <td><span class="mono">${k}</span></td>
-        <td><input id="w-name-${k}" value="${esc(w.name||"")}"></td>
-        <td><input id="w-net-${k}" value="${esc(w.network||"")}"></td>
-        <td><input id="w-addr-${k}" value="${esc(w.address||"")}"></td>
-        <td>
-          <input id="w-ml-${k}" value="${esc(w.memo_label||"")}" placeholder="Memo Label">
-          <div style="height:8px"></div>
-          <input id="w-mv-${k}" value="${esc(w.memo_value||"")}" placeholder="Memo Value">
-        </td>
-        <td><input id="w-note-${k}" value="${esc(w.note||"")}" placeholder="Note"></td>
+        <td><span class="mono ellipsis">${id}</span></td>
+        <td><input id="wa-asset-${id}" value="${esc(a.asset||"")}"></td>
+        <td><input id="wa-net-${id}" value="${esc(a.network||"")}"></td>
+        <td><input id="wa-addr-${id}" value="${esc(a.address||"")}"></td>
         <td>
           <div class="rowTools">
-            <button class="btnOk" onclick="saveWallet('${k}')">Save</button>
-            <button class="btnErr" onclick="deleteWallet('${k}')">Delete</button>
+            <button class="btnOk" onclick="saveWallet('${id}')">Save</button>
+            <button class="btnErr" onclick="deleteWallet('${id}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -1886,54 +1852,30 @@ function renderWallets(data){
 }
 async function createWallet(e){
   e.preventDefault();
-
-  const asset_key = (document.getElementById("newAssetKey").value||"").trim();
-  const name = (document.getElementById("newName").value||"").trim();
-  const network = (document.getElementById("newNetwork").value||"").trim();
+  const asset = (document.getElementById("newAsset").value||"").trim().toLowerCase();
+  const network = (document.getElementById("newNetwork").value||"").trim().toUpperCase();
   const address = (document.getElementById("newAddress").value||"").trim();
-  const memo_label = (document.getElementById("newMemoLabel").value||"").trim() || null;
-  const memo_value = (document.getElementById("newMemoValue").value||"").trim() || null;
-  const note = (document.getElementById("newNote").value||"").trim() || null;
-
-  if(!asset_key || !name || !network || !address){
-    modalShow("Missing fields","Fill asset key, name, network, and address.");
-    return;
-  }
-
-  await walletApiCall("wallets_admin_upsert", {
-    wallet: { asset_key, name, network, address, memo_label, memo_value, note }
-  });
-
-  feed("wallets_admin_upsert -> " + asset_key);
-  modalShow("Wallet Saved", "Deposit wallet saved (global).");
+  if(!asset || !network || !address){ modalShow("Missing fields","Fill all wallet fields."); return; }
+  await apiCall("address_save", { id:"", asset, network, address });
+  feed("address_save -> create");
+  modalShow("Wallet Added", "New wallet saved. It will show on user deposit page now.");
   e.target.reset();
   safeLoad(loadWallets);
 }
-async function saveWallet(asset_key){
-  const name = (document.getElementById(`w-name-${asset_key}`).value||"").trim();
-  const network = (document.getElementById(`w-net-${asset_key}`).value||"").trim();
-  const address = (document.getElementById(`w-addr-${asset_key}`).value||"").trim();
-  const memo_label = (document.getElementById(`w-ml-${asset_key}`).value||"").trim() || null;
-  const memo_value = (document.getElementById(`w-mv-${asset_key}`).value||"").trim() || null;
-  const note = (document.getElementById(`w-note-${asset_key}`).value||"").trim() || null;
-
-  if(!asset_key || !name || !network || !address){
-    modalShow("Missing fields","Fill name, network, and address.");
-    return;
-  }
-
-  await walletApiCall("wallets_admin_upsert", {
-    wallet: { asset_key, name, network, address, memo_label, memo_value, note }
-  });
-
-  feed("wallets_admin_upsert -> " + asset_key);
+async function saveWallet(id){
+  const asset = (document.getElementById(`wa-asset-${id}`).value||"").trim().toLowerCase();
+  const network = (document.getElementById(`wa-net-${id}`).value||"").trim().toUpperCase();
+  const address = (document.getElementById(`wa-addr-${id}`).value||"").trim();
+  if(!asset || !network || !address){ modalShow("Missing fields","Fill asset/network/address."); return; }
+  await apiCall("address_save", { id, asset, network, address });
+  feed("address_save -> " + id);
   modalShow("Wallet Updated", "Wallet saved successfully.");
   safeLoad(loadWallets);
 }
-async function deleteWallet(asset_key){
-  if(!confirm("Delete this wallet?")) return;
-  await walletApiCall("wallets_admin_delete", { asset_key });
-  feed("wallets_admin_delete -> " + asset_key);
+async function deleteWallet(id){
+  if(!confirm("Delete wallet address?")) return;
+  await apiCall("address_delete", { id });
+  feed("address_delete -> " + id);
   modalShow("Wallet Deleted", "Wallet removed.");
   safeLoad(loadWallets);
 }
@@ -2211,7 +2153,7 @@ async function savePortfolio(e){
   safeLoad(loadPortfolios);
 }
 
-/* KYC */
+/* ✅ NEW: KYC */
 async function loadKyc(){
   const st = document.getElementById("kycStatus");
   if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
@@ -2292,7 +2234,7 @@ async function rejectKyc(id){
   safeLoad(loadKyc);
 }
 
-/* Auto disappear on scroll + close sidebar on scroll */
+/* ✅ Auto disappear on scroll + close sidebar on scroll */
 let lastScrollTop = 0;
 let topbarHidden = false;
 
