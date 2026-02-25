@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VGM | Crypto Wallet</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+  <style>
+    :root{
+      --bg:#050a18;
+      --bg2:#020617;
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.65);
+      --muted2: rgba(234,240,255,.45);
+      --stroke: rgba(255,255,255,.12);
+
+      --ok:#22c55e;
+      --err:#f87171;
+      --warn:#f59e0b;
+
+      --blue:#5b6cff;
+      --purple:#7c4dff;
+      --cyan:#38bdf8;
+
+      --shadow: 0 26px 90px rgba(0,0,0,.55);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 700px at 15% 10%, rgba(91,108,255,.15), transparent 55%),
+        radial-gradient(900px 600px at 90% 20%, rgba(124,77,255,.14), transparent 55%),
+        radial-gradient(700px 500px at 40% 90%, rgba(56,189,248,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    .wrap{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      padding: 22px 0 42px;
+    }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      padding: 14px 0 12px;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(5,10,24,.72), rgba(5,10,24,.35));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .toprow{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width: 220px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:.2px;
+      font-weight: 800;
+    }
+    .title p{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .search{
+      flex: 1;
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+      align-items:center;
+    }
+    .search .box{
+      width: min(520px, 100%);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+    }
+    .search input{
+      width:100%;
+      border:none;
+      outline:none;
+      color: var(--text);
+      background: transparent;
+      font-size: 13px;
+    }
+    .search .icon{
+      width: 18px;
+      height: 18px;
+      opacity: .9;
+      flex: 0 0 auto;
+    }
+
+    .btnTop{
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .notice{
+      margin: 18px 0 18px;
+      border: 1px solid rgba(245,158,11,.35);
+      background: rgba(245,158,11,.08);
+      border-radius: 16px;
+      padding: 14px 14px;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .notice b{ color: #ffd08a; }
+    .notice .small{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .notice .dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      margin-top: 4px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(245,158,11,.95));
+      box-shadow: 0 0 0 4px rgba(245,158,11,.18);
+      flex: 0 0 auto;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 14px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .title{ min-width: 0; }
+    }
+
+    .card{
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.035);
+      border-radius: 18px;
+      padding: 14px 14px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-140px -120px auto auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle at 30% 30%, rgba(91,108,255,.22), transparent 60%);
+      transform: rotate(14deg);
+      pointer-events:none;
+    }
+
+    .row{
+      display:flex;
+      gap: 14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      position: relative;
+      z-index: 2;
+    }
+
+    .left{
+      min-width: 0;
+      flex: 1;
+    }
+
+    .meta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .coin{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      min-width: 0;
+    }
+
+    .badge{
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      flex: 0 0 auto;
+      overflow:hidden;
+    }
+    .badge span{
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .4px;
+      opacity: .95;
+    }
+
+    .names{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .names .sym{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .3px;
+    }
+    .names .net{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12px;
+      user-select:none;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .pill .mini{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(34,197,94,.9));
+      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+    }
+
+    .addr{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .field{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 10px;
+    }
+
+    .field .label{
+      font-size: 11px;
+      color: var(--muted2);
+      margin-bottom: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .field .value{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: var(--text);
+      word-break: break-all;
+      line-height: 1.35;
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .btn{
+      border: none;
+      outline:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .2px;
+      background: linear-gradient(135deg, rgba(91,108,255,.95), rgba(124,77,255,.92));
+      box-shadow: 0 18px 50px rgba(91,108,255,.22);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow:none;
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .right{
+      flex: 0 0 auto;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap: 8px;
+      min-width: 162px;
+    }
+
+    .qr{
+      width: 152px;
+      height: 152px;
+      display:grid;
+      place-items:center;
+      border-radius: 16px;
+      background: transparent; /* no box */
+    }
+    .qr svg{
+      width: 152px;
+      height: 152px;
+      display:block;
+    }
+
+    .hint{
+      font-size: 11px;
+      color: var(--muted);
+      text-align:right;
+      line-height: 1.35;
+      max-width: 220px;
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      z-index: 60;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-size: 12px;
+      box-shadow: 0 26px 90px rgba(0,0,0,.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .empty{
+      margin-top: 14px;
+      border: 1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="toprow">
+      <div class="title">
+        <h1>Crypto Wallet</h1>
+        <p>Deposit only — always pick the correct network.</p>
+      </div>
+
+      <div class="search">
+        <div class="box">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="rgba(234,240,255,.85)" stroke-width="2"/>
+            <path d="M16.5 16.5 21 21" stroke="rgba(234,240,255,.85)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input id="q" placeholder="Search asset (e.g. BTC, USDT, Ethereum, BEP20)..." autocomplete="off"/>
+        </div>
+        <button class="btnTop" id="btnReload" type="button">Reload</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="notice">
+      <div class="dot"></div>
+      <div>
+        <div style="font-size:13px; font-weight:900; margin-bottom:4px;">
+          Important: Send only the exact asset on the exact network shown.
+        </div>
+        <div class="small">
+          Deposits sent on the wrong network (e.g. ERC20 vs BEP20) may be unrecoverable. If an asset needs a tag/memo (like XRP),
+          you must include it or your deposit won’t be credited.
+        </div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty">No assets match your search.</div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Set this to your Edge Function URL:
+    // Example: https://YOUR-PROJECT.supabase.co/functions/v1/wallet-api
+    const WALLET_API_URL = "PASTE_YOUR_WALLET_API_URL_HERE";
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function toast(msg){
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window.__toastT);
+      window.__toastT = setTimeout(()=> el.classList.remove("show"), 1400);
+    }
+
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("Copied ✅");
+      }catch(e){
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast("Copied ✅");
+      }
+    }
+
+    function buildQrData(item){
+      // XRP tag encoded in QR
+      if(item.asset_key === "XRP" && item.memo_value){
+        return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`;
+      }
+      return item.address;
+    }
+
+    // Transparent SVG QR (no background box)
+    function renderTransparentQrSvg(data, size=152){
+      const qr = qrcode(0, "M");
+      qr.addData(data);
+      qr.make();
+
+      const cellCount = qr.getModuleCount();
+      const quiet = 4;
+      const total = cellCount + quiet * 2;
+      const cell = size / total;
+
+      let svg = '';
+      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
+
+      for(let r=0; r<cellCount; r++){
+        for(let c=0; c<cellCount; c++){
+          if(qr.isDark(r,c)){
+            const x = (c + quiet) * cell;
+            const y = (r + quiet) * cell;
+            svg += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="rgba(234,240,255,.95)"/>`;
+          }
+        }
+      }
+      svg += `</svg>`;
+      return svg;
+    }
+
+    function iconLetters(asset_key){
+      if(String(asset_key).startsWith("USDT")) return "USDT";
+      if(String(asset_key).startsWith("USDC")) return "USDC";
+      return String(asset_key || "").toUpperCase();
+    }
+
+    function makeCard(item){
+      const qrData = buildQrData(item);
+      const badgeText = iconLetters(item.asset_key);
+
+      const memoBlock = item.memo_label && item.memo_value ? `
+        <div class="field">
+          <div class="label">
+            <span>${escapeHtml(item.memo_label)}</span>
+            <button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy</button>
+          </div>
+          <div class="value">${escapeHtml(item.memo_value)}</div>
+        </div>
+      ` : '';
+
+      const note = item.note
+        ? `<div class="hint">${escapeHtml(item.note)}</div>`
+        : `<div class="hint">Deposit only.</div>`;
+
+      const el = document.createElement("div");
+      el.className = "card";
+      el.setAttribute("data-search", `${item.asset_key} ${item.name} ${item.network}`.toLowerCase());
+
+      el.innerHTML = `
+        <div class="row">
+          <div class="left">
+            <div class="meta">
+              <div class="coin">
+                <div class="badge"><span>${escapeHtml(badgeText)}</span></div>
+                <div class="names">
+                  <div class="sym">${escapeHtml(item.name)} <span style="opacity:.7;">•</span> ${escapeHtml(item.asset_key)}</div>
+                  <div class="net">${escapeHtml(item.network)}</div>
+                </div>
+              </div>
+              <div class="pill"><span class="mini"></span>Deposit</div>
+            </div>
+
+            <div class="addr">
+              <div class="field">
+                <div class="label">
+                  <span>Deposit Address</span>
+                  <button class="btn secondary" data-copy="${escapeHtml(item.address)}" type="button">Copy</button>
+                </div>
+                <div class="value">${escapeHtml(item.address)}</div>
+              </div>
+
+              ${memoBlock}
+
+              <div class="actions">
+                <button class="btn" data-copy="${escapeHtml(item.address)}" type="button">Copy Address</button>
+                ${item.memo_label && item.memo_value ? `<button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy ${escapeHtml(item.memo_label)}</button>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="qr" aria-label="QR code">${renderTransparentQrSvg(qrData, 152)}</div>
+            ${note}
+          </div>
+        </div>
+      `;
+
+      el.querySelectorAll("[data-copy]").forEach(btn=>{
+        btn.addEventListener("click", ()=> copyText(btn.getAttribute("data-copy") || ""));
+      });
+
+      return el;
+    }
+
+    function render(list){
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+      list.forEach(item => grid.appendChild(makeCard(item)));
+      applySearch();
+    }
+
+    function applySearch(){
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+      const cards = Array.from(document.querySelectorAll("#grid .card"));
+      let shown = 0;
+
+      cards.forEach(card=>{
+        const hay = card.getAttribute("data-search") || "";
+        const ok = !q || hay.includes(q);
+        card.style.display = ok ? "" : "none";
+        if(ok) shown++;
+      });
+
+      document.getElementById("empty").style.display = shown ? "none" : "block";
+    }
+
+    async function loadFromBackend(){
+      if(!WALLET_API_URL || WALLET_API_URL.includes("PASTE_")){
+        toast("Set WALLET_API_URL first");
+        return;
+      }
+
+      const res = await fetch(WALLET_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "wallets_public_list" })
+      });
+
+      const data = await res.json().catch(()=> ({}));
+      if(!res.ok || data?.success === false){
+        toast("Load failed");
+        console.error("wallets_public_list failed:", data);
+        return;
+      }
+
+      const wallets = (data.wallets || []).map(w => ({
+        asset_key: w.asset_key,
+        name: w.name,
+        network: w.network,
+        address: w.address,
+        memo_label: w.memo_label,
+        memo_value: w.memo_value,
+        note: w.note
+      }));
+
+      render(wallets);
+      toast("Loaded ✅");
+    }
+
+    document.getElementById("q").addEventListener("input", applySearch);
+    document.getElementById("btnReload").addEventListener("click", loadFromBackend);
+
+    // init
+    loadFromBackend();
+  </script>
+</body>
+</html>
