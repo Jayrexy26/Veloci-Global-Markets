@@ -79,13 +79,13 @@
     .container{max-width:980px;margin:0 auto}
 
     /* ============================================================
-      ✅ STICKY TOP BAR
+      ✅ STICKY TOP BAR (stays visible even during modal)
     ============================================================ */
     .stickyBar{
       position:fixed;
       top:14px;
       left:0; right:0;
-      z-index:10000;
+      z-index:10000; /* above modal blur but below modal card */
       pointer-events:auto;
     }
     .stickyInner{
@@ -124,6 +124,7 @@
       flex-direction:column;
       gap:2px;
     }
+    .brandTxt .t1{font-weight:1000}
     .brandTxt .t2{font-weight:900;color:rgba(234,240,255,.55);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
     .topActions{display:flex;gap:10px;align-items:center;flex:0 0 auto}
@@ -314,12 +315,12 @@
     .warn{color:var(--warn)}
 
     /* ============================================================
-      ✅ Full-screen progress modal
+      ✅ Full-screen progress modal (form disappears, sticky stays)
     ============================================================ */
     .modalOverlay{
       position:fixed;
       inset:0;
-      z-index:9999;
+      z-index:9999; /* below sticky bar (10000), above page */
       display:none;
       align-items:center;
       justify-content:center;
@@ -444,12 +445,12 @@
     }
 
     /* ============================================================
-      ✅ ALERT / STATUS POPUP MODAL (for missing fields + approved/rejected)
+      ✅ Simple popup modal (for missing info + status popups)
     ============================================================ */
-    .alertOverlay{
+    .popOverlay{
       position:fixed;
       inset:0;
-      z-index:20001; /* above auth gate (20000) and sticky */
+      z-index:15000; /* above sticky */
       display:none;
       align-items:center;
       justify-content:center;
@@ -458,35 +459,58 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    .alertOverlay.show{display:flex;}
-    .alertCard{
+    .popOverlay.show{display:flex;}
+    .popCard{
       width:min(560px, 94vw);
-      border-radius:24px;
+      border-radius:26px;
       border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(2,6,23,.95), rgba(2,6,23,.82));
+      background:
+        radial-gradient(900px 320px at 20% 10%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 320px at 90% 20%, rgba(52,211,153,.10), transparent 55%),
+        linear-gradient(180deg, rgba(2,6,23,.94), rgba(2,6,23,.86));
       box-shadow:0 26px 90px rgba(0,0,0,.65);
       padding:16px;
+      overflow:hidden;
     }
-    .alertHead{
+    .popHead{
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       justify-content:space-between;
-      gap:12px;
+      gap:10px;
       padding-bottom:10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(255,255,255,.10);
       margin-bottom:10px;
     }
-    .alertTitle{
+    .popTitle{
       font-weight:1000;
       font-size:16px;
+      letter-spacing:.2px;
     }
-    .alertBody{
-      color:rgba(234,240,255,.80);
+    .popBody{
+      color:rgba(234,240,255,.82);
       font-weight:900;
       font-size:13px;
       line-height:1.45;
       white-space:pre-wrap;
       word-break:break-word;
+    }
+    .popFoot{
+      margin-top:12px;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .popBadge{
+      display:inline-flex;
+      align-items:center;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.08);
+      font-weight:1000;
+      font-size:12px;
+      color:rgba(234,240,255,.88);
     }
 
     /* ============================================================
@@ -523,7 +547,7 @@
     .gateTxt{font-weight:1000;font-size:16px}
     .gateSub{margin-top:6px;color:rgba(234,240,255,.70);font-weight:900;font-size:12px}
 
-    /* When we hide main content (after submit) */
+    /* When we hide main content (after submit), keep layout stable */
     .hideMain{
       display:none !important;
     }
@@ -538,7 +562,7 @@
   <div class="blob b4"></div>
   <div class="shimmer"></div>
 
-  <!-- Sticky Top Bar -->
+  <!-- Sticky Top Bar (always visible) -->
   <div class="stickyBar">
     <div class="stickyInner">
       <div class="stickyCard">
@@ -556,6 +580,23 @@
     </div>
   </div>
 
+  <!-- ✅ Simple Popup Modal (missing info + status popup) -->
+  <div id="popModal" class="popOverlay" onclick="popClose()">
+    <div class="popCard" onclick="event.stopPropagation()">
+      <div class="popHead">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div id="popBadge" class="popBadge">Notice</div>
+          <div id="popTitle" class="popTitle">—</div>
+        </div>
+        <button class="btn" style="height:40px" onclick="popClose()">Close</button>
+      </div>
+      <div id="popBody" class="popBody">—</div>
+      <div class="popFoot">
+        <button class="btn btnPrimary" style="height:44px" onclick="popClose()">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Initial auth gate -->
   <div id="authGate">
     <div class="gateCard">
@@ -564,20 +605,6 @@
       </div>
       <div class="gateTxt">ID Verification</div>
       <div class="gateSub">Preparing secure verification…</div>
-    </div>
-  </div>
-
-  <!-- ✅ Alert/Status Modal -->
-  <div id="alertModal" class="alertOverlay" onclick="alertClose()">
-    <div class="alertCard" onclick="event.stopPropagation()">
-      <div class="alertHead">
-        <div class="alertTitle" id="alertTitle">Notice</div>
-        <button class="btn" onclick="alertClose()">Close</button>
-      </div>
-      <div class="alertBody" id="alertBody">—</div>
-      <div class="modalFooter">
-        <button class="btn btnPrimary" onclick="alertClose()">OK</button>
-      </div>
     </div>
   </div>
 
@@ -657,7 +684,7 @@
           <div>
             <label for="issuingCountryInput">Issuing Country</label>
             <div class="countryWrap">
-              <!-- ✅ CHANGE: removed example text -->
+              <!-- ✅ CHANGE: removed Nigeria example -->
               <input id="issuingCountryInput" class="countryInput" type="text" placeholder="Type to search country"/>
               <div id="countryList" class="countryList"></div>
             </div>
@@ -722,7 +749,7 @@
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ✅ set your actual bucket name here (must exist in Storage)
+    // ✅ IMPORTANT: set your actual bucket name here
     const KYC_BUCKET = "kyc-docs";
 
     let CURRENT_USER=null;
@@ -766,32 +793,47 @@
     }
 
     /* ============================================================
-      ✅ Popup modal helpers
+      ✅ Simple popup modal helpers
+      - Used for: missing info prompts + status popups
     ============================================================ */
-    function alertShow(title, body){
-      document.getElementById("alertTitle").textContent = title || "Notice";
-      document.getElementById("alertBody").textContent = body || "";
-      document.getElementById("alertModal").classList.add("show");
-    }
-    function alertClose(){
-      document.getElementById("alertModal").classList.remove("show");
-    }
+    function popShow(title, body, type){
+      const o=document.getElementById("popModal");
+      const t=document.getElementById("popTitle");
+      const b=document.getElementById("popBody");
+      const badge=document.getElementById("popBadge");
 
-    function showKycStatusPopup(status, note){
-      const s = String(status||"").toLowerCase();
-      if(!s) return;
+      if(t) t.textContent = title || "Notice";
+      if(b) b.textContent = body || "";
 
-      if(s === "approved"){
-        alertShow("KYC Approved ✅", note || "Your verification has been approved. You can continue to your dashboard.");
-      }else if(s === "rejected"){
-        alertShow("KYC Rejected", note || "Your verification was rejected. Please re-upload clearer documents and submit again.");
-      }else if(s === "pending"){
-        alertShow("KYC Pending", note || "Your verification is pending review. Please wait for approval.");
+      if(badge){
+        badge.textContent = (type === "ok") ? "Success" : (type === "err") ? "Error" : (type === "warn") ? "Warning" : "Notice";
+        badge.style.borderColor = "rgba(255,255,255,.14)";
+        badge.style.background = "rgba(255,255,255,.08)";
+        if(type === "ok"){
+          badge.style.borderColor = "rgba(34,197,94,.45)";
+          badge.style.background = "rgba(34,197,94,.12)";
+        }else if(type === "err"){
+          badge.style.borderColor = "rgba(248,113,113,.55)";
+          badge.style.background = "rgba(248,113,113,.12)";
+        }else if(type === "warn"){
+          badge.style.borderColor = "rgba(245,158,11,.55)";
+          badge.style.background = "rgba(245,158,11,.12)";
+        }
       }
+
+      if(o) o.classList.add("show");
+    }
+
+    function popClose(){
+      const o=document.getElementById("popModal");
+      if(o) o.classList.remove("show");
     }
 
     /* ============================================================
-      ✅ Searchable country list
+      ✅ Searchable country list (ALL countries)
+      - Type to filter
+      - Click to select
+      - Saves into hidden #issuingCountry (so your submit payload stays same)
     ============================================================ */
     const ALL_COUNTRIES = [
       "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
@@ -831,8 +873,12 @@
       countryList.innerHTML = matches.map(c => `<div class="countryItem" data-country="${c}">${c}</div>`).join("");
     }
 
-    function openCountryList(){ countryList.classList.add("show"); }
-    function closeCountryList(){ countryList.classList.remove("show"); }
+    function openCountryList(){
+      countryList.classList.add("show");
+    }
+    function closeCountryList(){
+      countryList.classList.remove("show");
+    }
     function setCountry(value){
       countryInput.value = value;
       countryHidden.value = value;
@@ -960,7 +1006,7 @@
       try{
         const { data, error } = await supabaseClient
           .from("user_kyc_requests")
-          .select("id,status,created_at,admin_note,note")
+          .select("id,status,created_at")
           .eq("user_id", userId)
           .order("id", { ascending:false })
           .limit(1);
@@ -1030,21 +1076,40 @@
     }
 
     /* ============================================================
-      ✅ SUBMIT FLOW
+      ✅ Status popup requirement
+      - If user lands here with ?status=approved/rejected/pending
+      - Show a popup modal telling them the status
     ============================================================ */
-    function requireField(ok, title, msg){
-      if(ok) return true;
-      alertShow(title, msg);
-      return false;
+    function showStatusPopupFromQuery(){
+      const s = String(qs("status") || "").trim().toLowerCase();
+      if(!s) return;
+
+      if(s === "approved"){
+        popShow("Verification Status", "Your KYC verification has been APPROVED ✅\n\nYou can continue to the dashboard.", "ok");
+        return;
+      }
+      if(s === "rejected"){
+        popShow("Verification Status", "Your KYC verification was REJECTED ❌\n\nPlease re-submit clear documents.", "err");
+        return;
+      }
+      if(s === "pending"){
+        popShow("Verification Status", "Your KYC verification is PENDING ⏳\n\nWe are reviewing your documents.", "warn");
+        return;
+      }
+
+      popShow("Verification Status", ("Status: " + s.toUpperCase()), "warn");
     }
 
+    /* ============================================================
+      ✅ SUBMIT FLOW
+    ============================================================ */
     async function submitKyc(){
       const btn=document.getElementById("submitBtn");
       if(btn) btn.disabled=true;
 
       try{
         if(!CURRENT_USER){
-          alertShow("Not signed in", "Please login again.");
+          popShow("Session required", "You are not signed in. Please login again.", "err");
           return;
         }
 
@@ -1056,12 +1121,27 @@
         const frontFile = document.getElementById("frontFile").files?.[0] || null;
         const backFile  = document.getElementById("backFile").files?.[0] || null;
 
-        if(docType === "other"){
-          if(!requireField(!!docTypeOther, "Missing info", "Please specify the document type.")) return;
+        /* ✅ CHANGE: missing info must show popup modal BEFORE submitting */
+        if(!docType){
+          popShow("Missing Information", "Please select an ID type.", "warn");
+          return;
         }
-        if(!requireField(!!issuingCountry, "Missing info", "Please select an issuing country.")) return;
-        if(!requireField(!!frontFile, "Missing info", "Please upload the FRONT of your ID.")) return;
-        if(!requireField(!!backFile, "Missing info", "Please upload the BACK of your ID.")) return;
+        if(docType === "other" && !docTypeOther){
+          popShow("Missing Information", "Please specify the document type (Other).", "warn");
+          return;
+        }
+        if(!issuingCountry){
+          popShow("Missing Information", "Please select an issuing country.", "warn");
+          return;
+        }
+        if(!frontFile){
+          popShow("Missing Information", "Please upload the FRONT of your ID.", "warn");
+          return;
+        }
+        if(!backFile){
+          popShow("Missing Information", "Please upload the BACK of your ID.", "warn");
+          return;
+        }
 
         hideMainContent();
         showProgressModal();
@@ -1082,17 +1162,16 @@
         stepSet("step3", "active", "Submitting…");
         setProgress(78);
 
-        // ✅ FIX: your table uses doc_country, not issuing_country
+        /* ✅ IMPORTANT: user_id must be CURRENT_USER.id (uuid) for RLS */
         const payload = {
           user_id: CURRENT_USER.id,
           user_email: CURRENT_USER.email,
           doc_type: docType,
           doc_type_other: docType === "other" ? docTypeOther : null,
-          doc_country: issuingCountry || null,
+          issuing_country: issuingCountry || null,
           front_path: frontPath,
           back_path: backPath,
-          status: "pending",
-          created_at: new Date().toISOString()
+          status: "pending"
         };
 
         const { error } = await supabaseClient
@@ -1120,9 +1199,6 @@
         document.getElementById("modalCloseBtn").style.display="none";
         document.getElementById("modalGoDashBtn").style.display="inline-flex";
 
-        // ✅ popup status after submission
-        showKycStatusPopup("pending", "Your verification is now pending review.");
-
       }catch(e){
         showProgressModal();
 
@@ -1132,9 +1208,18 @@
         stepSet("step4", "error", "Failed");
         setProgress(25);
 
+        const msg = (e?.message || String(e) || "Unknown error");
+
+        // ✅ Helpful bucket hint if it’s a bucket issue (without changing anything else)
+        const lower = String(msg).toLowerCase();
+        let extra = "";
+        if(lower.includes("bucket not found") || lower.includes("not found")){
+          extra = "\n\nCheck your bucket name in this file:\nconst KYC_BUCKET = \"...\";\nAlso ensure the bucket exists in Supabase Storage.";
+        }
+
         setModalState({
           title:"Submission failed",
-          sub: (e?.message || String(e)),
+          sub: msg + extra,
           badgeText:"Error",
           badgeType:"err"
         });
@@ -1198,12 +1283,13 @@
         const emailEl=document.getElementById("userEmail");
         if(emailEl) emailEl.value = user.email || "";
 
-        // ✅ show popup if status in URL
+        // ✅ Popup modal for status if present in querystring
+        showStatusPopupFromQuery();
+
         const statusQS = (qs("status") || "").toLowerCase();
         if(statusQS){
           showStatusPill("Status: " + statusQS.toUpperCase());
           setStatusField(statusQS);
-          showKycStatusPopup(statusQS);
         }else{
           setStatusField("—");
         }
@@ -1213,22 +1299,20 @@
           const s=String(latest.status).toLowerCase();
           setStatusField(s);
 
-          const note = String(latest.admin_note || latest.note || "").trim();
           if(s === "pending"){
             lockToPendingScreen(latest.created_at);
             hideGate();
-            showKycStatusPopup("pending", note || "Your verification is pending review.");
             return;
           }
           if(s === "approved"){
             lockToApprovedScreen(latest.created_at);
             hideGate();
-            showKycStatusPopup("approved", note || "Your verification has been approved.");
             return;
           }
           if(s === "rejected"){
             lockToRejectedScreen(latest.created_at);
-            showKycStatusPopup("rejected", note || "Your verification was rejected. Please re-submit.");
+            // ✅ also popup on load for rejected
+            popShow("Verification Status", "Your latest KYC verification was REJECTED ❌\n\nPlease re-submit clear documents.", "err");
           }
         }
 
