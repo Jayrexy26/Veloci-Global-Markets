@@ -1,3 +1,6 @@
+<!-- =========================
+FILE: wallet.html
+========================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VGM | Crypto Wallet</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
   <style>
@@ -442,9 +446,16 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    // Set this to your Edge Function URL:
-    // Example: https://YOUR-PROJECT.supabase.co/functions/v1/wallet-api
-    const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api";
+    /* ============================================================
+      ✅ SUPABASE AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
+      - Ensures wallet page has a valid session so we can send Authorization header
+    ============================================================ */
+    const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ✅ Your Edge Function URL
+    const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
 
     function escapeHtml(s){
       return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -610,9 +621,21 @@
         return;
       }
 
+      // ✅ FIX: include Authorization + apikey so Edge Function won't 401
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      const headers = {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY
+      };
+      if(accessToken){
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
       const res = await fetch(WALLET_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ action: "wallets_public_list" })
       });
 
@@ -640,8 +663,36 @@
     document.getElementById("q").addEventListener("input", applySearch);
     document.getElementById("btnReload").addEventListener("click", loadFromBackend);
 
-    // init
-    loadFromBackend();
+    // ✅ Auth + email verification guard before loading wallets
+    (async function authGuard(){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const session = sessionData?.session;
+        if(!session){
+          window.location.replace("login.html");
+          return;
+        }
+
+        const { data, error } = await supabaseClient.auth.getUser();
+        const user = data?.user;
+        if(error || !user){
+          window.location.replace("login.html");
+          return;
+        }
+
+        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+        if(!confirmed){
+          await supabaseClient.auth.signOut();
+          window.location.replace("verify.html?status=unverified");
+          return;
+        }
+
+        // init
+        loadFromBackend();
+      }catch(e){
+        window.location.replace("login.html");
+      }
+    })();
   </script>
 </body>
 </html>
