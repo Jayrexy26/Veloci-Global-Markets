@@ -942,7 +942,9 @@
     ============================================================ */
     async function uploadToBucket(file, userId, side){
       const ext = safeExt(file.name);
-      const path = `kyc/${userId}/${Date.now()}_${side}.${ext}`;
+
+      // ✅ ONLY FIX: put userId as the FIRST folder (most common Storage RLS policy expects this)
+      const path = `${userId}/${Date.now()}_${side}.${ext}`;
 
       const { error } = await supabaseClient
         .storage
@@ -1082,16 +1084,13 @@
         stepSet("step3", "active", "Submitting…");
         setProgress(78);
 
-        // ============================================================
-        // ✅ ONLY REQUIRED FIX (DO NOT CHANGE UI/MODALS):
-        // Your DB column is doc_country, not issuing_country
-        // ============================================================
+        // ✅ FIX: your table uses doc_country, not issuing_country
         const payload = {
           user_id: CURRENT_USER.id,
           user_email: CURRENT_USER.email,
           doc_type: docType,
           doc_type_other: docType === "other" ? docTypeOther : null,
-          doc_country: issuingCountry || null,  /* ✅ FIX HERE */
+          doc_country: issuingCountry || null,
           front_path: frontPath,
           back_path: backPath,
           status: "pending",
