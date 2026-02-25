@@ -230,6 +230,50 @@
       font-weight:900;
     }
 
+    /* ✅ Searchable country dropdown (custom) */
+    .countryWrap{ position:relative; }
+    .countryInput{
+      width:100%;
+      height:50px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      color:var(--text);
+      padding:10px 12px;
+      font-weight:1000;
+      outline:none;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+    }
+    .countryList{
+      position:absolute;
+      left:0; right:0;
+      top:54px;
+      max-height:280px;
+      overflow:auto;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(2,6,23,.92);
+      backdrop-filter: blur(14px);
+      box-shadow:0 18px 70px rgba(0,0,0,.55);
+      display:none;
+      z-index:99999;
+    }
+    .countryList.show{display:block;}
+    .countryItem{
+      padding:10px 12px;
+      font-weight:950;
+      cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      color:rgba(234,240,255,.88);
+    }
+    .countryItem:hover{background:rgba(56,189,248,.08);}
+    .countryItem:last-child{border-bottom:none;}
+    .countryEmpty{
+      padding:10px 12px;
+      color:rgba(234,240,255,.65);
+      font-weight:900;
+    }
+
     .uploadBox{
       border:1px dashed rgba(255,255,255,.18);
       border-radius:18px;
@@ -456,7 +500,7 @@
         <div class="brand">
           <img src="assets/vgm-logo.png" alt="VGM">
           <div class="brandTxt">
-            <div class="t1">Veloci Global Markets</div>
+            <!-- ✅ CHANGE: removed Veloci Global Markets -->
             <div class="t2">KYC Verification</div>
           </div>
         </div>
@@ -553,8 +597,14 @@
           </div>
 
           <div>
-            <label for="issuingCountry">Issuing Country (optional)</label>
-            <input id="issuingCountry" type="text" placeholder="e.g. Nigeria, United States, United Kingdom"/>
+            <!-- ✅ CHANGE: removed "(optional)" + custom searchable dropdown -->
+            <label for="issuingCountryInput">Issuing Country</label>
+            <div class="countryWrap">
+              <input id="issuingCountryInput" class="countryInput" type="text" placeholder="Type to search country (e.g. Nigeria)"/>
+              <div id="countryList" class="countryList"></div>
+            </div>
+            <!-- Hidden field used by your submit payload (keeps rest of code intact) -->
+            <input id="issuingCountry" type="hidden" value=""/>
           </div>
         </div>
 
@@ -657,6 +707,84 @@
       if(parts.length<2) return "bin";
       return parts.pop().toLowerCase().slice(0,8) || "bin";
     }
+
+    /* ============================================================
+      ✅ Searchable country list (ALL countries)
+      - Type to filter
+      - Click to select
+      - Saves into hidden #issuingCountry (so your submit payload stays same)
+    ============================================================ */
+    const ALL_COUNTRIES = [
+      "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria",
+      "Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
+      "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia",
+      "Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Congo-Brazzaville)",
+      "Costa Rica","Croatia","Cuba","Cyprus","Czechia","Democratic Republic of the Congo","Denmark","Djibouti","Dominica",
+      "Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
+      "Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea",
+      "Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel",
+      "Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon",
+      "Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali",
+      "Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro",
+      "Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger",
+      "Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine State","Panama","Papua New Guinea",
+      "Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis",
+      "Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal",
+      "Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa",
+      "South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan",
+      "Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
+      "Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City",
+      "Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"
+    ];
+
+    const countryInput = document.getElementById("issuingCountryInput");
+    const countryHidden = document.getElementById("issuingCountry");
+    const countryList = document.getElementById("countryList");
+
+    function renderCountryList(filter){
+      const q = String(filter||"").trim().toLowerCase();
+      const matches = ALL_COUNTRIES.filter(c => c.toLowerCase().includes(q)).slice(0, 60);
+
+      if(matches.length === 0){
+        countryList.innerHTML = `<div class="countryEmpty">No matches</div>`;
+        return;
+      }
+      countryList.innerHTML = matches.map(c => `<div class="countryItem" data-country="${c}">${c}</div>`).join("");
+    }
+
+    function openCountryList(){
+      countryList.classList.add("show");
+    }
+    function closeCountryList(){
+      countryList.classList.remove("show");
+    }
+    function setCountry(value){
+      countryInput.value = value;
+      countryHidden.value = value;
+      closeCountryList();
+    }
+
+    countryInput.addEventListener("focus", ()=>{
+      renderCountryList(countryInput.value);
+      openCountryList();
+    });
+    countryInput.addEventListener("input", ()=>{
+      renderCountryList(countryInput.value);
+      openCountryList();
+      // keep hidden in sync while typing (optional)
+      countryHidden.value = countryInput.value.trim();
+    });
+
+    countryList.addEventListener("click", (e)=>{
+      const item = e.target.closest(".countryItem");
+      if(!item) return;
+      setCountry(item.getAttribute("data-country") || "");
+    });
+
+    document.addEventListener("click", (e)=>{
+      const wrap = e.target.closest(".countryWrap");
+      if(!wrap) closeCountryList();
+    });
 
     /* ============================================================
       ✅ Progress Modal helpers
@@ -778,7 +906,6 @@
     }
 
     function lockToPendingScreen(createdAt){
-      // Hide form and show modal-like state without needing submit
       hideMainContent();
       showProgressModal();
       resetSteps();
@@ -790,7 +917,6 @@
         badgeType:"warn"
       });
 
-      // Show a completed-like bar but keep steps neutral
       setProgress(70);
       stepSet("step1", "done", "Uploaded");
       stepSet("step2", "done", "Uploaded");
@@ -798,7 +924,7 @@
       stepSet("step4", "active", "Reviewing");
 
       modalShowDoneButtons();
-      document.getElementById("modalCloseBtn").style.display="none"; // keep on this screen
+      document.getElementById("modalCloseBtn").style.display="none";
       document.getElementById("modalGoDashBtn").style.display="inline-flex";
     }
 
@@ -824,8 +950,6 @@
     }
 
     function lockToRejectedScreen(createdAt){
-      // Rejected: show modal with message but still allow user to re-upload by not hiding form permanently
-      // User requested: after upload, everything disappears. Rejected is not "after upload", so we keep the form visible.
       showStatusPill("Status: REJECTED — Please re-submit");
       setStatusField("rejected");
       setMsg("Your previous verification was rejected. Please upload again and submit.", false);
@@ -833,8 +957,7 @@
     }
 
     /* ============================================================
-      ✅ SUBMIT FLOW (your request)
-      - On submit: hide everything, show modal progress, keep sticky bar
+      ✅ SUBMIT FLOW
     ============================================================ */
     async function submitKyc(){
       const btn=document.getElementById("submitBtn");
@@ -845,21 +968,22 @@
 
         const docType = document.getElementById("docType").value;
         const docTypeOther = document.getElementById("docTypeOther").value.trim();
-        const issuingCountry = document.getElementById("issuingCountry").value.trim();
+
+        // ✅ keep your payload field name intact:
+        const issuingCountry = (document.getElementById("issuingCountry").value || "").trim();
 
         const frontFile = document.getElementById("frontFile").files?.[0] || null;
         const backFile  = document.getElementById("backFile").files?.[0] || null;
 
         if(docType === "other" && !docTypeOther) throw new Error("Please specify the document type.");
+        if(!issuingCountry) throw new Error("Please select an issuing country.");
         if(!frontFile) throw new Error("Please upload the FRONT of your ID.");
         if(!backFile) throw new Error("Please upload the BACK of your ID.");
 
-        // ✅ Immediately hide everything else + show modal
         hideMainContent();
         showProgressModal();
         resetSteps();
 
-        // Step 1
         stepSet("step1", "active", "Uploading…");
         setProgress(10);
 
@@ -867,13 +991,11 @@
         stepSet("step1", "done", "Uploaded");
         setProgress(40);
 
-        // Step 2
         stepSet("step2", "active", "Uploading…");
         const backPath  = await uploadToBucket(backFile,  CURRENT_USER.id, "back");
         stepSet("step2", "done", "Uploaded");
         setProgress(65);
 
-        // Step 3
         stepSet("step3", "active", "Submitting…");
         setProgress(78);
 
@@ -898,7 +1020,6 @@
         stepSet("step3", "done", "Submitted");
         setProgress(92);
 
-        // Step 4
         stepSet("step4", "active", "Finalizing…");
         setModalState({
           title:"Submitted successfully ✅",
@@ -912,12 +1033,10 @@
         setProgress(100);
 
         modalShowDoneButtons();
-        // Keep them on this nice screen
         document.getElementById("modalCloseBtn").style.display="none";
         document.getElementById("modalGoDashBtn").style.display="inline-flex";
 
       }catch(e){
-        // If submit fails, show error state in modal (still keep form hidden as you requested)
         showProgressModal();
 
         stepSet("step1", "error", "Error");
@@ -989,11 +1108,9 @@
 
         CURRENT_USER = user;
 
-        // Fill email field
         const emailEl=document.getElementById("userEmail");
         if(emailEl) emailEl.value = user.email || "";
 
-        // status from querystring (optional)
         const statusQS = (qs("status") || "").toLowerCase();
         if(statusQS){
           showStatusPill("Status: " + statusQS.toUpperCase());
@@ -1002,7 +1119,6 @@
           setStatusField("—");
         }
 
-        // Check latest request in DB so form can auto-hide if pending/approved
         const latest = await fetchLatestKycRequest(user.id);
         if(latest && latest.status){
           const s=String(latest.status).toLowerCase();
