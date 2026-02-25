@@ -541,23 +541,90 @@
       flex: 0 0 auto;
     }
 
-    /* ✅ Support message box (UPDATED: bigger) */
+    /* ✅ Support message box (UPDATED to match “message card” look; no lateral scrolling) */
     .msgBox{
+      position: relative;
       border: 1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.32);
-      border-radius: 14px;
-      padding: 12px 14px;
-      color: rgba(234,240,255,.86);
+      border-radius: 16px;
+      padding: 10px 12px 12px;
+      background:
+        radial-gradient(520px 120px at 12% 0%, rgba(56,189,248,.10), transparent 55%),
+        radial-gradient(520px 120px at 88% 0%, rgba(91,108,255,.10), transparent 60%),
+        linear-gradient(180deg, rgba(2,6,23,.42), rgba(2,6,23,.26));
+      box-shadow: 0 16px 40px rgba(0,0,0,.22);
+      color: rgba(234,240,255,.90);
       line-height: 1.5;
-      max-width: 880px; /* ✅ bigger */
       white-space: normal;
       word-break: break-word;
       overflow: hidden;
+      max-width: 880px;
+      min-width: 340px;
     }
-    .msgBoxClamp{
-      display: -webkit-box;
-      -webkit-line-clamp: 10; /* ✅ more lines */
-      -webkit-box-orient: vertical;
+    .msgBox:before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:3px;
+      border-radius: 16px 0 0 16px;
+      background: linear-gradient(180deg, rgba(56,189,248,.95), rgba(124,77,255,.85));
+      opacity:.85;
+    }
+    .msgBoxHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 8px;
+      padding-left: 6px;
+    }
+    .msgLabel{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight: 980;
+      font-size: 11px;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+      color: rgba(234,240,255,.72);
+    }
+    .msgMeta{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size: 11px;
+      color: rgba(234,240,255,.58);
+      font-weight: 900;
+      max-width: 60%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .msgViewBtn{
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.92);
+      font-weight: 980;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .msgViewBtn:hover{filter:brightness(1.06)}
+    .msgText{
+      padding-left: 6px;
+      max-height: 140px; /* ✅ keeps row clean; no horizontal scroll */
+      overflow: auto;    /* ✅ vertical scroll inside the box if long */
+      padding-right: 6px;
+    }
+    .msgText::-webkit-scrollbar{ width: 8px; height: 8px; }
+    .msgText::-webkit-scrollbar-track{ background: rgba(255,255,255,.05); border-radius: 999px; }
+    .msgText::-webkit-scrollbar-thumb{
+      background: linear-gradient(180deg, rgba(56,189,248,.70), rgba(91,108,255,.70));
+      border-radius: 999px;
+      border: 2px solid rgba(2,6,23,.55);
     }
   </style>
 </head>
@@ -1838,12 +1905,23 @@ function renderSupport(data){
     const id = esc(t.id||"");
     const email = String(t.user_email||"").trim().toLowerCase();
     const msg = String(t.message||"").trim();
-    const clamped = msg.length > 420 ? " msgBoxClamp" : "";
+    const subject = String(t.subject||"").trim();
+    const created = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(email)}</td>
-        <td><span class="ellipsis">${esc(t.subject||"")}</span></td>
-        <td><div class="msgBox${clamped}" title="${esc(msg)}">${esc(msg)}</div></td>
+        <td><span class="ellipsis">${esc(subject)}</span></td>
+        <td>
+          <div class="msgBox">
+            <div class="msgBoxHead">
+              <div class="msgLabel">MESSAGE</div>
+              <div class="msgMeta">${esc(created || "")}</div>
+              <button class="msgViewBtn" onclick="modalShow('Ticket Message', ${JSON.stringify(msg)})">View</button>
+            </div>
+            <div class="msgText">${esc(msg)}</div>
+          </div>
+        </td>
         <td>${esc(t.status||"")}</td>
         <td><textarea id="reply-${id}">${esc(t.admin_reply||"")}</textarea></td>
         <td>
