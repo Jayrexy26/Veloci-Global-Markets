@@ -1,9 +1,15 @@
+<!-- =========================
+FILE: wallet.html
+========================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veloci Admin • Elite Ops Console</title>
+  <title>VGM | Crypto Wallet</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
   <style>
     :root{
@@ -12,2569 +18,1757 @@
       --text:#eaf0ff;
       --muted: rgba(234,240,255,.65);
       --muted2: rgba(234,240,255,.45);
-
-      --cyan:#38bdf8;
-      --blue:#5b6cff;
-      --purple:#7c4dff;
+      --stroke: rgba(255,255,255,.12);
 
       --ok:#22c55e;
       --err:#f87171;
+      --warn:#f59e0b;
+
+      --blue:#5b6cff;
+      --purple:#7c4dff;
+      --cyan:#38bdf8;
 
       --shadow: 0 26px 90px rgba(0,0,0,.55);
-      --shadow2: 0 16px 55px rgba(0,0,0,.45);
-
-      --r:22px;
-      --r2:26px;
-
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-
-    /* ✅ Premium scrollbars */
-    *{
-      scrollbar-width: thin;
-      scrollbar-color: rgba(56,189,248,.55) rgba(255,255,255,.06);
-    }
-    *::-webkit-scrollbar{ height: 10px; width: 10px; }
-    *::-webkit-scrollbar-track{
-      background: rgba(255,255,255,.06);
-      border-radius: 999px;
-    }
-    *::-webkit-scrollbar-thumb{
-      background: linear-gradient(180deg, rgba(56,189,248,.75), rgba(91,108,255,.75));
-      border-radius: 999px;
-      border: 2px solid rgba(2,6,23,.65);
-    }
-    *::-webkit-scrollbar-thumb:hover{
-      background: linear-gradient(180deg, rgba(56,189,248,.92), rgba(124,77,255,.88));
-    }
-
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      font-family:var(--sans);
-      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background:
-        radial-gradient(1200px 700px at 15% -10%, rgba(91,108,255,.22), transparent 55%),
-        radial-gradient(900px 600px at 88% -10%, rgba(56,189,248,.16), transparent 60%),
-        radial-gradient(900px 600px at 45% 110%, rgba(124,77,255,.14), transparent 60%),
+        radial-gradient(1200px 700px at 15% 10%, rgba(91,108,255,.15), transparent 55%),
+        radial-gradient(900px 600px at 90% 20%, rgba(124,77,255,.14), transparent 55%),
+        radial-gradient(700px 500px at 40% 90%, rgba(56,189,248,.10), transparent 55%),
         linear-gradient(180deg, var(--bg), var(--bg2));
+      color:var(--text);
       overflow-x:hidden;
     }
 
-    .mono{font-family:var(--mono)}
-    .small{font-size:12px;color:var(--muted);line-height:1.45}
-    .tiny{font-size:11px;color:var(--muted2);line-height:1.45}
-    .title{font-weight:980;letter-spacing:.2px}
-    a{color: rgba(125,211,252,.95); text-decoration:none; font-weight:950}
-    a:hover{filter:brightness(1.1); text-decoration:underline}
-
-    input,select,textarea{
-      width:100%;
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.48);
-      color: var(--text);
-      outline:none;
-      transition: .18s ease;
-      font-size:13px;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-      height: 44px;
-    }
-    textarea{
-      border-radius: 18px;
-      height: auto;
-      min-height: 92px;
-      resize: vertical;
-      padding: 12px 14px;
-    }
-    input:focus,select:focus,textarea:focus{
-      border-color: rgba(56,189,248,.55);
-      box-shadow: 0 0 0 4px rgba(56,189,248,.10);
+    .wrap{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      padding: 18px 0 42px;
     }
 
-    button{
-      border:none;
-      padding: 8px 12px;
-      border-radius: 999px;
-      cursor:pointer;
-      font-weight:980;
-      letter-spacing:.2px;
-      transition: transform .08s ease, filter .2s ease, opacity .2s ease;
-      user-select:none;
-      white-space:nowrap;
-      font-size:12px;
-      height: 38px;
-    }
-    button:active{transform: translateY(1px)}
-    button:hover{filter:brightness(1.06)}
-    button:disabled{opacity:.35; cursor:not-allowed; filter:saturate(.65) brightness(.9);}
-
-    .btnPrimary{background: linear-gradient(135deg, rgba(56,189,248,1), rgba(91,108,255,1)); color:#020617}
-    .btnGhost{
-      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
-      border:1px solid rgba(255,255,255,.14);
-      color: rgba(234,240,255,.92)
-    }
-    .btnOk{background: linear-gradient(135deg, rgba(34,197,94,1), rgba(16,185,129,1)); color:#020617}
-    .btnErr{background: linear-gradient(135deg, rgba(248,113,113,1), rgba(236,72,153,1)); color:#020617}
-
-    .inline{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .grow{flex: 1 1 260px; min-width: 220px}
-    .w140{min-width:140px}
-    .w200{min-width:200px}
-    .w320{min-width:260px}
-
-    .loginWrap{min-height:100vh;display:grid;place-items:center;padding:18px}
-    .loginCard{
-      width: min(980px, 100%);
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border-radius: var(--r2);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      overflow:hidden;
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-    }
-    @media (max-width: 980px){ .loginCard{grid-template-columns:1fr} }
-    .loginLeft{
-      padding:20px;
-      border-right:1px solid rgba(255,255,255,.08);
-      background:
-        radial-gradient(900px 360px at 20% 0%, rgba(56,189,248,.12), transparent 55%),
-        radial-gradient(900px 360px at 80% 0%, rgba(91,108,255,.18), transparent 58%),
-        rgba(2,6,23,.35);
-    }
-    .loginRight{padding:20px;background: rgba(2,6,23,.35);}
-    .brandRow{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-    .brandDot{
-      width:14px;height:14px;border-radius:999px;
-      background: radial-gradient(circle at 30% 30%, #fff, rgba(255,255,255,.12));
-      box-shadow: 0 0 0 4px rgba(56,189,248,.10), 0 0 45px rgba(56,189,248,.18);
-    }
-
-    .hidden{display:none !important;}
-
-    .app{display:none;min-height:100vh;width:100%;}
-    .shell{width:100%;display:flex;min-width:0; height:100vh;}
-    .sidebar{
-      width: 286px;
-      flex: 0 0 286px;
-      padding: 16px 14px;
-      border-right:1px solid rgba(255,255,255,.07);
-      background: linear-gradient(180deg, rgba(2,6,23,.85), rgba(2,6,23,.45));
-      backdrop-filter: blur(16px);
-      position: sticky; top:0;
-      height:100vh;
-      overflow:auto;
-      min-width:0;
-    }
-    .main{
-      flex:1 1 auto;
-      min-width:0;
-      padding:16px;
-      height:100vh;
-      overflow:auto;
-    }
-
-    .mobileTop{display:none;gap:10px;align-items:center;justify-content:space-between;padding:12px 12px 0;}
-    .burger{
-      display:inline-flex;align-items:center;justify-content:center;
-      width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
-      color: rgba(234,240,255,.9);
-      font-weight:980;
-    }
-    .overlay{display:none;position:fixed;inset:0;background: rgba(0,0,0,.55);z-index:999;}
-    @media (max-width:1100px){
-      .shell{height:auto; min-height:100vh;}
-      .main{height:auto; overflow:visible; padding:12px;}
-      .sidebar{position:fixed;left:0;top:0;height:100vh;transform: translateX(-102%);transition: transform .2s ease;z-index:1000;}
-      .sidebar.open{transform: translateX(0);}
-      .overlay.show{display:block;}
-      .mobileTop{display:flex;}
-    }
-
-    .brand{display:flex;gap:12px;align-items:center;padding: 10px 10px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:14px}
-    .brandName{display:flex;flex-direction:column;gap:2px;min-width:0}
-    .brandName strong{font-weight:980;letter-spacing:.2px;font-size:13px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .brandName span{font-size:12px;color:var(--muted2)}
-
-    .nav{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-    .navBtn{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding: 12px 12px;border-radius: 18px;border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.03);color: rgba(234,240,255,.88);
-      cursor:pointer;user-select:none;transition:.2s ease;font-weight:980;font-size:13px;
-    }
-    .navBtn:hover{background: rgba(255,255,255,.06);border-color: rgba(255,255,255,.12);transform: translateY(-1px);}
-    .navBtn.active{
-      background: linear-gradient(180deg, rgba(91,108,255,.22), rgba(56,189,248,.08));
-      border-color: rgba(91,108,255,.36);
-      box-shadow: 0 0 0 4px rgba(91,108,255,.10);
-    }
-    .navLeft{display:flex;align-items:center;gap:10px;min-width:0}
-    .navIcon{
-      width:34px;height:34px;border-radius:999px;display:grid;place-items:center;
-      background: rgba(91,108,255,.10);border:1px solid rgba(91,108,255,.18);
-      box-shadow: 0 0 0 4px rgba(91,108,255,.06);flex:0 0 auto;
-      font-weight:980;
-    }
-    .navText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .countPill{
-      padding: 6px 10px;border-radius:999px;background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);font-size:12px;color: rgba(234,240,255,.85);
-      font-weight:980;flex:0 0 auto;min-width: 34px;text-align:center;font-family: var(--mono);
-    }
-
-    .sideCard{
-      margin-top: 14px;border:1px solid rgba(255,255,255,.10);background: rgba(255,255,255,.03);
-      border-radius: 20px;padding: 12px;
-    }
-    .sideCard strong{
-      display:flex;align-items:center;justify-content:space-between;
-      font-weight:980;font-size:12px;letter-spacing:.2px;text-transform:uppercase;color: rgba(234,240,255,.9);
-    }
-    .debug{
-      white-space:pre-wrap;font-family: var(--mono);font-size: 12px;color: rgba(234,240,255,.82);
-      line-height:1.35;border:1px solid rgba(255,255,255,.10);background: rgba(2,6,23,.35);
-      border-radius: 16px;padding: 10px;max-height: 240px;overflow:auto;
-    }
-
+    /* =========================
+       TOPBAR + MENU BUTTON
+    ========================== */
     .topbar{
-      position: sticky;top:0;z-index:30;
-      padding: 12px;border-radius: var(--r);border: 1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(2,6,23,.58), rgba(2,6,23,.22));
-      backdrop-filter: blur(16px);box-shadow: var(--shadow2);
-      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;min-width:0;
-      transition: transform .18s ease, opacity .18s ease;
-      transform: translateY(0);
-      opacity: 1;
-    }
-    .topbar.hide{
-      transform: translateY(-130%);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .chips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .chip{
-      padding: 7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);color: rgba(234,240,255,.86);
-      font-weight: 980;font-size:12px;letter-spacing:.2px;max-width:100%;
-    }
-    .chip.ok{border-color: rgba(34,197,94,.30); background: rgba(34,197,94,.10)}
-
-    .grid{
-      display:grid;
-      gap:14px;
-      margin-top:14px;
-      align-items:start;
-      min-width:0;
-
-      grid-template-columns: 1.55fr .45fr;
-      grid-template-areas: "main ops";
-    }
-    .gridMain{grid-area: main; min-width:0;}
-    .gridOps{grid-area: ops; min-width:0;}
-
-    @media (max-width:1300px){
-      .grid{grid-template-columns: 1.35fr .65fr;}
-    }
-    @media (max-width:1100px){
-      .grid{grid-template-columns:1fr; grid-template-areas: "main" "ops";}
-    }
-
-    #appView[data-view="users"] .grid,
-    #appView[data-view="plans"] .grid,
-    #appView[data-view="support"] .grid,
-    #appView[data-view="deposits"] .grid,
-    #appView[data-view="withdrawals"] .grid,
-    #appView[data-view="kyc"] .grid,
-    #appView[data-view="wallets"] .grid,
-    #appView[data-view="walletlinks"] .grid{
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "ops"
-        "main";
-    }
-
-    .card{
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border-radius: var(--r);
-      padding: 14px;
-      box-shadow: var(--shadow2);
-      backdrop-filter: blur(16px);
-      overflow: visible;
-      min-width:0;
-    }
-    .cardHead{
-      display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
-      padding-bottom: 10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom: 12px;
-    }
-    .cardTitle{display:flex;align-items:center;gap:10px;font-weight:980;letter-spacing:.2px}
-
-    .tableWrap{
-      border:1px solid rgba(255,255,255,.08);
-      border-radius: 18px;
-      background: rgba(2,6,23,.28);
-      min-width:0;
-      overflow:hidden;
-    }
-    .tableScroll{
-      overflow-x:auto;
-      overflow-y:hidden;
-      -webkit-overflow-scrolling: touch;
-      border-radius: 18px;
-    }
-    table{
-      border-collapse:separate;
-      border-spacing:0;
-      width: max(100%, 1300px);
-      table-layout:auto;
-    }
-    th,td{
-      padding: 12px 12px;
-      font-size:13px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      vertical-align:middle;
-      white-space:nowrap;
-    }
-    th{
-      background: rgba(12,20,46,.78);
-      text-transform: uppercase;
-      letter-spacing:.35px;
-      font-size:12px;
-      color: rgba(234,240,255,.86);
-    }
-    tr:hover td{background: rgba(56,189,248,.04)}
-
-    .ellipsis{max-width: 260px;overflow:hidden;text-overflow: ellipsis;}
-    .ellipsisWide{max-width: 520px;overflow:hidden;text-overflow: ellipsis;}
-    .rowTools{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;justify-content:flex-end}
-
-    .spin{
-      display:inline-block;width:14px;height:14px;border-radius:999px;
-      border:2px solid rgba(255,255,255,.25);border-top-color: rgba(56,189,248,.85);
-      animation: spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;
-    }
-    @keyframes spin{to{transform: rotate(360deg)}}
-
-    .modalOverlay{
-      position: fixed; inset:0; z-index:99999;
-      background: rgba(0,0,0,.62);
-      display:none; align-items:center; justify-content:center;
-      padding: 18px;
-    }
-    .modal{
-      width: min(860px, 100%);
-      border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(2,6,23,.90), rgba(2,6,23,.62));
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
-      padding: 14px;
-    }
-    .modalHead{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding-bottom: 10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom: 10px;
-    }
-    .modalTitle{font-weight:980;letter-spacing:.2px}
-    .modalBody{
-      font-size:13px;color: rgba(234,240,255,.86);
-      line-height:1.5;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
-    .modalFoot{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
-
-    .proofWrap{display:grid;gap:10px;}
-    .proofFrame{
-      width: 100%;
-      height: min(72vh, 720px);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 16px;
-      background: rgba(2,6,23,.35);
-      overflow:hidden;
-    }
-    .proofFrame iframe{width:100%;height:100%;border:0;}
-    .proofHint{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-
-    .namePill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
-      color: rgba(234,240,255,.92);
-      font-weight: 980;
-      font-size: 12px;
-      max-width: 100%;
-    }
-    .namePill .nm{
-      max-width: 220px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-    .namePill .em{
-      color: rgba(234,240,255,.62);
-      font-weight: 850;
-      max-width: 260px;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-
-    /* ✅ Top search autocomplete dropdown */
-    .searchWrap{
-      position: relative;
-      min-width: 260px;
-      flex: 0 1 340px;
-    }
-    .searchInput{
-      padding-left: 44px;
-      padding-right: 14px;
-    }
-    .searchBtnIcon{
-      position:absolute;
-      left: 6px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: linear-gradient(135deg, rgba(56,189,248,.20), rgba(91,108,255,.12));
-      color: rgba(234,240,255,.92);
-      display:grid;
-      place-items:center;
-      cursor:pointer;
-      font-weight: 980;
-      user-select:none;
-    }
-    .searchBtnIcon:hover{filter:brightness(1.06)}
-    .searchBtnIcon:active{transform: translateY(-50%) translateY(1px);}
-
-    .sugg{
-      position:absolute;
-      top: 48px;
-      left: 0;
-      right: 0;
-      z-index: 9999;
-      border:1px solid rgba(255,255,255,.14);
-      background: linear-gradient(180deg, rgba(2,6,23,.92), rgba(2,6,23,.70));
-      border-radius: 18px;
-      box-shadow: var(--shadow2);
-      overflow:hidden;
-      display:none;
-      backdrop-filter: blur(16px);
-      max-height: 320px;
-    }
-    .sugg.show{display:block;}
-    .suggHead{
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.10);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .suggTitle{
-      font-weight: 980;
-      letter-spacing:.2px;
-      font-size: 12px;
-      text-transform: uppercase;
-      color: rgba(234,240,255,.86);
-    }
-    .suggList{
-      max-height: 280px;
-      overflow:auto;
-    }
-    .suggItem{
-      padding: 10px 12px;
-      cursor:pointer;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      padding: 12px 0 10px;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(5,10,24,.74), rgba(5,10,24,.28));
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .suggItem:hover{background: rgba(56,189,248,.06);}
-    .suggLeft{
-      min-width:0;
+
+    .toprow{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .leftTop{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .menuBtn{
+      border:none;
+      cursor:pointer;
+      border-radius: 14px;
+      padding: 10px 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+      transition: transform .12s ease;
+    }
+    .menuBtn:active{ transform: translateY(1px); }
+    .menuBtn svg{ width: 18px; height:18px; opacity:.95; }
+
+    .title{
       display:flex;
       flex-direction:column;
-      gap:2px;
+      gap:4px;
+      min-width: 220px;
     }
-    .suggName{
-      font-weight: 980;
-      font-size: 13px;
-      color: rgba(234,240,255,.92);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      max-width: 520px;
-    }
-    .suggEmail{
-      font-family: var(--mono);
-      font-size: 12px;
-      color: rgba(234,240,255,.65);
-      overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-      max-width: 520px;
-    }
-    .suggTag{
-      font-size: 11px;
-      color: rgba(234,240,255,.70);
-      border: 1px solid rgba(255,255,255,.10);
-      padding: 5px 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.05);
+    .title h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:.2px;
       font-weight: 900;
+    }
+    .title p{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .rightTop{
+      flex: 1;
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+      align-items:center;
+      min-width: 0;
+    }
+
+    .searchBox{
+      width: min(520px, 100%);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+    }
+    .searchBox input{
+      width:100%;
+      border:none;
+      outline:none;
+      color: var(--text);
+      background: transparent;
+      font-size: 13px;
+    }
+    .searchBox .icon{
+      width: 18px;
+      height: 18px;
+      opacity: .9;
       flex: 0 0 auto;
     }
 
-    /* ✅ Support message box */
-    .msgBox{
-      position: relative;
+    .btnTop{
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 10px 12px 12px;
-      background:
-        radial-gradient(520px 120px at 12% 0%, rgba(56,189,248,.10), transparent 55%),
-        radial-gradient(520px 120px at 88% 0%, rgba(91,108,255,.10), transparent 60%),
-        linear-gradient(180deg, rgba(2,6,23,.42), rgba(2,6,23,.26));
-      box-shadow: 0 16px 40px rgba(0,0,0,.22);
-      color: rgba(234,240,255,.90);
-      line-height: 1.5;
-      white-space: normal;
-      word-break: break-word;
-      overflow: hidden;
-      max-width: 880px;
-      min-width: 340px;
+      transition: transform .12s ease, opacity .12s ease;
+      white-space: nowrap;
     }
-    .msgBox:before{
+    .btnTop:active{ transform: translateY(1px); }
+
+    .btnTop.primary{
+      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 18px 55px rgba(56,189,248,.16);
+    }
+
+    /* =========================
+       NOTICE
+    ========================== */
+    .notice{
+      margin: 14px 0 16px;
+      border: 1px solid rgba(245,158,11,.35);
+      background: rgba(245,158,11,.08);
+      border-radius: 16px;
+      padding: 14px 14px;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .notice .small{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .notice .dot{
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      margin-top: 4px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(245,158,11,.95));
+      box-shadow: 0 0 0 4px rgba(245,158,11,.18);
+      flex: 0 0 auto;
+    }
+
+    /* =========================
+       GRID + CARDS
+    ========================== */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 14px;
+    }
+    @media (max-width: 860px){
+      .grid{ grid-template-columns: 1fr; }
+      .title{ min-width: 0; }
+    }
+
+    .card{
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 14px 14px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+
+      --coinA: rgba(91,108,255,.22);
+      --coinB: rgba(124,77,255,.18);
+      background:
+        radial-gradient(1200px 600px at 10% 0%, var(--coinA), transparent 50%),
+        radial-gradient(900px 500px at 95% 10%, var(--coinB), transparent 55%),
+        rgba(255,255,255,.035);
+
+      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .card:hover{
+      border-color: rgba(255,255,255,.18);
+      filter: brightness(1.03);
+    }
+    .card.selected{
+      border-color: rgba(56,189,248,.55);
+      box-shadow: 0 26px 90px rgba(0,0,0,.55), 0 0 0 2px rgba(56,189,248,.20) inset;
+      transform: translateY(-1px);
+    }
+
+    .card::before{
       content:"";
       position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:3px;
-      border-radius: 16px 0 0 16px;
-      background: linear-gradient(180deg, rgba(56,189,248,.95), rgba(124,77,255,.85));
-      opacity:.85;
+      inset:-140px -120px auto auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 62%);
+      transform: rotate(14deg);
+      pointer-events:none;
+      opacity: .65;
     }
-    .msgBoxHead{
+
+    .row{
+      display:flex;
+      gap: 14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      position: relative;
+      z-index: 2;
+    }
+
+    .left{
+      min-width: 0;
+      flex: 1;
+    }
+
+    .meta{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
-      margin-bottom: 8px;
-      padding-left: 6px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
-    .msgLabel{
-      display:inline-flex;
+
+    .coin{
+      display:flex;
+      gap: 10px;
       align-items:center;
-      gap:8px;
-      font-weight: 980;
-      font-size: 11px;
-      letter-spacing: .35px;
-      text-transform: uppercase;
-      color: rgba(234,240,255,.72);
+      min-width: 0;
     }
-    .msgMeta{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size: 11px;
-      color: rgba(234,240,255,.58);
-      font-weight: 900;
-      max-width: 60%;
+
+    .badge{
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display:grid;
+      place-items:center;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      flex: 0 0 auto;
       overflow:hidden;
-      text-overflow:ellipsis;
-      white-space:nowrap;
     }
-    .msgViewBtn{
-      height: 30px;
-      padding: 0 10px;
+    .badge img{
+      width: 26px;
+      height: 26px;
+      display:block;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+    }
+    .badge .fallback{
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .4px;
+      opacity: .95;
+      display:none;
+    }
+
+    .names{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .names .sym{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .3px;
+    }
+    .names .net{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12px;
+      user-select:none;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .pill .mini{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, #fff, rgba(34,197,94,.9));
+      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+    }
+
+    .addr{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .field{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 10px;
+    }
+    .field .label{
+      font-size: 11px;
+      color: var(--muted2);
+      margin-bottom: 6px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .field .value{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: var(--text);
+      word-break: break-all;
+      line-height: 1.35;
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .btn{
+      border: none;
+      outline:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing: .2px;
+      background: linear-gradient(135deg, rgba(91,108,255,.95), rgba(124,77,255,.92));
+      box-shadow: 0 18px 50px rgba(91,108,255,.20);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow:none;
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .btn.send{
+      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
+      box-shadow: 0 18px 50px rgba(56,189,248,.18);
+    }
+
+    .right{
+      flex: 0 0 auto;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap: 8px;
+      min-width: 162px;
+    }
+
+    .qr{
+      width: 152px;
+      height: 152px;
+      display:grid;
+      place-items:center;
+      border-radius: 16px;
+      background: transparent;
+    }
+    .qr svg{ width:152px; height:152px; display:block; }
+
+    .hint{
+      font-size: 11px;
+      color: var(--muted);
+      text-align:right;
+      line-height: 1.35;
+      max-width: 220px;
+    }
+
+    .empty{
+      margin-top: 14px;
+      border: 1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      display:none;
+    }
+
+    /* =============================
+      TOAST (BIGGER + CENTER)
+    ============================== */
+    .toast{
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(.98);
+      z-index: 120;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.70);
+      backdrop-filter: blur(12px);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 40px 140px rgba(0,0,0,.75);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+      min-width: 220px;
+      text-align: center;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* =============================
+      MODALS + DRAWERS
+    ============================== */
+    .overlay{
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+    }
+    .overlay.show{ display:flex; }
+
+    .modal{
+      width: min(560px, 92vw);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.16), transparent 60%),
+        rgba(2,6,23,.92);
+      box-shadow: 0 40px 140px rgba(0,0,0,.70);
+      overflow:hidden;
+    }
+
+    .modalHead{
+      padding: 14px 14px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .modalTitle{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .modalTitle .h{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing:.2px;
+      margin:0;
+    }
+    .modalTitle .s{
+      font-size: 12px;
+      color: var(--muted);
+      margin:0;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .modalClose{
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      flex: 0 0 auto;
+    }
+
+    .modalBody{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .formGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .formGrid{ grid-template-columns: 1fr; }
+    }
+
+    .in{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .in label{
+      font-size: 11px;
+      color: var(--muted2);
+    }
+    .in input, .in select, .in textarea{
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      padding: 2px 0;
+      resize: none;
+    }
+    .in input::placeholder, .in textarea::placeholder{ color: rgba(234,240,255,.35); }
+
+    .feeBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .feeRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .feeRow b{
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .modalFoot{
+      padding: 12px 14px 14px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display:flex;
+      gap: 10px;
+      justify-content:flex-end;
+      flex-wrap: wrap;
+    }
+
+    .smallWarn{
+      font-size: 12px;
+      color: rgba(245,158,11,.95);
+      line-height: 1.4;
+    }
+
+    /* =============================
+      MENU DRAWER
+    ============================== */
+    .drawerOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      display:none;
+    }
+    .drawerOverlay.show{ display:block; }
+
+    .drawer{
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: min(320px, 86vw);
+      z-index: 95;
+      transform: translateX(-102%);
+      transition: transform .18s ease;
+      border-right: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.16), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.14), transparent 60%),
+        rgba(2,6,23,.94);
+      box-shadow: 0 40px 160px rgba(0,0,0,.75);
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .drawer.show{ transform: translateX(0); }
+
+    .drawerTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .drawerTop .brand{
+      font-weight: 1000;
+      letter-spacing: .3px;
+      font-size: 13px;
+    }
+    .drawerNav{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+    .navItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor:pointer;
+      user-select:none;
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--text);
+      text-decoration:none;
+    }
+    .navItem:hover{ border-color: rgba(255,255,255,.18); }
+    .navItem small{ color: var(--muted); font-weight: 800; }
+
+    /* =============================
+      SEND HISTORY DRAWER (RIGHT)
+    ============================== */
+    .historyOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      display:none;
+    }
+    .historyOverlay.show{ display:block; }
+
+    .history{
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: min(420px, 92vw);
+      z-index: 95;
+      transform: translateX(102%);
+      transition: transform .18s ease;
+      border-left: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(56,189,248,.16), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(91,108,255,.14), transparent 60%),
+        rgba(2,6,23,.94);
+      box-shadow: 0 40px 160px rgba(0,0,0,.75);
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      overflow:auto;
+    }
+    .history.show{ transform: translateX(0); }
+
+    .historyTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .historyTop .h{
+      font-weight: 1000;
+      font-size: 13px;
+      margin: 0;
+    }
+    .historyTop .s{
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .historyList{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      padding-bottom: 10px;
+    }
+
+    .hItem{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .hRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+    }
+    .hLeft{
+      display:flex;
+      flex-direction:column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .hLeft b{
+      font-size: 12px;
+      letter-spacing:.2px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .hLeft span{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .tag{
+      font-size: 11px;
+      font-weight: 1000;
+      padding: 6px 10px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: rgba(234,240,255,.92);
-      font-weight: 980;
+      background: rgba(0,0,0,.18);
+      white-space: nowrap;
+    }
+    .tag.pending{ color: rgba(245,158,11,.95); border-color: rgba(245,158,11,.30); }
+    .tag.approved{ color: rgba(34,197,94,.95); border-color: rgba(34,197,94,.30); }
+    .tag.rejected{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
+    .tag.sent{ color: rgba(56,189,248,.95); border-color: rgba(56,189,248,.30); }
+    .tag.failed{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
+    .tag.processing{ color: rgba(147,197,253,.95); border-color: rgba(147,197,253,.30); }
+
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    }
+
+    /* =============================
+      LIGHTNING LINK BUTTON
+    ============================== */
+    .linkFab{
+      position: fixed;
+      right: 16px;
+      top: 92px;
+      z-index: 70;
+      display:flex;
+      align-items:center;
+      gap: 10px;
       cursor:pointer;
-      white-space:nowrap;
-    }
-    .msgViewBtn:hover{filter:brightness(1.06)}
-    .msgText{
-      padding-left: 6px;
-      max-height: 140px;
-      overflow: auto;
-      padding-right: 6px;
-    }
-    .msgText::-webkit-scrollbar{ width: 8px; height: 8px; }
-    .msgText::-webkit-scrollbar-track{ background: rgba(255,255,255,.05); border-radius: 999px; }
-    .msgText::-webkit-scrollbar-thumb{
-      background: linear-gradient(180deg, rgba(56,189,248,.70), rgba(91,108,255,.70));
+      user-select:none;
       border-radius: 999px;
-      border: 2px solid rgba(2,6,23,.55);
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 26px 90px rgba(0,0,0,.55);
+    }
+
+    .bolt{
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      display:grid;
+      place-items:center;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(91,108,255,.75));
+      box-shadow: 0 18px 55px rgba(245,158,11,.18);
+      transform-origin: top center;
+      animation: swing 1.4s ease-in-out infinite;
+    }
+    @keyframes swing{
+      0%{ transform: rotate(-8deg) translateY(0); }
+      50%{ transform: rotate(10deg) translateY(1px); }
+      100%{ transform: rotate(-8deg) translateY(0); }
+    }
+    .bolt svg{ width: 16px; height:16px; opacity:.98; }
+
+    .linkFab .t{
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+      line-height: 1.1;
+    }
+    .linkFab .t b{
+      font-size: 12px;
+      font-weight: 1000;
+    }
+    .linkFab .t span{
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 900;
     }
   </style>
 </head>
-
 <body>
 
-  <div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
-    <div class="modal" onclick="event.stopPropagation()">
+  <!-- MENU DRAWER -->
+  <div id="menuOverlay" class="drawerOverlay"></div>
+  <aside id="menuDrawer" class="drawer" aria-label="Menu drawer">
+    <div class="drawerTop">
+      <div class="brand">VGM • Navigation</div>
+      <button class="modalClose" id="btnMenuClose" type="button">Close</button>
+    </div>
+
+    <div class="drawerNav">
+      <!-- Replace these links with your real pages -->
+      <a class="navItem" href="dashboard.html"><span>Dashboard</span><small>Home</small></a>
+      <a class="navItem" href="wallet.html"><span>Wallet</span><small>Deposits / Send</small></a>
+      <a class="navItem" href="profile.html"><span>Profile</span><small>Account</small></a>
+      <a class="navItem" href="support.html"><span>Support</span><small>Tickets</small></a>
+      <button class="navItem" id="btnLogout" type="button"><span>Logout</span><small>Sign out</small></button>
+    </div>
+  </aside>
+
+  <!-- SEND HISTORY DRAWER -->
+  <div id="historyOverlay" class="historyOverlay"></div>
+  <aside id="historyDrawer" class="history" aria-label="Send history drawer">
+    <div class="historyTop">
+      <div style="min-width:0;">
+        <p class="h">Send History</p>
+        <p class="s">Pending • Approved • Sent • Failed</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="btnTop" id="btnHistoryRefresh" type="button">Refresh</button>
+        <button class="btnTop" id="btnHistoryClose" type="button">Close</button>
+      </div>
+    </div>
+
+    <div id="historyList" class="historyList"></div>
+    <div id="historyEmpty" class="empty" style="display:none; margin-top:0;">No send history yet.</div>
+  </aside>
+
+  <!-- Floating Link Wallet -->
+  <div class="linkFab" id="btnLinkWallet" title="Link external wallet (safe)">
+    <div class="bolt">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M13 2 3 14h7l-1 8 12-14h-7l-1-6Z" stroke="rgba(10,12,18,.95)" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="t">
+      <b>Link Wallet</b>
+      <span>External address</span>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="toprow">
+      <div class="leftTop">
+        <button class="menuBtn" id="btnMenu" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <div class="title">
+          <h1>Crypto Wallet</h1>
+          <p>Deposit only — always pick the correct network.</p>
+        </div>
+      </div>
+
+      <div class="rightTop">
+        <div class="searchBox">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="rgba(234,240,255,.85)" stroke-width="2"/>
+            <path d="M16.5 16.5 21 21" stroke="rgba(234,240,255,.85)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input id="q" placeholder="Search asset (e.g. BTC, USDT, Ethereum, BEP20)..." autocomplete="off"/>
+        </div>
+
+        <button class="btnTop" id="btnReload" type="button">Reload</button>
+        <button class="btnTop primary" id="btnHistoryOpen" type="button">History</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="notice">
+      <div class="dot"></div>
+      <div>
+        <div style="font-size:13px; font-weight:1000; margin-bottom:4px;">
+          Important: Send only the exact asset on the exact network shown.
+        </div>
+        <div class="small">
+          Deposits sent on the wrong network (e.g. ERC20 vs BEP20) may be unrecoverable.
+          Never share your seed phrase — support will never request it.
+        </div>
+      </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty">No assets match your search.</div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- SEND MODAL -->
+  <div id="sendOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Send crypto">
+    <div class="modal">
       <div class="modalHead">
-        <div class="modalTitle" id="modalTitle">Notice</div>
-        <button class="btnGhost" onclick="modalClose()">Close</button>
+        <div class="modalTitle">
+          <p class="h" id="sendTitle">Send</p>
+          <p class="s" id="sendSub">—</p>
+        </div>
+        <button class="modalClose" id="btnSendClose" type="button">Close</button>
       </div>
-      <div class="modalBody" id="modalBody">—</div>
+
+      <div class="modalBody">
+        <div class="smallWarn">
+          ⚠️ Always confirm the network. Sending to the wrong network may result in permanent loss.
+        </div>
+
+        <div class="in">
+          <label>Recipient Wallet Address</label>
+          <input id="sendTo" placeholder="Paste recipient address..." autocomplete="off" />
+        </div>
+
+        <div class="formGrid">
+          <div class="in">
+            <label>Amount</label>
+            <input id="sendAmount" placeholder="0.00" inputmode="decimal" autocomplete="off" />
+          </div>
+
+          <div class="in">
+            <label>Network</label>
+            <select id="sendNetwork"></select>
+          </div>
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow">
+            <span>Network fee (est.)</span>
+            <b id="feeEst">—</b>
+          </div>
+          <div class="feeRow">
+            <span>Total (amount + fee)</span>
+            <b id="totalEst">—</b>
+          </div>
+        </div>
+
+        <div class="in">
+          <label>Note (optional)</label>
+          <input id="sendNote" placeholder="e.g. Payment / Transfer" autocomplete="off" />
+        </div>
+      </div>
+
       <div class="modalFoot">
-        <button class="btnPrimary" onclick="modalClose()">OK</button>
+        <button class="btn secondary" id="btnSendCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnSendSubmit" type="button">Send</button>
       </div>
     </div>
   </div>
 
-  <section id="loginView" class="loginWrap">
-    <div class="loginCard">
-      <div class="loginLeft">
-        <div class="brandRow">
-          <div class="brandDot"></div>
-          <div>
-            <div class="title" style="text-transform:uppercase;font-size:13px;letter-spacing:.3px">Veloci Admin</div>
-            <div class="tiny">Elite Ops Console • Edge API Controlled</div>
-          </div>
+  <!-- LINK WALLET MODAL (SAFE) -->
+  <div id="linkOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Link external wallet">
+    <div class="modal">
+      <div class="modalHead">
+        <div class="modalTitle">
+          <p class="h">Link External Wallet</p>
+          <p class="s">Add a public address (never seed phrase)</p>
         </div>
-
-        <div class="title" style="font-size:22px;margin:10px 0 8px;">Operator Access</div>
-        <div class="small">Login first. Console unlocks full screen after authentication.</div>
+        <button class="modalClose" id="btnLinkClose" type="button">Close</button>
       </div>
 
-      <div class="loginRight">
-        <div class="title" style="margin:0 0 10px;">Admin Login</div>
-        <div class="small">Enter operator identity + admin secret.</div>
-
-        <div style="height:10px;"></div>
-
-        <label class="tiny">Admin ID</label>
-        <input id="adminIdLogin" placeholder="Carl-Admin" autocomplete="username">
-
-        <div style="height:10px;"></div>
-
-        <label class="tiny">Admin Secret (x-admin-secret)</label>
-        <input id="adminSecretLogin" placeholder="••••••••••••••••" type="password" autocomplete="current-password">
-
-        <div style="height:12px;"></div>
-
-        <div class="inline">
-          <button class="btnPrimary grow" onclick="connectFromLogin()">Enter Console</button>
-          <button class="btnGhost" onclick="clearLogin()">Clear</button>
+      <div class="modalBody">
+        <div class="smallWarn">
+          ✅ Only paste your <b>public</b> wallet address. Never share 12/24-word phrases.
         </div>
 
-        <div style="height:12px;"></div>
-        <div class="chip" id="loginHint" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.1)">Login failed</div>
+        <div class="in">
+          <label>Wallet Address</label>
+          <input id="linkAddress" placeholder="0x... / bc1... / T... (public address)" autocomplete="off"/>
+        </div>
+
+        <div class="in">
+          <label>Label (optional)</label>
+          <input id="linkLabel" placeholder="e.g. My Trust Wallet" autocomplete="off"/>
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow">
+            <span>Status</span>
+            <b id="linkStatus">Not linked</b>
+          </div>
+          <div class="feeRow">
+            <span>Tip</span>
+            <b>We may request signature proof</b>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
-
-  <div id="appView" class="app" data-view="overview">
-    <div class="shell">
-
-      <aside id="sidebar" class="sidebar">
-        <div class="brand">
-          <div class="brandDot"></div>
-          <div class="brandName">
-            <strong>Veloci Admin</strong>
-            <span id="subAdmin">Operator • —</span>
-          </div>
-        </div>
-
-        <div class="nav">
-          <div class="navBtn active" id="nav-overview" onclick="switchView('overview')">
-            <div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div>
-            <div class="countPill" id="cnt-overview">✓</div>
-          </div>
-
-          <div class="navBtn" id="nav-users" onclick="switchView('users')">
-            <div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div>
-            <div class="countPill" id="cnt-users">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-plans" onclick="switchView('plans')">
-            <div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div>
-            <div class="countPill" id="cnt-plans">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-wallets" onclick="switchView('wallets')">
-            <div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div>
-            <div class="countPill" id="cnt-wallets">0</div>
-          </div>
-
-          <!-- ✅ NEW: Wallet Links -->
-          <div class="navBtn" id="nav-walletlinks" onclick="switchView('walletlinks')">
-            <div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div>
-            <div class="countPill" id="cnt-walletlinks">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-support" onclick="switchView('support')">
-            <div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div>
-            <div class="countPill" id="cnt-support">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-deposits" onclick="switchView('deposits')">
-            <div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div>
-            <div class="countPill" id="cnt-deposits">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-withdrawals" onclick="switchView('withdrawals')">
-            <div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div>
-            <div class="countPill" id="cnt-withdrawals">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-portfolio" onclick="switchView('portfolio')">
-            <div class="navLeft"><div class="navIcon">💼</div><div class="navText">Portfolio</div></div>
-            <div class="countPill" id="cnt-portfolio">0</div>
-          </div>
-
-          <div class="navBtn" id="nav-kyc" onclick="switchView('kyc')">
-            <div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div>
-            <div class="countPill" id="cnt-kyc">0</div>
-          </div>
-        </div>
-
-        <div class="sideCard">
-          <strong>Live Feed</strong>
-          <div class="small">Actions + errors.</div>
-          <div class="debug" id="feedBox">No activity yet.</div>
-        </div>
-
-        <div class="sideCard">
-          <strong>Session</strong>
-          <div class="small">Lock returns to login.</div>
-          <div class="inline" style="margin-top:10px;">
-            <button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button>
-          </div>
-        </div>
-      </aside>
-
-      <main class="main" id="mainScroll">
-
-        <div class="mobileTop">
-          <button class="burger" onclick="openSidebar()">☰</button>
-          <div class="chip ok">CONNECTED</div>
-        </div>
-
-        <div class="topbar" id="topbar">
-          <div class="chips">
-            <span class="chip ok" id="connChip">CONNECTED</span>
-            <span class="chip" id="autoChip">AUTO: OFF</span>
-            <span class="chip" id="lastChip">LAST: —</span>
-            <span class="chip" id="adminChip">ADMIN: —</span>
-          </div>
-
-          <div class="inline" style="min-width:0">
-            <div class="searchWrap">
-              <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
-              <input id="globalSearch" class="searchInput" placeholder="Search users by name/email (type letters…)" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
-              <div id="searchSugg" class="sugg">
-                <div class="suggHead">
-                  <div class="suggTitle" id="suggTitle">Matches</div>
-                  <button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button>
-                </div>
-                <div class="suggList" id="suggList"></div>
-              </div>
-            </div>
-
-            <button class="btnGhost" onclick="refreshAll()">Refresh</button>
-            <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
-            <button class="btnGhost" onclick="ping()">Ping</button>
-          </div>
-        </div>
-
-        <div class="grid">
-          <div class="gridMain">
-
-            <section id="view-overview" class="card">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">⚡ Overview</div>
-                  <div class="small">Counts.</div>
-                </div>
-                <div class="inline">
-                  <span class="chip">Users: <span class="mono" id="ov-users">0</span></span>
-                  <span class="chip">Plans: <span class="mono" id="ov-plans">0</span></span>
-                  <span class="chip">Wallets: <span class="mono" id="ov-wallets">0</span></span>
-                  <span class="chip">Wallet Links: <span class="mono" id="ov-walletlinks">0</span></span>
-                  <span class="chip">Tickets: <span class="mono" id="ov-support">0</span></span>
-                  <span class="chip">KYC: <span class="mono" id="ov-kyc">0</span></span>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>User</th>
-                        <th>Withdrawals</th>
-                        <th>Total</th>
-                        <th>Latest</th>
-                      </tr>
-                    </thead>
-                    <tbody id="riskRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-users" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">👤 Users</div>
-                  <div class="small" id="usersStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadUsers)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:120px">Balance</th>
-                        <th style="width:160px">Set Balance</th>
-                        <th style="width:140px">Amount</th>
-                        <th style="width:260px">Plan Upgrade</th>
-                        <th style="width:380px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="userRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-plans" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">📈 Plans</div>
-                  <div class="small" id="plansStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadPlans)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:160px">Plan</th>
-                        <th style="width:120px">Amount</th>
-                        <th style="width:120px">Return</th>
-                        <th style="width:110px">Duration</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:240px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="planRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <!-- ✅ UPDATED: Wallets uses wallet-api and includes preset list -->
-            <section id="view-wallets" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">🏦 Deposit Wallets (Edit from Admin)</div>
-                  <div class="small" id="walletsStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadWallets)">Refresh</button>
-                  <button class="btnPrimary" onclick="addPresetWalletRows()">Load Preset Coins</button>
-                </div>
-              </div>
-
-              <div class="small" style="margin-bottom:10px">
-                Asset keys must be unique (examples: <span class="mono">BTC</span>, <span class="mono">ETH</span>, <span class="mono">USDT_TRC20</span>, <span class="mono">USDT_ERC20</span>). XRP is excluded.
-              </div>
-
-              <form onsubmit="createWallet(event)">
-                <div class="inline">
-                  <input id="newAssetKey" class="w200" placeholder="Asset Key (USDT_TRC20)" required>
-                  <input id="newName" class="w200" placeholder="Name (Tether USDT)" required>
-                  <input id="newNetwork" class="w200" placeholder="Network (TRC20)" required>
-                  <input id="newAddress" class="grow" placeholder="Deposit Address" required>
-                  <input id="newMemoLabel" class="w200" placeholder="Memo Label (optional)">
-                  <input id="newMemoValue" class="w200" placeholder="Memo Value (optional)">
-                  <input id="newNote" class="grow" placeholder="Note (optional)">
-                  <button class="btnOk" type="submit">Add</button>
-                </div>
-              </form>
-
-              <div style="height:12px"></div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:180px">Asset Key</th>
-                        <th style="width:220px">Name</th>
-                        <th style="width:150px">Network</th>
-                        <th style="width:520px">Address</th>
-                        <th style="width:160px">Memo Label</th>
-                        <th style="width:180px">Memo Value</th>
-                        <th style="width:300px">Note</th>
-                        <th style="width:220px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="walletRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <!-- ✅ NEW: Wallet Links Queue -->
-            <section id="view-walletlinks" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">🔗 Wallet Link Requests</div>
-                  <div class="small" id="walletLinksStatus">Not loaded.</div>
-                </div>
-                <div class="inline">
-                  <select id="wlFilter" class="w200" onchange="safeLoad(loadWalletLinks)">
-                    <option value="">All</option>
-                    <option value="pending" selected>Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                  <button class="btnGhost" onclick="safeLoad(loadWalletLinks)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="small" style="margin-bottom:10px">
-                Approve/reject wallet link requests created from user wallet page. Status updates are written with your <span class="mono">ADMIN_ID</span>.
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:520px">Address</th>
-                        <th style="width:260px">Label</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:320px">Admin Note</th>
-                        <th style="width:220px">Created</th>
-                        <th style="width:260px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="walletLinkRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-support" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">🎫 Support</div>
-                  <div class="small" id="supportStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadSupport)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:220px">Subject</th>
-                        <th style="width:760px">Message</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:380px">Reply</th>
-                        <th style="width:220px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="supportRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-deposits" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">➕ Deposits</div>
-                  <div class="small" id="depStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadDeposits)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:90px">Asset</th>
-                        <th style="width:120px">Network</th>
-                        <th style="width:120px">Amount</th>
-                        <th style="width:420px">TX</th>
-                        <th style="width:110px">Proof</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:240px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="depRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-withdrawals" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">➖ Withdrawals (Send Requests)</div>
-                  <div class="small" id="wdStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadWithdrawals)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:90px">Asset</th>
-                        <th style="width:120px">Network</th>
-                        <th style="width:120px">Amount</th>
-                        <th style="width:560px">Wallet</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:240px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="wdRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-portfolio" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">💼 Portfolio</div>
-                  <div class="small" id="pfStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadPortfolios)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="inline" style="margin-bottom:10px">
-                <input id="pfEmail" class="grow" placeholder="Search by user email" oninput="loadPortfolios()"/>
-              </div>
-
-              <form onsubmit="savePortfolio(event)">
-                <input type="hidden" id="pfId">
-                <div class="inline">
-                  <input id="pfUserEmail" class="grow" placeholder="User Email" required>
-                  <select id="pfAsset" class="w140" required>
-                    <option value="btc">BTC</option>
-                    <option value="eth">ETH</option>
-                    <option value="usdt">USDT</option>
-                  </select>
-                  <input id="pfAmount" class="w140" type="number" step="0.00000001" placeholder="Amount" required>
-                  <input id="pfBuyPrice" class="w140" type="number" step="0.01" placeholder="Buy (USD)" required>
-                  <input id="pfNotes" class="grow" placeholder="Notes">
-                  <button class="btnOk" type="submit">Save</button>
-                </div>
-              </form>
-
-              <div style="height:12px"></div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:90px">Asset</th>
-                        <th style="width:120px">Amount</th>
-                        <th style="width:120px">Buy</th>
-                        <th style="width:520px">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody id="pfRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-            <section id="view-kyc" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">🛡️ KYC Requests</div>
-                  <div class="small" id="kycStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadKyc)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:180px">Doc Type</th>
-                        <th style="width:200px">Country</th>
-                        <th style="width:110px">Front</th>
-                        <th style="width:110px">Back</th>
-                        <th style="width:120px">Status</th>
-                        <th style="width:220px">Submitted</th>
-                        <th style="width:280px">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="kycRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
-          </div>
-
-          <div class="card gridOps" id="opsCard">
-            <div class="cardHead">
-              <div>
-                <div class="cardTitle">🧠 Ops Intelligence</div>
-                <div class="small">System + last error/response.</div>
-              </div>
-              <div class="rowTools">
-                <button class="btnGhost" onclick="clearDebug()">Clear</button>
-              </div>
-            </div>
-
-            <div class="small"><strong>System Status</strong></div>
-            <div class="debug" id="sysBox">Not connected.</div>
-
-            <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div>
-            <div class="debug" id="debugBox">No errors yet.</div>
-          </div>
-
-        </div>
-
-      </main>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnLinkCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnLinkSubmit" type="button" disabled style="opacity:.55; cursor:not-allowed;">Link Wallet</button>
+      </div>
     </div>
   </div>
 
-<script>
-const API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
-const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+  <script>
+    /* ============================================================
+      ✅ SUPABASE AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
+    ============================================================ */
+    const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let ADMIN_SECRET = "";
-let ADMIN_ID = "admin";
-let ACTIVE_VIEW = "overview";
-let AUTO_REFRESH = false;
-let AUTO_TIMER = null;
+    // ✅ Your Edge Function URL
+    const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
 
-const CACHE = {
-  support: [],
-  users: [],
-  plans: [],
-  deposits: [],
-  withdrawals: [],
-  portfolio: [],
-  wallets: [],
-  kyc: [],
-  wallet_links: []
-};
-
-const USERNAME_MAP = {};
-let SEARCH_RESULTS = [];
-let SEARCH_CURSOR = -1;
-
-const PLAN_TEMPLATES = [
-  { key:"silver",   label:"Silver • X10 • 5 days • Min $100",   plan_name:"Silver Plan",   amount:100,  x_times:10, duration_days:5 },
-  { key:"gold",     label:"Gold • X13 • 5 days • Min $700",     plan_name:"Gold Plan",     amount:700,  x_times:13, duration_days:5 },
-  { key:"diamond",  label:"Diamond • X15 • 5 days • Min $1500", plan_name:"Diamond Plan",  amount:1500, x_times:15, duration_days:5 },
-  { key:"platinum", label:"Platinum • X18 • 5 days • Min $5000",plan_name:"Platinum Plan", amount:5000, x_times:18, duration_days:5 },
-];
-
-/* ✅ Preset wallet rows (NO XRP) */
-const WALLET_PRESETS = [
-  { asset_key:"BTC",        name:"Bitcoin",           network:"BTC",   address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"ETH",        name:"Ethereum",          network:"ERC20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"USDT_TRC20", name:"Tether USDT",       network:"TRC20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"USDT_ERC20", name:"Tether USDT",       network:"ERC20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"USDT_BEP20", name:"Tether USDT",       network:"BEP20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"USDC_ERC20", name:"USD Coin",          network:"ERC20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"BNB_BEP20",  name:"BNB",               network:"BEP20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"SOL",        name:"Solana",            network:"SOL",   address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"TRX",        name:"TRON",              network:"TRC20", address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"DOGE",       name:"Dogecoin",          network:"DOGE",  address:"", memo_label:null, memo_value:null, note:"" },
-  { asset_key:"LTC",        name:"Litecoin",          network:"LTC",   address:"", memo_label:null, memo_value:null, note:"" },
-];
-
-function esc(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
-function nowStamp(){ return new Date().toLocaleString(); }
-
-function inferUsernameFromEmail(email){
-  const e = String(email||"").trim().toLowerCase();
-  if(!e || !e.includes("@")) return "";
-  let u = e.split("@")[0] || "";
-  u = u.replaceAll(".", " ").replaceAll("_", " ").replaceAll("-", " ").trim();
-  if(!u) return "";
-  return u.split(" ").map(w => w ? (w[0].toUpperCase() + w.slice(1)) : "").join(" ");
-}
-function usernameForEmail(email){
-  const key = String(email||"").trim().toLowerCase();
-  return USERNAME_MAP[key] || inferUsernameFromEmail(key) || "User";
-}
-function userPillHtml(email){
-  const em = String(email||"").trim().toLowerCase();
-  const nm = usernameForEmail(em);
-  return `<span class="namePill"><span class="nm">${esc(nm)}</span><span class="em">${esc(em)}</span></span>`;
-}
-
-function openProof(url){
-  const u = String(url||"").trim();
-  if(!u){ modalShow("No proof", "No URL attached."); return; }
-  modalShow("Preview", "");
-  const body = document.getElementById("modalBody");
-  body.innerHTML = `
-    <div class="proofWrap">
-      <div class="proofHint">
-        <span class="chip">Preview</span>
-        <a href="${esc(u)}" target="_blank" rel="noopener">Open in new tab</a>
-      </div>
-      <div class="proofFrame">
-        <iframe src="${esc(u)}" loading="lazy" referrerpolicy="no-referrer"></iframe>
-      </div>
-      <div class="tiny">If preview is blocked by the host, use “Open in new tab”.</div>
-    </div>
-  `;
-}
-
-function modalShow(title, body){
-  document.getElementById("modalTitle").textContent = title;
-  const el = document.getElementById("modalBody");
-  el.textContent = body;
-  document.getElementById("modalOverlay").style.display = "flex";
-}
-function modalClose(){ document.getElementById("modalOverlay").style.display = "none"; }
-
-function feed(line){
-  const box = document.getElementById("feedBox");
-  const stamp = nowStamp();
-  const prev = (box.textContent && box.textContent.trim() !== "No activity yet.") ? box.textContent : "";
-  box.textContent = `[${stamp}] ${line}\n` + prev;
-}
-
-function setSysBox(msg){ document.getElementById("sysBox").textContent = msg; }
-function setDebugBox(msg){ document.getElementById("debugBox").textContent = msg; }
-
-function clearDebug(){
-  setDebugBox("No errors yet.");
-  setSysBox(ADMIN_SECRET ? "Connected." : "Not connected.");
-  modalShow("Cleared", "Ops Intelligence cleared.");
-}
-
-function openSidebar(){
-  document.getElementById("sidebar").classList.add("open");
-  document.getElementById("overlay").classList.add("show");
-}
-function closeSidebar(){
-  document.getElementById("sidebar").classList.remove("open");
-  document.getElementById("overlay").classList.remove("show");
-}
-
-function switchView(view){
-  ACTIVE_VIEW = view;
-  document.getElementById("appView").setAttribute("data-view", view);
-
-  const views = ["overview","users","plans","wallets","walletlinks","support","deposits","withdrawals","portfolio","kyc"];
-  views.forEach(v=>{
-    const nav = document.getElementById("nav-" + v);
-    if(nav) nav.classList.toggle("active", v === view);
-    const sec = document.getElementById("view-" + v);
-    if(sec) sec.classList.toggle("hidden", v !== view);
-  });
-
-  closeSidebar();
-  scrollTopMain();
-}
-
-function scrollTopMain(){
-  const main = document.getElementById("mainScroll");
-  if(main && main.scrollTo){
-    main.scrollTo({ top: 0, behavior: "smooth" });
-  }else{
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-}
-
-/* ✅ Search: matches by email OR username */
-function normalize(s){ return String(s||"").trim().toLowerCase(); }
-function buildUserIndex(){
-  const map = new Map();
-  (CACHE.users||[]).forEach(u=>{
-    const email = normalize(u.email);
-    if(!email) return;
-    const name =
-      normalize(u.username||u.full_name||u.name||u.display_name) ||
-      normalize(USERNAME_MAP[email]) ||
-      normalize(inferUsernameFromEmail(email));
-    map.set(email, { email, name: name || "user" });
-  });
-  return Array.from(map.values());
-}
-function searchUsers(q){
-  const query = normalize(q);
-  if(!query) return [];
-  const index = buildUserIndex();
-
-  const prefix = index.filter(u => (u.name||"").startsWith(query) || (u.email||"").startsWith(query));
-  const contains = index.filter(u =>
-    !((u.name||"").startsWith(query) || (u.email||"").startsWith(query)) &&
-    (((u.name||"").includes(query)) || ((u.email||"").includes(query)))
-  );
-
-  return prefix.concat(contains).slice(0, 24);
-}
-
-function getSearch(){ return normalize(document.getElementById("globalSearch").value || ""); }
-function matchSearch(obj){
-  const q = getSearch();
-  if(!q) return true;
-
-  try{
-    const o = obj || {};
-    const email = normalize(o.email || o.user_email || "");
-    const name = normalize(USERNAME_MAP[email] || inferUsernameFromEmail(email) || "");
-    if(email.includes(q) || name.includes(q)) return true;
-    return JSON.stringify(o).toLowerCase().includes(q);
-  }catch(e){
-    return true;
-  }
-}
-
-/* Suggestions UI */
-function focusSearch(){ document.getElementById("globalSearch").focus(); }
-function clearSearch(){
-  const inp = document.getElementById("globalSearch");
-  inp.value = "";
-  hideSuggestions();
-  refreshVisibleOnly();
-}
-function showSuggestions(items){
-  const box = document.getElementById("searchSugg");
-  const list = document.getElementById("suggList");
-  const title = document.getElementById("suggTitle");
-
-  SEARCH_RESULTS = items || [];
-  SEARCH_CURSOR = -1;
-
-  if(SEARCH_RESULTS.length === 0){
-    hideSuggestions();
-    return;
-  }
-
-  title.textContent = `Matches (${SEARCH_RESULTS.length})`;
-  list.innerHTML = "";
-
-  SEARCH_RESULTS.forEach((u, idx)=>{
-    const nm = usernameForEmail(u.email);
-    list.innerHTML += `
-      <div class="suggItem" id="sugg-${idx}" onclick="selectSuggestion(${idx})">
-        <div class="suggLeft">
-          <div class="suggName">${esc(nm)}</div>
-          <div class="suggEmail">${esc(u.email)}</div>
-        </div>
-        <div class="suggTag">OPEN</div>
-      </div>
-    `;
-  });
-
-  box.classList.add("show");
-}
-function hideSuggestions(){
-  document.getElementById("searchSugg").classList.remove("show");
-  SEARCH_RESULTS = [];
-  SEARCH_CURSOR = -1;
-}
-function highlightCursor(){
-  for(let i=0;i<SEARCH_RESULTS.length;i++){
-    const el = document.getElementById("sugg-"+i);
-    if(!el) continue;
-    el.style.background = (i === SEARCH_CURSOR) ? "rgba(56,189,248,.10)" : "";
-  }
-  if(SEARCH_CURSOR >= 0){
-    const el = document.getElementById("sugg-"+SEARCH_CURSOR);
-    if(el && el.scrollIntoView) el.scrollIntoView({ block:"nearest" });
-  }
-}
-function selectSuggestion(idx){
-  const u = SEARCH_RESULTS[idx];
-  if(!u) return;
-
-  document.getElementById("globalSearch").value = u.email;
-  hideSuggestions();
-
-  switchView("users");
-  refreshVisibleOnly();
-  feed("SEARCH selected -> " + u.email);
-}
-
-function onSearchInput(){
-  const q = getSearch();
-  refreshVisibleOnly();
-
-  if(q.length >= 1 && (CACHE.users||[]).length > 0){
-    const items = searchUsers(q);
-    showSuggestions(items);
-  }else{
-    hideSuggestions();
-  }
-}
-function onSearchKeydown(e){
-  const open = document.getElementById("searchSugg").classList.contains("show");
-  if(!open) return;
-
-  if(e.key === "ArrowDown"){
-    e.preventDefault();
-    SEARCH_CURSOR = Math.min(SEARCH_CURSOR + 1, SEARCH_RESULTS.length - 1);
-    highlightCursor();
-  }else if(e.key === "ArrowUp"){
-    e.preventDefault();
-    SEARCH_CURSOR = Math.max(SEARCH_CURSOR - 1, 0);
-    highlightCursor();
-  }else if(e.key === "Enter"){
-    if(SEARCH_CURSOR >= 0){
-      e.preventDefault();
-      selectSuggestion(SEARCH_CURSOR);
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
-  }else if(e.key === "Escape"){
-    hideSuggestions();
-  }
-}
 
-document.addEventListener("click", (ev)=>{
-  const wrap = document.querySelector(".searchWrap");
-  if(!wrap) return;
-  if(!wrap.contains(ev.target)){
-    hideSuggestions();
-  }
-});
+    function toast(msg){
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window.__toastT);
+      window.__toastT = setTimeout(()=> el.classList.remove("show"), 1700);
+    }
 
-/* API */
-async function apiCall(action, payload={}){
-  if(!ADMIN_SECRET) throw new Error("Admin not connected.");
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("Copied ✅");
+      }catch(e){
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast("Copied ✅");
+      }
+    }
 
-  const res = await fetch(API_URL, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey": ANON_KEY,
-      "Authorization": "Bearer " + ANON_KEY,
-      "x-admin-secret": ADMIN_SECRET,
-      "x-admin-id": ADMIN_ID
-    },
-    body: JSON.stringify({ action, payload })
-  });
+    function buildQrData(item){
+      // keep safe handling
+      if(item.asset_key === "XRP" && item.memo_value){
+        return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`;
+      }
+      return item.address;
+    }
 
-  const raw = await res.text();
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
+    function renderTransparentQrSvg(data, size=152){
+      const qr = qrcode(0, "M");
+      qr.addData(data);
+      qr.make();
 
-  if(!res.ok || !data.success){
-    setDebugBox(`HTTP ${res.status}\nAction: ${action}\nPayload: ${JSON.stringify(payload)}\nResponse: ${raw}`);
-    feed("ERROR " + action + " -> HTTP " + res.status);
-    throw new Error(data.error || ("HTTP " + res.status));
-  }
-  return data;
-}
+      const cellCount = qr.getModuleCount();
+      const quiet = 4;
+      const total = cellCount + quiet * 2;
+      const cell = size / total;
 
-/* ✅ Wallet API (wallet-api Edge Function) */
-async function walletApiCall(action, bodyPayload={}){
-  if(!ADMIN_SECRET) throw new Error("Admin not connected.");
+      let svg = '';
+      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
 
-  const res = await fetch(WALLET_API_URL, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey": ANON_KEY,
-      "Authorization": "Bearer " + ANON_KEY,
-      "x-admin-secret": ADMIN_SECRET,
-      "x-admin-id": ADMIN_ID
-    },
-    body: JSON.stringify({ action, ...bodyPayload })
-  });
+      for(let r=0; r<cellCount; r++){
+        for(let c=0; c<cellCount; c++){
+          if(qr.isDark(r,c)){
+            const x = (c + quiet) * cell;
+            const y = (r + quiet) * cell;
+            svg += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="rgba(234,240,255,.95)"/>`;
+          }
+        }
+      }
+      svg += `</svg>`;
+      return svg;
+    }
 
-  const raw = await res.text();
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
+    function iconLetters(asset_key){
+      if(String(asset_key).startsWith("USDT")) return "USDT";
+      if(String(asset_key).startsWith("USDC")) return "USDC";
+      return String(asset_key || "").toUpperCase();
+    }
 
-  if(!res.ok || !data.success){
-    setDebugBox(`HTTP ${res.status}\nAction: ${action}\nPayload: ${JSON.stringify(bodyPayload)}\nResponse: ${raw}`);
-    feed("ERROR wallet-api " + action + " -> HTTP " + res.status);
-    throw new Error(data.error || ("HTTP " + res.status));
-  }
-  return data;
-}
+    function logoUrlFor(asset_key){
+      const sym = String(asset_key || "").toLowerCase();
+      return `https://assets.coincap.io/assets/icons/${sym}@2x.png`;
+    }
 
-async function safeLoad(fn){
-  try{
-    await fn();
-    document.getElementById("lastChip").textContent = "LAST: " + nowStamp();
-    setSysBox("OK • " + nowStamp());
-  }catch(e){
-    setSysBox("ERROR • " + e.message);
-    modalShow("Request failed", e.message);
-  }
-}
+    const COIN_GRAD = {
+      BTC: ["rgba(247,147,26,.28)", "rgba(255,193,7,.18)"],
+      ETH: ["rgba(98,126,234,.26)", "rgba(124,77,255,.18)"],
+      USDT: ["rgba(38,161,123,.26)", "rgba(34,197,94,.16)"],
+      USDC: ["rgba(39,117,202,.26)", "rgba(56,189,248,.16)"],
+      BNB: ["rgba(240,185,11,.26)", "rgba(245,158,11,.16)"],
+      SOL: ["rgba(0,255,163,.18)", "rgba(220,31,255,.16)"],
+      TRX: ["rgba(239,68,68,.22)", "rgba(245,158,11,.14)"],
+      LTC: ["rgba(190,190,190,.22)", "rgba(56,189,248,.12)"],
+      TON: ["rgba(56,189,248,.22)", "rgba(91,108,255,.16)"],
+      DOGE:["rgba(198,172,105,.22)", "rgba(245,158,11,.14)"],
+      MATIC:["rgba(168,85,247,.22)", "rgba(91,108,255,.14)"],
+      AVAX:["rgba(248,113,113,.22)", "rgba(124,77,255,.14)"]
+    };
 
-function clearLogin(){
-  document.getElementById("adminIdLogin").value = "";
-  document.getElementById("adminSecretLogin").value = "";
-  document.getElementById("loginHint").style.display = "none";
-}
+    function getGradFor(asset_key){
+      const key = String(asset_key || "").toUpperCase();
+      return COIN_GRAD[key] || ["rgba(91,108,255,.22)", "rgba(124,77,255,.18)"];
+    }
 
-async function connectFromLogin(){
-  const sid = (document.getElementById("adminIdLogin").value || "").trim();
-  const ssec = (document.getElementById("adminSecretLogin").value || "").trim();
-  if(!ssec){
-    document.getElementById("loginHint").style.display = "inline-flex";
-    document.getElementById("loginHint").textContent = "Enter Admin Secret";
-    return;
-  }
+    function estimateFee(asset_key, network){
+      const sym = String(asset_key || "").toUpperCase();
+      const net = String(network || "").toUpperCase();
 
-  ADMIN_ID = sid || "admin";
-  ADMIN_SECRET = ssec;
+      if(sym === "USDT" || sym === "USDC"){
+        if(net.includes("TRC")) return 1.0;
+        if(net.includes("BEP")) return 0.3;
+        if(net.includes("ERC")) return 6.0;
+        return 1.0;
+      }
+      if(net.includes("BTC")) return 0.00015;
+      if(net.includes("ETH") || net.includes("ERC")) return 0.0012;
+      if(net.includes("BSC") || net.includes("BEP")) return 0.0006;
+      if(net.includes("TRON") || net.includes("TRC")) return 2.0;
+      if(net.includes("SOL")) return 0.00005;
+      return 0.001;
+    }
 
-  try{ await apiCall("ping", {}); }
-  catch(e){
-    ADMIN_SECRET="";
-    document.getElementById("loginHint").style.display = "inline-flex";
-    document.getElementById("loginHint").textContent = "Login failed: " + e.message;
-    return;
-  }
+    let __wallets = [];
+    let __selectedCard = null;
 
-  document.getElementById("loginView").style.display = "none";
-  document.getElementById("appView").style.display = "block";
-  document.getElementById("adminChip").textContent = "ADMIN: " + ADMIN_ID;
-  document.getElementById("subAdmin").textContent = "Operator • " + ADMIN_ID;
+    function makeCard(item){
+      const qrData = buildQrData(item);
+      const badgeText = iconLetters(item.asset_key);
+      const grad = getGradFor(item.asset_key);
+      const logoUrl = logoUrlFor(item.asset_key);
 
-  feed("CONNECTED as " + ADMIN_ID);
-  refreshAll();
-}
-
-function lockConsole(){
-  ADMIN_SECRET = "";
-  ADMIN_ID = "admin";
-  AUTO_REFRESH = false;
-  if(AUTO_TIMER){ clearInterval(AUTO_TIMER); AUTO_TIMER=null; }
-  document.getElementById("autoChip").textContent = "AUTO: OFF";
-
-  Object.keys(CACHE).forEach(k=>CACHE[k]=[]);
-  Object.keys(USERNAME_MAP).forEach(k=>delete USERNAME_MAP[k]);
-
-  setSysBox("Not connected.");
-  setDebugBox("No errors yet.");
-
-  document.getElementById("appView").style.display = "none";
-  document.getElementById("loginView").style.display = "grid";
-  closeSidebar();
-  modalShow("Locked", "Returned to login.");
-}
-
-function refreshVisibleOnly(){
-  renderOverview();
-  if(ACTIVE_VIEW === "users") renderUsers(CACHE.users);
-  if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
-  if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
-  if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
-  if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
-  if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
-  if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
-  if(ACTIVE_VIEW === "portfolio") renderPortfolio(CACHE.portfolio);
-  if(ACTIVE_VIEW === "kyc") renderKyc(CACHE.kyc);
-}
-
-function toggleAutoRefresh(){
-  AUTO_REFRESH = !AUTO_REFRESH;
-  document.getElementById("autoChip").textContent = "AUTO: " + (AUTO_REFRESH ? "ON" : "OFF");
-  if(AUTO_REFRESH){
-    feed("AUTO REFRESH ON");
-    AUTO_TIMER = setInterval(()=>refreshAll(), 30000);
-    modalShow("Auto Refresh", "Enabled. Refreshing every 30 seconds.");
-  }else{
-    feed("AUTO REFRESH OFF");
-    if(AUTO_TIMER){ clearInterval(AUTO_TIMER); AUTO_TIMER=null; }
-    modalShow("Auto Refresh", "Disabled.");
-  }
-}
-
-async function ping(){
-  try{
-    const res = await apiCall("ping", {});
-    feed("PING OK");
-    modalShow("Ping OK", JSON.stringify(res.data || {}, null, 2));
-  }catch(e){
-    modalShow("Ping Failed", e.message);
-  }
-}
-
-function refreshAll(){
-  safeLoad(loadUsers);
-  safeLoad(loadPlans);
-  safeLoad(loadWallets);
-  safeLoad(loadWalletLinks);
-  safeLoad(loadSupport);
-  safeLoad(loadDeposits);
-  safeLoad(loadWithdrawals);
-  safeLoad(loadPortfolios);
-  safeLoad(loadKyc);
-}
-
-function riskForEmail(email){
-  const list = (CACHE.withdrawals||[]).filter(w => String(w.user_email||"").toLowerCase() === String(email||"").toLowerCase());
-  const total = list.reduce((s,w)=> s + Number(w.amount||0), 0);
-  const count = list.length;
-  return { total, count, latest: list[0]?.status || "" };
-}
-
-function renderOverview(){
-  document.getElementById("ov-users").textContent = String(CACHE.users.length);
-  document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
-  document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
-  document.getElementById("ov-walletlinks").textContent = String(CACHE.wallet_links.length);
-  document.getElementById("ov-support").textContent = String(CACHE.support.length);
-  document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
-
-  document.getElementById("cnt-users").textContent = String(CACHE.users.filter(matchSearch).length);
-  document.getElementById("cnt-plans").textContent = String(CACHE.plans.filter(matchSearch).length);
-  document.getElementById("cnt-wallets").textContent = String(CACHE.wallets.filter(matchSearch).length);
-  document.getElementById("cnt-walletlinks").textContent = String(CACHE.wallet_links.filter(matchSearch).length);
-  document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
-  document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
-  document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
-  document.getElementById("cnt-portfolio").textContent = String(CACHE.portfolio.filter(matchSearch).length);
-  document.getElementById("cnt-kyc").textContent = String(CACHE.kyc.filter(matchSearch).length);
-
-  const tbody = document.getElementById("riskRows");
-  const emails = Array.from(new Set((CACHE.withdrawals||[]).map(w=>String(w.user_email||"").toLowerCase()).filter(Boolean)));
-  const rows = emails.map(e=>({ email:e, ...riskForEmail(e) }))
-    .sort((a,b)=> (b.total - a.total))
-    .filter(matchSearch);
-
-  if(rows.length === 0){
-    tbody.innerHTML = `<tr><td colspan="4" style="padding:14px;color:rgba(234,240,255,.70)">No activity yet.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = "";
-  rows.forEach(r=>{
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(r.email)}</td>
-        <td>${esc(r.count)}</td>
-        <td>$${Number(r.total||0).toFixed(2)}</td>
-        <td>${esc(r.latest||"-")}</td>
-      </tr>
-    `;
-  });
-}
-
-function planOptionsHtml(){
-  return PLAN_TEMPLATES.map(p=>`<option value="${esc(p.key)}">${esc(p.label)}</option>`).join("");
-}
-
-/* USERS */
-async function loadUsers(){
-  document.getElementById("usersStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("users_list");
-  CACHE.users = res.data || [];
-
-  CACHE.users.forEach(u=>{
-    const email = String(u.email||"").trim().toLowerCase();
-    const name =
-      String(u.username||u.full_name||u.name||u.display_name||"").trim() ||
-      inferUsernameFromEmail(email);
-    if(email) USERNAME_MAP[email] = name || inferUsernameFromEmail(email) || "User";
-  });
-
-  renderUsers(CACHE.users);
-  feed("users_list loaded (" + CACHE.users.length + ")");
-  renderOverview();
-  onSearchInput();
-}
-
-function renderUsers(data){
-  const status = document.getElementById("usersStatus");
-  const tbody = document.getElementById("userRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No users found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} user(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(u=>{
-    const uid = esc(u.id||"");
-    const email = String(u.email||"").trim().toLowerCase();
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>$${Number(u.balance||0).toFixed(2)}</strong></td>
-        <td><input type="number" step="0.01" id="setbal-${uid}" placeholder="9000.00"></td>
-        <td><input type="number" step="0.01" id="amt-${uid}" placeholder="50.00"></td>
-        <td>
-          <select id="plan-${uid}">
-            ${planOptionsHtml()}
-          </select>
-        </td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
-            <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
-            <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
-            <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
-            <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
+      const memoBlock = item.memo_label && item.memo_value ? `
+        <div class="field">
+          <div class="label">
+            <span>${escapeHtml(item.memo_label)}</span>
+            <button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy</button>
           </div>
-        </td>
-      </tr>
-    `;
-  });
-}
+          <div class="value">${escapeHtml(item.memo_value)}</div>
+        </div>
+      ` : '';
 
-async function creditUser(email,id){
-  const amt = Number(document.getElementById(`amt-${id}`).value||0);
-  if(amt<=0){ modalShow("Invalid amount","Enter amount > 0"); return; }
-  const res = await apiCall("user_credit", { email, amount: amt });
-  feed("user_credit -> " + email);
-  modalShow("Credited", `User: ${email}\nNew Balance: ${res.data?.new_balance ?? "ok"}\n`);
-  safeLoad(loadUsers);
-}
+      const note = item.note
+        ? `<div class="hint">${escapeHtml(item.note)}</div>`
+        : `<div class="hint">Deposit only.</div>`;
 
-async function debitUser(email,id){
-  const amt = Number(document.getElementById(`amt-${id}`).value||0);
-  if(amt<=0){ modalShow("Invalid amount","Enter amount > 0"); return; }
-  const res = await apiCall("user_debit", { email, amount: amt });
-  feed("user_debit -> " + email);
-  modalShow("Debited", `User: ${email}\nNew Balance: ${res.data?.new_balance ?? "ok"}\n`);
-  safeLoad(loadUsers);
-}
+      const el = document.createElement("div");
+      el.className = "card";
+      el.setAttribute("data-search", `${item.asset_key} ${item.name} ${item.network}`.toLowerCase());
+      el.style.setProperty("--coinA", grad[0]);
+      el.style.setProperty("--coinB", grad[1]);
 
-async function setBalance(email,id){
-  const target = Number(document.getElementById(`setbal-${id}`).value||NaN);
-  if(!Number.isFinite(target)){ modalShow("Invalid target","Enter a target balance number."); return; }
-  if(!confirm(`Set ${email} balance to $${target.toFixed(2)} ?`)) return;
-  const res = await apiCall("user_set_balance", { email, target_balance: target });
-  feed("user_set_balance -> " + email);
-  modalShow("Balance Set", `User: ${email}\nTarget: $${target.toFixed(2)}\nDelta applied: ${res.data?.delta ?? ""}\n`);
-  safeLoad(loadUsers);
-}
+      el.innerHTML = `
+        <div class="row">
+          <div class="left">
+            <div class="meta">
+              <div class="coin">
+                <div class="badge" title="${escapeHtml(item.asset_key)}">
+                  <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(item.asset_key)} logo"
+                       onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='block';">
+                  <span class="fallback">${escapeHtml(badgeText)}</span>
+                </div>
+                <div class="names">
+                  <div class="sym">${escapeHtml(item.name)} <span style="opacity:.7;">•</span> ${escapeHtml(item.asset_key)}</div>
+                  <div class="net">${escapeHtml(item.network)}</div>
+                </div>
+              </div>
+              <div class="pill"><span class="mini"></span>Deposit</div>
+            </div>
 
-async function upgradeUser(email,id){
-  const key = document.getElementById(`plan-${id}`).value;
-  const tpl = PLAN_TEMPLATES.find(p=>p.key === key);
-  if(!tpl){ modalShow("Plan missing","Invalid plan selection."); return; }
-  if(!confirm(`Upgrade ${email} to:\n${tpl.label}\n\nProceed?`)) return;
+            <div class="addr">
+              <div class="field">
+                <div class="label">
+                  <span>Deposit Address</span>
+                  <button class="btn secondary" data-copy="${escapeHtml(item.address)}" type="button">Copy</button>
+                </div>
+                <div class="value">${escapeHtml(item.address)}</div>
+              </div>
 
-  await apiCall("plan_assign", {
-    email,
-    plan_name: tpl.plan_name,
-    amount: tpl.amount,
-    x_times: tpl.x_times,
-    duration_days: tpl.duration_days
-  });
+              ${memoBlock}
 
-  feed("plan_assign -> " + email);
-  modalShow("Upgraded", `User: ${email}\nPlan: ${tpl.plan_name}\nAmount: $${tpl.amount}\nReturn: X${tpl.x_times}\nDuration: ${tpl.duration_days} days\n`);
-  safeLoad(loadPlans);
-}
-
-async function deleteUser(email){
-  if(!confirm(`DELETE USER:\n${email}\n\nThis removes auth + profile.\nContinue?`)) return;
-  const res = await apiCall("user_delete", { email });
-  feed("user_delete -> " + email);
-  modalShow("User Deleted", `Deleted: ${email}\nAuth User ID: ${res.data?.auth_user_id ?? ""}\nAuth Deleted: ${res.data?.auth_deleted ?? ""}\n`);
-  safeLoad(loadUsers);
-}
-
-/* PLANS */
-async function loadPlans(){
-  document.getElementById("plansStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("plans_list");
-  CACHE.plans = res.data || [];
-  renderPlans(CACHE.plans);
-  feed("plans_list loaded (" + CACHE.plans.length + ")");
-  renderOverview();
-}
-function renderPlans(data){
-  const status = document.getElementById("plansStatus");
-  const tbody = document.getElementById("planRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No plans found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} plan(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(p=>{
-    const pid = esc(p.id||"");
-    const x = Number(p.roi_percent||0);
-    const email = String(p.user_email||"").trim().toLowerCase();
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>${esc(p.plan_name||"")}</strong></td>
-        <td>$${Number(p.amount||0).toFixed(2)}</td>
-        <td><strong>X${Number.isFinite(x) ? x : 0}</strong></td>
-        <td>${Number(p.duration_days||0)}d</td>
-        <td>${esc(p.status||"")}</td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="approvePlan('${pid}')">Approve</button>
-            <button class="btnPrimary" onclick="completePlan('${pid}')">Complete</button>
-            <button class="btnErr" onclick="rejectPlan('${pid}')">Reject</button>
+              <div class="actions">
+                <button class="btn" data-copy="${escapeHtml(item.address)}" type="button">Copy Address</button>
+                <button class="btn send" data-send="${escapeHtml(item.asset_key)}" data-network="${escapeHtml(item.network)}" type="button">Send</button>
+                ${item.memo_label && item.memo_value ? `<button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy ${escapeHtml(item.memo_label)}</button>` : ''}
+              </div>
+            </div>
           </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-async function approvePlan(id){
-  await apiCall("plan_approve", { plan_id:id });
-  feed("plan_approve -> " + id);
-  modalShow("Plan Approved", "Plan has been approved.");
-  safeLoad(loadPlans);
-}
-async function rejectPlan(id){
-  await apiCall("plan_reject", { plan_id:id });
-  feed("plan_reject -> " + id);
-  modalShow("Plan Rejected", "Plan has been rejected.");
-  safeLoad(loadPlans);
-}
-async function completePlan(id){
-  if(!confirm("Complete plan now?")) return;
-  const res = await apiCall("plan_complete", { plan_id:id });
-  feed("plan_complete -> " + id);
-  modalShow("Plan Completed", `Completed.\nReturn: X${res.data?.x_times ?? ""}\nProfit credited: ${res.data?.profit ?? ""}`);
-  safeLoad(loadPlans);
-  safeLoad(loadUsers);
-}
 
-/* ✅ WALLETS (wallet-api) */
-function addPresetWalletRows(){
-  // Merge presets into CACHE.wallets if missing (by asset_key)
-  const byKey = new Map((CACHE.wallets||[]).map(w => [String(w.asset_key||"").trim().toUpperCase(), w]));
-  WALLET_PRESETS.forEach(p=>{
-    const k = String(p.asset_key||"").trim().toUpperCase();
-    if(!k) return;
-    if(!byKey.has(k)){
-      byKey.set(k, {
-        asset_key: k,
-        name: p.name,
-        network: p.network,
-        address: "",
-        memo_label: null,
-        memo_value: null,
-        note: ""
+          <div class="right">
+            <div class="qr" aria-label="QR code">${renderTransparentQrSvg(qrData, 152)}</div>
+            ${note}
+          </div>
+        </div>
+      `;
+
+      // Highlight on click (but don't block button clicks)
+      el.addEventListener("click", (e)=>{
+        const t = e.target;
+        if(t && (t.closest("button") || t.closest("a") || t.closest("input") || t.closest("select"))) return;
+        if(__selectedCard) __selectedCard.classList.remove("selected");
+        el.classList.add("selected");
+        __selectedCard = el;
       });
+
+      el.querySelectorAll("[data-copy]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          copyText(btn.getAttribute("data-copy") || "");
+        });
+      });
+
+      el.querySelectorAll("[data-send]").forEach(btn=>{
+        btn.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          const asset = btn.getAttribute("data-send") || "";
+          const network = btn.getAttribute("data-network") || "";
+          openSendModal(asset, network);
+        });
+      });
+
+      return el;
     }
-  });
-  CACHE.wallets = Array.from(byKey.values()).sort((a,b)=> String(a.asset_key||"").localeCompare(String(b.asset_key||"")));
-  renderWallets(CACHE.wallets);
-  renderOverview();
-  feed("Preset coins loaded into table");
-}
 
-async function loadWallets(){
-  const st = document.getElementById("walletsStatus");
-  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+    function render(list){
+      const grid = document.getElementById("grid");
+      grid.innerHTML = "";
+      list.forEach(item => grid.appendChild(makeCard(item)));
+      applySearch();
+    }
 
-  // pull from wallet-api
-  const res = await walletApiCall("wallets_admin_list", {});
-  const list = res.wallets || [];
-  // normalize keys to uppercase
-  CACHE.wallets = (list||[]).map(w => ({
-    asset_key: String(w.asset_key||"").trim().toUpperCase(),
-    name: String(w.name||"").trim(),
-    network: String(w.network||"").trim(),
-    address: String(w.address||"").trim(),
-    memo_label: w.memo_label === undefined ? null : w.memo_label,
-    memo_value: w.memo_value === undefined ? null : w.memo_value,
-    note: w.note === undefined ? null : w.note
-  }));
+    function applySearch(){
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+      const cards = Array.from(document.querySelectorAll("#grid .card"));
+      let shown = 0;
 
-  // auto-merge presets so table is "full coin list" for editing
-  addPresetWalletRows();
+      cards.forEach(card=>{
+        const hay = card.getAttribute("data-search") || "";
+        const ok = !q || hay.includes(q);
+        card.style.display = ok ? "" : "none";
+        if(ok) shown++;
+      });
 
-  if(st) st.textContent = `Loaded ${CACHE.wallets.length} wallet row(s) ✅`;
-  feed("wallets_admin_list loaded (" + (list||[]).length + " from DB)");
-}
+      document.getElementById("empty").style.display = shown ? "none" : "block";
+    }
 
-function renderWallets(data){
-  const status = document.getElementById("walletsStatus");
-  const tbody = document.getElementById("walletRows");
-  const filtered = (data||[]).filter(matchSearch);
+    async function getAuthHeaders(){
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-  if(filtered.length === 0){
-    if(status) status.textContent = "No wallet rows.";
-    tbody.innerHTML = "";
-    return;
-  }
+      return {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+      };
+    }
 
-  if(status) status.textContent = `Loaded ${filtered.length} wallet row(s) ✅`;
-  tbody.innerHTML = "";
+    async function loadFromBackend(){
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "wallets_public_list" })
+        });
 
-  filtered.forEach(w=>{
-    const key = esc(String(w.asset_key||"").trim().toUpperCase());
-    const rowId = key.replaceAll(/[^A-Z0-9_]/g, "_");
+        const data = await res.json().catch(()=> ({}));
 
-    tbody.innerHTML += `
-      <tr>
-        <td><input id="wk-key-${rowId}" value="${key}" /></td>
-        <td><input id="wk-name-${rowId}" value="${esc(w.name||"")}" /></td>
-        <td><input id="wk-net-${rowId}" value="${esc(w.network||"")}" /></td>
-        <td><input id="wk-addr-${rowId}" value="${esc(w.address||"")}" placeholder="Paste address here" /></td>
-        <td><input id="wk-ml-${rowId}" value="${esc(w.memo_label||"")}" placeholder="(optional)" /></td>
-        <td><input id="wk-mv-${rowId}" value="${esc(w.memo_value||"")}" placeholder="(optional)" /></td>
-        <td><input id="wk-note-${rowId}" value="${esc(w.note||"")}" placeholder="(optional)" /></td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="saveWallet('${rowId}')">Save</button>
-            <button class="btnErr" onclick="deleteWallet('${rowId}')">Delete</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
+        if(!res.ok || data?.success === false){
+          toast(`Load failed (${res.status})`);
+          console.error("wallets_public_list failed:", { status: res.status, data });
+          return;
+        }
 
-async function createWallet(e){
-  e.preventDefault();
+        const wallets = (data.wallets || []).map(w => ({
+          asset_key: w.asset_key,
+          name: w.name,
+          network: w.network,
+          address: w.address,
+          memo_label: w.memo_label,
+          memo_value: w.memo_value,
+          note: w.note
+        }));
 
-  const asset_key = String(document.getElementById("newAssetKey").value||"").trim().toUpperCase();
-  const name = String(document.getElementById("newName").value||"").trim();
-  const network = String(document.getElementById("newNetwork").value||"").trim();
-  const address = String(document.getElementById("newAddress").value||"").trim();
+        // Remove XRP as you requested earlier
+        __wallets = wallets.filter(w => String(w.asset_key || "").toUpperCase() !== "XRP");
 
-  const memo_label_raw = String(document.getElementById("newMemoLabel").value||"").trim();
-  const memo_value_raw = String(document.getElementById("newMemoValue").value||"").trim();
-  const note_raw = String(document.getElementById("newNote").value||"").trim();
+        render(__wallets);
+        toast("Loaded ✅");
+      }catch(e){
+        toast("Network error ❌");
+        console.error("Wallet fetch error:", e);
+      }
+    }
 
-  const memo_label = memo_label_raw ? memo_label_raw : null;
-  const memo_value = memo_value_raw ? memo_value_raw : null;
-  const note = note_raw ? note_raw : null;
+    /* =========================
+      SEND MODAL LOGIC (REAL REQUEST)
+    ========================== */
+    const sendOverlay = document.getElementById("sendOverlay");
+    const btnSendClose = document.getElementById("btnSendClose");
+    const btnSendCancel = document.getElementById("btnSendCancel");
+    const btnSendSubmit = document.getElementById("btnSendSubmit");
 
-  if(!asset_key || !name || !network || !address){
-    modalShow("Missing fields","Fill asset_key, name, network, address.");
-    return;
-  }
-  if(asset_key === "XRP"){
-    modalShow("Not allowed","XRP is removed from your list.");
-    return;
-  }
+    const sendTitle = document.getElementById("sendTitle");
+    const sendSub = document.getElementById("sendSub");
+    const sendTo = document.getElementById("sendTo");
+    const sendAmount = document.getElementById("sendAmount");
+    const sendNetwork = document.getElementById("sendNetwork");
+    const sendNote = document.getElementById("sendNote");
+    const feeEst = document.getElementById("feeEst");
+    const totalEst = document.getElementById("totalEst");
 
-  await walletApiCall("wallets_admin_upsert", {
-    wallet: { asset_key, name, network, address, memo_label, memo_value, note }
-  });
+    let __sendAsset = "";
+    let __sendDefaultNetwork = "";
 
-  feed("wallets_admin_upsert -> " + asset_key);
-  modalShow("Wallet Saved", "Deposit wallet updated.");
-  e.target.reset();
-  safeLoad(loadWallets);
-}
+    function closeSendModal(){
+      sendOverlay.classList.remove("show");
+      __sendAsset = "";
+      __sendDefaultNetwork = "";
+      sendTo.value = "";
+      sendAmount.value = "";
+      sendNote.value = "";
+      sendNetwork.innerHTML = "";
+      feeEst.textContent = "—";
+      totalEst.textContent = "—";
+    }
 
-async function saveWallet(rowId){
-  const asset_key = String(document.getElementById(`wk-key-${rowId}`).value||"").trim().toUpperCase();
-  const name = String(document.getElementById(`wk-name-${rowId}`).value||"").trim();
-  const network = String(document.getElementById(`wk-net-${rowId}`).value||"").trim();
-  const address = String(document.getElementById(`wk-addr-${rowId}`).value||"").trim();
+    function openSendModal(asset_key, preferredNetwork){
+      __sendAsset = String(asset_key || "").toUpperCase();
+      __sendDefaultNetwork = String(preferredNetwork || "");
 
-  const memo_label_raw = String(document.getElementById(`wk-ml-${rowId}`).value||"").trim();
-  const memo_value_raw = String(document.getElementById(`wk-mv-${rowId}`).value||"").trim();
-  const note_raw = String(document.getElementById(`wk-note-${rowId}`).value||"").trim();
+      const nets = __wallets
+        .filter(w => String(w.asset_key || "").toUpperCase() === __sendAsset)
+        .map(w => w.network)
+        .filter(Boolean);
 
-  const memo_label = memo_label_raw ? memo_label_raw : null;
-  const memo_value = memo_value_raw ? memo_value_raw : null;
-  const note = note_raw ? note_raw : null;
+      const options = (nets.length ? nets : [__sendDefaultNetwork]).filter(Boolean);
 
-  if(!asset_key || !name || !network || !address){
-    modalShow("Missing fields","Fill asset_key, name, network, address.");
-    return;
-  }
-  if(asset_key === "XRP"){
-    modalShow("Not allowed","XRP is removed from your list.");
-    return;
-  }
+      sendNetwork.innerHTML = "";
+      options.forEach((n, idx)=>{
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n;
+        if(n === __sendDefaultNetwork || idx === 0) opt.selected = true;
+        sendNetwork.appendChild(opt);
+      });
 
-  await walletApiCall("wallets_admin_upsert", {
-    wallet: { asset_key, name, network, address, memo_label, memo_value, note }
-  });
+      sendTitle.textContent = `Send ${__sendAsset}`;
+      sendSub.textContent = `${options[sendNetwork.selectedIndex] || __sendDefaultNetwork || "Network"}`;
 
-  feed("wallets_admin_upsert -> " + asset_key);
-  modalShow("Saved", "Wallet row updated.");
-  safeLoad(loadWallets);
-}
+      updateFeeEstimate();
+      sendOverlay.classList.add("show");
+      sendTo.focus();
+    }
 
-async function deleteWallet(rowId){
-  const asset_key = String(document.getElementById(`wk-key-${rowId}`).value||"").trim().toUpperCase();
-  if(!asset_key){ modalShow("Missing asset_key","Row has no asset_key."); return; }
-  if(!confirm(`Delete wallet row:\n${asset_key}\n\nContinue?`)) return;
+    function parseAmount(v){
+      const n = Number(String(v || "").replace(/,/g,"").trim());
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
 
-  await walletApiCall("wallets_admin_delete", { asset_key });
-  feed("wallets_admin_delete -> " + asset_key);
-  modalShow("Deleted", "Wallet row removed.");
-  safeLoad(loadWallets);
-}
+    function fmtNum(n, decimals=8){
+      if(!Number.isFinite(n)) return "—";
+      if(__sendAsset === "USDT" || __sendAsset === "USDC") decimals = 2;
+      return n.toFixed(decimals).replace(/\.?0+$/,"");
+    }
 
-/* ✅ WALLET LINKS (wallet-api)
-   Requires wallet-api actions:
-   - wallet_link_admin_list (optional status)
-   - wallet_link_admin_update_status (id, status, admin_note)
-*/
-async function loadWalletLinks(){
-  const st = document.getElementById("walletLinksStatus");
-  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+    function updateFeeEstimate(){
+      const net = sendNetwork.value || __sendDefaultNetwork || "";
+      const amt = parseAmount(sendAmount.value);
 
-  const filter = String((document.getElementById("wlFilter")?.value || "")).trim();
+      sendSub.textContent = `${net || "Network"}`;
 
-  const res = await walletApiCall("wallet_link_admin_list", { status: filter });
-  CACHE.wallet_links = (res.requests || res.request || res.data || res.rows || res.list || res.items || res.results || res.wallet_links || res.walletLinks || res.wallet_link_requests || res.wallet_link_request || res.wallet_link_rows || res.walletLinkRows || res.walletLinkRequests || res.walletLinkRequestRows || res.walletlink_requests || res.walletlink || res.wallet_links_requests || res.requests_list || res.requestsList || res.requests_list || res.requests || []).slice ? (res.requests || []) : (res.requests || []);
-  // ✅ normalize: expect res.requests from edge function
-  if(!Array.isArray(CACHE.wallet_links)) CACHE.wallet_links = (res.requests && Array.isArray(res.requests) ? res.requests : []);
+      const fee = estimateFee(__sendAsset, net);
+      const feeText = `${fmtNum(fee, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}`;
+      feeEst.textContent = feeText;
 
-  renderWalletLinks(CACHE.wallet_links);
+      const total = amt + (Number(fee) || 0);
+      totalEst.textContent = amt ? `${fmtNum(total, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}` : "—";
+    }
 
-  if(st) st.textContent = `Loaded ${CACHE.wallet_links.length} request(s) ✅`;
-  feed("wallet_link_admin_list loaded (" + CACHE.wallet_links.length + ")");
-  renderOverview();
-}
+    btnSendClose.addEventListener("click", closeSendModal);
+    btnSendCancel.addEventListener("click", closeSendModal);
+    sendOverlay.addEventListener("click", (e)=>{ if(e.target === sendOverlay) closeSendModal(); });
+    document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && sendOverlay.classList.contains("show")) closeSendModal(); });
+    sendAmount.addEventListener("input", updateFeeEstimate);
+    sendNetwork.addEventListener("change", updateFeeEstimate);
 
-function renderWalletLinks(data){
-  const status = document.getElementById("walletLinksStatus");
-  const tbody = document.getElementById("walletLinkRows");
-  const filtered = (data||[]).filter(matchSearch);
+    btnSendSubmit.addEventListener("click", async ()=>{
+      const to = (sendTo.value || "").trim();
+      const amt = parseAmount(sendAmount.value);
+      const net = (sendNetwork.value || "").trim();
+      const note = (sendNote.value || "").trim();
 
-  if(filtered.length === 0){
-    if(status) status.textContent = "No wallet link requests found.";
-    tbody.innerHTML = "";
-    return;
-  }
+      if(!__sendAsset){ toast("Select an asset"); return; }
+      if(!net){ toast("Select a network"); return; }
+      if(!to || to.length < 12){ toast("Enter a valid address"); return; }
+      if(!amt){ toast("Enter amount"); return; }
 
-  if(status) status.textContent = `Loaded ${filtered.length} request(s) ✅`;
-  tbody.innerHTML = "";
+      const fee = estimateFee(__sendAsset, net);
 
-  filtered.forEach(r=>{
-    const id = esc(r.id||"");
-    const email = String(r.user_email||"").trim().toLowerCase();
-    const addr = String(r.address||"").trim();
-    const label = String(r.label||"").trim();
-    const st = String(r.status||"pending").toLowerCase();
-    const isDone = (st === "approved" || st === "rejected");
-    const created = r.created_at ? new Date(r.created_at).toLocaleString() : "-";
-    const adminNote = String(r.admin_note||"").trim();
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "send_create",
+            asset_key: __sendAsset,
+            network: net,
+            to_address: to,
+            amount: amt,
+            fee_est: fee,
+            note
+          })
+        });
 
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td>
-          <span class="mono ellipsisWide">${esc(addr)}</span>
-          <a style="margin-left:10px" href="javascript:void(0)" onclick="modalShow('Wallet Address', ${JSON.stringify(addr)})">View</a>
-        </td>
-        <td><span class="ellipsis">${esc(label||"-")}</span></td>
-        <td>${esc(st)}</td>
-        <td><span class="ellipsisWide">${esc(adminNote||"-")}</span></td>
-        <td>${esc(created)}</td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="approveWalletLink('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
-            <button class="btnErr" onclick="rejectWalletLink('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success === false){
+          toast(`Send failed (${res.status})`);
+          console.error("send_create failed:", { status: res.status, data });
+          return;
+        }
 
-async function approveWalletLink(id){
-  const row = (CACHE.wallet_links||[]).find(x => String(x.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This request is already " + st + ".");
-    return;
-  }
-  const note = prompt("Approve note (optional):", "") || "";
-  if(!confirm("Approve this wallet link request?")) return;
+        toast("Send request submitted ✅");
+        closeSendModal();
 
-  await walletApiCall("wallet_link_admin_update_status", { id, status: "approved", admin_note: note });
-  feed("wallet_link approved -> " + id);
-  modalShow("Approved", "Wallet link request approved.");
-  safeLoad(loadWalletLinks);
-}
+        // refresh history so it looks real-time
+        await loadSendHistory(true);
+      }catch(e){
+        toast("Send error ❌");
+        console.error("send_create error:", e);
+      }
+    });
 
-async function rejectWalletLink(id){
-  const row = (CACHE.wallet_links||[]).find(x => String(x.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This request is already " + st + ".");
-    return;
-  }
-  const note = prompt("Reject reason (optional):", "") || "";
-  if(!confirm("Reject this wallet link request?")) return;
+    /* =========================
+      SEND HISTORY DRAWER
+    ========================== */
+    const historyOverlay = document.getElementById("historyOverlay");
+    const historyDrawer = document.getElementById("historyDrawer");
+    const btnHistoryOpen = document.getElementById("btnHistoryOpen");
+    const btnHistoryClose = document.getElementById("btnHistoryClose");
+    const btnHistoryRefresh = document.getElementById("btnHistoryRefresh");
+    const historyList = document.getElementById("historyList");
+    const historyEmpty = document.getElementById("historyEmpty");
 
-  await walletApiCall("wallet_link_admin_update_status", { id, status: "rejected", admin_note: note });
-  feed("wallet_link rejected -> " + id);
-  modalShow("Rejected", "Wallet link request rejected.");
-  safeLoad(loadWalletLinks);
-}
+    function openHistory(){
+      historyOverlay.classList.add("show");
+      historyDrawer.classList.add("show");
+    }
+    function closeHistory(){
+      historyOverlay.classList.remove("show");
+      historyDrawer.classList.remove("show");
+    }
 
-/* SUPPORT */
-async function loadSupport(){
-  document.getElementById("supportStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("tickets_list");
-  CACHE.support = res.data || [];
-  renderSupport(CACHE.support);
-  feed("tickets_list loaded (" + CACHE.support.length + ")");
-  renderOverview();
-}
-function renderSupport(data){
-  const status = document.getElementById("supportStatus");
-  const tbody = document.getElementById("supportRows");
-  const filtered = (data||[]).filter(matchSearch);
+    function statusTagClass(s){
+      const x = String(s || "").toLowerCase();
+      if(x === "pending") return "pending";
+      if(x === "approved") return "approved";
+      if(x === "rejected") return "rejected";
+      if(x === "sent") return "sent";
+      if(x === "failed") return "failed";
+      if(x === "processing") return "processing";
+      return "pending";
+    }
 
-  if(filtered.length === 0){
-    status.textContent = "No tickets found.";
-    tbody.innerHTML = "";
-    return;
-  }
+    function shortAddr(a){
+      const s = String(a || "");
+      if(s.length <= 16) return s;
+      return s.slice(0,8) + "..." + s.slice(-6);
+    }
 
-  status.textContent = `Loaded ${filtered.length} ticket(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(t=>{
-    const id = esc(t.id||"");
-    const email = String(t.user_email||"").trim().toLowerCase();
-    const msg = String(t.message||"").trim();
-    const subject = String(t.subject||"").trim();
-    const created = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+    function formatWhen(ts){
+      const d = ts ? new Date(ts) : null;
+      if(!d || isNaN(d.getTime())) return "";
+      return d.toLocaleString();
+    }
 
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><span class="ellipsis">${esc(subject)}</span></td>
-        <td>
-          <div class="msgBox">
-            <div class="msgBoxHead">
-              <div class="msgLabel">MESSAGE</div>
-              <div class="msgMeta">${esc(created || "")}</div>
-              <button class="msgViewBtn" onclick="modalShow('Ticket Message', ${JSON.stringify(msg)})">View</button>
+    async function loadSendHistory(silent=false){
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "send_my_list" })
+        });
+
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success === false){
+          if(!silent) toast(`History failed (${res.status})`);
+          console.error("send_my_list failed:", { status: res.status, data });
+          return;
+        }
+
+        const rows = Array.isArray(data?.requests) ? data.requests : [];
+        historyList.innerHTML = "";
+
+        if(!rows.length){
+          historyEmpty.style.display = "block";
+          return;
+        }
+        historyEmpty.style.display = "none";
+
+        rows.forEach(r=>{
+          const st = String(r.status || "pending");
+          const item = document.createElement("div");
+          item.className = "hItem";
+          item.innerHTML = `
+            <div class="hRow">
+              <div class="hLeft" style="min-width:0;">
+                <b>${escapeHtml(String(r.asset_key || "").toUpperCase())} • ${escapeHtml(r.network || "")}</b>
+                <span class="mono">To: ${escapeHtml(shortAddr(r.to_address || ""))}</span>
+              </div>
+              <div class="tag ${statusTagClass(st)}">${escapeHtml(st.toUpperCase())}</div>
             </div>
-            <div class="msgText">${esc(msg)}</div>
-          </div>
-        </td>
-        <td>${esc(t.status||"")}</td>
-        <td><textarea id="reply-${id}">${esc(t.admin_reply||"")}</textarea></td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="replyTicket('${id}')">Save</button>
-            <button class="btnPrimary" onclick="closeTicket('${id}')">Close</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-async function replyTicket(id){
-  const reply = (document.getElementById(`reply-${id}`).value||"").trim();
-  await apiCall("ticket_reply", { ticket_id:id, reply });
-  feed("ticket_reply -> " + id);
-  modalShow("Reply Saved", "Admin reply saved.");
-  safeLoad(loadSupport);
-}
-async function closeTicket(id){
-  const reply = (document.getElementById(`reply-${id}`).value||"").trim();
-  await apiCall("ticket_close", { ticket_id:id, reply });
-  feed("ticket_close -> " + id);
-  modalShow("Ticket Closed", "Ticket marked closed.");
-  safeLoad(loadSupport);
-}
+            <div class="hRow">
+              <span class="mono" style="color: var(--muted); font-size:12px;">
+                Amount: <b style="color:var(--text);">${escapeHtml(String(r.amount || ""))}</b>
+                &nbsp;|&nbsp; Fee: <b style="color:var(--text);">${escapeHtml(String(r.fee_est || "0"))}</b>
+              </span>
+              <span style="color: var(--muted); font-size:12px;">${escapeHtml(formatWhen(r.created_at || r.updated_at || ""))}</span>
+            </div>
+            ${r.admin_note ? `<div style="color: var(--muted); font-size:12px;">Admin: ${escapeHtml(r.admin_note)}</div>` : ``}
+          `;
+          historyList.appendChild(item);
+        });
 
-/* DEPOSITS */
-async function loadDeposits(){
-  document.getElementById("depStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("deposits_list");
-  CACHE.deposits = res.data || [];
-  renderDeposits(CACHE.deposits);
-  feed("deposits_list loaded (" + CACHE.deposits.length + ")");
-  renderOverview();
-}
-function renderDeposits(data){
-  const status = document.getElementById("depStatus");
-  const tbody = document.getElementById("depRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No deposits found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} deposit(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(d=>{
-    const id = esc(d.id||"");
-    const email = String(d.user_email||"-").trim().toLowerCase();
-    const st = String(d.status||"pending").toLowerCase();
-    const isDone = (st === "approved" || st === "rejected");
-    const proof = d.proof_url
-      ? `<a href="javascript:void(0)" onclick="openProof('${esc(d.proof_url)}')">View</a>`
-      : "-";
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td>${esc(d.asset||"-")}</td>
-        <td>${esc(d.network||"-")}</td>
-        <td>${esc(d.amount||"-")}</td>
-        <td><span class="mono ellipsisWide">${esc(d.tx_hash||"-")}</span></td>
-        <td>${proof}</td>
-        <td>${esc(st)}</td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="approveDeposit('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
-            <button class="btnErr" onclick="rejectDeposit('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-async function approveDeposit(id){
-  const row = (CACHE.deposits||[]).find(d => String(d.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This deposit is already " + st + ".");
-    return;
-  }
-  if(!confirm("Approve deposit and credit user balance?")) return;
-  await apiCall("deposit_approve", { deposit_id:id });
-  feed("deposit_approve -> " + id);
-  modalShow("Deposit Approved", "Deposit approved + user credited.");
-  safeLoad(loadDeposits);
-  safeLoad(loadUsers);
-}
-async function rejectDeposit(id){
-  const row = (CACHE.deposits||[]).find(d => String(d.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This deposit is already " + st + ".");
-    return;
-  }
-  if(!confirm("Reject deposit?")) return;
-  await apiCall("deposit_reject", { deposit_id:id });
-  feed("deposit_reject -> " + id);
-  modalShow("Deposit Rejected", "Deposit rejected.");
-  safeLoad(loadDeposits);
-}
-
-/* WITHDRAWALS */
-async function loadWithdrawals(){
-  document.getElementById("wdStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("withdrawals_list");
-  CACHE.withdrawals = res.data || [];
-  renderWithdrawals(CACHE.withdrawals);
-  feed("withdrawals_list loaded (" + CACHE.withdrawals.length + ")");
-  renderOverview();
-}
-function renderWithdrawals(data){
-  const status = document.getElementById("wdStatus");
-  const tbody = document.getElementById("wdRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No withdrawals found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} withdrawal(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(w=>{
-    const id = esc(w.id||"");
-    const email = String(w.user_email||"").trim().toLowerCase();
-    const st = String(w.status||"pending").toLowerCase();
-    const isDone = (st === "approved" || st === "rejected");
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td>${esc(w.asset||"")}</td>
-        <td>${esc(w.network||"")}</td>
-        <td>${esc(w.amount||"")}</td>
-        <td><span class="mono ellipsisWide">${esc(w.wallet_address||"")}</span></td>
-        <td>${esc(st)}</td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="approveWithdrawal('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
-            <button class="btnErr" onclick="rejectWithdrawal('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-async function approveWithdrawal(id){
-  const row = (CACHE.withdrawals||[]).find(w => String(w.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This withdrawal is already " + st + ".");
-    return;
-  }
-  if(!confirm("Approve withdrawal & debit user?")) return;
-  await apiCall("withdrawal_approve", { withdrawal_id:id });
-  feed("withdrawal_approve -> " + id);
-  modalShow("Withdrawal Approved", "Approved + user debited.");
-  safeLoad(loadWithdrawals);
-  safeLoad(loadUsers);
-}
-async function rejectWithdrawal(id){
-  const row = (CACHE.withdrawals||[]).find(w => String(w.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This withdrawal is already " + st + ".");
-    return;
-  }
-  if(!confirm("Reject withdrawal?")) return;
-  await apiCall("withdrawal_reject", { withdrawal_id:id });
-  feed("withdrawal_reject -> " + id);
-  modalShow("Withdrawal Rejected", "Rejected.");
-  safeLoad(loadWithdrawals);
-}
-
-/* PORTFOLIO */
-async function loadPortfolios(){
-  document.getElementById("pfStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const search = (document.getElementById("pfEmail").value||"").trim();
-  const res = await apiCall("portfolios_list", { search });
-  CACHE.portfolio = res.data || [];
-  renderPortfolio(CACHE.portfolio);
-  feed("portfolios_list loaded (" + CACHE.portfolio.length + ")");
-  renderOverview();
-}
-function renderPortfolio(data){
-  const status = document.getElementById("pfStatus");
-  const tbody = document.getElementById("pfRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No holdings found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} holding(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(p=>{
-    const email = String(p.user_email||"").trim().toLowerCase();
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>${esc((p.asset||"").toUpperCase())}</strong></td>
-        <td>${esc(p.amount||"")}</td>
-        <td>$${Number(p.buy_price||0).toFixed(2)}</td>
-        <td><span class="ellipsisWide">${esc(p.notes||"-")}</span></td>
-      </tr>
-    `;
-  });
-}
-async function savePortfolio(e){
-  e.preventDefault();
-  const id = document.getElementById("pfId").value || "";
-  const user_email = document.getElementById("pfUserEmail").value.trim();
-  const asset = document.getElementById("pfAsset").value.trim().toLowerCase();
-  const amount = Number(document.getElementById("pfAmount").value||0);
-  const buy_price = Number(document.getElementById("pfBuyPrice").value||0);
-  const notes = document.getElementById("pfNotes").value.trim();
-  await apiCall("portfolio_save", { id, user_email, asset, amount, buy_price, notes });
-  feed("portfolio_save");
-  modalShow("Saved", "Holding saved.");
-  e.target.reset();
-  safeLoad(loadPortfolios);
-}
-
-/* KYC */
-async function loadKyc(){
-  const st = document.getElementById("kycStatus");
-  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("kyc_list", {});
-  CACHE.kyc = res.data || [];
-  renderKyc(CACHE.kyc);
-  feed("kyc_list loaded (" + CACHE.kyc.length + ")");
-  renderOverview();
-}
-function renderKyc(data){
-  const status = document.getElementById("kycStatus");
-  const tbody = document.getElementById("kycRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    if(status) status.textContent = "No KYC requests found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  if(status) status.textContent = `Loaded ${filtered.length} request(s) ✅`;
-  tbody.innerHTML = "";
-
-  filtered.forEach(r=>{
-    const id = esc(r.id||"");
-    const email = String(r.user_email||"").trim().toLowerCase();
-    const st = String(r.status||"pending").toLowerCase();
-    const isDone = (st === "approved" || st === "rejected");
-
-    const front = r.front_url ? `<a href="javascript:void(0)" onclick="openProof('${esc(r.front_url)}')">View</a>` : (r.front_path ? `<span class="tiny mono ellipsis">${esc(r.front_path)}</span>` : "-");
-    const back  = r.back_url  ? `<a href="javascript:void(0)" onclick="openProof('${esc(r.back_url)}')">View</a>`  : (r.back_path  ? `<span class="tiny mono ellipsis">${esc(r.back_path)}</span>`  : "-");
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>${esc(r.doc_type||"-")}</strong></td>
-        <td>${esc(r.issuing_country||"-")}</td>
-        <td>${front}</td>
-        <td>${back}</td>
-        <td>${esc(st)}</td>
-        <td>${esc(r.created_at ? new Date(r.created_at).toLocaleString() : "-")}</td>
-        <td>
-          <div class="rowTools">
-            <button class="btnOk" onclick="approveKyc('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
-            <button class="btnErr" onclick="rejectKyc('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-}
-async function approveKyc(id){
-  const row = (CACHE.kyc||[]).find(x => String(x.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This KYC is already " + st + ".");
-    return;
-  }
-  if(!confirm("Approve this KYC request?")) return;
-  await apiCall("kyc_approve", { kyc_id: id });
-  feed("kyc_approve -> " + id);
-  modalShow("KYC Approved", "KYC marked approved.");
-  safeLoad(loadKyc);
-  safeLoad(loadUsers);
-}
-async function rejectKyc(id){
-  const row = (CACHE.kyc||[]).find(x => String(x.id||"") === String(id));
-  const st = String(row?.status || "pending").toLowerCase();
-  if(st === "approved" || st === "rejected"){
-    modalShow("Already processed", "This KYC is already " + st + ".");
-    return;
-  }
-  const note = prompt("Reject reason (optional):", "") || "";
-  if(!confirm("Reject this KYC request?")) return;
-  await apiCall("kyc_reject", { kyc_id: id, note });
-  feed("kyc_reject -> " + id);
-  modalShow("KYC Rejected", "KYC marked rejected.");
-  safeLoad(loadKyc);
-}
-
-/* Topbar auto-hide on scroll */
-let lastScrollTop = 0;
-let topbarHidden = false;
-
-function handleScroll(currentTop){
-  const topbar = document.getElementById("topbar");
-  const sidebar = document.getElementById("sidebar");
-
-  if(sidebar && sidebar.classList.contains("open")){
-    closeSidebar();
-  }
-
-  const delta = currentTop - lastScrollTop;
-  if(Math.abs(delta) < 6) return;
-
-  if(delta > 0){
-    if(!topbarHidden){
-      topbar.classList.add("hide");
-      topbarHidden = true;
+        if(!silent) toast("History updated ✅");
+      }catch(e){
+        if(!silent) toast("History error ❌");
+        console.error("History error:", e);
+      }
     }
-  }else{
-    if(topbarHidden){
-      topbar.classList.remove("hide");
-      topbarHidden = false;
+
+    btnHistoryOpen.addEventListener("click", async ()=>{
+      openHistory();
+      await loadSendHistory(true);
+    });
+    btnHistoryClose.addEventListener("click", closeHistory);
+    btnHistoryRefresh.addEventListener("click", ()=> loadSendHistory(false));
+    historyOverlay.addEventListener("click", closeHistory);
+
+    /* =========================
+      MENU DRAWER
+    ========================== */
+    const btnMenu = document.getElementById("btnMenu");
+    const menuOverlay = document.getElementById("menuOverlay");
+    const menuDrawer = document.getElementById("menuDrawer");
+    const btnMenuClose = document.getElementById("btnMenuClose");
+    const btnLogout = document.getElementById("btnLogout");
+
+    function openMenu(){
+      menuOverlay.classList.add("show");
+      menuDrawer.classList.add("show");
     }
-  }
+    function closeMenu(){
+      menuOverlay.classList.remove("show");
+      menuDrawer.classList.remove("show");
+    }
 
-  lastScrollTop = currentTop;
-}
+    btnMenu.addEventListener("click", openMenu);
+    btnMenuClose.addEventListener("click", closeMenu);
+    menuOverlay.addEventListener("click", closeMenu);
 
-function attachScrollHandlers(){
-  const main = document.getElementById("mainScroll");
-  if(main){
-    main.addEventListener("scroll", ()=>handleScroll(main.scrollTop), { passive:true });
-  }
-  window.addEventListener("scroll", ()=>handleScroll(window.scrollY || 0), { passive:true });
-}
+    btnLogout.addEventListener("click", async ()=>{
+      try{
+        await supabaseClient.auth.signOut();
+      }catch(e){}
+      window.location.replace("login.html");
+    });
 
-/* Boot */
-document.getElementById("appView").style.display = "none";
-document.getElementById("loginView").style.display = "grid";
-switchView("overview");
-attachScrollHandlers();
-</script>
+    /* =========================
+      LINK WALLET (SAFE) MODAL
+    ========================== */
+    const btnLinkWallet = document.getElementById("btnLinkWallet");
+    const linkOverlay = document.getElementById("linkOverlay");
+    const btnLinkClose = document.getElementById("btnLinkClose");
+    const btnLinkCancel = document.getElementById("btnLinkCancel");
+    const btnLinkSubmit = document.getElementById("btnLinkSubmit");
+    const linkAddress = document.getElementById("linkAddress");
+    const linkLabel = document.getElementById("linkLabel");
+    const linkStatus = document.getElementById("linkStatus");
 
+    function openLink(){
+      linkStatus.textContent = "Not linked";
+      linkOverlay.classList.add("show");
+      linkAddress.focus();
+      validateLink();
+    }
+    function closeLink(){
+      linkOverlay.classList.remove("show");
+      linkAddress.value = "";
+      linkLabel.value = "";
+      btnLinkSubmit.disabled = true;
+      btnLinkSubmit.style.opacity = ".55";
+      btnLinkSubmit.style.cursor = "not-allowed";
+    }
+
+    function looksLikeAddress(a){
+      const s = String(a || "").trim();
+      if(s.length < 12) return false;
+      // quick heuristics: EVM, BTC, TRON-ish, SOL-ish
+      if(/^0x[a-fA-F0-9]{40}$/.test(s)) return true;
+      if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/.test(s)) return true;
+      if(/^T[1-9A-HJ-NP-Za-km-z]{25,}$/.test(s)) return true;
+      if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) return true;
+      return true; // allow others, just length check
+    }
+
+    function validateLink(){
+      const ok = looksLikeAddress(linkAddress.value);
+      btnLinkSubmit.disabled = !ok;
+      btnLinkSubmit.style.opacity = ok ? "1" : ".55";
+      btnLinkSubmit.style.cursor = ok ? "pointer" : "not-allowed";
+    }
+
+    linkAddress.addEventListener("input", validateLink);
+
+    btnLinkWallet.addEventListener("click", openLink);
+    btnLinkClose.addEventListener("click", closeLink);
+    btnLinkCancel.addEventListener("click", closeLink);
+    linkOverlay.addEventListener("click", (e)=>{ if(e.target === linkOverlay) closeLink(); });
+
+    btnLinkSubmit.addEventListener("click", async ()=>{
+      const addr = (linkAddress.value || "").trim();
+      const label = (linkLabel.value || "").trim();
+
+      if(!looksLikeAddress(addr)){
+        toast("Enter a valid public address");
+        return;
+      }
+
+      // This posts to a backend action you'll add next.
+      // IMPORTANT: We do NOT collect seed phrases.
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "wallet_link_request",
+            address: addr,
+            label: label || null
+          })
+        });
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success === false){
+          toast(`Link not enabled yet (${res.status})`);
+          console.error("wallet_link_request failed:", { status: res.status, data });
+          return;
+        }
+
+        linkStatus.textContent = "Request submitted";
+        toast("Link request submitted ✅");
+        closeLink();
+      }catch(e){
+        toast("Link error ❌");
+        console.error("Link error:", e);
+      }
+    });
+
+    /* =========================
+      INIT
+    ========================== */
+    document.getElementById("q").addEventListener("input", applySearch);
+    document.getElementById("btnReload").addEventListener("click", loadFromBackend);
+
+    (async function authGuard(){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const session = sessionData?.session;
+        if(!session){
+          window.location.replace("login.html");
+          return;
+        }
+
+        const { data, error } = await supabaseClient.auth.getUser();
+        const user = data?.user;
+        if(error || !user){
+          window.location.replace("login.html");
+          return;
+        }
+
+        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+        if(!confirmed){
+          await supabaseClient.auth.signOut();
+          window.location.replace("verify.html?status=unverified");
+          return;
+        }
+
+        await loadFromBackend();
+      }catch(e){
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
 </body>
 </html>
