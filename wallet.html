@@ -1514,6 +1514,63 @@ FILE: wallet.html
     </div>
   </div>
 
+  <!-- ✅ SWAP MODAL (REAL FEATURE) -->
+  <div id="swapOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Swap crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="swapTitle">Swap</p>
+          <p class="s" id="swapSub">Convert between assets using live price estimate</p>
+        </div>
+        <button class="modalClose" id="btnSwapClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="smallWarn">
+          ⚠️ Estimate only. Final rate may vary at execution.
+        </div>
+
+        <div class="formGrid">
+          <div class="in">
+            <label>From Asset</label>
+            <select id="swapFrom"></select>
+          </div>
+          <div class="in">
+            <label>To Asset</label>
+            <select id="swapTo"></select>
+          </div>
+        </div>
+
+        <div class="in">
+          <label>Amount (From)</label>
+          <input id="swapAmount" placeholder="0.00" inputmode="decimal" autocomplete="off" />
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow">
+            <span>Available (From)</span>
+            <b id="swapAvail">—</b>
+          </div>
+          <div class="feeRow">
+            <span>Rate (est.)</span>
+            <b id="swapRate">—</b>
+          </div>
+          <div class="feeRow">
+            <span>You Receive (est.)</span>
+            <b id="swapReceive">—</b>
+          </div>
+        </div>
+
+        <div class="hint" id="swapHint">Tip: Choose From/To then enter amount to see estimate.</div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnSwapCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnSwapSubmit" type="button">Swap</button>
+      </div>
+    </div>
+  </div>
+
   <!-- LINK WALLET MODAL (SAFE) -->
   <div id="linkOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Link external wallet">
     <div class="modal">
@@ -1902,7 +1959,6 @@ FILE: wallet.html
     // ✅ main buttons now open dropdown selector
     document.getElementById("btnMainReceive").addEventListener("click", ()=> openAssetSelector("receive"));
     document.getElementById("btnMainSend").addEventListener("click", ()=> openAssetSelector("send"));
-    document.getElementById("btnMainSwap").addEventListener("click", ()=> toast("Swap coming soon ⚡"));
 
     /* =========================
       PRICES — FIXED (ADA + USDT/USDC normalization)
@@ -1967,6 +2023,14 @@ FILE: wallet.html
       }
       __totalUsd = total;
       document.getElementById("totalBalanceUsd").textContent = money(total);
+
+      // ✅ allow dashboard to read same wallet total (user-specific)
+      try{
+        if(CURRENT_USER_ID){
+          localStorage.setItem(`vgm_total_wallet_usd_${CURRENT_USER_ID}`, String(total || 0));
+          localStorage.setItem(`vgm_total_wallet_usd_last_updated_${CURRENT_USER_ID}`, String(Date.now()));
+        }
+      }catch(e){}
     }
 
     function chgText(sym){
@@ -2160,6 +2224,9 @@ FILE: wallet.html
 
         calcTotal();
         render(__wallets);
+
+        // ✅ refresh swap options whenever data reloads
+        refreshSwapOptions();
 
         toast("Loaded ✅");
       }catch(e){
@@ -2441,6 +2508,173 @@ FILE: wallet.html
         await supabaseClient.auth.signOut();
       }catch(e){}
       window.location.replace("login.html");
+    });
+
+    /* =========================
+      SWAP (REAL UI + ESTIMATE + SAFE SUBMIT)
+    ========================== */
+    const btnMainSwap = document.getElementById("btnMainSwap");
+    const swapOverlay = document.getElementById("swapOverlay");
+    const btnSwapClose = document.getElementById("btnSwapClose");
+    const btnSwapCancel = document.getElementById("btnSwapCancel");
+    const btnSwapSubmit = document.getElementById("btnSwapSubmit");
+    const swapFrom = document.getElementById("swapFrom");
+    const swapTo = document.getElementById("swapTo");
+    const swapAmount = document.getElementById("swapAmount");
+    const swapAvail = document.getElementById("swapAvail");
+    const swapRate = document.getElementById("swapRate");
+    const swapReceive = document.getElementById("swapReceive");
+
+    function openSwap(){
+      refreshSwapOptions(true);
+      swapOverlay.classList.add("show");
+      setTimeout(()=>swapAmount.focus(), 80);
+      updateSwapEstimate();
+    }
+    function closeSwap(){
+      swapOverlay.classList.remove("show");
+      swapAmount.value = "";
+      updateSwapEstimate();
+    }
+    btnMainSwap.addEventListener("click", openSwap);
+    btnSwapClose.addEventListener("click", closeSwap);
+    btnSwapCancel.addEventListener("click", closeSwap);
+    swapOverlay.addEventListener("click", (e)=>{ if(e.target === swapOverlay) closeSwap(); });
+    document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && swapOverlay.classList.contains("show")) closeSwap(); });
+
+    function distinctSymbolsFromWallets(){
+      const set = new Set();
+      (__wallets || []).forEach(w=> set.add(normalizeSymbol(w.asset_key)));
+      return Array.from(set);
+    }
+
+    function refreshSwapOptions(keepSelection=false){
+      const syms = distinctSymbolsFromWallets().filter(Boolean);
+      const prevFrom = swapFrom.value;
+      const prevTo = swapTo.value;
+
+      swapFrom.innerHTML = "";
+      swapTo.innerHTML = "";
+
+      syms.forEach(sym=>{
+        const o1 = document.createElement("option");
+        o1.value = sym; o1.textContent = sym;
+        swapFrom.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = sym; o2.textContent = sym;
+        swapTo.appendChild(o2);
+      });
+
+      // defaults
+      if(keepSelection && prevFrom && syms.includes(prevFrom)) swapFrom.value = prevFrom;
+      if(keepSelection && prevTo && syms.includes(prevTo)) swapTo.value = prevTo;
+
+      if(!swapFrom.value && syms.length) swapFrom.value = syms[0];
+      if(!swapTo.value && syms.length) swapTo.value = syms[Math.min(1, syms.length-1)];
+      if(swapTo.value === swapFrom.value && syms.length > 1){
+        swapTo.value = syms.find(s=>s !== swapFrom.value) || swapTo.value;
+      }
+
+      updateSwapEstimate();
+    }
+
+    function updateSwapEstimate(){
+      const fromSym = normalizeSymbol(swapFrom.value || "");
+      const toSym = normalizeSymbol(swapTo.value || "");
+      const amt = parseAmount(swapAmount.value);
+
+      const fromBal = Number(__balances?.[fromSym] || 0);
+      swapAvail.textContent = fromSym ? `${fmtBal(fromSym, fromBal)} ${fromSym}` : "—";
+
+      const fromPx = Number(__prices?.[fromSym]?.usd || 0);
+      const toPx = Number(__prices?.[toSym]?.usd || 0);
+
+      if(!fromSym || !toSym || fromSym === toSym){
+        swapRate.textContent = "—";
+        swapReceive.textContent = "—";
+        return;
+      }
+
+      if(!fromPx || !toPx){
+        swapRate.textContent = "Price unavailable";
+        swapReceive.textContent = "—";
+        return;
+      }
+
+      const rate = fromPx / toPx; // 1 FROM = rate TO
+      swapRate.textContent = `1 ${fromSym} ≈ ${rate.toFixed(6).replace(/\.?0+$/,"")} ${toSym}`;
+
+      if(!amt){
+        swapReceive.textContent = "—";
+        return;
+      }
+
+      const recv = amt * rate;
+      swapReceive.textContent = `${fmtBal(toSym, recv)} ${toSym}`;
+    }
+
+    swapFrom.addEventListener("change", ()=>{
+      if(swapTo.value === swapFrom.value){
+        const syms = distinctSymbolsFromWallets();
+        const next = syms.find(s=>s !== swapFrom.value);
+        if(next) swapTo.value = next;
+      }
+      updateSwapEstimate();
+    });
+    swapTo.addEventListener("change", ()=>{
+      if(swapTo.value === swapFrom.value){
+        const syms = distinctSymbolsFromWallets();
+        const next = syms.find(s=>s !== swapTo.value);
+        if(next) swapFrom.value = next;
+      }
+      updateSwapEstimate();
+    });
+    swapAmount.addEventListener("input", updateSwapEstimate);
+
+    btnSwapSubmit.addEventListener("click", async ()=>{
+      const fromSym = normalizeSymbol(swapFrom.value || "");
+      const toSym = normalizeSymbol(swapTo.value || "");
+      const amt = parseAmount(swapAmount.value);
+
+      if(!fromSym || !toSym){ toast("Select assets"); return; }
+      if(fromSym === toSym){ toast("Choose different assets"); return; }
+      if(!amt){ toast("Enter amount"); return; }
+
+      const fromBal = Number(__balances?.[fromSym] || 0);
+      if(amt > fromBal){
+        toast("Insufficient balance");
+        return;
+      }
+
+      // If your backend has swap_create, this will work.
+      // If not, it will fail safely with a clear toast.
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method:"POST",
+          headers,
+          body: JSON.stringify({
+            action: "swap_create",
+            from_asset: fromSym,
+            to_asset: toSym,
+            amount: amt
+          })
+        });
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success === false){
+          toast("Swap not enabled yet ⚡");
+          console.error("swap_create failed:", { status: res.status, data });
+          return;
+        }
+
+        toast("Swap submitted ✅");
+        closeSwap();
+        await loadFromBackend();
+      }catch(e){
+        toast("Swap not enabled yet ⚡");
+        console.error("swap_create error:", e);
+      }
     });
 
     /* =========================
