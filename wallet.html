@@ -621,43 +621,51 @@ FILE: wallet.html
         return;
       }
 
-      // ✅ FIX: include Authorization + apikey so Edge Function won't 401
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
+      try{
+        // ✅ Get access token (if logged in)
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
 
-      const headers = {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY
-      };
-      if(accessToken){
-        headers["Authorization"] = `Bearer ${accessToken}`;
+        // ✅ IMPORTANT:
+        // Remove "apikey" header to avoid CORS preflight failures when Edge Function
+        // doesn't include "apikey" in Access-Control-Allow-Headers.
+        // Use Authorization only (most wallet-api functions allow it).
+        const headers = {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+        };
+
+        const res = await fetch(WALLET_API_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "wallets_public_list" })
+        });
+
+        const data = await res.json().catch(()=> ({}));
+
+        if(!res.ok || data?.success === false){
+          toast(`Load failed (${res.status})`);
+          console.error("wallets_public_list failed:", { status: res.status, data });
+          return;
+        }
+
+        const wallets = (data.wallets || []).map(w => ({
+          asset_key: w.asset_key,
+          name: w.name,
+          network: w.network,
+          address: w.address,
+          memo_label: w.memo_label,
+          memo_value: w.memo_value,
+          note: w.note
+        }));
+
+        render(wallets);
+        toast("Loaded ✅");
+      }catch(e){
+        // This is what you get when CORS blocks the request or network fails
+        toast("Network/CORS blocked ❌");
+        console.error("Wallet fetch error (likely CORS):", e);
       }
-
-      const res = await fetch(WALLET_API_URL, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ action: "wallets_public_list" })
-      });
-
-      const data = await res.json().catch(()=> ({}));
-      if(!res.ok || data?.success === false){
-        toast("Load failed");
-        console.error("wallets_public_list failed:", data);
-        return;
-      }
-
-      const wallets = (data.wallets || []).map(w => ({
-        asset_key: w.asset_key,
-        name: w.name,
-        network: w.network,
-        address: w.address,
-        memo_label: w.memo_label,
-        memo_value: w.memo_value,
-        note: w.note
-      }));
-
-      render(wallets);
-      toast("Loaded ✅");
     }
 
     document.getElementById("q").addEventListener("input", applySearch);
