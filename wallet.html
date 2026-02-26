@@ -26,435 +26,561 @@ FILE: wallet.html
 
       --blue:#5b6cff;
       --purple:#7c4dff;
+      --green:#34d399;
       --cyan:#38bdf8;
+      --pink:#ff4da6;
 
       --shadow: 0 26px 90px rgba(0,0,0,.55);
+      --shadow2: 0 16px 55px rgba(0,0,0,.45);
+
+      --r: 18px;
+      --r2: 22px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
     *{ box-sizing:border-box; }
     html,body{ height:100%; }
+
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background:
-        radial-gradient(1200px 700px at 15% 10%, rgba(91,108,255,.15), transparent 55%),
-        radial-gradient(900px 600px at 90% 20%, rgba(124,77,255,.14), transparent 55%),
-        radial-gradient(700px 500px at 40% 90%, rgba(56,189,248,.10), transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2));
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
       overflow-x:hidden;
+      background:
+        radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
+        radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.20), transparent 55%),
+        radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
+        linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
     }
 
-    .wrap{
-      width: min(1180px, 92vw);
-      margin: 0 auto;
-      padding: 18px 0 42px;
+    /* ===== ambient blobs (dashboard feel) ===== */
+    .blob{
+      position:fixed;
+      width:520px;height:520px;border-radius:999px;
+      filter: blur(72px);
+      opacity:.60;
+      z-index:-3;
+      mix-blend-mode: screen;
+      will-change: transform;
+      pointer-events:none;
     }
+    .blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
+    .blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
+    .blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
+    .blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
+    @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
+    @keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
+
+    .shimmer{
+      position:fixed; inset:-30px; z-index:-2;
+      opacity:.26;
+      background:
+        radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
+        linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
+      animation: shimmerMove 6s ease-in-out infinite alternate;
+      pointer-events:none;
+    }
+    @keyframes shimmerMove{
+      from{transform:translateY(0px) translateX(0px)}
+      to{transform:translateY(42px) translateX(22px)}
+    }
+
+    .container{max-width:920px;margin:0 auto;padding:16px;padding-bottom:140px;}
+    @media (min-width: 1100px){ .container{max-width:1250px;} }
+    @media (min-width: 1500px){ .container{max-width:1380px;} }
 
     /* =========================
-       TOPBAR + MENU BUTTON
+       LOADING GATE (Dashboard-like)
     ========================== */
-    .topbar{
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      padding: 12px 0 10px;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(5,10,24,.74), rgba(5,10,24,.28));
-      border-bottom: 1px solid rgba(255,255,255,.06);
+    #authGate{
+      position:fixed; inset:0; z-index:99999;
+      display:flex; align-items:center; justify-content:center;
+      background:
+        radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
+        radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
+        var(--bg);
     }
-
-    .toprow{
-      width: min(1180px, 92vw);
-      margin: 0 auto;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-    }
-
-    .leftTop{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .menuBtn{
+    .gateCard{
+      width:min(520px,92vw);
       border:none;
-      cursor:pointer;
-      border-radius: 14px;
-      padding: 10px 10px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--text);
-      display:grid;
-      place-items:center;
-      flex: 0 0 auto;
-      transition: transform .12s ease;
+      background:transparent;
+      border-radius:0;
+      padding:0;
+      box-shadow:none;
+      backdrop-filter:none;
+      text-align:center;
     }
-    .menuBtn:active{ transform: translateY(1px); }
-    .menuBtn svg{ width: 18px; height:18px; opacity:.95; }
+    .logoImg{width:100%;height:100%;object-fit:contain;display:block;}
+    .gateLogo{
+      width:260px;height:260px;border-radius:0;
+      margin:0 auto 14px;
+      display:grid;place-items:center;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      overflow:visible;
+      animation: premiumPulse 2.4s ease-in-out infinite;
+      filter:
+        drop-shadow(0 18px 45px rgba(0,0,0,.55))
+        drop-shadow(0 0 36px rgba(91,108,255,.45));
+    }
+    @keyframes premiumPulse{
+      0%{
+        transform: scale(1);
+        filter:
+          drop-shadow(0 18px 45px rgba(0,0,0,.55))
+          drop-shadow(0 0 22px rgba(91,108,255,.28))
+          drop-shadow(0 0 30px rgba(255,77,166,.18));
+        opacity: .90;
+      }
+      50%{
+        transform: scale(1.12);
+        filter:
+          drop-shadow(0 18px 55px rgba(0,0,0,.60))
+          drop-shadow(0 0 40px rgba(91,108,255,.50))
+          drop-shadow(0 0 56px rgba(56,189,248,.30))
+          drop-shadow(0 0 64px rgba(255,77,166,.30));
+        opacity: 1;
+      }
+      100%{
+        transform: scale(1);
+        filter:
+          drop-shadow(0 18px 45px rgba(0,0,0,.55))
+          drop-shadow(0 0 22px rgba(91,108,255,.28))
+          drop-shadow(0 0 30px rgba(255,77,166,.18));
+        opacity: .90;
+      }
+    }
+    .gateTxt{font-weight:1000;font-size:18px;letter-spacing:.2px;}
+    .gateSub{margin-top:8px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px;}
 
-    .title{
-      display:flex;
-      flex-direction:column;
-      gap:4px;
-      min-width: 220px;
+    /* =========================
+       STICKY HEADER (Dashboard-style)
+    ========================== */
+    .stickyMenu{
+      position:sticky;
+      top:12px;
+      z-index:3000;
+      margin-bottom:10px;
     }
-    .title h1{
-      margin:0;
-      font-size: 16px;
-      letter-spacing:.2px;
-      font-weight: 900;
+    .stickyMenu::before{
+      content:"";
+      position:absolute;
+      inset:-10px -10px -8px -10px;
+      border-radius:26px;
+      background:rgba(5,10,24,.58);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 18px 70px rgba(0,0,0,.55);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index:-1;
+      pointer-events:none;
+      opacity:0;
+      transform: translateY(-6px);
+      transition: .18s ease;
     }
-    .title p{
-      margin:0;
-      font-size: 12px;
-      color: var(--muted);
-    }
+    .stickyMenu.isStuck::before{opacity:1;transform: translateY(0);}
+    .stickyMenu.isStuck .topRow{margin-bottom:8px;}
 
-    .rightTop{
-      flex: 1;
+    .topRow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:14px;
+    }
+    .brand{
       display:flex;
-      justify-content:flex-end;
-      gap: 10px;
       align-items:center;
-      min-width: 0;
+      gap:0;
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
+      min-width:unset;
+      position:relative;
+    }
+    .brandLogoWide{
+      height:54px;
+      width:auto;
+      max-width:520px;
+      display:block;
+      object-fit:contain;
+      transform: translateX(-18px) scale(4);
+      transform-origin: left center;
+      filter:
+        drop-shadow(0 18px 35px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(91,108,255,.22));
+    }
+    @media(max-width:520px){
+      .brandLogoWide{transform: translateX(-12px) scale(3);transform-origin:left center;}
     }
 
+    .headerActions{display:flex;gap:10px;align-items:center}
+    .avatarBtn{
+      width:46px;height:46px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
+      cursor:pointer;
+      box-shadow:0 16px 40px rgba(124,77,255,.32);
+      display:grid;place-items:center;
+      position:relative;overflow:hidden;
+    }
+    .avatarBtn:hover{filter:brightness(1.05)}
+    .avatarFallback{font-size:18px;line-height:1;z-index:2;}
+    .avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
+
+    .iconBtn{
+      width:46px;height:46px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);
+      color:white;font-weight:1000;
+      cursor:pointer;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+    }
+    .iconBtn:hover{background:rgba(255,255,255,.08)}
+
+    /* =========================
+       MOBILE SEARCH (FIXED)
+    ========================== */
+    .searchRow{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:8px;
+    }
     .searchBox{
-      width: min(520px, 100%);
+      flex:1;
+      min-width:0;
       display:flex;
       align-items:center;
       gap:10px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.04);
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(12px);
     }
+    .searchBox .icon{width:18px;height:18px;opacity:.9;flex:0 0 auto;}
     .searchBox input{
       width:100%;
       border:none;
       outline:none;
-      color: var(--text);
-      background: transparent;
-      font-size: 13px;
+      background:transparent;
+      color:var(--text);
+      font-weight:1000;
+      font-size:13px;
+      min-width:0;
     }
-    .searchBox .icon{
-      width: 18px;
-      height: 18px;
-      opacity: .9;
-      flex: 0 0 auto;
-    }
-
-    .btnTop{
-      border:none;
+    .btnSmall{
+      height:46px;
+      padding:0 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      font-weight:1000;
       cursor:pointer;
-      border-radius: 12px;
-      padding: 10px 12px;
-      color: var(--text);
-      font-weight: 900;
-      font-size: 12px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      transition: transform .12s ease, opacity .12s ease;
-      white-space: nowrap;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      white-space:nowrap;
     }
-    .btnTop:active{ transform: translateY(1px); }
-
-    .btnTop.primary{
-      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
-      border: 1px solid rgba(255,255,255,.14);
-      box-shadow: 0 18px 55px rgba(56,189,248,.16);
+    .btnSmall:hover{filter:brightness(1.05)}
+    @media(max-width:520px){
+      .searchRow{flex-wrap:wrap;}
+      .btnSmall{flex:1;}
     }
 
     /* =========================
-       NOTICE
+       HELLO CARD (wallet heading)
     ========================== */
-    .notice{
-      margin: 14px 0 16px;
-      border: 1px solid rgba(245,158,11,.35);
-      background: rgba(245,158,11,.08);
-      border-radius: 16px;
-      padding: 14px 14px;
-      display:flex;
+    .helloCard{
+      border-radius:20px;
+      padding:16px 16px;
+      overflow:hidden;
+      background:
+        radial-gradient(800px 220px at 20% 20%, rgba(255,255,255,.18), transparent 60%),
+        linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
+      color:white;
+      box-shadow:0 22px 70px rgba(109,87,255,.22);
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .helloLeft{display:flex;align-items:center;gap:12px;min-width:0;}
+    .helloLogo{
+      width:48px;height:48px;border-radius:18px;
+      background:rgba(255,255,255,.20);
+      border:1px solid rgba(255,255,255,.22);
+      display:grid;place-items:center;
+      font-weight:1000;
+      font-size:22px;
+      flex:0 0 auto;
+    }
+    .helloTitle{font-weight:1000;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .helloSub{font-size:12px;font-weight:900;opacity:.92;margin-top:4px;}
+    .helloRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+    .datetimeChip{
+      padding:6px 10px;border-radius:999px;
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.20);
+      font-weight:1000;font-size:12px;
+      color:#fff;
+      white-space:nowrap;
+    }
+
+    /* =========================
+       TOTAL WALLET (exchange style)
+    ========================== */
+    .balanceCard{
+      margin-top:14px;
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+        radial-gradient(900px 400px at 70% 20%, rgba(52,211,153,.24), transparent 55%),
+        linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+      color:white;
+      box-shadow: 0 26px 60px rgba(0,0,0,0.25);
+      padding:16px;
+    }
+    .bTitle{font-size:13px;font-weight:1000;opacity:.85}
+    .bValue{font-size:34px;font-weight:1000;margin-top:8px}
+    .bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
+    .actionGrid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
       gap:12px;
-      align-items:flex-start;
     }
-    .notice .small{
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
+    .action{
+      border-radius:18px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      gap:8px;
+      cursor:pointer;
+      transition:.18s ease;
+      user-select:none;
     }
-    .notice .dot{
-      width:10px;
-      height:10px;
-      border-radius:999px;
-      margin-top: 4px;
-      background: radial-gradient(circle at 30% 30%, #fff, rgba(245,158,11,.95));
-      box-shadow: 0 0 0 4px rgba(245,158,11,.18);
-      flex: 0 0 auto;
+    .action:hover{transform: translateY(-2px);background:rgba(255,255,255,.10)}
+    .aIcon{
+      width:48px;height:48px;border-radius:999px;
+      display:grid;place-items:center;
+      font-size:20px;
+      font-weight:1000;color:#fff;
+    }
+    .aSend{background:linear-gradient(180deg,#6d57ff,#7c4dff)}
+    .aReceive{background:linear-gradient(180deg,#18c07b,#11b981)}
+    .aSwap{background:linear-gradient(180deg,#38bdf8,#5b6cff)}
+    .aEdit{background:linear-gradient(180deg,#f59e0b,#f97316)}
+    .aText{font-weight:1000;font-size:13px}
+
+    @media(max-width:720px){
+      .actionGrid{grid-template-columns:repeat(2,1fr)}
     }
 
     /* =========================
-       GRID + CARDS
+       SECTIONS
     ========================== */
-    .grid{
+    .box{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:24px;
+      padding:16px;
+      background:
+        radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
+        radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow:0 26px 90px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      margin-top:14px;
+    }
+    .box h2{margin:0;font-size:18px;font-weight:1000}
+    .small{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.45}
+
+    /* =========================
+       COIN LIST + CARDS
+    ========================== */
+    .coinsGrid{
+      margin-top:12px;
       display:grid;
       grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 14px;
+      gap:12px;
     }
-    @media (max-width: 860px){
-      .grid{ grid-template-columns: 1fr; }
-      .title{ min-width: 0; }
-    }
-
-    .card{
-      border: 1px solid var(--stroke);
-      border-radius: 18px;
-      padding: 14px 14px;
-      box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-
-      --coinA: rgba(91,108,255,.22);
-      --coinB: rgba(124,77,255,.18);
-      background:
-        radial-gradient(1200px 600px at 10% 0%, var(--coinA), transparent 50%),
-        radial-gradient(900px 500px at 95% 10%, var(--coinB), transparent 55%),
-        rgba(255,255,255,.035);
-
-      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease, filter .12s ease;
-    }
-    .card:hover{
-      border-color: rgba(255,255,255,.18);
-      filter: brightness(1.03);
-    }
-    .card.selected{
-      border-color: rgba(56,189,248,.55);
-      box-shadow: 0 26px 90px rgba(0,0,0,.55), 0 0 0 2px rgba(56,189,248,.20) inset;
-      transform: translateY(-1px);
+    @media(max-width:860px){
+      .coinsGrid{grid-template-columns:1fr;}
     }
 
-    .card::before{
-      content:"";
-      position:absolute;
-      inset:-140px -120px auto auto;
-      width: 240px;
-      height: 240px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 62%);
-      transform: rotate(14deg);
-      pointer-events:none;
-      opacity: .65;
-    }
-
-    .row{
+    .coinCard{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:14px;
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      overflow:hidden;
+      position:relative;
       display:flex;
-      gap: 14px;
+      flex-direction:column;
+      gap:12px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    .coinCard:hover{background:rgba(255,255,255,.06);transform: translateY(-1px);}
+    .coinTop{
+      display:flex;
       align-items:flex-start;
       justify-content:space-between;
-      position: relative;
-      z-index: 2;
+      gap:12px;
     }
-
-    .left{
-      min-width: 0;
-      flex: 1;
-    }
-
-    .meta{
+    .coinLeft{
       display:flex;
+      gap:12px;
       align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      margin-bottom: 10px;
+      min-width:0;
     }
-
-    .coin{
+    .coinLogo{
+      width:46px;height:46px;border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      display:grid;place-items:center;
+      overflow:hidden;
+      flex:0 0 auto;
+      box-shadow:0 16px 40px rgba(0,0,0,.25);
+    }
+    .coinLogo img{width:100%;height:100%;object-fit:cover;display:block;}
+    .coinNameWrap{min-width:0}
+    .coinName{
+      font-weight:1000;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .coinMeta{
+      margin-top:4px;
+      font-size:12px;
+      font-weight:900;
+      color:rgba(234,240,255,.65);
       display:flex;
-      gap: 10px;
+      gap:8px;
+      flex-wrap:wrap;
       align-items:center;
-      min-width: 0;
     }
 
-    .badge{
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      display:grid;
-      place-items:center;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.20);
-      box-shadow: 0 14px 40px rgba(0,0,0,.35);
-      flex: 0 0 auto;
-      overflow:hidden;
-    }
-    .badge img{
-      width: 26px;
-      height: 26px;
-      display:block;
-      object-fit: contain;
-      filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
-    }
-    .badge .fallback{
-      font-weight: 900;
-      font-size: 12px;
-      letter-spacing: .4px;
-      opacity: .95;
-      display:none;
-    }
-
-    .names{
-      display:flex;
-      flex-direction:column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .names .sym{
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .3px;
-    }
-    .names .net{
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
-
-    .pill{
+    /* ✅ Network name must show fully on mobile (wrap, not ellipsis) */
+    .netPill{
       display:inline-flex;
       align-items:center;
-      gap: 8px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      color: var(--muted);
-      font-size: 12px;
-      user-select:none;
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-    .pill .mini{
-      width:8px;
-      height:8px;
+      gap:8px;
+      padding:6px 10px;
       border-radius:999px;
-      background: radial-gradient(circle at 30% 30%, #fff, rgba(34,197,94,.9));
-      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
+      color:rgba(234,240,255,.85);
+      font-weight:1000;
+      font-size:11px;
+      line-height:1.2;
+      white-space:normal;
+      word-break:break-word;
+      max-width:100%;
     }
 
-    .addr{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-    }
-
-    .field{
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.22);
-      border-radius: 14px;
-      padding: 10px 10px;
-    }
-    .field .label{
-      font-size: 11px;
-      color: var(--muted2);
-      margin-bottom: 6px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .field .value{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12px;
-      color: var(--text);
-      word-break: break-all;
-      line-height: 1.35;
-    }
-
-    .actions{
-      display:flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 2px;
-    }
-
-    .btn{
-      border: none;
-      outline:none;
-      cursor:pointer;
-      border-radius: 12px;
-      padding: 10px 12px;
-      color: var(--text);
-      font-weight: 900;
-      font-size: 12px;
-      letter-spacing: .2px;
-      background: linear-gradient(135deg, rgba(91,108,255,.95), rgba(124,77,255,.92));
-      box-shadow: 0 18px 50px rgba(91,108,255,.20);
-      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
-      user-select:none;
-      white-space: nowrap;
-    }
-    .btn:active{ transform: translateY(1px); }
-
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow:none;
-      color: var(--text);
-      font-weight: 900;
-    }
-
-    .btn.send{
-      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
-      box-shadow: 0 18px 50px rgba(56,189,248,.18);
-    }
-
-    .right{
-      flex: 0 0 auto;
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      gap: 8px;
-      min-width: 162px;
-    }
-
-    .qr{
-      width: 152px;
-      height: 152px;
-      display:grid;
-      place-items:center;
-      border-radius: 16px;
-      background: transparent;
-    }
-    .qr svg{ width:152px; height:152px; display:block; }
-
-    .hint{
-      font-size: 11px;
-      color: var(--muted);
+    .priceBox{
       text-align:right;
-      line-height: 1.35;
-      max-width: 220px;
+      flex:0 0 auto;
+    }
+    .priceNow{
+      font-weight:1000;
+      font-size:14px;
+      white-space:nowrap;
+    }
+    .priceChg{
+      margin-top:4px;
+      font-weight:1000;
+      font-size:12px;
+      color:rgba(234,240,255,.65);
+      white-space:nowrap;
+    }
+    .priceChg.up{color:rgba(34,197,94,1)}
+    .priceChg.down{color:rgba(248,113,113,1)}
+
+    .coinBottom{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .balBox{
+      min-width:0;
+    }
+    .balLabel{font-size:12px;font-weight:1000;color:rgba(234,240,255,.60)}
+    .balValue{margin-top:4px;font-size:16px;font-weight:1000}
+    .balUsd{margin-top:3px;font-size:12px;font-weight:900;color:rgba(234,240,255,.65)}
+
+    .miniBtns{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .miniBtn{
+      height:40px;
+      padding:0 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+      user-select:none;
+    }
+    .miniBtn:hover{filter:brightness(1.05)}
+    .miniBtn.primary{
+      background:linear-gradient(180deg, rgba(56,189,248,1), rgba(91,108,255,1));
+    }
+    .miniBtn.green{
+      background:linear-gradient(180deg, rgba(24,192,123,1), rgba(17,185,129,1));
+    }
+    .miniBtn.purple{
+      background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
     }
 
-    .empty{
-      margin-top: 14px;
-      border: 1px dashed rgba(255,255,255,.16);
-      background: rgba(255,255,255,.03);
-      border-radius: 16px;
-      padding: 16px;
-      color: var(--muted);
-      font-size: 13px;
-      display:none;
+    /* =========================
+       CHARTS (Pie + Bar)
+    ========================== */
+    .chartGrid{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
     }
+    @media(max-width:900px){
+      .chartGrid{grid-template-columns:1fr;}
+    }
+    .chartCard{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      padding:12px;
+      overflow:hidden;
+    }
+    .chartHead{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      font-weight:1000;
+      color:rgba(234,240,255,.78);
+      font-size:13px;
+      padding-bottom:10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      margin-bottom:10px;
+    }
+    .chartCanvas{width:100%;height:260px;display:block;}
 
-    /* =============================
-      TOAST (BIGGER + CENTER)
-    ============================== */
+    /* =========================
+       TOAST
+    ========================== */
     .toast{
       position: fixed;
       left: 50%;
@@ -476,27 +602,23 @@ FILE: wallet.html
       min-width: 220px;
       text-align: center;
     }
-    .toast.show{
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
+    .toast.show{opacity: 1;transform: translate(-50%, -50%) scale(1);}
 
-    /* =============================
-      MODALS + DRAWERS
-    ============================== */
+    /* ================================
+       OVERLAY / MODAL
+    ================================ */
     .overlay{
       position: fixed;
       inset: 0;
-      z-index: 80;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
+      z-index: 9000;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
       display:none;
       align-items:center;
       justify-content:center;
       padding: 18px;
     }
-    .overlay.show{ display:flex; }
-
+    .overlay.show{display:flex;}
     .modal{
       width: min(560px, 92vw);
       border-radius: 18px;
@@ -508,7 +630,6 @@ FILE: wallet.html
       box-shadow: 0 40px 140px rgba(0,0,0,.70);
       overflow:hidden;
     }
-
     .modalHead{
       padding: 14px 14px 12px;
       display:flex;
@@ -517,55 +638,53 @@ FILE: wallet.html
       gap: 10px;
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .modalTitle{
-      display:flex;
-      flex-direction:column;
-      gap: 4px;
-      min-width: 0;
-    }
-    .modalTitle .h{
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing:.2px;
-      margin:0;
-    }
-    .modalTitle .s{
-      font-size: 12px;
-      color: var(--muted);
-      margin:0;
-      white-space: nowrap;
+
+    /* ✅ Pulsating gradient header (for all modals + notice) */
+    .modalHead.pulseHead{
+      position:relative;
       overflow:hidden;
-      text-overflow: ellipsis;
+      background:
+        linear-gradient(90deg, rgba(109,87,255,.38), rgba(255,77,166,.30), rgba(56,189,248,.28));
     }
+    .modalHead.pulseHead::before{
+      content:"";
+      position:absolute; inset:-40px;
+      background:
+        radial-gradient(600px 200px at 20% 20%, rgba(56,189,248,.28), transparent 60%),
+        radial-gradient(700px 240px at 80% 40%, rgba(255,77,166,.20), transparent 62%),
+        linear-gradient(90deg, rgba(91,108,255,.20), rgba(124,77,255,.18), rgba(56,189,248,.18));
+      filter: blur(18px);
+      opacity:.65;
+      animation: headPulse 1.6s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes headPulse{
+      0%{transform: translateX(-8px) scale(1); opacity:.55;}
+      50%{transform: translateX(10px) scale(1.05); opacity:.95;}
+      100%{transform: translateX(-8px) scale(1); opacity:.55;}
+    }
+
+    .modalTitle{display:flex;flex-direction:column;gap:4px;min-width:0;position:relative;z-index:2;}
+    .modalTitle .h{font-size:13px;font-weight:1000;letter-spacing:.2px;margin:0;}
+    .modalTitle .s{font-size:12px;color:var(--muted);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
     .modalClose{
       border:none;
       cursor:pointer;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 10px 12px;
       color: var(--text);
-      font-weight: 900;
+      font-weight: 1000;
       font-size: 12px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.14);
       flex: 0 0 auto;
+      position:relative;
+      z-index:2;
     }
+    .modalClose:hover{background:rgba(255,255,255,.08)}
 
-    .modalBody{
-      padding: 14px;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
-
-    .formGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 520px){
-      .formGrid{ grid-template-columns: 1fr; }
-    }
-
+    .modalBody{padding: 14px;display:flex;flex-direction:column;gap: 12px;}
     .in{
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(0,0,0,.22);
@@ -575,42 +694,12 @@ FILE: wallet.html
       flex-direction:column;
       gap: 6px;
     }
-    .in label{
-      font-size: 11px;
-      color: var(--muted2);
-    }
+    .in label{font-size: 11px;color: var(--muted2);}
     .in input, .in select, .in textarea{
-      border:none;
-      outline:none;
-      background: transparent;
-      color: var(--text);
-      font-size: 13px;
-      padding: 2px 0;
-      resize: none;
+      border:none;outline:none;background:transparent;color:var(--text);
+      font-size: 13px;padding: 2px 0;resize:none;font-weight:900;
     }
-    .in input::placeholder, .in textarea::placeholder{ color: rgba(234,240,255,.35); }
-
-    .feeBox{
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      border-radius: 14px;
-      padding: 12px;
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-    }
-    .feeRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .feeRow b{
-      color: var(--text);
-      font-weight: 900;
-    }
+    .in input::placeholder{color: rgba(234,240,255,.35);}
 
     .modalFoot{
       padding: 12px 14px 14px;
@@ -620,210 +709,189 @@ FILE: wallet.html
       justify-content:flex-end;
       flex-wrap: wrap;
     }
-
-    .smallWarn{
-      font-size: 12px;
-      color: rgba(245,158,11,.95);
-      line-height: 1.4;
-    }
-
-    /* =============================
-      MENU DRAWER
-    ============================== */
-    .drawerOverlay{
-      position: fixed;
-      inset: 0;
-      z-index: 90;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-      display:none;
-    }
-    .drawerOverlay.show{ display:block; }
-
-    .drawer{
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: min(320px, 86vw);
-      z-index: 95;
-      transform: translateX(-102%);
-      transition: transform .18s ease;
-      border-right: 1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.16), transparent 55%),
-        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.14), transparent 60%),
-        rgba(2,6,23,.94);
-      box-shadow: 0 40px 160px rgba(0,0,0,.75);
-      padding: 14px;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
-    .drawer.show{ transform: translateX(0); }
-
-    .drawerTop{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .drawerTop .brand{
-      font-weight: 1000;
-      letter-spacing: .3px;
-      font-size: 13px;
-    }
-    .drawerNav{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-    }
-    .navItem{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
+    .btn{
+      border:none;
       cursor:pointer;
-      user-select:none;
-      font-weight: 900;
-      font-size: 12px;
+      border-radius: 14px;
+      padding: 12px 14px;
       color: var(--text);
-      text-decoration:none;
-    }
-    .navItem:hover{ border-color: rgba(255,255,255,.18); }
-    .navItem small{ color: var(--muted); font-weight: 800; }
-
-    /* =============================
-      SEND HISTORY DRAWER (RIGHT)
-    ============================== */
-    .historyOverlay{
-      position: fixed;
-      inset: 0;
-      z-index: 90;
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-      display:none;
-    }
-    .historyOverlay.show{ display:block; }
-
-    .history{
-      position: fixed;
-      top: 0;
-      right: 0;
-      height: 100%;
-      width: min(420px, 92vw);
-      z-index: 95;
-      transform: translateX(102%);
-      transition: transform .18s ease;
-      border-left: 1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(900px 500px at 10% 0%, rgba(56,189,248,.16), transparent 55%),
-        radial-gradient(900px 500px at 90% 10%, rgba(91,108,255,.14), transparent 60%),
-        rgba(2,6,23,.94);
-      box-shadow: 0 40px 160px rgba(0,0,0,.75);
-      padding: 14px;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-      overflow:auto;
-    }
-    .history.show{ transform: translateX(0); }
-
-    .historyTop{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .historyTop .h{
       font-weight: 1000;
-      font-size: 13px;
-      margin: 0;
-    }
-    .historyTop .s{
-      margin: 4px 0 0;
       font-size: 12px;
-      color: var(--muted);
-    }
-
-    .historyList{
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-      padding-bottom: 10px;
-    }
-
-    .hItem{
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-      border-radius: 16px;
-      padding: 12px;
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-    }
-    .hRow{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-    }
-    .hLeft{
-      display:flex;
-      flex-direction:column;
-      gap: 3px;
-      min-width: 0;
-    }
-    .hLeft b{
-      font-size: 12px;
-      letter-spacing:.2px;
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
-    .hLeft span{
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow:hidden;
-      text-overflow: ellipsis;
-    }
-    .tag{
-      font-size: 11px;
-      font-weight: 1000;
-      padding: 6px 10px;
-      border-radius: 999px;
+      background: rgba(255,255,255,.08);
       border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.18);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+      user-select:none;
       white-space: nowrap;
     }
-    .tag.pending{ color: rgba(245,158,11,.95); border-color: rgba(245,158,11,.30); }
-    .tag.approved{ color: rgba(34,197,94,.95); border-color: rgba(34,197,94,.30); }
-    .tag.rejected{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
-    .tag.sent{ color: rgba(56,189,248,.95); border-color: rgba(56,189,248,.30); }
-    .tag.failed{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
-    .tag.processing{ color: rgba(147,197,253,.95); border-color: rgba(147,197,253,.30); }
-
-    .mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    .btn:hover{filter:brightness(1.05)}
+    .btn:active{transform: translateY(1px);}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(56,189,248,1), rgba(91,108,255,1));
+    }
+    .btn.green{
+      background: linear-gradient(180deg, rgba(24,192,123,1), rgba(17,185,129,1));
+    }
+    .btn.purple{
+      background: linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(248,113,113,1), rgba(239,68,68,1));
+      color:#020617;
+      border:none;
     }
 
-    /* =============================
-      LIGHTNING LINK BUTTON
-    ============================== */
+    .smallWarn{font-size:12px;color:rgba(245,158,11,.95);line-height:1.4;}
+    .mono{font-family:var(--mono);}
+
+    /* =========================
+       DASHBOARD SIDEBAR (MATCHED)
+       ✅ Portfolio removed.
+    ========================== */
+    #menuOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.65);
+      display:none; z-index:9990;
+      backdrop-filter: blur(4px);
+    }
+    #menuOverlay.show{display:block;}
+    #sidebar{
+      position:fixed; top:0; left:-315px;
+      width:292px; height:100vh;
+      padding:16px;
+      z-index:9991;
+      transition: .28s ease;
+      border-right:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
+        linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
+      box-shadow:0 26px 90px rgba(0,0,0,.60);
+      backdrop-filter: blur(16px);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
+    }
+    #sidebar::-webkit-scrollbar{width:8px}
+    #sidebar::-webkit-scrollbar-track{background:transparent}
+    #sidebar::-webkit-scrollbar-thumb{
+      background:rgba(255,255,255,.16);
+      border-radius:999px;
+      border:2px solid rgba(0,0,0,0);
+      background-clip:padding-box;
+    }
+    #sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+    #sidebar.open{ left:0; }
+
+    .sideTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+    .sideBrand{display:flex;align-items:center;gap:0;padding:0;border:none;background:transparent;box-shadow:none;min-width:unset;}
+    .sideLogoWide{
+      height:128px;
+      width:auto;
+      max-width:230px;
+      display:block;
+      object-fit:contain;
+      filter:
+        drop-shadow(0 18px 35px rgba(0,0,0,.55))
+        drop-shadow(0 0 22px rgba(91,108,255,.18));
+    }
+    .closeBtn{
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(234,240,255,.95);
+      border-radius:14px;
+      width:44px;height:44px;
+      cursor:pointer;
+      display:grid;place-items:center;
+      font-weight:1000;
+    }
+    .closeBtn:hover{background:rgba(255,255,255,.08)}
+    .userTag{
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow:0 18px 55px rgba(0,0,0,.35);
+      margin:14px 0 14px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .userTagLeft{min-width:0}
+    .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
+    .userTag .t2{
+      margin-top:6px;font-weight:1000;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:180px;
+    }
+    .sideAvatar{
+      width:46px;height:46px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      display:grid;place-items:center;
+      position:relative;overflow:hidden;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .sideAvatar span{font-size:18px}
+    .sideAvatar img{position:absolute; inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+
+    .menuGroupTitle{
+      margin:10px 0 8px;
+      font-size:12px;font-weight:1000;
+      color:rgba(234,240,255,.50);
+      letter-spacing:.8px;
+      text-transform:uppercase;
+    }
+    .sideItem{
+      display:flex;align-items:center;gap:12px;
+      padding:12px 12px;border-radius:18px;
+      color:rgba(234,240,255,.82);
+      text-decoration:none;
+      font-weight:1000;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      margin-bottom:10px;
+      position:relative;overflow:hidden;
+      user-select:none;
+    }
+    .sideItem:hover{background:rgba(255,255,255,.08)}
+    .sideItem .i{
+      width:42px;height:42px;border-radius:16px;
+      display:grid;place-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
+    .activeLink{
+      border:1px solid rgba(56,189,248,.55);
+      background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
+      color:#cfefff;
+    }
+    .activeLink::after{
+      content:"";
+      position:absolute; inset:0;
+      background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
+      pointer-events:none;
+    }
+    .sideLogout{
+      margin-top:10px;
+      background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
+      color:#020617;border:none;width:100%;
+      padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
+      box-shadow:0 18px 55px rgba(239,68,68,.18);
+    }
+    .sideLogout:hover{filter:brightness(1.03)}
+
+    /* =========================
+       LINK WALLET SWING FAB (always visible)
+    ========================== */
     .linkFab{
       position: fixed;
       right: 16px;
       top: 92px;
-      z-index: 70;
+      z-index: 5000;
       display:flex;
       align-items:center;
       gap: 10px;
@@ -836,7 +904,6 @@ FILE: wallet.html
       backdrop-filter: blur(10px);
       box-shadow: 0 26px 90px rgba(0,0,0,.55);
     }
-
     .bolt{
       width: 34px;
       height: 34px;
@@ -848,6 +915,7 @@ FILE: wallet.html
       box-shadow: 0 18px 55px rgba(245,158,11,.18);
       transform-origin: top center;
       animation: swing 1.4s ease-in-out infinite;
+      position:relative;
     }
     @keyframes swing{
       0%{ transform: rotate(-8deg) translateY(0); }
@@ -861,86 +929,179 @@ FILE: wallet.html
       flex-direction:column;
       gap: 2px;
       line-height: 1.1;
+      min-width:0;
     }
     .linkFab .t b{
       font-size: 12px;
       font-weight: 1000;
+      white-space:nowrap;
     }
     .linkFab .t span{
       font-size: 11px;
       color: var(--muted);
       font-weight: 900;
+      white-space:nowrap;
+    }
+
+    /* ✅ approved glow dot for “View Wallet Connection” */
+    .fabDot{
+      width:10px;height:10px;border-radius:999px;
+      background:rgba(34,197,94,1);
+      box-shadow:0 0 18px rgba(34,197,94,.55);
+      animation:pulseDot 1.3s ease-in-out infinite;
+      display:none;
+      flex:0 0 auto;
+    }
+    @keyframes pulseDot{
+      0%{transform:scale(.85);opacity:.7}
+      50%{transform:scale(1.1);opacity:1}
+      100%{transform:scale(.85);opacity:.7}
+    }
+
+    /* =========================
+       SITE-WIDE NOTICE MODAL (admin-controlled)
+       - default OFF
+    ========================== */
+    .noticeBody{
+      font-size:13px;
+      font-weight:900;
+      color:rgba(234,240,255,.86);
+      line-height:1.5;
+    }
+    .noticeMeta{
+      margin-top:10px;
+      font-size:12px;
+      color:rgba(234,240,255,.60);
+      font-weight:900;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .noticeTag{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.08);
+      font-weight:1000;
+      font-size:11px;
+      color:rgba(234,240,255,.84);
     }
   </style>
 </head>
+
 <body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+  <div class="shimmer"></div>
 
-  <!-- MENU DRAWER -->
-  <div id="menuOverlay" class="drawerOverlay"></div>
-  <aside id="menuDrawer" class="drawer" aria-label="Menu drawer">
-    <div class="drawerTop">
-      <div class="brand">VGM • Navigation</div>
-      <button class="modalClose" id="btnMenuClose" type="button">Close</button>
-    </div>
-
-    <div class="drawerNav">
-      <!-- Replace these links with your real pages -->
-      <a class="navItem" href="dashboard.html"><span>Dashboard</span><small>Home</small></a>
-      <a class="navItem" href="wallet.html"><span>Wallet</span><small>Deposits / Send</small></a>
-      <a class="navItem" href="profile.html"><span>Profile</span><small>Account</small></a>
-      <a class="navItem" href="support.html"><span>Support</span><small>Tickets</small></a>
-      <button class="navItem" id="btnLogout" type="button"><span>Logout</span><small>Sign out</small></button>
-    </div>
-  </aside>
-
-  <!-- SEND HISTORY DRAWER -->
-  <div id="historyOverlay" class="historyOverlay"></div>
-  <aside id="historyDrawer" class="history" aria-label="Send history drawer">
-    <div class="historyTop">
-      <div style="min-width:0;">
-        <p class="h">Send History</p>
-        <p class="s">Pending • Approved • Sent • Failed</p>
+  <!-- Loading -->
+  <div id="authGate">
+    <div class="gateCard">
+      <div class="gateLogo">
+        <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-        <button class="btnTop" id="btnHistoryRefresh" type="button">Refresh</button>
-        <button class="btnTop" id="btnHistoryClose" type="button">Close</button>
+      <div class="gateTxt">Veloci Global Markets</div>
+      <div class="gateSub">Seamless transaction simplified.</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="menuOverlay"></div>
+  <div id="sidebar">
+    <div class="sideTop">
+      <div class="sideBrand">
+        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="VGM Logo">
+      </div>
+      <button class="closeBtn" id="btnSideClose" type="button">✕</button>
+    </div>
+
+    <div class="userTag">
+      <div class="userTagLeft">
+        <div class="t1">Logged in as</div>
+        <div id="sideName" class="t2">---</div>
+      </div>
+      <div class="sideAvatar" title="Profile photo">
+        <span id="sideAvatarFallback">👤</span>
+        <img id="sideAvatarImg" alt="Avatar"/>
       </div>
     </div>
 
-    <div id="historyList" class="historyList"></div>
-    <div id="historyEmpty" class="empty" style="display:none; margin-top:0;">No send history yet.</div>
-  </aside>
+    <div class="menuGroupTitle">Navigation</div>
+
+    <a class="sideItem" href="user-dashboard.html">
+      <div class="i">🏠</div>
+      <div>Dashboard<small>Main overview</small></div>
+    </a>
+
+    <!-- ✅ Portfolio REMOVED (as requested) -->
+
+    <a class="sideItem activeLink" href="wallet.html">
+      <div class="i">👛</div>
+      <div>Wallets<small>Your assets & balances</small></div>
+    </a>
+
+    <a class="sideItem" href="deposits.html">
+      <div class="i">💳</div>
+      <div>Deposit<small>Fund your account</small></div>
+    </a>
+
+    <a class="sideItem" href="withdraw.html">
+      <div class="i">➡</div>
+      <div>Withdraw Funds<small>Request payout</small></div>
+    </a>
+
+    <a class="sideItem" href="support.html">
+      <div class="i">🧑‍💻</div>
+      <div>Support / Contact<small>Tickets & help</small></div>
+    </a>
+
+    <a class="sideItem" href="plans.html">
+      <div class="i">💼</div>
+      <div>Investment Plans<small>Start investing</small></div>
+    </a>
+
+    <a class="sideItem" href="profile.html">
+      <div class="i">👤</div>
+      <div>Profile / Settings<small>Account security</small></div>
+    </a>
+
+    <button class="sideLogout" id="btnLogout" type="button">Logout</button>
+  </div>
 
   <!-- Floating Link Wallet -->
-  <div class="linkFab" id="btnLinkWallet" title="Link external wallet (safe)">
-    <div class="bolt">
+  <div class="linkFab" id="btnLinkWallet" title="Link external wallet / View connection">
+    <div class="bolt" id="boltBox">
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M13 2 3 14h7l-1 8 12-14h-7l-1-6Z" stroke="rgba(10,12,18,.95)" stroke-width="2" stroke-linejoin="round"/>
       </svg>
     </div>
     <div class="t">
-      <b>Link Wallet</b>
-      <span>External address</span>
+      <b id="fabTitle">Link Wallet</b>
+      <span id="fabSub">External address</span>
     </div>
+    <div class="fabDot" id="fabDot" title="Approved"></div>
   </div>
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div class="toprow">
-      <div class="leftTop">
-        <button class="menuBtn" id="btnMenu" type="button" aria-label="Open menu">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M4 7h16M4 12h16M4 17h16" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
+  <div class="container">
+    <div id="stickyMenu" class="stickyMenu">
+      <div class="topRow">
+        <div class="brand">
+          <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
+        </div>
 
-        <div class="title">
-          <h1>Crypto Wallet</h1>
-          <p>Deposit only — always pick the correct network.</p>
+        <div class="headerActions">
+          <button class="avatarBtn" id="btnProfile" type="button" title="Profile">
+            <span id="avatarFallback" class="avatarFallback">👤</span>
+            <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
+          </button>
+          <button class="iconBtn" id="btnMenu" type="button" title="Menu">☰</button>
         </div>
       </div>
 
-      <div class="rightTop">
+      <div class="searchRow">
         <div class="searchBox">
           <svg class="icon" viewBox="0 0 24 24" fill="none">
             <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="rgba(234,240,255,.85)" stroke-width="2"/>
@@ -948,37 +1109,129 @@ FILE: wallet.html
           </svg>
           <input id="q" placeholder="Search asset (e.g. BTC, USDT, Ethereum, BEP20)..." autocomplete="off"/>
         </div>
-
-        <button class="btnTop" id="btnReload" type="button">Reload</button>
-        <button class="btnTop primary" id="btnHistoryOpen" type="button">History</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div class="notice">
-      <div class="dot"></div>
-      <div>
-        <div style="font-size:13px; font-weight:1000; margin-bottom:4px;">
-          Important: Send only the exact asset on the exact network shown.
-        </div>
-        <div class="small">
-          Deposits sent on the wrong network (e.g. ERC20 vs BEP20) may be unrecoverable.
-          Never share your seed phrase — support will never request it.
-        </div>
+        <button class="btnSmall" id="btnReload" type="button">Reload</button>
+        <button class="btnSmall" id="btnRefreshPrices" type="button">Prices</button>
       </div>
     </div>
 
-    <div id="grid" class="grid"></div>
-    <div id="empty" class="empty">No assets match your search.</div>
+    <div class="helloCard">
+      <div class="helloLeft">
+        <div class="helloLogo">🛡️</div>
+        <div style="min-width:0">
+          <div class="helloTitle" id="helloTitle">Crypto Wallet</div>
+          <div class="helloSub" id="helloSub">Deposit only appears when you tap <b>Receive</b>.</div>
+        </div>
+      </div>
+      <div class="helloRight">
+        <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
+      </div>
+    </div>
+
+    <div class="balanceCard">
+      <div class="bTitle">Total Wallet Balance (All Crypto)</div>
+      <div class="bValue" id="totalUsd">$0.00</div>
+      <div class="bHint">
+        <div class="dot"></div>
+        <div>
+          <span style="opacity:.9">This is the accumulated value of all assets.</span>
+          <span style="opacity:.8">It also syncs into your dashboard balance when possible.</span>
+        </div>
+      </div>
+
+      <div class="actionGrid">
+        <div class="action" id="btnSendMain"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
+        <div class="action" id="btnReceiveMain"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
+        <div class="action" id="btnSwapMain"><div class="aIcon aSwap">⇄</div><div class="aText">Swap</div></div>
+        <div class="action" id="btnEditMain"><div class="aIcon aEdit">⚙️</div><div class="aText">Edit Balances</div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>Asset Allocation</h2>
+      <div class="small">Pie + Bar charts show your percentage allocation across all assets.</div>
+
+      <div class="chartGrid">
+        <div class="chartCard">
+          <div class="chartHead"><span>Allocation Pie</span><span id="pieMeta">—</span></div>
+          <canvas id="pieCanvas" class="chartCanvas" width="900" height="520"></canvas>
+        </div>
+        <div class="chartCard">
+          <div class="chartHead"><span>Allocation Bars</span><span id="barMeta">—</span></div>
+          <canvas id="barCanvas" class="chartCanvas" width="900" height="520"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h2>All Assets</h2>
+      <div class="small">Each card shows balance, live price, and 24h change. Network name wraps fully on mobile.</div>
+      <div id="coinsGrid" class="coinsGrid"></div>
+      <div id="empty" class="small" style="display:none;">No assets match your search.</div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
-  <!-- SEND MODAL -->
+  <!-- =========================
+       RECEIVE MODAL (Deposit address shown ONLY here)
+  ========================== -->
+  <div id="receiveOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Receive crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="recvTitle">Receive</p>
+          <p class="s" id="recvSub">—</p>
+        </div>
+        <button class="modalClose" id="btnRecvClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="smallWarn">⚠️ Always confirm the network. Deposits on wrong network may be unrecoverable.</div>
+
+        <div class="in">
+          <label>Deposit Address</label>
+          <input id="recvAddr" class="mono" readonly />
+        </div>
+
+        <div class="in" id="memoWrap" style="display:none;">
+          <label id="memoLabel">Memo</label>
+          <input id="memoValue" class="mono" readonly />
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:0 0 auto;">
+            <div id="recvQr" style="width:180px;height:180px;display:grid;place-items:center;"></div>
+            <div class="small" style="margin-top:8px">Scan QR (deposit only)</div>
+          </div>
+
+          <div style="flex:1;min-width:220px;">
+            <div class="in">
+              <label>Tip</label>
+              <div style="font-size:13px;font-weight:900;color:rgba(234,240,255,.82);line-height:1.5">
+                Send only <b id="recvAsset">—</b> on <b id="recvNet">—</b>.
+                Never share your seed phrase.
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+              <button class="btn primary" id="btnCopyAddr" type="button">Copy Address</button>
+              <button class="btn" id="btnCopyMemo" type="button" style="display:none;">Copy Memo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn" id="btnRecvDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       SEND MODAL
+  ========================== -->
   <div id="sendOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Send crypto">
     <div class="modal">
-      <div class="modalHead">
+      <div class="modalHead pulseHead">
         <div class="modalTitle">
           <p class="h" id="sendTitle">Send</p>
           <p class="s" id="sendSub">—</p>
@@ -987,55 +1240,123 @@ FILE: wallet.html
       </div>
 
       <div class="modalBody">
-        <div class="smallWarn">
-          ⚠️ Always confirm the network. Sending to the wrong network may result in permanent loss.
+        <div class="smallWarn">⚠️ Always confirm the network.</div>
+
+        <div class="in">
+          <label>Asset</label>
+          <select id="sendAsset"></select>
+        </div>
+
+        <div class="in">
+          <label>Network</label>
+          <select id="sendNetwork"></select>
         </div>
 
         <div class="in">
           <label>Recipient Wallet Address</label>
-          <input id="sendTo" placeholder="Paste recipient address..." autocomplete="off" />
+          <input id="sendTo" placeholder="Paste recipient address..." autocomplete="off"/>
         </div>
 
-        <div class="formGrid">
-          <div class="in">
-            <label>Amount</label>
-            <input id="sendAmount" placeholder="0.00" inputmode="decimal" autocomplete="off" />
-          </div>
-
-          <div class="in">
-            <label>Network</label>
-            <select id="sendNetwork"></select>
-          </div>
-        </div>
-
-        <div class="feeBox">
-          <div class="feeRow">
-            <span>Network fee (est.)</span>
-            <b id="feeEst">—</b>
-          </div>
-          <div class="feeRow">
-            <span>Total (amount + fee)</span>
-            <b id="totalEst">—</b>
-          </div>
+        <div class="in">
+          <label>Amount</label>
+          <input id="sendAmount" placeholder="0.00" inputmode="decimal" autocomplete="off"/>
         </div>
 
         <div class="in">
           <label>Note (optional)</label>
-          <input id="sendNote" placeholder="e.g. Payment / Transfer" autocomplete="off" />
+          <input id="sendNote" placeholder="e.g. Payment / Transfer" autocomplete="off"/>
         </div>
+
+        <div class="small" id="sendHint" style="margin-top:2px;">Available: —</div>
       </div>
 
       <div class="modalFoot">
-        <button class="btn secondary" id="btnSendCancel" type="button">Cancel</button>
-        <button class="btn send" id="btnSendSubmit" type="button">Send</button>
+        <button class="btn" id="btnSendCancel" type="button">Cancel</button>
+        <button class="btn primary" id="btnSendSubmit" type="button">Send</button>
       </div>
     </div>
   </div>
 
-  <!-- LINK WALLET MODAL (SAFE) -->
+  <!-- =========================
+       SWAP MODAL
+  ========================== -->
+  <div id="swapOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Swap crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Swap Assets</p>
+          <p class="s">Swap between coins using live USD prices</p>
+        </div>
+        <button class="modalClose" id="btnSwapClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="in">
+          <label>From</label>
+          <select id="swapFrom"></select>
+        </div>
+
+        <div class="in">
+          <label>To</label>
+          <select id="swapTo"></select>
+        </div>
+
+        <div class="in">
+          <label>Amount (From)</label>
+          <input id="swapAmt" placeholder="0.00" inputmode="decimal" autocomplete="off"/>
+        </div>
+
+        <div class="in">
+          <label>Preview</label>
+          <div style="font-size:13px;font-weight:1000;color:rgba(234,240,255,.86);line-height:1.5">
+            <div id="swapPreview">—</div>
+            <div class="small" style="margin-top:8px">
+              Rates are based on current market price. This is an internal swap.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn" id="btnSwapCancel" type="button">Cancel</button>
+        <button class="btn green" id="btnSwapDo" type="button">Swap</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       EDIT BALANCES MODAL (direct control)
+  ========================== -->
+  <div id="editOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Edit balances">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Edit Balances</p>
+          <p class="s">Directly control each asset balance (updates total instantly)</p>
+        </div>
+        <button class="modalClose" id="btnEditClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="small">
+          This editor saves per-user balances locally for fast control, and it also tries to sync your total into <b>users.balance</b> so your dashboard shows the same number.
+        </div>
+        <div id="editList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn" id="btnEditCancel" type="button">Cancel</button>
+        <button class="btn purple" id="btnEditSave" type="button">Save Balances</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       LINK WALLET MODAL (request)
+  ========================== -->
   <div id="linkOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Link external wallet">
     <div class="modal">
-      <div class="modalHead">
+      <div class="modalHead pulseHead">
         <div class="modalTitle">
           <p class="h">Link External Wallet</p>
           <p class="s">Add a public address (never seed phrase)</p>
@@ -1044,9 +1365,7 @@ FILE: wallet.html
       </div>
 
       <div class="modalBody">
-        <div class="smallWarn">
-          ✅ Only paste your <b>public</b> wallet address. Never share 12/24-word phrases.
-        </div>
+        <div class="smallWarn">✅ Only paste your <b>public</b> wallet address. Never share 12/24-word phrases.</div>
 
         <div class="in">
           <label>Wallet Address</label>
@@ -1058,21 +1377,103 @@ FILE: wallet.html
           <input id="linkLabel" placeholder="e.g. My Trust Wallet" autocomplete="off"/>
         </div>
 
-        <div class="feeBox">
-          <div class="feeRow">
-            <span>Status</span>
-            <b id="linkStatus">Not linked</b>
-          </div>
-          <div class="feeRow">
-            <span>Tip</span>
-            <b>We may request signature proof</b>
-          </div>
+        <div class="in">
+          <label>Status</label>
+          <input id="linkStatus" value="Not linked" readonly />
         </div>
       </div>
 
       <div class="modalFoot">
-        <button class="btn secondary" id="btnLinkCancel" type="button">Cancel</button>
-        <button class="btn send" id="btnLinkSubmit" type="button" disabled style="opacity:.55; cursor:not-allowed;">Link Wallet</button>
+        <button class="btn" id="btnLinkCancel" type="button">Cancel</button>
+        <button class="btn green" id="btnLinkSubmit" type="button" disabled style="opacity:.55;cursor:not-allowed;">Link Wallet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       VIEW WALLET CONNECTION MODAL (approved + green glow dot)
+  ========================== -->
+  <div id="viewLinkOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Wallet connection">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Wallet Connection</p>
+          <p class="s">Your linked wallet information</p>
+        </div>
+        <button class="modalClose" id="btnViewLinkClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div style="width:10px;height:10px;border-radius:999px;background:rgba(34,197,94,1);box-shadow:0 0 18px rgba(34,197,94,.55);animation:pulseDot 1.3s ease-in-out infinite;"></div>
+          <div style="font-weight:1000;">Status: <span id="viewLinkStatus" style="color:rgba(34,197,94,1)">APPROVED</span></div>
+        </div>
+
+        <div class="in">
+          <label>Wallet Address</label>
+          <input id="viewLinkAddr" class="mono" readonly />
+        </div>
+
+        <div class="in">
+          <label>Label</label>
+          <input id="viewLinkLabel" readonly />
+        </div>
+
+        <div class="small" id="viewLinkMeta">—</div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn primary" id="btnViewLinkCopy" type="button">Copy Address</button>
+        <button class="btn" id="btnViewLinkDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       WALLET LINK APPROVED POPUP
+  ========================== -->
+  <div id="linkedOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Wallet linked">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">✅ Wallet Linked</p>
+          <p class="s">Your wallet is now linked successfully</p>
+        </div>
+        <button class="modalClose" id="btnLinkedClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div style="font-weight:1000;line-height:1.5;color:rgba(234,240,255,.85);">
+          Your wallet link request has been approved by admin.
+          You can now tap <b>View Wallet Connection</b> from the swing button anytime.
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn primary" id="btnLinkedOk" type="button">Okay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================
+       SITE NOTICE POPUP (ADMIN CONTROLLED)
+  ========================== -->
+  <div id="noticeOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Notice">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="noticeTitle">Notice</p>
+          <p class="s" id="noticeSub">VGM Update</p>
+        </div>
+        <button class="modalClose" id="btnNoticeClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="noticeBody" id="noticeBody">—</div>
+        <div class="noticeMeta">
+          <span class="noticeTag" id="noticeTag">Announcement</span>
+          <span id="noticeWhen">—</span>
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn primary" id="btnNoticeOk" type="button">Okay</button>
       </div>
     </div>
   </div>
@@ -1085,57 +1486,492 @@ FILE: wallet.html
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ✅ Your Edge Function URL
     const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
 
-    function escapeHtml(s){
-      return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-
+    /* ============================================================
+      ✅ HELPERS
+    ============================================================ */
+    function esc(s){ return String(s??"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
     function toast(msg){
-      const el = document.getElementById("toast");
-      el.textContent = msg;
+      const el=document.getElementById("toast");
+      el.textContent=msg;
       el.classList.add("show");
       clearTimeout(window.__toastT);
-      window.__toastT = setTimeout(()=> el.classList.remove("show"), 1700);
+      window.__toastT=setTimeout(()=>el.classList.remove("show"),1700);
     }
-
     async function copyText(text){
+      try{ await navigator.clipboard.writeText(text); toast("Copied ✅"); }
+      catch{
+        const ta=document.createElement("textarea");
+        ta.value=text; document.body.appendChild(ta);
+        ta.select(); document.execCommand("copy"); ta.remove();
+        toast("Copied ✅");
+      }
+    }
+    function fmtUsd(n){
+      const x=Number(n||0);
+      return "$" + x.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    function fmtAmt(n, maxDp=8){
+      const x=Number(n||0);
+      if(!isFinite(x)) return "0";
+      const s=x.toFixed(maxDp);
+      return s.replace(/\.?0+$/,"");
+    }
+
+    function hideGate(){
+      const g=document.getElementById("authGate");
+      if(g) g.style.display="none";
+    }
+    (function safetyAutoHideGate(){ setTimeout(()=>hideGate(), 3500); })();
+
+    /* sticky polish */
+    (function(){
+      const sticky=document.getElementById("stickyMenu");
+      const onScroll=()=>{ if(window.scrollY>14) sticky.classList.add("isStuck"); else sticky.classList.remove("isStuck"); };
+      onScroll(); window.addEventListener("scroll", onScroll, {passive:true});
+    })();
+
+    function startClock(){
+      const dtEl=document.getElementById("dateTimeNow");
+      const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const tick=()=>{
+        const now=new Date();
+        const dayName=days[now.getDay()];
+        const day=String(now.getDate()).padStart(2,"0");
+        const mon=months[now.getMonth()];
+        const yr=now.getFullYear();
+        let hh=now.getHours();
+        const ampm=hh>=12?"PM":"AM";
+        hh=hh%12; hh=hh?hh:12;
+        const hhs=String(hh).padStart(2,"0");
+        const mm=String(now.getMinutes()).padStart(2,"0");
+        const ss=String(now.getSeconds()).padStart(2,"0");
+        dtEl.textContent=`${dayName}, ${day} ${mon} ${yr} | ${hhs}:${mm}:${ss} ${ampm}`;
+      };
+      tick(); setInterval(tick,1000);
+    }
+
+    /* ============================================================
+      ✅ STATE
+    ============================================================ */
+    let CURRENT_USER=null;
+    let __wallets=[];       // from backend wallets_public_list
+    let __balances={};      // per-asset balances (editable)
+    let __prices={};        // live market data per symbol
+    let __linkState={ status:"none", address:"", label:"", updated_at:"" };
+    let __lastLinkApproved=false;
+
+    function storageKeyBalances(){
+      const uid=CURRENT_USER?.id || "anon";
+      return `vgm_wallet_balances_${uid}`;
+    }
+    function storageKeyLinkSeen(){
+      const uid=CURRENT_USER?.id || "anon";
+      return `vgm_wallet_link_seen_${uid}`;
+    }
+    function storageKeyNoticeDismissed(){
+      const uid=CURRENT_USER?.id || "anon";
+      return `vgm_notice_dismissed_${uid}`;
+    }
+
+    function loadBalancesLocal(){
       try{
-        await navigator.clipboard.writeText(text);
-        toast("Copied ✅");
+        const raw=localStorage.getItem(storageKeyBalances());
+        if(raw){
+          const obj=JSON.parse(raw);
+          if(obj && typeof obj==="object") return obj;
+        }
+      }catch(e){}
+      return {};
+    }
+    function saveBalancesLocal(){
+      try{ localStorage.setItem(storageKeyBalances(), JSON.stringify(__balances||{})); }catch(e){}
+    }
+
+    function ensureBalance(asset_key){
+      const k=String(asset_key||"").toUpperCase();
+      if(__balances[k]==null) __balances[k]=0;
+      if(!isFinite(Number(__balances[k]))) __balances[k]=0;
+    }
+
+    function logoUrlFor(symbol){
+      const sym=String(symbol||"").toLowerCase();
+      return `https://assets.coincap.io/assets/icons/${sym}@2x.png`;
+    }
+
+    function coinGeckoIdFor(sym){
+      const s=String(sym||"").toUpperCase();
+      const map={
+        BTC:"bitcoin",
+        ETH:"ethereum",
+        USDT:"tether",
+        USDC:"usd-coin",
+        BNB:"binancecoin",
+        SOL:"solana",
+        XRP:"ripple",
+        DOGE:"dogecoin",
+        TRX:"tron",
+        LTC:"litecoin",
+        TON:"the-open-network",
+        MATIC:"matic-network",
+        AVAX:"avalanche-2",
+        ADA:"cardano",
+        DOT:"polkadot",
+        LINK:"chainlink"
+      };
+      return map[s] || "";
+    }
+
+    /* ============================================================
+      ✅ BACKEND AUTH HEADERS
+    ============================================================ */
+    async function getAuthHeaders(){
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      return {
+        "Content-Type":"application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+      };
+    }
+
+    /* ============================================================
+      ✅ MENU / PROFILE / LOGOUT
+    ============================================================ */
+    const menuOverlay=document.getElementById("menuOverlay");
+    const sidebar=document.getElementById("sidebar");
+    const btnMenu=document.getElementById("btnMenu");
+    const btnSideClose=document.getElementById("btnSideClose");
+    const btnLogout=document.getElementById("btnLogout");
+    const btnProfile=document.getElementById("btnProfile");
+
+    function openMenu(){ sidebar.classList.add("open"); menuOverlay.classList.add("show"); }
+    function closeMenu(){ sidebar.classList.remove("open"); menuOverlay.classList.remove("show"); }
+
+    btnMenu.addEventListener("click", openMenu);
+    btnSideClose.addEventListener("click", closeMenu);
+    menuOverlay.addEventListener("click", closeMenu);
+
+    btnProfile.addEventListener("click", ()=> window.location.href="profile.html");
+
+    btnLogout.addEventListener("click", async ()=>{
+      try{ await supabaseClient.auth.signOut(); }catch(e){}
+      window.location.replace("login.html");
+    });
+
+    function setTopAvatar(url){
+      const fb=document.getElementById("avatarFallback");
+      const img=document.getElementById("avatarImgBtn");
+      if(url){
+        img.src=url+"?t="+Date.now();
+        img.style.display="block";
+        fb.style.display="none";
+      }else{
+        img.style.display="none";
+        fb.style.display="block";
+      }
+    }
+    function setSideAvatar(url){
+      const fb=document.getElementById("sideAvatarFallback");
+      const img=document.getElementById("sideAvatarImg");
+      if(url){
+        img.src=url+"?t="+Date.now();
+        img.style.display="block";
+        fb.style.display="none";
+      }else{
+        img.style.display="none";
+        fb.style.display="block";
+      }
+    }
+    function setUserName(name){
+      document.getElementById("sideName").textContent = name || "User";
+    }
+
+    async function loadIdentity(){
+      try{
+        const email=CURRENT_USER?.email || "";
+        let fullName="", avatarUrl="";
+        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url").eq("email", email).maybeSingle();
+        if(!error && row){
+          fullName = row.full_name || "";
+          avatarUrl = row.avatar_url || "";
+        }
+        const md=(CURRENT_USER?.user_metadata||{});
+        if(!fullName) fullName = md.full_name || "User";
+        if(!avatarUrl) avatarUrl = md.avatar_url || "";
+        setUserName(fullName);
+        setTopAvatar(avatarUrl);
+        setSideAvatar(avatarUrl);
       }catch(e){
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-        toast("Copied ✅");
+        setUserName("User");
+        setTopAvatar("");
+        setSideAvatar("");
       }
     }
 
-    function buildQrData(item){
-      // keep safe handling
-      if(item.asset_key === "XRP" && item.memo_value){
-        return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`;
+    /* ============================================================
+      ✅ WALLET DATA LOAD
+    ============================================================ */
+    async function loadWalletsFromBackend(){
+      try{
+        const headers = await getAuthHeaders();
+        const res = await fetch(WALLET_API_URL, {
+          method:"POST",
+          headers,
+          body: JSON.stringify({ action:"wallets_public_list" })
+        });
+        const data = await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Wallets load failed (${res.status})`);
+          console.error("wallets_public_list failed:", {status:res.status, data});
+          return;
+        }
+
+        const wallets = (data.wallets || []).map(w => ({
+          asset_key: String(w.asset_key||"").toUpperCase(),
+          name: w.name || String(w.asset_key||"").toUpperCase(),
+          network: w.network || "",
+          address: w.address || "",
+          memo_label: w.memo_label || "",
+          memo_value: w.memo_value || "",
+          note: w.note || ""
+        }));
+
+        __wallets = wallets;
+
+        // Ensure balances exist for all assets
+        __wallets.forEach(w=>ensureBalance(w.asset_key));
+
+        renderCoins();
+        await refreshPrices(true);
+        recalcTotalsAndCharts(true);
+
+        toast("Loaded ✅");
+      }catch(e){
+        toast("Network error ❌");
+        console.error(e);
       }
-      return item.address;
     }
 
-    function renderTransparentQrSvg(data, size=152){
+    /* ============================================================
+      ✅ LIVE PRICES + 24H (CoinGecko)
+    ============================================================ */
+    async function refreshPrices(silent=false){
+      try{
+        const syms = Array.from(new Set(__wallets.map(w=>String(w.asset_key||"").toUpperCase()))).filter(Boolean);
+        const ids = syms.map(coinGeckoIdFor).filter(Boolean);
+        if(!ids.length){
+          if(!silent) toast("No price ids");
+          return;
+        }
+        const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(ids.join(","))}&order=market_cap_desc&per_page=250&page=1&sparkline=false`;
+        const res = await fetch(url);
+        const rows = await res.json().catch(()=>[]);
+        if(!Array.isArray(rows)) throw new Error("bad prices");
+
+        const byId = {};
+        rows.forEach(r=>{ if(r?.id) byId[r.id]=r; });
+
+        __prices = {};
+        syms.forEach(sym=>{
+          const id=coinGeckoIdFor(sym);
+          const r=byId[id];
+          if(!r) return;
+          __prices[sym]={
+            price: Number(r.current_price||0),
+            chg24: Number(r.price_change_percentage_24h||0),
+            img: r.image || ""
+          };
+        });
+
+        renderCoins();
+        recalcTotalsAndCharts(true);
+
+        if(!silent) toast("Prices updated ✅");
+      }catch(e){
+        if(!silent) toast("Prices unavailable (network) ⚠️");
+      }
+    }
+
+    /* ============================================================
+      ✅ TOTAL + DASHBOARD SYNC (users.balance)
+    ============================================================ */
+    function calcTotalUsd(){
+      let total=0;
+      for(const sym of Object.keys(__balances)){
+        const bal=Number(__balances[sym]||0);
+        const px=Number(__prices?.[sym]?.price||0);
+        total += bal * px;
+      }
+      return total;
+    }
+
+    async function syncTotalToDashboard(totalUsd){
+      // Try to set users.balance so dashboard shows same number.
+      // If RLS blocks it, we just ignore silently.
+      try{
+        const email=CURRENT_USER?.email;
+        if(!email) return;
+        await supabaseClient.from("users").update({ balance: Number(totalUsd||0) }).eq("email", email);
+      }catch(e){}
+    }
+
+    function recalcTotalsAndCharts(trySync=false){
+      const total=calcTotalUsd();
+      document.getElementById("totalUsd").textContent = fmtUsd(total);
+
+      if(trySync) syncTotalToDashboard(total);
+
+      drawPie();
+      drawBars();
+    }
+
+    /* ============================================================
+      ✅ RENDER COINS + SEARCH
+    ============================================================ */
+    const coinsGrid=document.getElementById("coinsGrid");
+    const emptyEl=document.getElementById("empty");
+
+    function coinSearchHay(w){
+      return `${w.asset_key} ${w.name} ${w.network}`.toLowerCase();
+    }
+
+    function groupWalletsByAsset(){
+      const map={};
+      __wallets.forEach(w=>{
+        const k=String(w.asset_key||"").toUpperCase();
+        if(!map[k]) map[k]=[];
+        map[k].push(w);
+      });
+      return map;
+    }
+
+    function renderCoins(){
+      const q=(document.getElementById("q").value||"").trim().toLowerCase();
+      const grouped = groupWalletsByAsset();
+      const assets = Object.keys(grouped).sort();
+
+      coinsGrid.innerHTML="";
+      let shown=0;
+
+      assets.forEach(sym=>{
+        const list = grouped[sym] || [];
+        const sample = list[0] || {asset_key:sym, name:sym, network:""};
+        const hay = list.map(coinSearchHay).join(" ");
+        if(q && !hay.includes(q)) return;
+
+        ensureBalance(sym);
+
+        const bal=Number(__balances[sym]||0);
+        const px=Number(__prices?.[sym]?.price||0);
+        const chg=Number(__prices?.[sym]?.chg24||0);
+        const usd=bal*px;
+
+        const chgClass = chg>=0 ? "up" : "down";
+        const sign = chg>=0 ? "+" : "";
+
+        const img = __prices?.[sym]?.img || logoUrlFor(sym);
+
+        // show primary network list as pills
+        const nets = Array.from(new Set(list.map(x=>x.network).filter(Boolean))).slice(0,3);
+        const netHtml = nets.length
+          ? nets.map(n=>`<span class="netPill">${esc(n)}</span>`).join("")
+          : `<span class="netPill">Network: —</span>`;
+
+        const card=document.createElement("div");
+        card.className="coinCard";
+        card.setAttribute("data-sym", sym);
+        card.innerHTML=`
+          <div class="coinTop">
+            <div class="coinLeft">
+              <div class="coinLogo">
+                <img src="${esc(img)}" alt="${esc(sym)}" onerror="this.src='${esc(logoUrlFor(sym))}'">
+              </div>
+              <div class="coinNameWrap">
+                <div class="coinName">${esc(sample.name)} <span style="opacity:.7">•</span> ${esc(sym)}</div>
+                <div class="coinMeta">${netHtml}</div>
+              </div>
+            </div>
+            <div class="priceBox">
+              <div class="priceNow">${px ? fmtUsd(px) : "—"}</div>
+              <div class="priceChg ${chgClass}">${px ? `${sign}${chg.toFixed(2)}% (24h)` : "—"}</div>
+            </div>
+          </div>
+
+          <div class="coinBottom">
+            <div class="balBox">
+              <div class="balLabel">Balance</div>
+              <div class="balValue">${fmtAmt(bal, 8)} <span style="opacity:.75">${esc(sym)}</span></div>
+              <div class="balUsd">${px ? `${fmtUsd(usd)} USD` : "—"}</div>
+            </div>
+
+            <div class="miniBtns">
+              <button class="miniBtn green" data-receive="${esc(sym)}" type="button">Receive</button>
+              <button class="miniBtn primary" data-send="${esc(sym)}" type="button">Send</button>
+              <button class="miniBtn purple" data-swap="${esc(sym)}" type="button">Swap</button>
+            </div>
+          </div>
+        `;
+
+        // actions
+        card.querySelector("[data-receive]")?.addEventListener("click",(e)=>{ e.stopPropagation(); openReceive(sym); });
+        card.querySelector("[data-send]")?.addEventListener("click",(e)=>{ e.stopPropagation(); openSend(sym); });
+        card.querySelector("[data-swap]")?.addEventListener("click",(e)=>{ e.stopPropagation(); openSwap(sym); });
+
+        // tap card opens receive (exchange style)
+        card.addEventListener("click", ()=> openReceive(sym));
+
+        coinsGrid.appendChild(card);
+        shown++;
+      });
+
+      emptyEl.style.display = shown ? "none" : "block";
+      document.getElementById("pieMeta").textContent = shown ? `${shown} assets` : "—";
+      document.getElementById("barMeta").textContent = shown ? `${shown} assets` : "—";
+    }
+
+    document.getElementById("q").addEventListener("input", renderCoins);
+    document.getElementById("btnReload").addEventListener("click", loadWalletsFromBackend);
+    document.getElementById("btnRefreshPrices").addEventListener("click", ()=>refreshPrices(false));
+
+    /* main buttons */
+    document.getElementById("btnSendMain").addEventListener("click", ()=>openSend(""));
+    document.getElementById("btnReceiveMain").addEventListener("click", ()=>openReceive(""));
+    document.getElementById("btnSwapMain").addEventListener("click", ()=>openSwap(""));
+    document.getElementById("btnEditMain").addEventListener("click", openEditBalances);
+
+    /* ============================================================
+      ✅ RECEIVE MODAL
+    ============================================================ */
+    const receiveOverlay=document.getElementById("receiveOverlay");
+    const btnRecvClose=document.getElementById("btnRecvClose");
+    const btnRecvDone=document.getElementById("btnRecvDone");
+    const recvTitle=document.getElementById("recvTitle");
+    const recvSub=document.getElementById("recvSub");
+    const recvAddr=document.getElementById("recvAddr");
+    const recvQr=document.getElementById("recvQr");
+    const memoWrap=document.getElementById("memoWrap");
+    const memoLabel=document.getElementById("memoLabel");
+    const memoValue=document.getElementById("memoValue");
+    const btnCopyAddr=document.getElementById("btnCopyAddr");
+    const btnCopyMemo=document.getElementById("btnCopyMemo");
+    const recvAsset=document.getElementById("recvAsset");
+    const recvNet=document.getElementById("recvNet");
+
+    let __recvAsset="";
+
+    function renderTransparentQrSvg(data, size=180){
       const qr = qrcode(0, "M");
       qr.addData(data);
       qr.make();
-
       const cellCount = qr.getModuleCount();
       const quiet = 4;
       const total = cellCount + quiet * 2;
       const cell = size / total;
 
-      let svg = '';
-      svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
-
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
       for(let r=0; r<cellCount; r++){
         for(let c=0; c<cellCount; c++){
           if(qr.isDark(r,c)){
@@ -1149,603 +1985,756 @@ FILE: wallet.html
       return svg;
     }
 
-    function iconLetters(asset_key){
-      if(String(asset_key).startsWith("USDT")) return "USDT";
-      if(String(asset_key).startsWith("USDC")) return "USDC";
-      return String(asset_key || "").toUpperCase();
-    }
-
-    function logoUrlFor(asset_key){
-      const sym = String(asset_key || "").toLowerCase();
-      return `https://assets.coincap.io/assets/icons/${sym}@2x.png`;
-    }
-
-    const COIN_GRAD = {
-      BTC: ["rgba(247,147,26,.28)", "rgba(255,193,7,.18)"],
-      ETH: ["rgba(98,126,234,.26)", "rgba(124,77,255,.18)"],
-      USDT: ["rgba(38,161,123,.26)", "rgba(34,197,94,.16)"],
-      USDC: ["rgba(39,117,202,.26)", "rgba(56,189,248,.16)"],
-      BNB: ["rgba(240,185,11,.26)", "rgba(245,158,11,.16)"],
-      SOL: ["rgba(0,255,163,.18)", "rgba(220,31,255,.16)"],
-      TRX: ["rgba(239,68,68,.22)", "rgba(245,158,11,.14)"],
-      LTC: ["rgba(190,190,190,.22)", "rgba(56,189,248,.12)"],
-      TON: ["rgba(56,189,248,.22)", "rgba(91,108,255,.16)"],
-      DOGE:["rgba(198,172,105,.22)", "rgba(245,158,11,.14)"],
-      MATIC:["rgba(168,85,247,.22)", "rgba(91,108,255,.14)"],
-      AVAX:["rgba(248,113,113,.22)", "rgba(124,77,255,.14)"]
-    };
-
-    function getGradFor(asset_key){
-      const key = String(asset_key || "").toUpperCase();
-      return COIN_GRAD[key] || ["rgba(91,108,255,.22)", "rgba(124,77,255,.18)"];
-    }
-
-    function estimateFee(asset_key, network){
-      const sym = String(asset_key || "").toUpperCase();
-      const net = String(network || "").toUpperCase();
-
-      if(sym === "USDT" || sym === "USDC"){
-        if(net.includes("TRC")) return 1.0;
-        if(net.includes("BEP")) return 0.3;
-        if(net.includes("ERC")) return 6.0;
-        return 1.0;
+    function buildQrData(item){
+      // Keep safe handling (XRP example)
+      if(String(item.asset_key).toUpperCase()==="XRP" && item.memo_value){
+        return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`;
       }
-      if(net.includes("BTC")) return 0.00015;
-      if(net.includes("ETH") || net.includes("ERC")) return 0.0012;
-      if(net.includes("BSC") || net.includes("BEP")) return 0.0006;
-      if(net.includes("TRON") || net.includes("TRC")) return 2.0;
-      if(net.includes("SOL")) return 0.00005;
-      return 0.001;
+      return item.address;
     }
 
-    let __wallets = [];
-    let __selectedCard = null;
-
-    function makeCard(item){
-      const qrData = buildQrData(item);
-      const badgeText = iconLetters(item.asset_key);
-      const grad = getGradFor(item.asset_key);
-      const logoUrl = logoUrlFor(item.asset_key);
-
-      const memoBlock = item.memo_label && item.memo_value ? `
-        <div class="field">
-          <div class="label">
-            <span>${escapeHtml(item.memo_label)}</span>
-            <button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy</button>
-          </div>
-          <div class="value">${escapeHtml(item.memo_value)}</div>
-        </div>
-      ` : '';
-
-      const note = item.note
-        ? `<div class="hint">${escapeHtml(item.note)}</div>`
-        : `<div class="hint">Deposit only.</div>`;
-
-      const el = document.createElement("div");
-      el.className = "card";
-      el.setAttribute("data-search", `${item.asset_key} ${item.name} ${item.network}`.toLowerCase());
-      el.style.setProperty("--coinA", grad[0]);
-      el.style.setProperty("--coinB", grad[1]);
-
-      el.innerHTML = `
-        <div class="row">
-          <div class="left">
-            <div class="meta">
-              <div class="coin">
-                <div class="badge" title="${escapeHtml(item.asset_key)}">
-                  <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(item.asset_key)} logo"
-                       onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='block';">
-                  <span class="fallback">${escapeHtml(badgeText)}</span>
-                </div>
-                <div class="names">
-                  <div class="sym">${escapeHtml(item.name)} <span style="opacity:.7;">•</span> ${escapeHtml(item.asset_key)}</div>
-                  <div class="net">${escapeHtml(item.network)}</div>
-                </div>
-              </div>
-              <div class="pill"><span class="mini"></span>Deposit</div>
-            </div>
-
-            <div class="addr">
-              <div class="field">
-                <div class="label">
-                  <span>Deposit Address</span>
-                  <button class="btn secondary" data-copy="${escapeHtml(item.address)}" type="button">Copy</button>
-                </div>
-                <div class="value">${escapeHtml(item.address)}</div>
-              </div>
-
-              ${memoBlock}
-
-              <div class="actions">
-                <button class="btn" data-copy="${escapeHtml(item.address)}" type="button">Copy Address</button>
-                <button class="btn send" data-send="${escapeHtml(item.asset_key)}" data-network="${escapeHtml(item.network)}" type="button">Send</button>
-                ${item.memo_label && item.memo_value ? `<button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy ${escapeHtml(item.memo_label)}</button>` : ''}
-              </div>
-            </div>
-          </div>
-
-          <div class="right">
-            <div class="qr" aria-label="QR code">${renderTransparentQrSvg(qrData, 152)}</div>
-            ${note}
-          </div>
-        </div>
-      `;
-
-      // Highlight on click (but don't block button clicks)
-      el.addEventListener("click", (e)=>{
-        const t = e.target;
-        if(t && (t.closest("button") || t.closest("a") || t.closest("input") || t.closest("select"))) return;
-        if(__selectedCard) __selectedCard.classList.remove("selected");
-        el.classList.add("selected");
-        __selectedCard = el;
-      });
-
-      el.querySelectorAll("[data-copy]").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          e.stopPropagation();
-          copyText(btn.getAttribute("data-copy") || "");
-        });
-      });
-
-      el.querySelectorAll("[data-send]").forEach(btn=>{
-        btn.addEventListener("click", (e)=>{
-          e.stopPropagation();
-          const asset = btn.getAttribute("data-send") || "";
-          const network = btn.getAttribute("data-network") || "";
-          openSendModal(asset, network);
-        });
-      });
-
-      return el;
+    function closeReceive(){
+      receiveOverlay.classList.remove("show");
+      __recvAsset="";
+      recvQr.innerHTML="";
+      recvAddr.value="";
+      memoValue.value="";
+      memoWrap.style.display="none";
+      btnCopyMemo.style.display="none";
     }
 
-    function render(list){
-      const grid = document.getElementById("grid");
-      grid.innerHTML = "";
-      list.forEach(item => grid.appendChild(makeCard(item)));
-      applySearch();
-    }
-
-    function applySearch(){
-      const q = (document.getElementById("q").value || "").trim().toLowerCase();
-      const cards = Array.from(document.querySelectorAll("#grid .card"));
-      let shown = 0;
-
-      cards.forEach(card=>{
-        const hay = card.getAttribute("data-search") || "";
-        const ok = !q || hay.includes(q);
-        card.style.display = ok ? "" : "none";
-        if(ok) shown++;
-      });
-
-      document.getElementById("empty").style.display = shown ? "none" : "block";
-    }
-
-    async function getAuthHeaders(){
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-
-      return {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+    function pickDefaultWalletForAsset(sym){
+      const s=String(sym||"").toUpperCase();
+      const list=__wallets.filter(w=>String(w.asset_key||"").toUpperCase()===s);
+      // prefer TRC/BEP then ERC last (common UX)
+      const score=(net)=>{
+        const n=String(net||"").toUpperCase();
+        if(n.includes("TRC")) return 1;
+        if(n.includes("BEP")) return 2;
+        if(n.includes("BSC")) return 2;
+        if(n.includes("SOL")) return 3;
+        if(n.includes("ERC")||n.includes("ETH")) return 4;
+        return 5;
       };
+      list.sort((a,b)=>score(a.network)-score(b.network));
+      return list[0] || null;
     }
 
-    async function loadFromBackend(){
-      try{
-        const headers = await getAuthHeaders();
-        const res = await fetch(WALLET_API_URL, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ action: "wallets_public_list" })
-        });
-
-        const data = await res.json().catch(()=> ({}));
-
-        if(!res.ok || data?.success === false){
-          toast(`Load failed (${res.status})`);
-          console.error("wallets_public_list failed:", { status: res.status, data });
-          return;
-        }
-
-        const wallets = (data.wallets || []).map(w => ({
-          asset_key: w.asset_key,
-          name: w.name,
-          network: w.network,
-          address: w.address,
-          memo_label: w.memo_label,
-          memo_value: w.memo_value,
-          note: w.note
-        }));
-
-        // Remove XRP as you requested earlier
-        __wallets = wallets.filter(w => String(w.asset_key || "").toUpperCase() !== "XRP");
-
-        render(__wallets);
-        toast("Loaded ✅");
-      }catch(e){
-        toast("Network error ❌");
-        console.error("Wallet fetch error:", e);
+    function openReceive(sym){
+      const s=String(sym||"").toUpperCase();
+      const item = s ? pickDefaultWalletForAsset(s) : (__wallets[0] || null);
+      if(!item){
+        toast("No deposit wallets found");
+        return;
       }
+
+      __recvAsset = String(item.asset_key||"").toUpperCase();
+      recvTitle.textContent = `Receive ${__recvAsset}`;
+      recvSub.textContent = item.network || "Network";
+      recvAddr.value = item.address || "";
+
+      recvAsset.textContent = __recvAsset;
+      recvNet.textContent = item.network || "—";
+
+      if(item.memo_label && item.memo_value){
+        memoWrap.style.display="block";
+        memoLabel.textContent = item.memo_label;
+        memoValue.value = item.memo_value;
+        btnCopyMemo.style.display="inline-block";
+      }else{
+        memoWrap.style.display="none";
+        btnCopyMemo.style.display="none";
+      }
+
+      const qrData=buildQrData(item);
+      recvQr.innerHTML = renderTransparentQrSvg(qrData, 180);
+
+      receiveOverlay.classList.add("show");
     }
 
-    /* =========================
-      SEND MODAL LOGIC (REAL REQUEST)
-    ========================== */
-    const sendOverlay = document.getElementById("sendOverlay");
-    const btnSendClose = document.getElementById("btnSendClose");
-    const btnSendCancel = document.getElementById("btnSendCancel");
-    const btnSendSubmit = document.getElementById("btnSendSubmit");
+    btnRecvClose.addEventListener("click", closeReceive);
+    btnRecvDone.addEventListener("click", closeReceive);
+    receiveOverlay.addEventListener("click",(e)=>{ if(e.target===receiveOverlay) closeReceive(); });
 
-    const sendTitle = document.getElementById("sendTitle");
-    const sendSub = document.getElementById("sendSub");
-    const sendTo = document.getElementById("sendTo");
-    const sendAmount = document.getElementById("sendAmount");
-    const sendNetwork = document.getElementById("sendNetwork");
-    const sendNote = document.getElementById("sendNote");
-    const feeEst = document.getElementById("feeEst");
-    const totalEst = document.getElementById("totalEst");
+    btnCopyAddr.addEventListener("click", ()=> copyText(recvAddr.value||""));
+    btnCopyMemo.addEventListener("click", ()=> copyText(memoValue.value||""));
+        /* ============================================================
+      ✅ SEND MODAL (real request via edge function if supported)
+    ============================================================ */
+    const sendOverlay=document.getElementById("sendOverlay");
+    const btnSendClose=document.getElementById("btnSendClose");
+    const btnSendCancel=document.getElementById("btnSendCancel");
+    const btnSendSubmit=document.getElementById("btnSendSubmit");
+    const sendTitle=document.getElementById("sendTitle");
+    const sendSub=document.getElementById("sendSub");
+    const sendAsset=document.getElementById("sendAsset");
+    const sendNetwork=document.getElementById("sendNetwork");
+    const sendTo=document.getElementById("sendTo");
+    const sendAmount=document.getElementById("sendAmount");
+    const sendNote=document.getElementById("sendNote");
+    const sendHint=document.getElementById("sendHint");
 
-    let __sendAsset = "";
-    let __sendDefaultNetwork = "";
-
-    function closeSendModal(){
+    function closeSend(){
       sendOverlay.classList.remove("show");
-      __sendAsset = "";
-      __sendDefaultNetwork = "";
-      sendTo.value = "";
-      sendAmount.value = "";
-      sendNote.value = "";
-      sendNetwork.innerHTML = "";
-      feeEst.textContent = "—";
-      totalEst.textContent = "—";
+      sendTo.value=""; sendAmount.value=""; sendNote.value="";
     }
 
-    function openSendModal(asset_key, preferredNetwork){
-      __sendAsset = String(asset_key || "").toUpperCase();
-      __sendDefaultNetwork = String(preferredNetwork || "");
+    function populateSendSelectors(defaultSym){
+      const grouped=groupWalletsByAsset();
+      const assets=Object.keys(grouped).sort();
 
-      const nets = __wallets
-        .filter(w => String(w.asset_key || "").toUpperCase() === __sendAsset)
-        .map(w => w.network)
-        .filter(Boolean);
-
-      const options = (nets.length ? nets : [__sendDefaultNetwork]).filter(Boolean);
-
-      sendNetwork.innerHTML = "";
-      options.forEach((n, idx)=>{
-        const opt = document.createElement("option");
-        opt.value = n;
-        opt.textContent = n;
-        if(n === __sendDefaultNetwork || idx === 0) opt.selected = true;
-        sendNetwork.appendChild(opt);
+      sendAsset.innerHTML="";
+      assets.forEach(sym=>{
+        const opt=document.createElement("option");
+        opt.value=sym; opt.textContent=sym;
+        if(sym===defaultSym) opt.selected=true;
+        sendAsset.appendChild(opt);
       });
 
-      sendTitle.textContent = `Send ${__sendAsset}`;
-      sendSub.textContent = `${options[sendNetwork.selectedIndex] || __sendDefaultNetwork || "Network"}`;
+      function fillNetworks(sym){
+        const list=grouped[sym] || [];
+        const nets=Array.from(new Set(list.map(w=>w.network).filter(Boolean)));
+        sendNetwork.innerHTML="";
+        nets.forEach((n,idx)=>{
+          const opt=document.createElement("option");
+          opt.value=n; opt.textContent=n;
+          if(idx===0) opt.selected=true;
+          sendNetwork.appendChild(opt);
+        });
+        const bal=Number(__balances[sym]||0);
+        sendHint.textContent = `Available: ${fmtAmt(bal,8)} ${sym}`;
+        sendSub.textContent = nets[sendNetwork.selectedIndex] || "Network";
+      }
 
-      updateFeeEstimate();
+      fillNetworks(defaultSym || assets[0] || "");
+
+      sendAsset.onchange=()=> fillNetworks(sendAsset.value);
+      sendNetwork.onchange=()=> { sendSub.textContent = sendNetwork.value || "Network"; };
+    }
+
+    function openSend(sym){
+      const s=String(sym||"").toUpperCase();
+      const grouped=groupWalletsByAsset();
+      const assets=Object.keys(grouped);
+      if(!assets.length){
+        toast("No assets found");
+        return;
+      }
+      const defaultSym = s && grouped[s] ? s : assets[0];
+      populateSendSelectors(defaultSym);
+
+      sendTitle.textContent = `Send`;
+      sendSub.textContent = sendNetwork.value || "Network";
       sendOverlay.classList.add("show");
       sendTo.focus();
     }
 
+    btnSendClose.addEventListener("click", closeSend);
+    btnSendCancel.addEventListener("click", closeSend);
+    sendOverlay.addEventListener("click",(e)=>{ if(e.target===sendOverlay) closeSend(); });
+
     function parseAmount(v){
-      const n = Number(String(v || "").replace(/,/g,"").trim());
-      return Number.isFinite(n) && n > 0 ? n : 0;
+      const n=Number(String(v||"").replace(/,/g,"").trim());
+      return Number.isFinite(n) && n>0 ? n : 0;
     }
-
-    function fmtNum(n, decimals=8){
-      if(!Number.isFinite(n)) return "—";
-      if(__sendAsset === "USDT" || __sendAsset === "USDC") decimals = 2;
-      return n.toFixed(decimals).replace(/\.?0+$/,"");
-    }
-
-    function updateFeeEstimate(){
-      const net = sendNetwork.value || __sendDefaultNetwork || "";
-      const amt = parseAmount(sendAmount.value);
-
-      sendSub.textContent = `${net || "Network"}`;
-
-      const fee = estimateFee(__sendAsset, net);
-      const feeText = `${fmtNum(fee, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}`;
-      feeEst.textContent = feeText;
-
-      const total = amt + (Number(fee) || 0);
-      totalEst.textContent = amt ? `${fmtNum(total, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}` : "—";
-    }
-
-    btnSendClose.addEventListener("click", closeSendModal);
-    btnSendCancel.addEventListener("click", closeSendModal);
-    sendOverlay.addEventListener("click", (e)=>{ if(e.target === sendOverlay) closeSendModal(); });
-    document.addEventListener("keydown", (e)=>{ if(e.key === "Escape" && sendOverlay.classList.contains("show")) closeSendModal(); });
-    sendAmount.addEventListener("input", updateFeeEstimate);
-    sendNetwork.addEventListener("change", updateFeeEstimate);
 
     btnSendSubmit.addEventListener("click", async ()=>{
-      const to = (sendTo.value || "").trim();
-      const amt = parseAmount(sendAmount.value);
-      const net = (sendNetwork.value || "").trim();
-      const note = (sendNote.value || "").trim();
+      const sym=String(sendAsset.value||"").toUpperCase();
+      const net=String(sendNetwork.value||"");
+      const to=String(sendTo.value||"").trim();
+      const amt=parseAmount(sendAmount.value);
+      const note=String(sendNote.value||"").trim();
 
-      if(!__sendAsset){ toast("Select an asset"); return; }
-      if(!net){ toast("Select a network"); return; }
-      if(!to || to.length < 12){ toast("Enter a valid address"); return; }
+      if(!sym){ toast("Select asset"); return; }
+      if(!net){ toast("Select network"); return; }
+      if(!to || to.length<12){ toast("Enter valid address"); return; }
       if(!amt){ toast("Enter amount"); return; }
 
-      const fee = estimateFee(__sendAsset, net);
+      ensureBalance(sym);
+      const bal=Number(__balances[sym]||0);
+      if(amt>bal){ toast("Insufficient balance"); return; }
 
+      // Try backend send_create if enabled; otherwise simulate locally
       try{
-        const headers = await getAuthHeaders();
-        const res = await fetch(WALLET_API_URL, {
-          method: "POST",
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{
+          method:"POST",
           headers,
           body: JSON.stringify({
-            action: "send_create",
-            asset_key: __sendAsset,
-            network: net,
-            to_address: to,
-            amount: amt,
-            fee_est: fee,
-            note
+            action:"send_create",
+            asset_key:sym,
+            network:net,
+            to_address:to,
+            amount:amt,
+            note: note || null
           })
         });
-
-        const data = await res.json().catch(()=> ({}));
-        if(!res.ok || data?.success === false){
-          toast(`Send failed (${res.status})`);
-          console.error("send_create failed:", { status: res.status, data });
+        const data=await res.json().catch(()=> ({}));
+        if(res.ok && data?.success!==false){
+          toast("Send request submitted ✅");
+          closeSend();
           return;
         }
-
-        toast("Send request submitted ✅");
-        closeSendModal();
-
-        // refresh history so it looks real-time
-        await loadSendHistory(true);
-      }catch(e){
-        toast("Send error ❌");
-        console.error("send_create error:", e);
-      }
-    });
-
-    /* =========================
-      SEND HISTORY DRAWER
-    ========================== */
-    const historyOverlay = document.getElementById("historyOverlay");
-    const historyDrawer = document.getElementById("historyDrawer");
-    const btnHistoryOpen = document.getElementById("btnHistoryOpen");
-    const btnHistoryClose = document.getElementById("btnHistoryClose");
-    const btnHistoryRefresh = document.getElementById("btnHistoryRefresh");
-    const historyList = document.getElementById("historyList");
-    const historyEmpty = document.getElementById("historyEmpty");
-
-    function openHistory(){
-      historyOverlay.classList.add("show");
-      historyDrawer.classList.add("show");
-    }
-    function closeHistory(){
-      historyOverlay.classList.remove("show");
-      historyDrawer.classList.remove("show");
-    }
-
-    function statusTagClass(s){
-      const x = String(s || "").toLowerCase();
-      if(x === "pending") return "pending";
-      if(x === "approved") return "approved";
-      if(x === "rejected") return "rejected";
-      if(x === "sent") return "sent";
-      if(x === "failed") return "failed";
-      if(x === "processing") return "processing";
-      return "pending";
-    }
-
-    function shortAddr(a){
-      const s = String(a || "");
-      if(s.length <= 16) return s;
-      return s.slice(0,8) + "..." + s.slice(-6);
-    }
-
-    function formatWhen(ts){
-      const d = ts ? new Date(ts) : null;
-      if(!d || isNaN(d.getTime())) return "";
-      return d.toLocaleString();
-    }
-
-    async function loadSendHistory(silent=false){
-      try{
-        const headers = await getAuthHeaders();
-        const res = await fetch(WALLET_API_URL, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ action: "send_my_list" })
-        });
-
-        const data = await res.json().catch(()=> ({}));
-        if(!res.ok || data?.success === false){
-          if(!silent) toast(`History failed (${res.status})`);
-          console.error("send_my_list failed:", { status: res.status, data });
-          return;
-        }
-
-        const rows = Array.isArray(data?.requests) ? data.requests : [];
-        historyList.innerHTML = "";
-
-        if(!rows.length){
-          historyEmpty.style.display = "block";
-          return;
-        }
-        historyEmpty.style.display = "none";
-
-        rows.forEach(r=>{
-          const st = String(r.status || "pending");
-          const item = document.createElement("div");
-          item.className = "hItem";
-          item.innerHTML = `
-            <div class="hRow">
-              <div class="hLeft" style="min-width:0;">
-                <b>${escapeHtml(String(r.asset_key || "").toUpperCase())} • ${escapeHtml(r.network || "")}</b>
-                <span class="mono">To: ${escapeHtml(shortAddr(r.to_address || ""))}</span>
-              </div>
-              <div class="tag ${statusTagClass(st)}">${escapeHtml(st.toUpperCase())}</div>
-            </div>
-            <div class="hRow">
-              <span class="mono" style="color: var(--muted); font-size:12px;">
-                Amount: <b style="color:var(--text);">${escapeHtml(String(r.amount || ""))}</b>
-                &nbsp;|&nbsp; Fee: <b style="color:var(--text);">${escapeHtml(String(r.fee_est || "0"))}</b>
-              </span>
-              <span style="color: var(--muted); font-size:12px;">${escapeHtml(formatWhen(r.created_at || r.updated_at || ""))}</span>
-            </div>
-            ${r.admin_note ? `<div style="color: var(--muted); font-size:12px;">Admin: ${escapeHtml(r.admin_note)}</div>` : ``}
-          `;
-          historyList.appendChild(item);
-        });
-
-        if(!silent) toast("History updated ✅");
-      }catch(e){
-        if(!silent) toast("History error ❌");
-        console.error("History error:", e);
-      }
-    }
-
-    btnHistoryOpen.addEventListener("click", async ()=>{
-      openHistory();
-      await loadSendHistory(true);
-    });
-    btnHistoryClose.addEventListener("click", closeHistory);
-    btnHistoryRefresh.addEventListener("click", ()=> loadSendHistory(false));
-    historyOverlay.addEventListener("click", closeHistory);
-
-    /* =========================
-      MENU DRAWER
-    ========================== */
-    const btnMenu = document.getElementById("btnMenu");
-    const menuOverlay = document.getElementById("menuOverlay");
-    const menuDrawer = document.getElementById("menuDrawer");
-    const btnMenuClose = document.getElementById("btnMenuClose");
-    const btnLogout = document.getElementById("btnLogout");
-
-    function openMenu(){
-      menuOverlay.classList.add("show");
-      menuDrawer.classList.add("show");
-    }
-    function closeMenu(){
-      menuOverlay.classList.remove("show");
-      menuDrawer.classList.remove("show");
-    }
-
-    btnMenu.addEventListener("click", openMenu);
-    btnMenuClose.addEventListener("click", closeMenu);
-    menuOverlay.addEventListener("click", closeMenu);
-
-    btnLogout.addEventListener("click", async ()=>{
-      try{
-        await supabaseClient.auth.signOut();
       }catch(e){}
-      window.location.replace("login.html");
+
+      // fallback local debit (demo)
+      __balances[sym]=Math.max(0, bal-amt);
+      saveBalancesLocal();
+      renderCoins();
+      recalcTotalsAndCharts(true);
+      toast("Send queued (local) ✅");
+      closeSend();
     });
 
-    /* =========================
-      LINK WALLET (SAFE) MODAL
-    ========================== */
-    const btnLinkWallet = document.getElementById("btnLinkWallet");
-    const linkOverlay = document.getElementById("linkOverlay");
-    const btnLinkClose = document.getElementById("btnLinkClose");
-    const btnLinkCancel = document.getElementById("btnLinkCancel");
-    const btnLinkSubmit = document.getElementById("btnLinkSubmit");
-    const linkAddress = document.getElementById("linkAddress");
-    const linkLabel = document.getElementById("linkLabel");
-    const linkStatus = document.getElementById("linkStatus");
+    /* ============================================================
+      ✅ SWAP MODAL
+    ============================================================ */
+    const swapOverlay=document.getElementById("swapOverlay");
+    const btnSwapClose=document.getElementById("btnSwapClose");
+    const btnSwapCancel=document.getElementById("btnSwapCancel");
+    const btnSwapDo=document.getElementById("btnSwapDo");
+    const swapFrom=document.getElementById("swapFrom");
+    const swapTo=document.getElementById("swapTo");
+    const swapAmt=document.getElementById("swapAmt");
+    const swapPreview=document.getElementById("swapPreview");
 
-    function openLink(){
-      linkStatus.textContent = "Not linked";
-      linkOverlay.classList.add("show");
-      linkAddress.focus();
-      validateLink();
+    function closeSwap(){
+      swapOverlay.classList.remove("show");
+      swapAmt.value="";
+      swapPreview.textContent="—";
     }
-    function closeLink(){
-      linkOverlay.classList.remove("show");
-      linkAddress.value = "";
-      linkLabel.value = "";
-      btnLinkSubmit.disabled = true;
-      btnLinkSubmit.style.opacity = ".55";
-      btnLinkSubmit.style.cursor = "not-allowed";
+
+    function populateSwapSelectors(defaultFrom){
+      const assets=Object.keys(groupWalletsByAsset()).sort();
+      swapFrom.innerHTML="";
+      swapTo.innerHTML="";
+      assets.forEach(sym=>{
+        const o1=document.createElement("option"); o1.value=sym; o1.textContent=sym;
+        const o2=document.createElement("option"); o2.value=sym; o2.textContent=sym;
+        swapFrom.appendChild(o1); swapTo.appendChild(o2);
+      });
+      if(defaultFrom && assets.includes(defaultFrom)) swapFrom.value=defaultFrom;
+      // pick different target if possible
+      const target = assets.find(x=>x!==swapFrom.value) || swapFrom.value;
+      swapTo.value = target;
+
+      swapFrom.onchange=()=>{ if(swapTo.value===swapFrom.value){ const alt=assets.find(x=>x!==swapFrom.value)||swapFrom.value; swapTo.value=alt; } updateSwapPreview(); };
+      swapTo.onchange=()=>{ if(swapTo.value===swapFrom.value){ const alt=assets.find(x=>x!==swapTo.value)||swapTo.value; swapFrom.value=alt; } updateSwapPreview(); };
+      swapAmt.oninput=updateSwapPreview;
+
+      updateSwapPreview();
     }
+
+    function updateSwapPreview(){
+      const from=String(swapFrom.value||"").toUpperCase();
+      const to=String(swapTo.value||"").toUpperCase();
+      const amt=parseAmount(swapAmt.value);
+
+      ensureBalance(from); ensureBalance(to);
+
+      const fromBal=Number(__balances[from]||0);
+      const fromPx=Number(__prices?.[from]?.price||0);
+      const toPx=Number(__prices?.[to]?.price||0);
+
+      if(!amt){
+        swapPreview.textContent = `Enter amount to preview. Available: ${fmtAmt(fromBal,8)} ${from}`;
+        return;
+      }
+      if(amt>fromBal){
+        swapPreview.textContent = `Insufficient ${from}. Available: ${fmtAmt(fromBal,8)} ${from}`;
+        return;
+      }
+      if(!fromPx || !toPx){
+        swapPreview.textContent = `Prices not loaded for swap. Tap “Prices”.`;
+        return;
+      }
+
+      const usd = amt * fromPx;
+      const out = usd / toPx;
+
+      swapPreview.textContent =
+        `${fmtAmt(amt,8)} ${from} ≈ ${fmtAmt(out,8)} ${to}  (≈ ${fmtUsd(usd)})`;
+    }
+
+    function openSwap(sym){
+      const assets=Object.keys(groupWalletsByAsset());
+      if(!assets.length){ toast("No assets"); return; }
+      const s=String(sym||"").toUpperCase();
+      const def = s && assets.includes(s) ? s : assets[0];
+      populateSwapSelectors(def);
+      swapOverlay.classList.add("show");
+      swapAmt.focus();
+    }
+
+    btnSwapClose.addEventListener("click", closeSwap);
+    btnSwapCancel.addEventListener("click", closeSwap);
+    swapOverlay.addEventListener("click",(e)=>{ if(e.target===swapOverlay) closeSwap(); });
+
+    btnSwapDo.addEventListener("click", ()=>{
+      const from=String(swapFrom.value||"").toUpperCase();
+      const to=String(swapTo.value||"").toUpperCase();
+      const amt=parseAmount(swapAmt.value);
+
+      ensureBalance(from); ensureBalance(to);
+
+      const fromBal=Number(__balances[from]||0);
+      const fromPx=Number(__prices?.[from]?.price||0);
+      const toPx=Number(__prices?.[to]?.price||0);
+
+      if(!amt){ toast("Enter amount"); return; }
+      if(amt>fromBal){ toast("Insufficient balance"); return; }
+      if(!fromPx || !toPx){ toast("Prices not loaded"); return; }
+
+      const usd = amt * fromPx;
+      const out = usd / toPx;
+
+      __balances[from] = Math.max(0, fromBal - amt);
+      __balances[to] = Number(__balances[to]||0) + out;
+
+      saveBalancesLocal();
+      renderCoins();
+      recalcTotalsAndCharts(true);
+
+      toast("Swap completed ✅");
+      closeSwap();
+    });
+
+    /* ============================================================
+      ✅ EDIT BALANCES (direct control)
+    ============================================================ */
+    const editOverlay=document.getElementById("editOverlay");
+    const btnEditClose=document.getElementById("btnEditClose");
+    const btnEditCancel=document.getElementById("btnEditCancel");
+    const btnEditSave=document.getElementById("btnEditSave");
+    const editList=document.getElementById("editList");
+
+    function closeEdit(){ editOverlay.classList.remove("show"); editList.innerHTML=""; }
+
+    function openEditBalances(){
+      const assets=Object.keys(groupWalletsByAsset()).sort();
+      if(!assets.length){ toast("No assets"); return; }
+
+      editList.innerHTML = assets.map(sym=>{
+        ensureBalance(sym);
+        const val=Number(__balances[sym]||0);
+        return `
+          <div class="in">
+            <label>${esc(sym)} Balance</label>
+            <input data-edit-sym="${esc(sym)}" inputmode="decimal" placeholder="0.00" value="${esc(String(val))}"/>
+          </div>
+        `;
+      }).join("");
+
+      editOverlay.classList.add("show");
+    }
+
+    btnEditClose.addEventListener("click", closeEdit);
+    btnEditCancel.addEventListener("click", closeEdit);
+    editOverlay.addEventListener("click",(e)=>{ if(e.target===editOverlay) closeEdit(); });
+
+    btnEditSave.addEventListener("click", ()=>{
+      const inputs=Array.from(editList.querySelectorAll("[data-edit-sym]"));
+      inputs.forEach(inp=>{
+        const sym=String(inp.getAttribute("data-edit-sym")||"").toUpperCase();
+        const v=parseAmount(inp.value);
+        __balances[sym]=v;
+      });
+      saveBalancesLocal();
+      renderCoins();
+      recalcTotalsAndCharts(true);
+      toast("Balances saved ✅");
+      closeEdit();
+    });
+
+    /* ============================================================
+      ✅ CHARTS DRAWING (Pie + Bar)
+    ============================================================ */
+    function pickColor(i){
+      const palette=[
+        [91,108,255],[255,77,166],[56,189,248],[52,211,153],
+        [124,77,255],[245,158,11],[248,113,113],[147,197,253],
+        [59,130,246],[168,85,247],[34,197,94],[14,165,233]
+      ];
+      const p=palette[i % palette.length];
+      return `rgba(${p[0]},${p[1]},${p[2]},0.95)`;
+    }
+
+    function getAllocRows(){
+      const rows=[];
+      for(const sym of Object.keys(__balances)){
+        const bal=Number(__balances[sym]||0);
+        const px=Number(__prices?.[sym]?.price||0);
+        const usd=bal*px;
+        if(usd>0) rows.push({sym, usd});
+      }
+      rows.sort((a,b)=>b.usd-a.usd);
+      return rows;
+    }
+
+    function drawPie(){
+      const canvas=document.getElementById("pieCanvas");
+      if(!canvas) return;
+      const ctx=canvas.getContext("2d");
+
+      const rows=getAllocRows();
+      const total=rows.reduce((s,r)=>s+r.usd,0);
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      const w=canvas.width, h=canvas.height;
+      const cx=w/2, cy=h/2;
+      const r=Math.min(w,h)*0.34;
+
+      // background ring
+      ctx.beginPath();
+      ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,.10)";
+      ctx.lineWidth=28;
+      ctx.stroke();
+
+      if(total<=0){
+        ctx.fillStyle="rgba(234,240,255,.70)";
+        ctx.font="900 28px system-ui";
+        ctx.textAlign="center";
+        ctx.fillText("No allocation", cx, cy);
+        return;
+      }
+
+      let ang=-Math.PI/2;
+      rows.forEach((row, i)=>{
+        const frac=row.usd/total;
+        const a0=ang;
+        const a1=ang + frac*Math.PI*2;
+
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,a0,a1);
+        ctx.strokeStyle=pickColor(i);
+        ctx.lineWidth=28;
+        ctx.lineCap="round";
+        ctx.stroke();
+
+        ang=a1;
+      });
+
+      // center text
+      ctx.fillStyle="rgba(234,240,255,.92)";
+      ctx.font="1000 32px system-ui";
+      ctx.textAlign="center";
+      ctx.fillText(fmtUsd(total), cx, cy+10);
+      ctx.fillStyle="rgba(234,240,255,.60)";
+      ctx.font="900 14px system-ui";
+      ctx.fillText("Total", cx, cy+36);
+    }
+
+    function drawBars(){
+      const canvas=document.getElementById("barCanvas");
+      if(!canvas) return;
+      const ctx=canvas.getContext("2d");
+
+      const rows=getAllocRows().slice(0,10);
+      const total=rows.reduce((s,r)=>s+r.usd,0);
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      const pad=40;
+      const w=canvas.width - pad*2;
+      const h=canvas.height - pad*2;
+
+      // axes baseline
+      ctx.strokeStyle="rgba(255,255,255,.10)";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(pad, pad+h);
+      ctx.lineTo(pad+w, pad+h);
+      ctx.stroke();
+
+      if(total<=0){
+        ctx.fillStyle="rgba(234,240,255,.70)";
+        ctx.font="900 28px system-ui";
+        ctx.textAlign="center";
+        ctx.fillText("No allocation", canvas.width/2, canvas.height/2);
+        return;
+      }
+
+      const max = Math.max(...rows.map(r=>r.usd), 1);
+      const barW = rows.length ? (w / rows.length) * 0.66 : 0;
+      const gap = rows.length ? (w / rows.length) * 0.34 : 0;
+
+      rows.forEach((row, i)=>{
+        const x = pad + i*(barW+gap) + gap*0.5;
+        const bh = (row.usd / max) * (h * 0.78);
+        const y = pad + h - bh;
+
+        ctx.fillStyle=pickColor(i);
+        ctx.fillRect(x, y, barW, bh);
+
+        // label
+        ctx.fillStyle="rgba(234,240,255,.80)";
+        ctx.font="900 14px system-ui";
+        ctx.textAlign="center";
+        ctx.fillText(row.sym, x+barW/2, pad+h+22);
+
+        // percent
+        const pct = (row.usd / (rows.reduce((s,r)=>s+r.usd,0) || 1)) * 100;
+        ctx.fillStyle="rgba(234,240,255,.65)";
+        ctx.font="900 12px system-ui";
+        ctx.fillText(pct.toFixed(1)+"%", x+barW/2, y-8);
+      });
+    }
+
+    /* ============================================================
+      ✅ LINK WALLET FLOW (request + approved watch + view)
+    ============================================================ */
+    const btnLinkWallet=document.getElementById("btnLinkWallet");
+    const fabTitle=document.getElementById("fabTitle");
+    const fabSub=document.getElementById("fabSub");
+    const fabDot=document.getElementById("fabDot");
+
+    const linkOverlay=document.getElementById("linkOverlay");
+    const btnLinkClose=document.getElementById("btnLinkClose");
+    const btnLinkCancel=document.getElementById("btnLinkCancel");
+    const btnLinkSubmit=document.getElementById("btnLinkSubmit");
+    const linkAddress=document.getElementById("linkAddress");
+    const linkLabel=document.getElementById("linkLabel");
+    const linkStatus=document.getElementById("linkStatus");
+
+    const viewLinkOverlay=document.getElementById("viewLinkOverlay");
+    const btnViewLinkClose=document.getElementById("btnViewLinkClose");
+    const btnViewLinkDone=document.getElementById("btnViewLinkDone");
+    const btnViewLinkCopy=document.getElementById("btnViewLinkCopy");
+    const viewLinkAddr=document.getElementById("viewLinkAddr");
+    const viewLinkLabel=document.getElementById("viewLinkLabel");
+    const viewLinkStatus=document.getElementById("viewLinkStatus");
+    const viewLinkMeta=document.getElementById("viewLinkMeta");
+
+    const linkedOverlay=document.getElementById("linkedOverlay");
+    const btnLinkedClose=document.getElementById("btnLinkedClose");
+    const btnLinkedOk=document.getElementById("btnLinkedOk");
 
     function looksLikeAddress(a){
-      const s = String(a || "").trim();
-      if(s.length < 12) return false;
-      // quick heuristics: EVM, BTC, TRON-ish, SOL-ish
+      const s=String(a||"").trim();
+      if(s.length<12) return false;
       if(/^0x[a-fA-F0-9]{40}$/.test(s)) return true;
       if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/.test(s)) return true;
       if(/^T[1-9A-HJ-NP-Za-km-z]{25,}$/.test(s)) return true;
       if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) return true;
-      return true; // allow others, just length check
+      return true;
     }
-
     function validateLink(){
-      const ok = looksLikeAddress(linkAddress.value);
-      btnLinkSubmit.disabled = !ok;
-      btnLinkSubmit.style.opacity = ok ? "1" : ".55";
-      btnLinkSubmit.style.cursor = ok ? "pointer" : "not-allowed";
+      const ok=looksLikeAddress(linkAddress.value);
+      btnLinkSubmit.disabled=!ok;
+      btnLinkSubmit.style.opacity=ok?"1":".55";
+      btnLinkSubmit.style.cursor=ok?"pointer":"not-allowed";
     }
-
     linkAddress.addEventListener("input", validateLink);
 
-    btnLinkWallet.addEventListener("click", openLink);
-    btnLinkClose.addEventListener("click", closeLink);
-    btnLinkCancel.addEventListener("click", closeLink);
-    linkOverlay.addEventListener("click", (e)=>{ if(e.target === linkOverlay) closeLink(); });
+    function openLinkModal(){
+      linkStatus.value = (__linkState?.status==="approved") ? "Approved" : (__linkState?.status==="pending" ? "Pending" : "Not linked");
+      linkOverlay.classList.add("show");
+      validateLink();
+      setTimeout(()=>linkAddress.focus(), 40);
+    }
+    function closeLinkModal(){
+      linkOverlay.classList.remove("show");
+      linkAddress.value="";
+      linkLabel.value="";
+      btnLinkSubmit.disabled=true;
+      btnLinkSubmit.style.opacity=".55";
+      btnLinkSubmit.style.cursor="not-allowed";
+    }
+    btnLinkClose.addEventListener("click", closeLinkModal);
+    btnLinkCancel.addEventListener("click", closeLinkModal);
+    linkOverlay.addEventListener("click",(e)=>{ if(e.target===linkOverlay) closeLinkModal(); });
+
+    function openViewLink(){
+      viewLinkAddr.value = __linkState?.address || "—";
+      viewLinkLabel.value = __linkState?.label || "—";
+      viewLinkStatus.textContent = String(__linkState?.status || "unknown").toUpperCase();
+      viewLinkStatus.style.color = (__linkState?.status==="approved") ? "rgba(34,197,94,1)" : "rgba(245,158,11,1)";
+      viewLinkMeta.textContent = __linkState?.updated_at ? `Updated: ${new Date(__linkState.updated_at).toLocaleString()}` : "—";
+      viewLinkOverlay.classList.add("show");
+    }
+    function closeViewLink(){ viewLinkOverlay.classList.remove("show"); }
+    btnViewLinkClose.addEventListener("click", closeViewLink);
+    btnViewLinkDone.addEventListener("click", closeViewLink);
+    viewLinkOverlay.addEventListener("click",(e)=>{ if(e.target===viewLinkOverlay) closeViewLink(); });
+    btnViewLinkCopy.addEventListener("click", ()=> copyText(viewLinkAddr.value||""));
+
+    function openLinkedPopup(){ linkedOverlay.classList.add("show"); }
+    function closeLinkedPopup(){ linkedOverlay.classList.remove("show"); }
+    btnLinkedClose.addEventListener("click", closeLinkedPopup);
+    btnLinkedOk.addEventListener("click", closeLinkedPopup);
+    linkedOverlay.addEventListener("click",(e)=>{ if(e.target===linkedOverlay) closeLinkedPopup(); });
+
+    function updateFab(){
+      const approved = (__linkState?.status==="approved");
+      if(approved){
+        fabTitle.textContent="View Wallet Connection";
+        fabSub.textContent="Approved • Verified";
+        fabDot.style.display="block";
+      }else{
+        fabTitle.textContent="Link Wallet";
+        fabSub.textContent=(__linkState?.status==="pending") ? "Pending approval" : "External address";
+        fabDot.style.display="none";
+      }
+    }
+
+    btnLinkWallet.addEventListener("click", ()=>{
+      if(__linkState?.status==="approved") openViewLink();
+      else openLinkModal();
+    });
 
     btnLinkSubmit.addEventListener("click", async ()=>{
-      const addr = (linkAddress.value || "").trim();
-      const label = (linkLabel.value || "").trim();
+      const addr=(linkAddress.value||"").trim();
+      const label=(linkLabel.value||"").trim();
+      if(!looksLikeAddress(addr)){ toast("Enter a valid public address"); return; }
 
-      if(!looksLikeAddress(addr)){
-        toast("Enter a valid public address");
-        return;
-      }
-
-      // This posts to a backend action you'll add next.
-      // IMPORTANT: We do NOT collect seed phrases.
       try{
-        const headers = await getAuthHeaders();
-        const res = await fetch(WALLET_API_URL, {
-          method: "POST",
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{
+          method:"POST",
           headers,
           body: JSON.stringify({
-            action: "wallet_link_request",
+            action:"wallet_link_request",
             address: addr,
             label: label || null
           })
         });
-        const data = await res.json().catch(()=> ({}));
-        if(!res.ok || data?.success === false){
-          toast(`Link not enabled yet (${res.status})`);
-          console.error("wallet_link_request failed:", { status: res.status, data });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Link request failed (${res.status})`);
+          console.error("wallet_link_request failed:", {status:res.status, data});
           return;
         }
-
-        linkStatus.textContent = "Request submitted";
+        __linkState = { status:"pending", address: addr, label: label||"", updated_at: new Date().toISOString() };
+        updateFab();
         toast("Link request submitted ✅");
-        closeLink();
+        closeLinkModal();
       }catch(e){
         toast("Link error ❌");
-        console.error("Link error:", e);
+        console.error(e);
       }
     });
 
-    /* =========================
-      INIT
-    ========================== */
-    document.getElementById("q").addEventListener("input", applySearch);
-    document.getElementById("btnReload").addEventListener("click", loadFromBackend);
+    async function fetchLinkStatus(){
+      // Try backend action if implemented; otherwise keep local.
+      try{
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{
+          method:"POST",
+          headers,
+          body: JSON.stringify({ action:"wallet_link_my_status" })
+        });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false) return;
+
+        // expected: { success:true, status, address, label, updated_at }
+        const status=String(data.status||"").toLowerCase();
+        if(status){
+          __linkState = {
+            status,
+            address: data.address || __linkState.address || "",
+            label: data.label || __linkState.label || "",
+            updated_at: data.updated_at || new Date().toISOString()
+          };
+          updateFab();
+
+          // show approved popup once per user
+          const approved = (__linkState.status==="approved");
+          if(approved){
+            const seen = localStorage.getItem(storageKeyLinkSeen())==="1";
+            if(!seen){
+              localStorage.setItem(storageKeyLinkSeen(),"1");
+              openLinkedPopup();
+            }
+          }
+        }
+      }catch(e){}
+    }
+
+    /* ============================================================
+      ✅ ADMIN-CONTROLLED NOTICE (site-wide)
+      - default OFF
+      - per user on/off
+      - persists across pages until admin turns off
+    ============================================================ */
+    const noticeOverlay=document.getElementById("noticeOverlay");
+    const btnNoticeClose=document.getElementById("btnNoticeClose");
+    const btnNoticeOk=document.getElementById("btnNoticeOk");
+    const noticeTitle=document.getElementById("noticeTitle");
+    const noticeSub=document.getElementById("noticeSub");
+    const noticeBody=document.getElementById("noticeBody");
+    const noticeTag=document.getElementById("noticeTag");
+    const noticeWhen=document.getElementById("noticeWhen");
+
+    function closeNotice(){
+      noticeOverlay.classList.remove("show");
+      try{ localStorage.setItem(storageKeyNoticeDismissed(),"1"); }catch(e){}
+    }
+    btnNoticeClose.addEventListener("click", closeNotice);
+    btnNoticeOk.addEventListener("click", closeNotice);
+    noticeOverlay.addEventListener("click",(e)=>{ if(e.target===noticeOverlay) closeNotice(); });
+
+    async function fetchNoticeForUser(){
+      // This expects (recommended) table: user_notices with columns:
+      // user_id (uuid), enabled (bool), title, subtitle, message, tag, updated_at
+      // If table doesn’t exist yet, this fails silently.
+      try{
+        const uid=CURRENT_USER?.id;
+        if(!uid) return;
+
+        const { data, error } = await supabaseClient
+          .from("user_notices")
+          .select("enabled,title,subtitle,message,tag,updated_at")
+          .eq("user_id", uid)
+          .maybeSingle();
+
+        if(error || !data) return;
+
+        const enabled = !!data.enabled;
+        if(!enabled) return;
+
+        // If user already dismissed, still show again because requirement:
+        // "should always pop up across all navigated pages on my site until turned off"
+        // So we IGNORE dismissal while enabled.
+        noticeTitle.textContent = data.title || "Notice";
+        noticeSub.textContent = data.subtitle || "VGM Update";
+        noticeBody.textContent = data.message || "";
+        noticeTag.textContent = data.tag || "Announcement";
+        noticeWhen.textContent = data.updated_at ? `Updated: ${new Date(data.updated_at).toLocaleString()}` : "";
+
+        noticeOverlay.classList.add("show");
+      }catch(e){}
+    }
+
+    /* ============================================================
+      ✅ INIT
+    ============================================================ */
+    async function init(){
+      startClock();
+
+      // Load local editable balances first (so user can control instantly)
+      __balances = loadBalancesLocal();
+
+      // Load wallets + prices
+      await loadWalletsFromBackend();
+
+      // Link status polling (approval detection)
+      updateFab();
+      await fetchLinkStatus();
+      setInterval(fetchLinkStatus, 12000);
+
+      // Notice (admin-controlled, always pops while enabled)
+      await fetchNoticeForUser();
+      setInterval(fetchNoticeForUser, 20000);
+    }
 
     (async function authGuard(){
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         if(!session){
+          hideGate();
           window.location.replace("login.html");
           return;
         }
@@ -1753,6 +2742,7 @@ FILE: wallet.html
         const { data, error } = await supabaseClient.auth.getUser();
         const user = data?.user;
         if(error || !user){
+          hideGate();
           window.location.replace("login.html");
           return;
         }
@@ -1760,12 +2750,20 @@ FILE: wallet.html
         const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
         if(!confirmed){
           await supabaseClient.auth.signOut();
+          hideGate();
           window.location.replace("verify.html?status=unverified");
           return;
         }
 
-        await loadFromBackend();
+        CURRENT_USER = user;
+        await loadIdentity();
+
+        // Gate stays a bit for premium feel
+        setTimeout(()=>hideGate(), 1200);
+
+        await init();
       }catch(e){
+        hideGate();
         window.location.replace("login.html");
       }
     })();
