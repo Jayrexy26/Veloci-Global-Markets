@@ -295,7 +295,8 @@
     #appView[data-view="deposits"] .grid,
     #appView[data-view="withdrawals"] .grid,
     #appView[data-view="kyc"] .grid,
-    #appView[data-view="wallets"] .grid{
+    #appView[data-view="wallets"] .grid,
+    #appView[data-view="walletlinks"] .grid{
       grid-template-columns: 1fr;
       grid-template-areas:
         "ops"
@@ -722,6 +723,12 @@
             <div class="countPill" id="cnt-wallets">0</div>
           </div>
 
+          <!-- ✅ NEW: Wallet Links -->
+          <div class="navBtn" id="nav-walletlinks" onclick="switchView('walletlinks')">
+            <div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div>
+            <div class="countPill" id="cnt-walletlinks">0</div>
+          </div>
+
           <div class="navBtn" id="nav-support" onclick="switchView('support')">
             <div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div>
             <div class="countPill" id="cnt-support">0</div>
@@ -810,6 +817,7 @@
                   <span class="chip">Users: <span class="mono" id="ov-users">0</span></span>
                   <span class="chip">Plans: <span class="mono" id="ov-plans">0</span></span>
                   <span class="chip">Wallets: <span class="mono" id="ov-wallets">0</span></span>
+                  <span class="chip">Wallet Links: <span class="mono" id="ov-walletlinks">0</span></span>
                   <span class="chip">Tickets: <span class="mono" id="ov-support">0</span></span>
                   <span class="chip">KYC: <span class="mono" id="ov-kyc">0</span></span>
                 </div>
@@ -941,6 +949,48 @@
                       </tr>
                     </thead>
                     <tbody id="walletRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- ✅ NEW: Wallet Links Queue -->
+            <section id="view-walletlinks" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">🔗 Wallet Link Requests</div>
+                  <div class="small" id="walletLinksStatus">Not loaded.</div>
+                </div>
+                <div class="inline">
+                  <select id="wlFilter" class="w200" onchange="safeLoad(loadWalletLinks)">
+                    <option value="">All</option>
+                    <option value="pending" selected>Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <button class="btnGhost" onclick="safeLoad(loadWalletLinks)">Refresh</button>
+                </div>
+              </div>
+
+              <div class="small" style="margin-bottom:10px">
+                Approve/reject wallet link requests created from user wallet page. Status updates are written with your <span class="mono">ADMIN_ID</span>.
+              </div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:320px">User</th>
+                        <th style="width:520px">Address</th>
+                        <th style="width:260px">Label</th>
+                        <th style="width:120px">Status</th>
+                        <th style="width:320px">Admin Note</th>
+                        <th style="width:220px">Created</th>
+                        <th style="width:260px">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="walletLinkRows"></tbody>
                   </table>
                 </div>
               </div>
@@ -1167,7 +1217,8 @@ const CACHE = {
   withdrawals: [],
   portfolio: [],
   wallets: [],
-  kyc: []
+  kyc: [],
+  wallet_links: []
 };
 
 const USERNAME_MAP = {};
@@ -1280,7 +1331,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","plans","wallets","support","deposits","withdrawals","portfolio","kyc"];
+  const views = ["overview","users","plans","wallets","walletlinks","support","deposits","withdrawals","portfolio","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1580,6 +1631,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "users") renderUsers(CACHE.users);
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
+  if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
   if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
@@ -1615,6 +1667,7 @@ function refreshAll(){
   safeLoad(loadUsers);
   safeLoad(loadPlans);
   safeLoad(loadWallets);
+  safeLoad(loadWalletLinks);
   safeLoad(loadSupport);
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
@@ -1633,12 +1686,14 @@ function renderOverview(){
   document.getElementById("ov-users").textContent = String(CACHE.users.length);
   document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
   document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
+  document.getElementById("ov-walletlinks").textContent = String(CACHE.wallet_links.length);
   document.getElementById("ov-support").textContent = String(CACHE.support.length);
   document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
 
   document.getElementById("cnt-users").textContent = String(CACHE.users.filter(matchSearch).length);
   document.getElementById("cnt-plans").textContent = String(CACHE.plans.filter(matchSearch).length);
   document.getElementById("cnt-wallets").textContent = String(CACHE.wallets.filter(matchSearch).length);
+  document.getElementById("cnt-walletlinks").textContent = String(CACHE.wallet_links.filter(matchSearch).length);
   document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
   document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
@@ -2019,6 +2074,107 @@ async function deleteWallet(rowId){
   feed("wallets_admin_delete -> " + asset_key);
   modalShow("Deleted", "Wallet row removed.");
   safeLoad(loadWallets);
+}
+
+/* ✅ WALLET LINKS (wallet-api)
+   Requires wallet-api actions:
+   - wallet_link_admin_list (optional status)
+   - wallet_link_admin_update_status (id, status, admin_note)
+*/
+async function loadWalletLinks(){
+  const st = document.getElementById("walletLinksStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const filter = String((document.getElementById("wlFilter")?.value || "")).trim();
+
+  const res = await walletApiCall("wallet_link_admin_list", { status: filter });
+  CACHE.wallet_links = (res.requests || res.request || res.data || res.rows || res.list || res.items || res.results || res.wallet_links || res.walletLinks || res.wallet_link_requests || res.wallet_link_request || res.wallet_link_rows || res.walletLinkRows || res.walletLinkRequests || res.walletLinkRequestRows || res.walletlink_requests || res.walletlink || res.wallet_links_requests || res.requests_list || res.requestsList || res.requests_list || res.requests || []).slice ? (res.requests || []) : (res.requests || []);
+  // ✅ normalize: expect res.requests from edge function
+  if(!Array.isArray(CACHE.wallet_links)) CACHE.wallet_links = (res.requests && Array.isArray(res.requests) ? res.requests : []);
+
+  renderWalletLinks(CACHE.wallet_links);
+
+  if(st) st.textContent = `Loaded ${CACHE.wallet_links.length} request(s) ✅`;
+  feed("wallet_link_admin_list loaded (" + CACHE.wallet_links.length + ")");
+  renderOverview();
+}
+
+function renderWalletLinks(data){
+  const status = document.getElementById("walletLinksStatus");
+  const tbody = document.getElementById("walletLinkRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){
+    if(status) status.textContent = "No wallet link requests found.";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  if(status) status.textContent = `Loaded ${filtered.length} request(s) ✅`;
+  tbody.innerHTML = "";
+
+  filtered.forEach(r=>{
+    const id = esc(r.id||"");
+    const email = String(r.user_email||"").trim().toLowerCase();
+    const addr = String(r.address||"").trim();
+    const label = String(r.label||"").trim();
+    const st = String(r.status||"pending").toLowerCase();
+    const isDone = (st === "approved" || st === "rejected");
+    const created = r.created_at ? new Date(r.created_at).toLocaleString() : "-";
+    const adminNote = String(r.admin_note||"").trim();
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td>
+          <span class="mono ellipsisWide">${esc(addr)}</span>
+          <a style="margin-left:10px" href="javascript:void(0)" onclick="modalShow('Wallet Address', ${JSON.stringify(addr)})">View</a>
+        </td>
+        <td><span class="ellipsis">${esc(label||"-")}</span></td>
+        <td>${esc(st)}</td>
+        <td><span class="ellipsisWide">${esc(adminNote||"-")}</span></td>
+        <td>${esc(created)}</td>
+        <td>
+          <div class="rowTools">
+            <button class="btnOk" onclick="approveWalletLink('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
+            <button class="btnErr" onclick="rejectWalletLink('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function approveWalletLink(id){
+  const row = (CACHE.wallet_links||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This request is already " + st + ".");
+    return;
+  }
+  const note = prompt("Approve note (optional):", "") || "";
+  if(!confirm("Approve this wallet link request?")) return;
+
+  await walletApiCall("wallet_link_admin_update_status", { id, status: "approved", admin_note: note });
+  feed("wallet_link approved -> " + id);
+  modalShow("Approved", "Wallet link request approved.");
+  safeLoad(loadWalletLinks);
+}
+
+async function rejectWalletLink(id){
+  const row = (CACHE.wallet_links||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This request is already " + st + ".");
+    return;
+  }
+  const note = prompt("Reject reason (optional):", "") || "";
+  if(!confirm("Reject this wallet link request?")) return;
+
+  await walletApiCall("wallet_link_admin_update_status", { id, status: "rejected", admin_note: note });
+  feed("wallet_link rejected -> " + id);
+  modalShow("Rejected", "Wallet link request rejected.");
+  safeLoad(loadWalletLinks);
 }
 
 /* SUPPORT */
