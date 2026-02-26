@@ -130,7 +130,9 @@ FILE: wallet.html
       font-size: 12px;
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
+      transition: transform .12s ease, opacity .12s ease;
     }
+    .btnTop:active{ transform: translateY(1px); }
 
     .notice{
       margin: 18px 0 18px;
@@ -170,22 +172,31 @@ FILE: wallet.html
 
     .card{
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.035);
       border-radius: 18px;
       padding: 14px 14px;
       box-shadow: var(--shadow);
       position: relative;
       overflow: hidden;
+
+      /* per-coin gradient */
+      --coinA: rgba(91,108,255,.22);
+      --coinB: rgba(124,77,255,.18);
+      background:
+        radial-gradient(1200px 600px at 10% 0%, var(--coinA), transparent 50%),
+        radial-gradient(900px 500px at 95% 10%, var(--coinB), transparent 55%),
+        rgba(255,255,255,.035);
     }
+
     .card::before{
       content:"";
       position:absolute;
       inset:-140px -120px auto auto;
       width: 240px;
       height: 240px;
-      background: radial-gradient(circle at 30% 30%, rgba(91,108,255,.22), transparent 60%);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 62%);
       transform: rotate(14deg);
       pointer-events:none;
+      opacity: .65;
     }
 
     .row{
@@ -224,16 +235,25 @@ FILE: wallet.html
       display:grid;
       place-items:center;
       border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
+      background: rgba(0,0,0,.20);
       box-shadow: 0 14px 40px rgba(0,0,0,.35);
       flex: 0 0 auto;
       overflow:hidden;
+      position: relative;
     }
-    .badge span{
+    .badge img{
+      width: 26px;
+      height: 26px;
+      display:block;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.35));
+    }
+    .badge .fallback{
       font-weight: 900;
       font-size: 12px;
       letter-spacing: .4px;
       opacity: .95;
+      display:none;
     }
 
     .names{
@@ -336,6 +356,10 @@ FILE: wallet.html
       color: var(--text);
       font-weight: 800;
     }
+    .btn.send{
+      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
+      box-shadow: 0 18px 50px rgba(56,189,248,.18);
+    }
 
     .right{
       flex: 0 0 auto;
@@ -401,6 +425,151 @@ FILE: wallet.html
       font-size: 13px;
       display:none;
     }
+
+    /* =============================
+      SEND MODAL (Exchange style)
+    ============================== */
+    .modalOverlay{
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+    }
+    .modalOverlay.show{ display:flex; }
+
+    .modal{
+      width: min(560px, 92vw);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.16), transparent 60%),
+        rgba(2,6,23,.92);
+      box-shadow: 0 40px 140px rgba(0,0,0,.70);
+      overflow:hidden;
+    }
+
+    .modalHead{
+      padding: 14px 14px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .modalTitle{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .modalTitle .h{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing:.2px;
+      margin:0;
+    }
+    .modalTitle .s{
+      font-size: 12px;
+      color: var(--muted);
+      margin:0;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .modalClose{
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-weight: 900;
+      font-size: 12px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      flex: 0 0 auto;
+    }
+
+    .modalBody{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .formGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .formGrid{ grid-template-columns: 1fr; }
+    }
+
+    .in{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px 10px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    .in label{
+      font-size: 11px;
+      color: var(--muted2);
+    }
+    .in input, .in select{
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      padding: 2px 0;
+    }
+    .in input::placeholder{ color: rgba(234,240,255,.35); }
+
+    .feeBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .feeRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .feeRow b{
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .modalFoot{
+      padding: 12px 14px 14px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      display:flex;
+      gap: 10px;
+      justify-content:flex-end;
+      flex-wrap: wrap;
+    }
+
+    .smallWarn{
+      font-size: 12px;
+      color: rgba(245,158,11,.95);
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -445,6 +614,63 @@ FILE: wallet.html
 
   <div id="toast" class="toast"></div>
 
+  <!-- SEND MODAL -->
+  <div id="sendOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-label="Send crypto">
+    <div class="modal">
+      <div class="modalHead">
+        <div class="modalTitle">
+          <p class="h" id="sendTitle">Send</p>
+          <p class="s" id="sendSub">—</p>
+        </div>
+        <button class="modalClose" id="btnSendClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="smallWarn">
+          ⚠️ Always confirm the network. Sending to the wrong network may result in permanent loss.
+        </div>
+
+        <div class="in">
+          <label>Recipient Wallet Address</label>
+          <input id="sendTo" placeholder="Paste recipient address..." autocomplete="off" />
+        </div>
+
+        <div class="formGrid">
+          <div class="in">
+            <label>Amount</label>
+            <input id="sendAmount" placeholder="0.00" inputmode="decimal" autocomplete="off" />
+          </div>
+
+          <div class="in">
+            <label>Network</label>
+            <select id="sendNetwork"></select>
+          </div>
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow">
+            <span>Network fee (est.)</span>
+            <b id="feeEst">—</b>
+          </div>
+          <div class="feeRow">
+            <span>Total (amount + fee)</span>
+            <b id="totalEst">—</b>
+          </div>
+        </div>
+
+        <div class="in">
+          <label>Note (optional)</label>
+          <input id="sendNote" placeholder="e.g. Payment / Transfer" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnSendCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnSendSubmit" type="button">Send</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ============================================================
       ✅ SUPABASE AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
@@ -466,7 +692,7 @@ FILE: wallet.html
       el.textContent = msg;
       el.classList.add("show");
       clearTimeout(window.__toastT);
-      window.__toastT = setTimeout(()=> el.classList.remove("show"), 1400);
+      window.__toastT = setTimeout(()=> el.classList.remove("show"), 1600);
     }
 
     async function copyText(text){
@@ -485,7 +711,7 @@ FILE: wallet.html
     }
 
     function buildQrData(item){
-      // XRP tag encoded in QR
+      // XRP tag encoded in QR (XRP removed from list, but keep safe handling)
       if(item.asset_key === "XRP" && item.memo_value){
         return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`;
       }
@@ -525,9 +751,65 @@ FILE: wallet.html
       return String(asset_key || "").toUpperCase();
     }
 
+    // Logo source with fallback (CoinCap icons)
+    function logoUrlFor(asset_key){
+      const sym = String(asset_key || "").toLowerCase();
+      // CoinCap uses symbol icons like btc, eth, usdt, usdc, bnb, sol, etc.
+      return `https://assets.coincap.io/assets/icons/${sym}@2x.png`;
+    }
+
+    // Per-coin gradient palette (feel free to expand)
+    const COIN_GRAD = {
+      BTC: ["rgba(247,147,26,.28)", "rgba(255,193,7,.18)"],
+      ETH: ["rgba(98,126,234,.26)", "rgba(124,77,255,.18)"],
+      USDT: ["rgba(38,161,123,.26)", "rgba(34,197,94,.16)"],
+      USDC: ["rgba(39,117,202,.26)", "rgba(56,189,248,.16)"],
+      BNB: ["rgba(240,185,11,.26)", "rgba(245,158,11,.16)"],
+      SOL: ["rgba(0,255,163,.18)", "rgba(220,31,255,.16)"],
+      TRX: ["rgba(239,68,68,.22)", "rgba(245,158,11,.14)"],
+      LTC: ["rgba(190,190,190,.22)", "rgba(56,189,248,.12)"],
+      TON: ["rgba(56,189,248,.22)", "rgba(91,108,255,.16)"],
+      DOGE:["rgba(198,172,105,.22)", "rgba(245,158,11,.14)"],
+      MATIC:["rgba(168,85,247,.22)", "rgba(91,108,255,.14)"],
+      AVAX:["rgba(248,113,113,.22)", "rgba(124,77,255,.14)"]
+    };
+
+    function getGradFor(asset_key){
+      const key = String(asset_key || "").toUpperCase();
+      return COIN_GRAD[key] || ["rgba(91,108,255,.22)", "rgba(124,77,255,.18)"];
+    }
+
+    // Network fee estimates (UI estimate only)
+    function estimateFee(asset_key, network){
+      const sym = String(asset_key || "").toUpperCase();
+      const net = String(network || "").toUpperCase();
+
+      // USDT often varies by network
+      if(sym === "USDT" || sym === "USDC"){
+        if(net.includes("TRC")) return 1.0;       // ~1 USDT
+        if(net.includes("BEP")) return 0.3;       // ~0.3
+        if(net.includes("ERC")) return 6.0;       // ~6
+        return 1.0;
+      }
+
+      // Native chains (rough UI)
+      if(net.includes("BTC")) return 0.00015;
+      if(net.includes("ETH") || net.includes("ERC")) return 0.0012;
+      if(net.includes("BSC") || net.includes("BEP")) return 0.0006;
+      if(net.includes("TRON") || net.includes("TRC")) return 2.0;
+      if(net.includes("SOL")) return 0.00005;
+
+      // fallback
+      return 0.001;
+    }
+
+    // Keep wallets in memory for send modal options
+    let __wallets = [];
+
     function makeCard(item){
       const qrData = buildQrData(item);
       const badgeText = iconLetters(item.asset_key);
+      const grad = getGradFor(item.asset_key);
 
       const memoBlock = item.memo_label && item.memo_value ? `
         <div class="field">
@@ -546,13 +828,21 @@ FILE: wallet.html
       const el = document.createElement("div");
       el.className = "card";
       el.setAttribute("data-search", `${item.asset_key} ${item.name} ${item.network}`.toLowerCase());
+      el.style.setProperty("--coinA", grad[0]);
+      el.style.setProperty("--coinB", grad[1]);
+
+      const logoUrl = logoUrlFor(item.asset_key);
 
       el.innerHTML = `
         <div class="row">
           <div class="left">
             <div class="meta">
               <div class="coin">
-                <div class="badge"><span>${escapeHtml(badgeText)}</span></div>
+                <div class="badge" title="${escapeHtml(item.asset_key)}">
+                  <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(item.asset_key)} logo"
+                       onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='block';">
+                  <span class="fallback">${escapeHtml(badgeText)}</span>
+                </div>
                 <div class="names">
                   <div class="sym">${escapeHtml(item.name)} <span style="opacity:.7;">•</span> ${escapeHtml(item.asset_key)}</div>
                   <div class="net">${escapeHtml(item.network)}</div>
@@ -574,6 +864,7 @@ FILE: wallet.html
 
               <div class="actions">
                 <button class="btn" data-copy="${escapeHtml(item.address)}" type="button">Copy Address</button>
+                <button class="btn send" data-send="${escapeHtml(item.asset_key)}" data-network="${escapeHtml(item.network)}" type="button">Send</button>
                 ${item.memo_label && item.memo_value ? `<button class="btn secondary" data-copy="${escapeHtml(item.memo_value)}" type="button">Copy ${escapeHtml(item.memo_label)}</button>` : ''}
               </div>
             </div>
@@ -588,6 +879,15 @@ FILE: wallet.html
 
       el.querySelectorAll("[data-copy]").forEach(btn=>{
         btn.addEventListener("click", ()=> copyText(btn.getAttribute("data-copy") || ""));
+      });
+
+      // Send action
+      el.querySelectorAll("[data-send]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const asset = btn.getAttribute("data-send") || "";
+          const network = btn.getAttribute("data-network") || "";
+          openSendModal(asset, network);
+        });
       });
 
       return el;
@@ -622,14 +922,9 @@ FILE: wallet.html
       }
 
       try{
-        // ✅ Get access token (if logged in)
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
 
-        // ✅ IMPORTANT:
-        // Remove "apikey" header to avoid CORS preflight failures when Edge Function
-        // doesn't include "apikey" in Access-Control-Allow-Headers.
-        // Use Authorization only (most wallet-api functions allow it).
         const headers = {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
@@ -659,14 +954,153 @@ FILE: wallet.html
           note: w.note
         }));
 
-        render(wallets);
+        // ✅ REMOVE XRP FROM LIST (as requested)
+        __wallets = wallets.filter(w => String(w.asset_key || "").toUpperCase() !== "XRP");
+
+        render(__wallets);
         toast("Loaded ✅");
       }catch(e){
-        // This is what you get when CORS blocks the request or network fails
-        toast("Network/CORS blocked ❌");
-        console.error("Wallet fetch error (likely CORS):", e);
+        toast("Network error ❌");
+        console.error("Wallet fetch error:", e);
       }
     }
+
+    /* =========================
+      SEND MODAL LOGIC
+    ========================== */
+    const sendOverlay = document.getElementById("sendOverlay");
+    const btnSendClose = document.getElementById("btnSendClose");
+    const btnSendCancel = document.getElementById("btnSendCancel");
+    const btnSendSubmit = document.getElementById("btnSendSubmit");
+
+    const sendTitle = document.getElementById("sendTitle");
+    const sendSub = document.getElementById("sendSub");
+    const sendTo = document.getElementById("sendTo");
+    const sendAmount = document.getElementById("sendAmount");
+    const sendNetwork = document.getElementById("sendNetwork");
+    const sendNote = document.getElementById("sendNote");
+    const feeEst = document.getElementById("feeEst");
+    const totalEst = document.getElementById("totalEst");
+
+    let __sendAsset = "";
+    let __sendDefaultNetwork = "";
+
+    function closeSendModal(){
+      sendOverlay.classList.remove("show");
+      __sendAsset = "";
+      __sendDefaultNetwork = "";
+      sendTo.value = "";
+      sendAmount.value = "";
+      sendNote.value = "";
+      sendNetwork.innerHTML = "";
+      feeEst.textContent = "—";
+      totalEst.textContent = "—";
+    }
+
+    function openSendModal(asset_key, preferredNetwork){
+      __sendAsset = String(asset_key || "").toUpperCase();
+      __sendDefaultNetwork = String(preferredNetwork || "");
+
+      // Build network options for this asset from loaded wallets
+      const nets = __wallets
+        .filter(w => String(w.asset_key || "").toUpperCase() === __sendAsset)
+        .map(w => w.network)
+        .filter(Boolean);
+
+      // Fallback: at least show current network
+      const options = (nets.length ? nets : [__sendDefaultNetwork]).filter(Boolean);
+
+      sendNetwork.innerHTML = "";
+      options.forEach((n, idx)=>{
+        const opt = document.createElement("option");
+        opt.value = n;
+        opt.textContent = n;
+        if(n === __sendDefaultNetwork || idx === 0) opt.selected = true;
+        sendNetwork.appendChild(opt);
+      });
+
+      sendTitle.textContent = `Send ${__sendAsset}`;
+      sendSub.textContent = `${options[sendNetwork.selectedIndex] || __sendDefaultNetwork || "Network"}`;
+
+      // prime estimates
+      updateFeeEstimate();
+
+      sendOverlay.classList.add("show");
+      sendTo.focus();
+    }
+
+    function parseAmount(v){
+      const n = Number(String(v || "").replace(/,/g,"").trim());
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+
+    function fmtNum(n, decimals=8){
+      if(!Number.isFinite(n)) return "—";
+      // show fewer decimals for stablecoins
+      if(__sendAsset === "USDT" || __sendAsset === "USDC") decimals = 2;
+      return n.toFixed(decimals).replace(/\.?0+$/,"");
+    }
+
+    function updateFeeEstimate(){
+      const net = sendNetwork.value || __sendDefaultNetwork || "";
+      const amt = parseAmount(sendAmount.value);
+
+      sendSub.textContent = `${net || "Network"}`;
+
+      const fee = estimateFee(__sendAsset, net);
+
+      // display fee in asset symbol for stablecoins and most tokens (exchange-style)
+      const feeText = `${fmtNum(fee, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}`;
+      feeEst.textContent = feeText;
+
+      const total = amt + (Number(fee) || 0);
+      totalEst.textContent = amt ? `${fmtNum(total, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}` : "—";
+    }
+
+    btnSendClose.addEventListener("click", closeSendModal);
+    btnSendCancel.addEventListener("click", closeSendModal);
+
+    sendOverlay.addEventListener("click", (e)=>{
+      if(e.target === sendOverlay) closeSendModal();
+    });
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape" && sendOverlay.classList.contains("show")) closeSendModal();
+    });
+
+    sendAmount.addEventListener("input", updateFeeEstimate);
+    sendNetwork.addEventListener("change", updateFeeEstimate);
+
+    btnSendSubmit.addEventListener("click", async ()=>{
+      const to = (sendTo.value || "").trim();
+      const amt = parseAmount(sendAmount.value);
+      const net = (sendNetwork.value || "").trim();
+      const note = (sendNote.value || "").trim();
+
+      if(!__sendAsset){
+        toast("Select an asset");
+        return;
+      }
+      if(!net){
+        toast("Select a network");
+        return;
+      }
+      if(!to || to.length < 12){
+        toast("Enter a valid address");
+        return;
+      }
+      if(!amt){
+        toast("Enter amount");
+        return;
+      }
+
+      // UI-only send request (exchange-style confirmation)
+      // Real sending needs secured backend custody/signing logic.
+      // For now we show success UI feedback.
+      console.log("SEND REQUEST (UI):", { asset: __sendAsset, network: net, to, amount: amt, note });
+      toast("Send request submitted ✅");
+      closeSendModal();
+    });
 
     document.getElementById("q").addEventListener("input", applySearch);
     document.getElementById("btnReload").addEventListener("click", loadFromBackend);
