@@ -357,6 +357,21 @@
     .ellipsis{max-width: 260px;overflow:hidden;text-overflow: ellipsis;}
     .ellipsisWide{max-width: 520px;overflow:hidden;text-overflow: ellipsis;}
     .rowTools{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;justify-content:flex-end}
+    .rowTools.wrap{flex-wrap:wrap;justify-content:flex-start}
+    .miniSel,.miniIn{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-weight: 900;
+      font-size: 12px;
+      outline: none;
+    }
+    .miniIn{ width: 120px; }
+    .miniSel{ width: 120px; cursor:pointer; }
+    @media (max-width: 980px){ .miniIn,.miniSel{ width: 100%; } }
+
 
     .spin{
       display:inline-block;width:14px;height:14px;border-radius:999px;
@@ -1232,6 +1247,12 @@ const PLAN_TEMPLATES = [
   { key:"platinum", label:"Platinum • X18 • 5 days • Min $5000",plan_name:"Platinum Plan", amount:5000, x_times:18, duration_days:5 },
 ];
 
+const CRYPTO_ASSETS = ["BTC","ETH","USDT","USDC","BNB","SOL","TRX","LTC","TON","DOGE","XRP","ADA","AVAX","MATIC"];
+function cryptoAssetOptionsHtml(){
+  return CRYPTO_ASSETS.map(s=>`<option value="${s}">${s}</option>`).join("");
+}
+
+
 /* ✅ Preset wallet rows (NO XRP) */
 const WALLET_PRESETS = [
   { asset_key:"BTC",        name:"Bitcoin",           network:"BTC",   address:"", memo_label:null, memo_value:null, note:"" },
@@ -1783,6 +1804,15 @@ function renderUsers(data){
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
+
+          <!-- ✅ Crypto balance ops (per-asset) -->
+          <div class="rowTools wrap" style="margin-top:8px;">
+            <select class="miniSel" id="casset-${uid}" aria-label="Crypto asset">${cryptoAssetOptionsHtml()}</select>
+            <input class="miniIn" type="number" step="0.00000001" id="camt-${uid}" placeholder="0.00" aria-label="Crypto amount">
+            <button class="btnOk" onclick="cryptoCreditUser('${uid}','${esc(email)}')">+ Crypto</button>
+            <button class="btnErr" onclick="cryptoDebitUser('${uid}','${esc(email)}')">- Crypto</button>
+            <button class="btnGhost" onclick="cryptoSetUser('${uid}','${esc(email)}')">Set Crypto</button>
+          </div>
         </td>
       </tr>
     `;
@@ -1816,6 +1846,61 @@ async function setBalance(email,id){
   modalShow("Balance Set", `User: ${email}\nTarget: $${target.toFixed(2)}\nDelta applied: ${res.data?.delta ?? ""}\n`);
   safeLoad(loadUsers);
 }
+
+/* ============================================================
+   ✅ ADMIN: PER-ASSET CRYPTO BALANCE OPS (BACKEND)
+   Requires admin-api Edge Function actions:
+   - user_crypto_credit  { user_id, email?, asset_key, amount }
+   - user_crypto_debit   { user_id, email?, asset_key, amount }
+   - user_crypto_set     { user_id, email?, asset_key, target_balance }
+   Backend should upsert into: public.user_crypto_balances(user_id, asset_key, balance)
+============================================================ */
+function getCryptoInputs(uid){
+  const asset = (document.getElementById(`casset-${uid}`)?.value || "").trim().toUpperCase();
+  const amtRaw = document.getElementById(`camt-${uid}`)?.value || "";
+  const amt = Number(amtRaw);
+  return { asset, amt, amtRaw };
+}
+
+async function cryptoCreditUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!(amt>0)){ modalShow("Invalid amount","Enter crypto amount > 0"); return; }
+
+  const res = await apiCall("user_crypto_credit", { user_id: uid, email, asset_key: asset, amount: amt });
+  feed(`user_crypto_credit -> ${email} (${asset})`);
+
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? "ok");
+  modalShow("Crypto Credited", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadUsers);
+}
+
+async function cryptoDebitUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!(amt>0)){ modalShow("Invalid amount","Enter crypto amount > 0"); return; }
+  const res = await apiCall("user_crypto_debit", { user_id: uid, email, asset_key: asset, amount: amt });
+  feed(`user_crypto_debit -> ${email} (${asset})`);
+
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? "ok");
+  modalShow("Crypto Debited", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadUsers);
+}
+
+async function cryptoSetUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!Number.isFinite(amt)){ modalShow("Invalid target","Enter a target crypto balance number."); return; }
+  if(!confirm(`Set ${email} ${asset} balance to ${amt} ?`)) return;
+
+  const res = await apiCall("user_crypto_set", { user_id: uid, email, asset_key: asset, target_balance: amt });
+  feed(`user_crypto_set -> ${email} (${asset})`);
+
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? amt);
+  modalShow("Crypto Balance Set", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadUsers);
+}
+
 
 async function upgradeUser(email,id){
   const key = document.getElementById(`plan-${id}`).value;
