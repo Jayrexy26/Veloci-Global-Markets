@@ -7,6 +7,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
     :root{
@@ -132,6 +133,7 @@
       box-shadow: var(--shadow);
       padding: 14px;
       overflow:hidden;
+      position: relative;
     }
     .bTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     .bLeft{ min-width:220px; }
@@ -159,10 +161,40 @@
     .actionBtn.primary{ background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(56,189,248,.16); }
     .actionBtn.green{ background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(16,185,129,.90)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(34,197,94,.14); }
     .actionBtn.orange{ background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(249,115,22,.92)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(245,158,11,.14); }
+    .actionBtn.alloc{
+      background: linear-gradient(135deg, rgba(124,77,255,.92), rgba(56,189,248,.92));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 18px 55px rgba(124,77,255,.14);
+    }
+    .actionBtn.alloc span{ font-size:14px; }
     @media (max-width: 560px){
       .bValue{ font-size:28px; }
       .bRight{ justify-content:flex-start; }
       .actionBtn{ flex:1 1 auto; justify-content:center; }
+      .actionBtn.alloc{ display:none; } /* hide desktop placement on mobile */
+    }
+
+    /* mobile allocation button (top-right of balance card) */
+    .allocMini{
+      display:none;
+      position:absolute;
+      top:12px;
+      right:12px;
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      color: var(--text);
+      font-weight:1000;
+      cursor:pointer;
+      box-shadow: 0 26px 90px rgba(0,0,0,.45);
+      place-items:center;
+    }
+    .allocMini:active{ transform: translateY(1px); }
+    @media (max-width: 560px){
+      .allocMini{ display:grid; }
     }
 
     /* GRID */
@@ -255,6 +287,26 @@
       font-size: 13px;
       display:none;
     }
+
+    /* chart emoji on card */
+    .miniChartBtn{
+      position:absolute;
+      right:12px;
+      bottom:10px;
+      z-index:3;
+      font-size:18px;
+      opacity:.18;
+      cursor:pointer;
+      user-select:none;
+      transition: opacity .12s ease, transform .12s ease;
+      padding:6px 8px;
+      border-radius:12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+      backdrop-filter: blur(8px);
+    }
+    .miniChartBtn:hover{ opacity:.55; }
+    .miniChartBtn:active{ transform: translateY(1px); }
 
     /* TOAST */
     .toast{
@@ -486,14 +538,54 @@
     .linkFab .t b{ font-size:12px; font-weight:1000; }
     .linkFab .t span{ font-size:11px; color: var(--muted); font-weight:900; }
 
-    /* SWAP EXTRAS */
-    .swapRow{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .swapRate{ font-size:12px; color: var(--muted); line-height:1.35; }
-    .swapBig{
-      font-weight:1000;
-      font-size: 14px;
-      letter-spacing:.2px;
+    /* footer */
+    footer{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      padding: 18px 0 26px;
+      text-align:center;
+      color: rgba(234,240,255,.55);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2px;
     }
+
+    /* allocation chart modal canvas */
+    .chartWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .chartGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 720px){
+      .chartGrid{ grid-template-columns: 1fr; }
+    }
+    .chartBox{
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 10px;
+      min-height: 260px;
+    }
+    .chartBox canvas{ width:100% !important; height:240px !important; }
+
+    /* tradingview modal container */
+    .tvWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      overflow:hidden;
+      min-height: 420px;
+    }
+    #tvContainer{ width:100%; height: 420px; }
   </style>
 </head>
 <body>
@@ -605,6 +697,8 @@
 
     <!-- TOTAL WALLET BALANCE -->
     <div class="balanceCard">
+      <button class="allocMini" id="btnAllocMini" type="button" title="Allocation charts">📊</button>
+
       <div class="bTop">
         <div class="bLeft">
           <div class="bTitle">Total Wallet Balance</div>
@@ -625,13 +719,14 @@
           </div>
           <div class="bSub">
             <span class="dotLive"></span>
-            <span id="totalHint">Live prices • 24h change</span>
+            <span id="totalHint">Linked with dashboard balance</span>
           </div>
         </div>
         <div class="bRight">
           <button class="actionBtn primary" id="btnMainSend" type="button">📤 Send</button>
           <button class="actionBtn green" id="btnMainReceive" type="button">📥 Receive</button>
           <button class="actionBtn orange" id="btnMainSwap" type="button">⇄ Swap</button>
+          <button class="actionBtn alloc" id="btnAlloc" type="button" title="Allocation charts"><span>📊</span> Allocation</button>
         </div>
       </div>
     </div>
@@ -639,6 +734,8 @@
     <div id="grid" class="grid"></div>
     <div id="empty" class="empty">No assets match your search.</div>
   </div>
+
+  <footer>© 2026 Veloci Global Markets. All rights reserved</footer>
 
   <div id="toast" class="toast"></div>
 
@@ -856,6 +953,83 @@
     </div>
   </div>
 
+  <!-- WALLET REJECTED POPUP -->
+  <div id="rejectedOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Wallet rejected">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Wallet Linking Unsuccessful ❌</p>
+          <p class="s">Try again with the correct details</p>
+        </div>
+        <button class="modalClose" id="btnRejectedClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="feeBox">
+          <div class="feeRow"><span>Status</span><b style="color:rgba(248,113,113,1)">Rejected</b></div>
+          <div class="feeRow"><span>Action</span><b>Retry wallet linking</b></div>
+        </div>
+        <div class="hint" id="rejectedReason">Wallet linking unsuccessful, try again.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn send" id="btnRejectedOk" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALLOCATION MODAL -->
+  <div id="allocOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Allocation charts">
+    <div class="modal" style="width:min(860px, 94vw);">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Asset Allocation 📊</p>
+          <p class="s">Pie + Bar (based on your balances & live prices)</p>
+        </div>
+        <button class="modalClose" id="btnAllocClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="chartWrap">
+          <div class="chartGrid">
+            <div class="chartBox">
+              <div style="font-weight:1000; font-size:12px; color:rgba(234,240,255,.78); margin-bottom:8px;">Allocation (Pie)</div>
+              <canvas id="allocPie"></canvas>
+            </div>
+            <div class="chartBox">
+              <div style="font-weight:1000; font-size:12px; color:rgba(234,240,255,.78); margin-bottom:8px;">Allocation (Bar)</div>
+              <canvas id="allocBar"></canvas>
+            </div>
+          </div>
+          <div class="hint" id="allocHint">Charts update whenever you reload prices/balances.</div>
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnAllocRefresh" type="button">Refresh</button>
+        <button class="btn send" id="btnAllocDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CHART MODAL -->
+  <div id="chartOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Live chart">
+    <div class="modal" style="width:min(920px, 95vw);">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="chartTitle">Live Chart</p>
+          <p class="s" id="chartSub">TradingView</p>
+        </div>
+        <button class="modalClose" id="btnChartClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="tvWrap">
+          <div id="tvContainer"></div>
+        </div>
+        <div class="hint">Tip: you can zoom and switch timeframes inside the chart.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn send" id="btnChartDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ADMIN NOTICE MODAL (site-wide, default OFF) -->
   <div id="noticeOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Notice">
     <div class="modal">
@@ -881,6 +1055,7 @@
   <script>
     /* ============================================================
       SUPABASE AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
+      (kept exactly in one block as requested)
     ============================================================ */
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
@@ -1158,7 +1333,6 @@
         const a=document.createElement("option"); a.value=sym; a.textContent=sym; swapFrom.appendChild(a);
         const b=document.createElement("option"); b.value=sym; b.textContent=sym; swapTo.appendChild(b);
       });
-      // sensible defaults
       if(syms.includes("USDT")) swapFrom.value="USDT";
       if(syms.includes("BTC")) swapTo.value="BTC";
       if(swapFrom.value===swapTo.value && syms.length>1) swapTo.value = syms.find(x=>x!==swapFrom.value) || swapTo.value;
@@ -1207,7 +1381,7 @@
         return;
       }
 
-      const rate = pFrom / pTo; // 1 FROM = rate TO
+      const rate = pFrom / pTo;
       swapRate.textContent = `1 ${from} ≈ ${rate.toLocaleString(undefined,{maximumFractionDigits:10})} ${to}`;
 
       const recv = amt ? (amt * rate) : 0;
@@ -1232,7 +1406,6 @@
     swapAmount.addEventListener("input", updateSwapQuote);
 
     btnSwapDo.addEventListener("click", async ()=>{
-      // UI-only quote. If you have a backend action for swaps, tell me its action/RPC/table and I’ll wire it.
       const from=normalizeSymbol(swapFrom.value);
       const to=normalizeSymbol(swapTo.value);
       const amt=parseAmount(swapAmount.value);
@@ -1256,7 +1429,7 @@
         const id=map[sym];
         if(id){ ids.push(id); symById[id]=sym; }
       }
-      if(!ids.length){ __prices={}; return; }
+      if(!ids.length){ return; }
       try{
         const url=`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids.join(","))}&vs_currencies=usd&include_24hr_change=true`;
         const res=await fetch(url);
@@ -1267,9 +1440,7 @@
           out[sym] = { usd: Number(data?.[id]?.usd||0), chg: Number(data?.[id]?.usd_24h_change||0) };
         }
         __prices = { ...__prices, ...out };
-      }catch(e){
-        // keep whatever we had
-      }
+      }catch(e){}
     }
 
     function setTotalBalanceDisplay(text){
@@ -1278,22 +1449,118 @@
       el.dataset.balReal=String(text||"$0.00");
       el.textContent = __hideBalances ? maskText() : el.dataset.balReal;
     }
-    function calcTotal(){
-      let total=0;
-      for(const w of __wallets){
-        const sym=normalizeSymbol(w.asset_key);
-        const bal=Number(__balances[sym]||0);
-        const px=Number(__prices?.[sym]?.usd||0);
-        total += bal*px;
-      }
-      __totalUsd=total;
-      setTotalBalanceDisplay(money(total));
-    }
+
     function chgText(sym){
       const c=__prices?.[sym]?.chg;
       if(typeof c!=="number" || !isFinite(c)) return {txt:"—", cls:""};
       const sign=c>=0?"+":"";
       return { txt: `${sign}${c.toFixed(2)}% (24h)`, cls: c>=0 ? "up" : "down" };
+    }
+
+    /* ===========================
+       BALANCES (NEW TABLE)
+       - user_crypto_balances (per coin)
+       - users.balance (dashboard total)
+    =========================== */
+    async function loadBalancesSafe(){
+      __balances={};
+      try{
+        if(!CURRENT_USER_ID) return;
+        const { data, error } = await supabaseClient
+          .from("user_crypto_balances")
+          .select("asset_key,balance")
+          .eq("user_id", CURRENT_USER_ID);
+        if(error) throw error;
+        (data||[]).forEach(r=>{
+          const sym=normalizeSymbol(r.asset_key);
+          __balances[sym]=Number(r.balance||0);
+        });
+      }catch(e){
+        __balances={};
+      }
+    }
+
+    async function loadUserUsdBalanceFromUsersTable(){
+      // IMPORTANT: your DB confirmed public.users has only: balance
+      try{
+        if(!CURRENT_USER_ID) return null;
+        const { data, error } = await supabaseClient
+          .from("users")
+          .select("balance")
+          .eq("id", CURRENT_USER_ID)
+          .maybeSingle();
+        if(error || !data) return null;
+        const v=Number(data.balance);
+        return Number.isFinite(v) ? v : null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    /* BACKEND WALLETS LIST */
+    async function getAuthHeaders(){
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      return {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+      };
+    }
+
+    async function loadFromBackend(){
+      try{
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL, {
+          method:"POST",
+          headers,
+          body: JSON.stringify({ action:"wallets_public_list" })
+        });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Load failed (${res.status})`);
+          console.error("wallets_public_list failed:", { status:res.status, data });
+          return;
+        }
+
+        const wallets=(data.wallets||[]).map(w=>({
+          asset_key:w.asset_key, name:w.name, network:w.network, address:w.address,
+          memo_label:w.memo_label, memo_value:w.memo_value, note:w.note
+        }));
+        __wallets = wallets.filter(w => String(w.asset_key||"").toUpperCase() !== "XRP");
+
+        // load coin balances (if table exists & has rows)
+        await loadBalancesSafe();
+        await fetchPricesUSD(__wallets.map(w=>w.asset_key));
+
+        // Total wallet balance MUST MATCH dashboard: users.balance
+        const userUsd = await loadUserUsdBalanceFromUsersTable();
+        if(Number.isFinite(userUsd)){
+          __totalUsd = Number(userUsd);
+          setTotalBalanceDisplay(money(__totalUsd));
+          document.getElementById("totalHint").textContent="Linked with dashboard balance";
+        }else{
+          // fallback: compute from balances/prices if users.balance not readable
+          let total=0;
+          for(const w of __wallets){
+            const sym=normalizeSymbol(w.asset_key);
+            const bal=Number(__balances[sym]||0);
+            const px=Number(__prices?.[sym]?.usd||0);
+            total += bal*px;
+          }
+          __totalUsd=total;
+          setTotalBalanceDisplay(money(total));
+          document.getElementById("totalHint").textContent="Live prices • 24h change";
+        }
+
+        render(__wallets);
+        toast("Loaded ✅");
+      }catch(e){
+        toast("Network error ❌");
+        console.error("Wallet fetch error:", e);
+      }finally{
+        hideGate();
+      }
     }
 
     function makeCard(item){
@@ -1351,10 +1618,11 @@
             <div class="hint">${escapeHtml(item.note || "Receive shows deposit address & QR.")}</div>
           </div>
         </div>
+        <div class="miniChartBtn" title="Live chart" data-chart="1">〽️</div>
       `;
       el.addEventListener("click",(e)=>{
         const t=e.target;
-        if(t && (t.closest("button")||t.closest("a")||t.closest("input")||t.closest("select"))) return;
+        if(t && (t.closest("button")||t.closest("a")||t.closest("input")||t.closest("select")||t.closest("[data-chart]"))) return;
         if(__selectedCard) __selectedCard.classList.remove("selected");
         el.classList.add("selected"); __selectedCard=el;
       });
@@ -1364,6 +1632,13 @@
       el.querySelectorAll("[data-recv]").forEach(btn=>{
         btn.addEventListener("click",(e)=>{ e.stopPropagation(); openReceive(item); });
       });
+      const chartBtn = el.querySelector("[data-chart]");
+      if(chartBtn){
+        chartBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          openLiveChart(sym);
+        });
+      }
       return el;
     }
 
@@ -1386,113 +1661,6 @@
         if(ok) shown++;
       });
       document.getElementById("empty").style.display = shown ? "none" : "block";
-    }
-
-    async function getAuthHeaders(){
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      return {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
-      };
-    }
-
-    async function loadBalancesSafe(){
-      __balances={};
-      try{
-        if(!CURRENT_USER_ID) return;
-        const { data, error } = await supabaseClient
-          .from("user_crypto_balances")
-          .select("asset_key,balance")
-          .eq("user_id", CURRENT_USER_ID);
-        if(error) throw error;
-        (data||[]).forEach(r=>{
-          const sym=normalizeSymbol(r.asset_key);
-          __balances[sym]=Number(r.balance||0);
-        });
-      }catch(e){ __balances={}; }
-    }
-
-    /* DASHBOARD BALANCE LINK (more reliable) */
-    async function loadDashboardUsdBalanceSafe(){
-      if(!CURRENT_USER_ID) return null;
-      const candidates = [
-        { table: "profiles", where: { col: "id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" },
-        { table: "user_balances", where: { col: "user_id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" },
-        { table: "users", where: { col: "id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" }
-      ];
-      for(const c of candidates){
-        try{
-          const { data, error } = await supabaseClient
-            .from(c.table).select(c.cols)
-            .eq(c.where.col, c.where.val)
-            .maybeSingle();
-          if(error || !data) continue;
-          const keys=["total_balance","wallet_balance","usd_balance","fiat_balance","available_balance","balance"];
-          for(const k of keys){
-            const v=Number(data?.[k]);
-            if(Number.isFinite(v)) return v;
-          }
-        }catch(e){}
-      }
-      return null;
-    }
-
-    async function loadFromBackend(){
-      try{
-        const headers=await getAuthHeaders();
-        const res=await fetch(WALLET_API_URL, {
-          method:"POST",
-          headers,
-          body: JSON.stringify({ action:"wallets_public_list" })
-        });
-        const data=await res.json().catch(()=> ({}));
-        if(!res.ok || data?.success===false){
-          toast(`Load failed (${res.status})`);
-          console.error("wallets_public_list failed:", { status:res.status, data });
-          return;
-        }
-
-        const wallets=(data.wallets||[]).map(w=>({
-          asset_key:w.asset_key, name:w.name, network:w.network, address:w.address,
-          memo_label:w.memo_label, memo_value:w.memo_value, note:w.note
-        }));
-        __wallets = wallets.filter(w => String(w.asset_key||"").toUpperCase() !== "XRP");
-
-        await loadBalancesSafe();
-        await fetchPricesUSD(__wallets.map(w=>w.asset_key));
-        calcTotal();
-
-        const dashUsd = await loadDashboardUsdBalanceSafe();
-        if(Number.isFinite(dashUsd)){
-          __totalUsd = Number(dashUsd);
-          setTotalBalanceDisplay(money(__totalUsd));
-          document.getElementById("totalHint").textContent="Linked with dashboard balance";
-          try{ localStorage.setItem(`vgm_dash_bal_${CURRENT_USER_ID}`, String(__totalUsd)); }catch(e){}
-        }else{
-          // fallback: use last cached dash bal if any
-          try{
-            const cached=Number(localStorage.getItem(`vgm_dash_bal_${CURRENT_USER_ID}`));
-            if(Number.isFinite(cached)){
-              setTotalBalanceDisplay(money(cached));
-              document.getElementById("totalHint").textContent="Linked with dashboard balance";
-            }else{
-              document.getElementById("totalHint").textContent="Live prices • 24h change";
-            }
-          }catch(e){
-            document.getElementById("totalHint").textContent="Live prices • 24h change";
-          }
-        }
-
-        render(__wallets);
-        toast("Loaded ✅");
-      }catch(e){
-        toast("Network error ❌");
-        console.error("Wallet fetch error:", e);
-      }finally{
-        hideGate();
-      }
     }
 
     /* SEND MODAL */
@@ -1670,12 +1838,10 @@
     });
 
     /* ============================================================
-      WALLET LINK — FIXED FOR YOUR REAL TABLE + REALTIME
-      ✅ Uses Edge action: wallet_link_my_status
-      ✅ Fallback reads: user_wallet_link_requests (your real DB table)
-      ✅ Realtime subscription: user_wallet_link_requests (fixes “stuck pending”)
-      ✅ Processing/Approved: click opens submitted details (read-only)
-      ✅ Re-upload only when Rejected/Failed
+      WALLET LINK (TABLE: user_wallet_link_requests)
+      - popup on approve/reject
+      - approved => FAB becomes "View Wallet Connection"
+      - processing/pending not required in your DB right now, but supported
     ============================================================ */
     const btnLinkWallet=document.getElementById("btnLinkWallet");
     const linkOverlay=document.getElementById("linkOverlay");
@@ -1692,19 +1858,21 @@
     const linkFabSub=document.getElementById("linkFabSub");
 
     const linkedOverlay=document.getElementById("linkedOverlay");
-    function showLinkedPopupOnce(){
-      const k=`vgm_wallet_link_popup_${CURRENT_USER_ID}`;
-      if(localStorage.getItem(k)==="shown") return;
-      localStorage.setItem(k,"shown");
-      linkedOverlay.classList.add("show");
-    }
+    const rejectedOverlay=document.getElementById("rejectedOverlay");
+    const rejectedReason=document.getElementById("rejectedReason");
+
     function closeLinkedPopup(){ linkedOverlay.classList.remove("show"); }
     document.getElementById("btnLinkedClose").addEventListener("click", closeLinkedPopup);
     document.getElementById("btnLinkedOk").addEventListener("click", closeLinkedPopup);
     linkedOverlay.addEventListener("click",(e)=>{ if(e.target===linkedOverlay) closeLinkedPopup(); });
 
+    function closeRejectedPopup(){ rejectedOverlay.classList.remove("show"); }
+    document.getElementById("btnRejectedClose").addEventListener("click", closeRejectedPopup);
+    document.getElementById("btnRejectedOk").addEventListener("click", closeRejectedPopup);
+    rejectedOverlay.addEventListener("click",(e)=>{ if(e.target===rejectedOverlay) closeRejectedPopup(); });
+
     let __linkState="none"; // none | processing | approved | rejected
-    let __linkDetails=null; // row object from user_wallet_link_requests
+    let __linkDetails=null;
 
     function looksLikeAddress(a){
       const s=String(a||"").trim();
@@ -1733,14 +1901,13 @@
 
     function setFabState(state){
       __linkState=state;
-      if(state==="approved"){ linkFabTitle.textContent="Wallet Linked"; linkFabSub.textContent="Linked ✅"; return; }
+      if(state==="approved"){ linkFabTitle.textContent="View Wallet Connection"; linkFabSub.textContent="Linked ✅"; return; }
       if(state==="processing"){ linkFabTitle.textContent="Processing"; linkFabSub.textContent="Awaiting approval"; return; }
       if(state==="rejected"){ linkFabTitle.textContent="Link Wallet"; linkFabSub.textContent="Rejected — retry"; return; }
       linkFabTitle.textContent="Link Wallet"; linkFabSub.textContent="External address";
     }
 
     function setLinkModalViewMode(mode){
-      // mode: "edit" (allowed submit) | "view" (read-only)
       const view = (mode==="view");
       linkAddress.disabled=view;
       linkLabel.disabled=view;
@@ -1767,7 +1934,7 @@
         linkStatus.textContent="Not linked";
       }
 
-      const rej = __linkDetails?.reject_reason || __linkDetails?.admin_note || __linkDetails?.note || "";
+      const rej = __linkDetails?.admin_note || __linkDetails?.reject_reason || __linkDetails?.note || "";
       if(st==="rejected" && rej){
         linkRejectWrap.style.display="block";
         linkRejectMsg.textContent = String(rej);
@@ -1779,7 +1946,6 @@
     }
 
     function openLink(){
-      // Processing & Approved should OPEN DETAILS (read-only)
       if(__linkState==="approved"){
         document.getElementById("linkModalTitle").textContent="Wallet Connection";
         document.getElementById("linkModalSub").textContent="Your linked wallet details";
@@ -1797,7 +1963,6 @@
         return;
       }
       if(__linkState==="rejected"){
-        // Reupload allowed ONLY if rejected
         document.getElementById("linkModalTitle").textContent="Re-Link External Wallet";
         document.getElementById("linkModalSub").textContent="Rejected — update and resubmit";
         setLinkModalViewMode("edit");
@@ -1807,7 +1972,6 @@
         return;
       }
 
-      // normal new link
       document.getElementById("linkModalTitle").textContent="Link External Wallet";
       document.getElementById("linkModalSub").textContent="Add a public address (never seed phrase)";
       setLinkModalViewMode("edit");
@@ -1824,10 +1988,6 @@
 
     function closeLink(){
       linkOverlay.classList.remove("show");
-      // don't wipe details if processing/approved; keeps view data
-      if(__linkState==="none"){
-        linkAddress.value=""; linkLabel.value="";
-      }
       btnLinkSubmit.disabled=true;
       btnLinkSubmit.style.opacity=".55";
       btnLinkSubmit.style.cursor="not-allowed";
@@ -1840,7 +2000,6 @@
     linkOverlay.addEventListener("click",(e)=>{ if(e.target===linkOverlay) closeLink(); });
 
     btnLinkSubmit.addEventListener("click", async ()=>{
-      // Only used in "edit" mode: new or rejected resubmit
       const addr=(linkAddress.value||"").trim();
       const label=(linkLabel.value||"").trim();
       if(!looksLikeAddress(addr)){ toast("Enter a valid public address"); return; }
@@ -1858,7 +2017,6 @@
           return;
         }
 
-        // If edge returns existing request, prefer it
         const edgeReq = data?.request || null;
         if(edgeReq && typeof edgeReq === "object"){
           __linkDetails = edgeReq;
@@ -1883,115 +2041,59 @@
       }
     });
 
-    // 🔥 Direct-table fallback + realtime listener to fix “pending after admin approved/rejected”
+    // realtime listener (best effort) + polling (reliable)
     let __linkRealtimeSub=null;
 
-    async function tryFallbackLinkTables(){
-      if(!CURRENT_USER_ID) return null;
+    async function fetchLatestLinkRow(){
+      try{
+        if(!CURRENT_USER_ID) return null;
+        const { data, error } = await supabaseClient
+          .from("user_wallet_link_requests")
+          .select("id,status,address,label,created_at,updated_at,admin_note")
+          .eq("user_id", CURRENT_USER_ID)
+          .order("created_at", { ascending:false })
+          .limit(1);
+        if(error) return null;
+        const row = Array.isArray(data) ? data[0] : null;
+        return row || null;
+      }catch(e){ return null; }
+    }
 
-      // ✅ Your real table is user_wallet_link_requests
-      const tries = [
-        { table:"user_wallet_link_requests", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,admin_note,admin_id,user_email" },
-        // Optional legacy tables (keep in case you still have them)
-        { table:"wallet_link_requests", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" },
-        { table:"wallet_links", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" },
-        { table:"user_wallet_links", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" }
-      ];
-
-      for(const t of tries){
-        try{
-          const { data, error } = await supabaseClient
-            .from(t.table).select(t.cols)
-            .eq(t.userCol, CURRENT_USER_ID)
-            .order("created_at", { ascending:false })
-            .limit(1);
-          if(error) continue;
-          const row=Array.isArray(data) ? data[0] : null;
-          if(!row) continue;
-          return { status: normalizeLinkStatus(row.status), details: row, table: t.table };
-        }catch(e){}
-      }
-      return null;
+    function getLastSeenLinkStatusKey(){ return `vgm_link_last_status_${CURRENT_USER_ID}`; }
+    function showApprovedPopupOnceOnChange(currentStatus){
+      try{
+        const key=getLastSeenLinkStatusKey();
+        const prev=localStorage.getItem(key) || "";
+        if(prev && prev!==currentStatus){
+          if(currentStatus==="approved"){
+            linkedOverlay.classList.add("show");
+          }
+          if(currentStatus==="rejected"){
+            const reason = (__linkDetails?.admin_note || "Wallet linking unsuccessful, try again.");
+            rejectedReason.textContent = reason;
+            rejectedOverlay.classList.add("show");
+          }
+        }
+        localStorage.setItem(key, currentStatus);
+      }catch(e){}
     }
 
     async function checkLinkStatus(){
-      // 1) edge action (preferred)
-      try{
-        const headers=await getAuthHeaders();
-        const res=await fetch(WALLET_API_URL,{ method:"POST", headers, body: JSON.stringify({ action:"wallet_link_my_status" }) });
-        const data=await res.json().catch(()=> ({}));
-        if(res.ok && data?.success !== false){
-          const rawStatus = data?.status ?? data?.details?.status ?? data?.details?.link_status ?? (data?.linked ? "approved" : null);
-          const status=normalizeLinkStatus(rawStatus);
-          const details=data?.details || null;
+      const row = await fetchLatestLinkRow();
+      if(!row){
+        setFabState("none");
+        return;
+      }
+      __linkDetails = row;
+      const st = normalizeLinkStatus(row.status);
+      const was = __linkState;
+      setFabState(st);
+      fillLinkDetails(__linkDetails);
 
-          if(status==="approved"){
-            const was=(__linkState==="approved");
-            __linkDetails = details || __linkDetails;
-            setFabState("approved");
-            fillLinkDetails(__linkDetails);
-            if(!was) showLinkedPopupOnce();
-            return;
-          }
-          if(status==="processing"){
-            setFabState("processing");
-            if(details) __linkDetails=details;
-            fillLinkDetails(__linkDetails);
-            return;
-          }
-          if(status==="rejected"){
-            setFabState("rejected");
-            if(details) __linkDetails=details;
-            fillLinkDetails(__linkDetails);
-            return;
-          }
-          setFabState("none");
-          return;
-        }
-      }catch(e){}
-
-      // 2) fallback: direct table reads (includes user_wallet_link_requests)
-      try{
-        const fb=await tryFallbackLinkTables();
-        if(fb?.status){
-          const status=fb.status;
-          const details=fb.details || null;
-
-          if(status==="approved"){
-            const was=(__linkState==="approved");
-            __linkDetails = details || __linkDetails;
-            setFabState("approved");
-            fillLinkDetails(__linkDetails);
-            if(!was) showLinkedPopupOnce();
-            return;
-          }
-          if(status==="processing"){
-            __linkDetails = details || __linkDetails;
-            setFabState("processing");
-            fillLinkDetails(__linkDetails);
-            return;
-          }
-          if(status==="rejected"){
-            __linkDetails = details || __linkDetails;
-            setFabState("rejected");
-            fillLinkDetails(__linkDetails);
-            return;
-          }
-        }
-      }catch(e){}
-
-      // 3) local fallback
-      try{
-        const raw=localStorage.getItem(`vgm_link_last_${CURRENT_USER_ID}`);
-        if(raw){
-          const obj=JSON.parse(raw);
-          if(obj?.status==="processing" && __linkState!=="approved"){
-            __linkDetails=obj;
-            setFabState("processing");
-            fillLinkDetails(__linkDetails);
-          }
-        }
-      }catch(e){}
+      // Popup only if status changed since last time we saw it
+      if(was !== st){
+        showApprovedPopupOnceOnChange(st);
+      }
     }
 
     function setupLinkRealtime(){
@@ -1999,8 +2101,6 @@
       if(!CURRENT_USER_ID) return;
 
       const channel = supabaseClient.channel(`vgm-link-${CURRENT_USER_ID}`);
-
-      // ✅ MAIN: your real table
       channel.on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -2011,46 +2111,15 @@
         if(!row) return;
         __linkDetails = row;
         const st = normalizeLinkStatus(row.status);
-        const wasApproved = (__linkState==="approved");
+        const prev = __linkState;
         setFabState(st);
         fillLinkDetails(__linkDetails);
-        if(st==="approved" && !wasApproved) showLinkedPopupOnce();
+        if(prev !== st){
+          showApprovedPopupOnceOnChange(st);
+        }
       });
 
-      // Optional legacy tables (safe to keep)
-      channel.on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'wallet_link_requests',
-        filter: `user_id=eq.${CURRENT_USER_ID}`
-      }, payload => {
-        const row = payload?.new || payload?.old || null;
-        if(!row) return;
-        __linkDetails = row;
-        const st = normalizeLinkStatus(row.status);
-        const wasApproved = (__linkState==="approved");
-        setFabState(st);
-        fillLinkDetails(__linkDetails);
-        if(st==="approved" && !wasApproved) showLinkedPopupOnce();
-      });
-
-      channel.on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'wallet_links',
-        filter: `user_id=eq.${CURRENT_USER_ID}`
-      }, payload => {
-        const row = payload?.new || payload?.old || null;
-        if(!row) return;
-        __linkDetails = row;
-        const st = normalizeLinkStatus(row.status);
-        const wasApproved = (__linkState==="approved");
-        setFabState(st);
-        fillLinkDetails(__linkDetails);
-        if(st==="approved" && !wasApproved) showLinkedPopupOnce();
-      });
-
-      __linkRealtimeSub = channel.subscribe((status)=>{ /* SUBSCRIBED etc */ });
+      __linkRealtimeSub = channel.subscribe();
     }
 
     /* ADMIN NOTICE */
@@ -2076,6 +2145,168 @@
         document.getElementById("noticeMsg").textContent=String(data?.message||"");
         noticeOverlay.classList.add("show");
       }catch(e){}
+    }
+
+    /* ALLOCATION CHARTS */
+    const allocOverlay = document.getElementById("allocOverlay");
+    const btnAlloc = document.getElementById("btnAlloc");
+    const btnAllocMini = document.getElementById("btnAllocMini");
+    const btnAllocClose = document.getElementById("btnAllocClose");
+    const btnAllocDone = document.getElementById("btnAllocDone");
+    const btnAllocRefresh = document.getElementById("btnAllocRefresh");
+    let __pieChart=null, __barChart=null;
+
+    function closeAlloc(){
+      allocOverlay.classList.remove("show");
+    }
+    btnAllocClose.addEventListener("click", closeAlloc);
+    btnAllocDone.addEventListener("click", closeAlloc);
+    allocOverlay.addEventListener("click",(e)=>{ if(e.target===allocOverlay) closeAlloc(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && allocOverlay.classList.contains("show")) closeAlloc(); });
+
+    function buildAllocData(){
+      // Compute USD values per symbol using balances+prices
+      const rows=[];
+      const syms = uniqueSymbols();
+      syms.forEach(sym=>{
+        const bal = Number(__balances?.[sym]||0);
+        const px = Number(__prices?.[sym]?.usd||0);
+        const usd = (bal && px) ? bal*px : 0;
+        if(usd>0) rows.push({ sym, usd });
+      });
+      rows.sort((a,b)=>b.usd-a.usd);
+      return rows;
+    }
+
+    function openAlloc(){
+      allocOverlay.classList.add("show");
+      setTimeout(()=>renderAllocCharts(), 60);
+    }
+
+    async function renderAllocCharts(){
+      // Ensure prices for all symbols
+      const syms = uniqueSymbols();
+      await fetchPricesUSD(syms);
+
+      const rows = buildAllocData();
+      const labels = rows.map(r=>r.sym);
+      const values = rows.map(r=>Number(r.usd||0));
+
+      const hint = document.getElementById("allocHint");
+      if(!rows.length){
+        hint.textContent = "No allocation data yet (add balances in user_crypto_balances).";
+      }else{
+        hint.textContent = "Charts update whenever you reload prices/balances.";
+      }
+
+      const pieCtx = document.getElementById("allocPie");
+      const barCtx = document.getElementById("allocBar");
+
+      if(__pieChart){ __pieChart.destroy(); __pieChart=null; }
+      if(__barChart){ __barChart.destroy(); __barChart=null; }
+
+      __pieChart = new Chart(pieCtx, {
+        type: "pie",
+        data: { labels, datasets: [{ data: values }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: "rgba(234,240,255,.85)", font: { weight: 800 } } },
+            tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${money(ctx.parsed)}` } }
+          }
+        }
+      });
+
+      __barChart = new Chart(barCtx, {
+        type: "bar",
+        data: { labels, datasets: [{ label: "USD value", data: values }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: "rgba(234,240,255,.85)", font: { weight: 800 } } },
+            tooltip: { callbacks: { label: (ctx)=> `${money(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { ticks: { color: "rgba(234,240,255,.75)" }, grid: { color: "rgba(255,255,255,.06)" } },
+            y: { ticks: { color: "rgba(234,240,255,.75)" }, grid: { color: "rgba(255,255,255,.06)" } }
+          }
+        }
+      });
+    }
+
+    btnAlloc.addEventListener("click", openAlloc);
+    btnAllocMini.addEventListener("click", openAlloc);
+    btnAllocRefresh.addEventListener("click", renderAllocCharts);
+
+    /* LIVE CHART MODAL (TradingView embed) */
+    const chartOverlay = document.getElementById("chartOverlay");
+    const btnChartClose = document.getElementById("btnChartClose");
+    const btnChartDone = document.getElementById("btnChartDone");
+    const chartTitle = document.getElementById("chartTitle");
+    const chartSub = document.getElementById("chartSub");
+    const tvContainer = document.getElementById("tvContainer");
+    let __tvScriptEl=null;
+
+    function closeChart(){
+      chartOverlay.classList.remove("show");
+      // cleanup
+      try{
+        if(__tvScriptEl){ __tvScriptEl.remove(); __tvScriptEl=null; }
+      }catch(e){}
+      tvContainer.innerHTML="";
+    }
+    btnChartClose.addEventListener("click", closeChart);
+    btnChartDone.addEventListener("click", closeChart);
+    chartOverlay.addEventListener("click",(e)=>{ if(e.target===chartOverlay) closeChart(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && chartOverlay.classList.contains("show")) closeChart(); });
+
+    function tvSymbolFor(sym){
+      // reasonable defaults (USDT pairs)
+      const s = normalizeSymbol(sym);
+      if(s==="USDT") return "BINANCE:USDTUSD";
+      if(s==="USDC") return "COINBASE:USDCUSD";
+      if(s==="BTC") return "BINANCE:BTCUSDT";
+      if(s==="ETH") return "BINANCE:ETHUSDT";
+      if(s==="BNB") return "BINANCE:BNBUSDT";
+      if(s==="SOL") return "BINANCE:SOLUSDT";
+      if(s==="TRX") return "BINANCE:TRXUSDT";
+      if(s==="LTC") return "BINANCE:LTCUSDT";
+      if(s==="DOGE") return "BINANCE:DOGEUSDT";
+      if(s==="ADA") return "BINANCE:ADAUSDT";
+      if(s==="AVAX") return "BINANCE:AVAXUSDT";
+      if(s==="MATIC") return "BINANCE:MATICUSDT";
+      return `BINANCE:${s}USDT`;
+    }
+
+    function openLiveChart(sym){
+      const tvSym = tvSymbolFor(sym);
+      chartTitle.textContent = `${sym} Live Chart`;
+      chartSub.textContent = tvSym;
+
+      tvContainer.innerHTML = `<div class="tradingview-widget-container" style="height:420px;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:420px;width:100%"></div>
+      </div>`;
+
+      // add tradingview script
+      const s=document.createElement("script");
+      s.type="text/javascript";
+      s.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      s.async=true;
+      s.innerHTML = JSON.stringify({
+        autosize: true,
+        symbol: tvSym,
+        interval: "60",
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: true,
+        calendar: false,
+        support_host: "https://www.tradingview.com"
+      });
+      __tvScriptEl=s;
+      tvContainer.querySelector(".tradingview-widget-container").appendChild(s);
+      chartOverlay.classList.add("show");
     }
 
     /* INIT */
@@ -2112,10 +2343,15 @@
         loadHideBalances();
 
         await loadFromBackend();
+
+        // wallet link status + realtime/poll fallback
         await checkLinkStatus();
         setupLinkRealtime();
+
+        // notice
         await checkNotice();
 
+        // periodic refresh
         setInterval(checkLinkStatus, 15000);
         setInterval(checkNotice, 30000);
       }catch(e){
