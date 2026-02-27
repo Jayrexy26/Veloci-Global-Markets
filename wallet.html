@@ -329,7 +329,36 @@ FILE: wallet.html
     }
     .bLeft{ min-width: 220px; }
     .bTitle{ font-size:12px; font-weight:1000; color: rgba(234,240,255,.78); }
-    .bValue{ font-size:32px; font-weight:1000; margin-top:8px; letter-spacing:.2px; }
+
+    .bValueRow{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .bValue{
+      font-size:32px;
+      font-weight:1000;
+      letter-spacing:.2px;
+      line-height: 1.1;
+    }
+    .eyeBtn{
+      border:none;
+      cursor:pointer;
+      border-radius: 12px;
+      padding: 10px 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      display:grid;
+      place-items:center;
+      transition: transform .12s ease, opacity .12s ease;
+      flex: 0 0 auto;
+    }
+    .eyeBtn:active{ transform: translateY(1px); }
+    .eyeBtn svg{ width: 18px; height:18px; opacity:.95; }
+
     .bSub{ margin-top:6px; font-size:12px; color: rgba(234,240,255,.70); font-weight:900; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .dotLive{ width:10px;height:10px;border-radius:999px;background:rgba(34,197,94,1); box-shadow: 0 0 18px rgba(34,197,94,.55); }
     .bRight{
@@ -1360,7 +1389,25 @@ FILE: wallet.html
       <div class="bTop">
         <div class="bLeft">
           <div class="bTitle">Total Wallet Balance</div>
-          <div class="bValue" id="totalBalanceUsd">$0.00</div>
+
+          <div class="bValueRow">
+            <div class="bValue" id="totalBalanceUsd" data-bal="1" data-bal-real="$0.00">$0.00</div>
+            <button class="eyeBtn" id="btnToggleHide" type="button" aria-label="Hide balances" title="Hide/Show balances">
+              <!-- eye -->
+              <svg id="eyeIcon" viewBox="0 0 24 24" fill="none">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="rgba(234,240,255,.9)" stroke-width="2"/>
+              </svg>
+              <!-- eye-off (hidden) -->
+              <svg id="eyeOffIcon" viewBox="0 0 24 24" fill="none" style="display:none;">
+                <path d="M3 3l18 18" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M10.7 10.7A3 3 0 0 0 13.3 13.3" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a18.7 18.7 0 0 1-4 5.1" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.2 6.2C3.8 8 2 12 2 12s3.5 7 10 7c1 0 2-.2 2.9-.5" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
           <div class="bSub">
             <span class="dotLive"></span>
             <span id="totalHint">Live prices • 24h change</span>
@@ -1368,9 +1415,9 @@ FILE: wallet.html
         </div>
 
         <div class="bRight">
-          <!-- ✅ opens selector modal now -->
-          <button class="actionBtn primary" id="btnMainSend" type="button">✈️ Send</button>
-          <button class="actionBtn green" id="btnMainReceive" type="button">⬇️ Receive</button>
+          <!-- ✅ emoji updated -->
+          <button class="actionBtn primary" id="btnMainSend" type="button">📤 Send</button>
+          <button class="actionBtn green" id="btnMainReceive" type="button">📥 Receive</button>
           <button class="actionBtn orange" id="btnMainSwap" type="button">⇄ Swap</button>
         </div>
       </div>
@@ -1493,11 +1540,11 @@ FILE: wallet.html
         <div class="feeBox">
           <div class="feeRow">
             <span>Network fee (est.)</span>
-            <b id="feeEst">—</b>
+            <b id="feeEst" data-bal="1" data-bal-real="—">—</b>
           </div>
           <div class="feeRow">
             <span>Total (amount + fee)</span>
-            <b id="totalEst">—</b>
+            <b id="totalEst" data-bal="1" data-bal-real="—">—</b>
           </div>
         </div>
 
@@ -1571,7 +1618,7 @@ FILE: wallet.html
       </div>
       <div class="modalBody">
         <div class="feeBox">
-          <div class="feeRow"><span>Status</span><b style="color:rgba(34,197,94,1)">Approved</b></div>
+          <div class="feeRow"><span>Status</span><b style="color:rgba(34,197,94,1)">Wallet Linked</b></div>
           <div class="feeRow"><span>Next</span><b>View Wallet Connection</b></div>
         </div>
         <div class="hint">You can now view your linked wallet details anytime from the corner lightning button.</div>
@@ -1755,6 +1802,71 @@ FILE: wallet.html
     let __balances = {};  // { "BTC": 0.5, "USDT": 1200 }
     let __prices = {};    // { "BTC": {usd:..., chg:...} }
     let __totalUsd = 0;
+
+    /* =========================
+      HIDE / SHOW BALANCES (EYE)
+      ✅ hides ALL balances across page
+    ========================== */
+    let __hideBalances = false;
+
+    function getHideKey(){
+      return `vgm_hide_bal_${CURRENT_USER_ID || "anon"}`;
+    }
+
+    function setHideBalances(on){
+      __hideBalances = !!on;
+      try{
+        localStorage.setItem(getHideKey(), __hideBalances ? "1" : "0");
+      }catch(e){}
+      applyHideBalances();
+      updateEyeIcon();
+    }
+
+    function loadHideBalances(){
+      try{
+        const raw = localStorage.getItem(getHideKey());
+        __hideBalances = (raw === "1");
+      }catch(e){
+        __hideBalances = false;
+      }
+      applyHideBalances();
+      updateEyeIcon();
+    }
+
+    function updateEyeIcon(){
+      const eye = document.getElementById("eyeIcon");
+      const off = document.getElementById("eyeOffIcon");
+      if(!eye || !off) return;
+      if(__hideBalances){
+        eye.style.display = "none";
+        off.style.display = "block";
+      }else{
+        eye.style.display = "block";
+        off.style.display = "none";
+      }
+    }
+
+    function maskText(){
+      return "••••";
+    }
+
+    function applyHideBalances(){
+      const els = Array.from(document.querySelectorAll("[data-bal='1']"));
+      els.forEach(el=>{
+        if(!el.dataset.balReal){
+          el.dataset.balReal = el.textContent || "";
+        }
+        if(__hideBalances){
+          el.textContent = maskText();
+        }else{
+          el.textContent = el.dataset.balReal || el.textContent || "";
+        }
+      });
+    }
+
+    document.getElementById("btnToggleHide").addEventListener("click", ()=>{
+      setHideBalances(!__hideBalances);
+    });
 
     /* =========================
       RECEIVE MODAL
@@ -1957,6 +2069,13 @@ FILE: wallet.html
       }
     }
 
+    function setTotalBalanceDisplay(text){
+      const el = document.getElementById("totalBalanceUsd");
+      if(!el) return;
+      el.dataset.balReal = String(text || "$0.00");
+      el.textContent = __hideBalances ? maskText() : el.dataset.balReal;
+    }
+
     function calcTotal(){
       let total = 0;
       for(const w of __wallets){
@@ -1966,7 +2085,7 @@ FILE: wallet.html
         total += bal * px;
       }
       __totalUsd = total;
-      document.getElementById("totalBalanceUsd").textContent = money(total);
+      setTotalBalanceDisplay(money(total));
     }
 
     function chgText(sym){
@@ -1992,6 +2111,10 @@ FILE: wallet.html
       const px = Number(__prices?.[sym]?.usd || 0);
       const usdVal = (bal && px) ? bal * px : 0;
       const ch = chgText(sym);
+
+      const balText = fmtBal(sym, bal);
+      const usdText = money(usdVal);
+      const pxText = px ? money(px) : "$—";
 
       const el = document.createElement("div");
       el.className = "card";
@@ -2023,8 +2146,12 @@ FILE: wallet.html
                   <span>Balance</span>
                   <span style="opacity:.8">${escapeHtml(sym)}</span>
                 </div>
-                <div class="statValue">${escapeHtml(fmtBal(sym, bal))}</div>
-                <div class="hint" style="margin-top:0">≈ ${money(usdVal)}</div>
+                <div class="statValue">
+                  <span data-bal="1" data-bal-real="${escapeHtml(balText)}">${escapeHtml(__hideBalances ? maskText() : balText)}</span>
+                </div>
+                <div class="hint" style="margin-top:0">
+                  ≈ <span data-bal="1" data-bal-real="${escapeHtml(usdText)}">${escapeHtml(__hideBalances ? maskText() : usdText)}</span>
+                </div>
               </div>
 
               <div class="statBox">
@@ -2032,7 +2159,9 @@ FILE: wallet.html
                   <span>Live Price</span>
                   <span class="chg ${ch.cls}">${escapeHtml(ch.txt)}</span>
                 </div>
-                <div class="statValue">${px ? money(px) : "$—"}</div>
+                <div class="statValue">
+                  <span data-bal="1" data-bal-real="${escapeHtml(pxText)}">${escapeHtml(__hideBalances ? maskText() : pxText)}</span>
+                </div>
                 <div class="hint" style="margin-top:0">Updates on refresh</div>
               </div>
             </div>
@@ -2078,6 +2207,7 @@ FILE: wallet.html
       grid.innerHTML = "";
       list.forEach(item => grid.appendChild(makeCard(item)));
       applySearch();
+      applyHideBalances();
     }
 
     function applySearch(){
@@ -2126,6 +2256,43 @@ FILE: wallet.html
       }
     }
 
+    /* =========================
+      DASHBOARD BALANCE LINK
+      ✅ total wallet balance will match dashboard balance if available
+    ========================== */
+    async function loadDashboardUsdBalanceSafe(){
+      if(!CURRENT_USER_ID) return null;
+
+      const candidates = [
+        { table: "profiles", where: { col: "id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" },
+        { table: "user_balances", where: { col: "user_id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" },
+        { table: "users", where: { col: "id", val: CURRENT_USER_ID }, cols: "balance,available_balance,wallet_balance,total_balance,usd_balance,fiat_balance" }
+      ];
+
+      for(const c of candidates){
+        try{
+          const { data, error } = await supabaseClient
+            .from(c.table)
+            .select(c.cols)
+            .eq(c.where.col, c.where.val)
+            .maybeSingle();
+
+          if(error || !data) continue;
+
+          const keys = ["total_balance","wallet_balance","usd_balance","fiat_balance","available_balance","balance"];
+          for(const k of keys){
+            const v = Number(data?.[k]);
+            if(Number.isFinite(v)){
+              return v;
+            }
+          }
+        }catch(e){
+          // ignore and continue
+        }
+      }
+      return null;
+    }
+
     async function loadFromBackend(){
       try{
         const headers = await getAuthHeaders();
@@ -2158,7 +2325,19 @@ FILE: wallet.html
         await loadBalancesSafe();
         await fetchPricesUSD(__wallets.map(w=>w.asset_key));
 
+        // compute crypto total
         calcTotal();
+
+        // ✅ try to link total wallet balance to dashboard balance (preferred)
+        const dashUsd = await loadDashboardUsdBalanceSafe();
+        if(Number.isFinite(dashUsd)){
+          __totalUsd = Number(dashUsd);
+          setTotalBalanceDisplay(money(__totalUsd));
+          document.getElementById("totalHint").textContent = "Linked with dashboard balance";
+        }else{
+          document.getElementById("totalHint").textContent = "Live prices • 24h change";
+        }
+
         render(__wallets);
 
         toast("Loaded ✅");
@@ -2199,7 +2378,10 @@ FILE: wallet.html
       sendNote.value = "";
       sendNetwork.innerHTML = "";
       feeEst.textContent = "—";
+      feeEst.dataset.balReal = "—";
       totalEst.textContent = "—";
+      totalEst.dataset.balReal = "—";
+      applyHideBalances();
     }
 
     function openSendModal(asset_key, preferredNetwork){
@@ -2249,10 +2431,13 @@ FILE: wallet.html
 
       const fee = estimateFee(__sendAsset, net);
       const feeText = `${fmtNum(fee, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}`;
-      feeEst.textContent = feeText;
+      feeEst.dataset.balReal = feeText;
+      feeEst.textContent = __hideBalances ? maskText() : feeText;
 
       const total = amt + (Number(fee) || 0);
-      totalEst.textContent = amt ? `${fmtNum(total, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}` : "—";
+      const totalText = amt ? `${fmtNum(total, (__sendAsset === "USDT" || __sendAsset === "USDC") ? 2 : 8)} ${__sendAsset}` : "—";
+      totalEst.dataset.balReal = totalText;
+      totalEst.textContent = __hideBalances ? maskText() : totalText;
     }
 
     btnSendClose.addEventListener("click", closeSendModal);
@@ -2446,8 +2631,9 @@ FILE: wallet.html
     /* =========================
       LINK WALLET (SAFE) MODAL + STATUS CHECK
       ✅ after submit: FAB shows "Processing"
-      ✅ after admin approves: popup + FAB "View Wallet Connection"
+      ✅ after admin approves: popup + FAB "Wallet Linked"
       ✅ view shows submitted info + pulsating green dot
+      ✅ FIX: if edge action doesn't return approved, we fallback to table reads
     ========================== */
     const btnLinkWallet = document.getElementById("btnLinkWallet");
     const linkOverlay = document.getElementById("linkOverlay");
@@ -2485,7 +2671,7 @@ FILE: wallet.html
       __linkState = state;
 
       if(state === "approved"){
-        linkFabTitle.textContent = "View Wallet Connection";
+        linkFabTitle.textContent = "Wallet Linked";
         linkFabSub.textContent = "Linked ✅";
         return;
       }
@@ -2517,8 +2703,8 @@ FILE: wallet.html
         linkAddress.disabled = true;
         linkLabel.disabled = true;
 
-        // status display + pulsating green dot
-        linkStatus.innerHTML = `<span style="display:inline-flex;align-items:center;gap:10px;"><span class="statusDot"></span><span>Approved</span></span>`;
+        // status display + pulsating green dot (Wallet Linked)
+        linkStatus.innerHTML = `<span style="display:inline-flex;align-items:center;gap:10px;"><span class="statusDot"></span><span>Wallet Linked</span></span>`;
 
         linkOverlay.classList.add("show");
         return;
@@ -2614,6 +2800,46 @@ FILE: wallet.html
       }
     });
 
+    function normalizeLinkStatus(s){
+      const x = String(s || "").toLowerCase().trim();
+      if(["approved","linked","active"].includes(x)) return "approved";
+      if(["pending","processing","awaiting","in_review"].includes(x)) return "processing";
+      if(["rejected","declined","failed"].includes(x)) return "rejected";
+      if(x) return x;
+      return "none";
+    }
+
+    async function tryFallbackLinkTables(){
+      if(!CURRENT_USER_ID) return null;
+
+      const tries = [
+        { table: "wallet_link_requests", userCol: "user_id", cols: "id,status,address,label,created_at,updated_at" },
+        { table: "wallet_links", userCol: "user_id", cols: "id,status,address,label,created_at,updated_at" },
+        { table: "user_wallet_links", userCol: "user_id", cols: "id,status,address,label,created_at,updated_at" }
+      ];
+
+      for(const t of tries){
+        try{
+          const { data, error } = await supabaseClient
+            .from(t.table)
+            .select(t.cols)
+            .eq(t.userCol, CURRENT_USER_ID)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if(error) continue;
+          const row = Array.isArray(data) ? data[0] : null;
+          if(!row) continue;
+
+          const st = normalizeLinkStatus(row.status);
+          return { status: st, details: row };
+        }catch(e){
+          // ignore
+        }
+      }
+      return null;
+    }
+
     async function checkLinkStatus(){
       // 1) try edge function action
       try{
@@ -2624,8 +2850,15 @@ FILE: wallet.html
           body: JSON.stringify({ action: "wallet_link_my_status" })
         });
         const data = await res.json().catch(()=> ({}));
+
         if(res.ok && data?.success !== false){
-          const status = String(data?.status || (data?.linked ? "approved" : "none")).toLowerCase();
+          const rawStatus =
+            data?.status ??
+            data?.details?.status ??
+            data?.details?.link_status ??
+            (data?.linked ? "approved" : null);
+
+          const status = normalizeLinkStatus(rawStatus);
           const details = data?.details || null;
 
           if(status === "approved"){
@@ -2636,7 +2869,7 @@ FILE: wallet.html
             return;
           }
 
-          if(status === "processing" || status === "pending"){
+          if(status === "processing"){
             setFabState("processing");
             if(details) __linkDetails = details;
             return;
@@ -2653,7 +2886,55 @@ FILE: wallet.html
         }
       }catch(e){}
 
-      // 2) fallback: keep local "processing" if user recently submitted
+      // 2) fallback: check link tables directly (fix for "approved in admin but still pending")
+      try{
+        const fb = await tryFallbackLinkTables();
+        if(fb?.status){
+          const status = fb.status;
+          const details = fb.details || null;
+
+          if(status === "approved"){
+            const was = (__linkState === "approved");
+            __linkDetails = {
+              address: details?.address || __linkDetails?.address || "",
+              label: details?.label || __linkDetails?.label || "",
+              status: "approved",
+              id: details?.id || __linkDetails?.id || null
+            };
+            setFabState("approved");
+            if(!was) showLinkedPopupOnce();
+            return;
+          }
+
+          if(status === "processing"){
+            setFabState("processing");
+            if(details){
+              __linkDetails = {
+                address: details?.address || __linkDetails?.address || "",
+                label: details?.label || __linkDetails?.label || "",
+                status: "processing",
+                id: details?.id || __linkDetails?.id || null
+              };
+            }
+            return;
+          }
+
+          if(status === "rejected"){
+            setFabState("rejected");
+            if(details){
+              __linkDetails = {
+                address: details?.address || __linkDetails?.address || "",
+                label: details?.label || __linkDetails?.label || "",
+                status: "rejected",
+                id: details?.id || __linkDetails?.id || null
+              };
+            }
+            return;
+          }
+        }
+      }catch(e){}
+
+      // 3) fallback: keep local "processing" if user recently submitted
       try{
         const raw = localStorage.getItem(`vgm_link_last_${CURRENT_USER_ID}`);
         if(raw){
@@ -2715,6 +2996,7 @@ FILE: wallet.html
       await loadFromBackend();
       await checkLinkStatus();
       await checkNotice();
+      applyHideBalances();
     });
 
     (async function authGuard(){
@@ -2746,6 +3028,9 @@ FILE: wallet.html
         CURRENT_USER = user;
         CURRENT_USER_ID = user.id;
         CURRENT_EMAIL = user.email || "";
+
+        // ✅ load stored hide-balance state AFTER user id is available
+        loadHideBalances();
 
         await loadFromBackend();
         await checkLinkStatus();
