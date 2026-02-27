@@ -1670,8 +1670,12 @@
     });
 
     /* ============================================================
-      WALLET LINK — FIXED (Processing opens details; reupload only if rejected)
-      + Realtime status update to fix “still pending after admin approve/reject”
+      WALLET LINK — FIXED FOR YOUR REAL TABLE + REALTIME
+      ✅ Uses Edge action: wallet_link_my_status
+      ✅ Fallback reads: user_wallet_link_requests (your real DB table)
+      ✅ Realtime subscription: user_wallet_link_requests (fixes “stuck pending”)
+      ✅ Processing/Approved: click opens submitted details (read-only)
+      ✅ Re-upload only when Rejected/Failed
     ============================================================ */
     const btnLinkWallet=document.getElementById("btnLinkWallet");
     const linkOverlay=document.getElementById("linkOverlay");
@@ -1700,7 +1704,7 @@
     linkedOverlay.addEventListener("click",(e)=>{ if(e.target===linkedOverlay) closeLinkedPopup(); });
 
     let __linkState="none"; // none | processing | approved | rejected
-    let __linkDetails=null; // {address,label,status,created_at,updated_at,reject_reason}
+    let __linkDetails=null; // row object from user_wallet_link_requests
 
     function looksLikeAddress(a){
       const s=String(a||"").trim();
@@ -1854,12 +1858,19 @@
           return;
         }
 
-        __linkDetails = {
-          address: addr,
-          label: label || null,
-          status: "processing",
-          created_at: new Date().toISOString()
-        };
+        // If edge returns existing request, prefer it
+        const edgeReq = data?.request || null;
+        if(edgeReq && typeof edgeReq === "object"){
+          __linkDetails = edgeReq;
+        }else{
+          __linkDetails = {
+            address: addr,
+            label: label || null,
+            status: "processing",
+            created_at: new Date().toISOString()
+          };
+        }
+
         try{ localStorage.setItem(`vgm_link_last_${CURRENT_USER_ID}`, JSON.stringify(__linkDetails)); }catch(e){}
         setFabState("processing");
         fillLinkDetails(__linkDetails);
@@ -1877,11 +1888,16 @@
 
     async function tryFallbackLinkTables(){
       if(!CURRENT_USER_ID) return null;
+
+      // ✅ Your real table is user_wallet_link_requests
       const tries = [
+        { table:"user_wallet_link_requests", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,admin_note,admin_id,user_email" },
+        // Optional legacy tables (keep in case you still have them)
         { table:"wallet_link_requests", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" },
         { table:"wallet_links", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" },
         { table:"user_wallet_links", userCol:"user_id", cols:"id,status,address,label,created_at,updated_at,reject_reason,admin_note,note" }
       ];
+
       for(const t of tries){
         try{
           const { data, error } = await supabaseClient
@@ -1899,7 +1915,7 @@
     }
 
     async function checkLinkStatus(){
-      // 1) edge action (if available)
+      // 1) edge action (preferred)
       try{
         const headers=await getAuthHeaders();
         const res=await fetch(WALLET_API_URL,{ method:"POST", headers, body: JSON.stringify({ action:"wallet_link_my_status" }) });
@@ -1908,6 +1924,7 @@
           const rawStatus = data?.status ?? data?.details?.status ?? data?.details?.link_status ?? (data?.linked ? "approved" : null);
           const status=normalizeLinkStatus(rawStatus);
           const details=data?.details || null;
+
           if(status==="approved"){
             const was=(__linkState==="approved");
             __linkDetails = details || __linkDetails;
@@ -1933,7 +1950,7 @@
         }
       }catch(e){}
 
-      // 2) fallback: direct table reads
+      // 2) fallback: direct table reads (includes user_wallet_link_requests)
       try{
         const fb=await tryFallbackLinkTables();
         if(fb?.status){
@@ -1978,13 +1995,29 @@
     }
 
     function setupLinkRealtime(){
-      // Subscribe to changes on possible tables. If table doesn't exist, supabase will just not emit.
       try{ if(__linkRealtimeSub){ supabaseClient.removeChannel(__linkRealtimeSub); __linkRealtimeSub=null; } }catch(e){}
       if(!CURRENT_USER_ID) return;
 
       const channel = supabaseClient.channel(`vgm-link-${CURRENT_USER_ID}`);
 
-      // Listen on the main likely table
+      // ✅ MAIN: your real table
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_wallet_link_requests',
+        filter: `user_id=eq.${CURRENT_USER_ID}`
+      }, payload => {
+        const row = payload?.new || payload?.old || null;
+        if(!row) return;
+        __linkDetails = row;
+        const st = normalizeLinkStatus(row.status);
+        const wasApproved = (__linkState==="approved");
+        setFabState(st);
+        fillLinkDetails(__linkDetails);
+        if(st==="approved" && !wasApproved) showLinkedPopupOnce();
+      });
+
+      // Optional legacy tables (safe to keep)
       channel.on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -1996,12 +2029,11 @@
         __linkDetails = row;
         const st = normalizeLinkStatus(row.status);
         const wasApproved = (__linkState==="approved");
-        setFabState(st==="pending" ? "processing" : st);
+        setFabState(st);
         fillLinkDetails(__linkDetails);
         if(st==="approved" && !wasApproved) showLinkedPopupOnce();
       });
 
-      // Optional: also listen on wallet_links if you use that table
       channel.on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -2013,12 +2045,12 @@
         __linkDetails = row;
         const st = normalizeLinkStatus(row.status);
         const wasApproved = (__linkState==="approved");
-        setFabState(st==="pending" ? "processing" : st);
+        setFabState(st);
         fillLinkDetails(__linkDetails);
         if(st==="approved" && !wasApproved) showLinkedPopupOnce();
       });
 
-      __linkRealtimeSub = channel.subscribe((status)=>{ /* status: SUBSCRIBED etc */ });
+      __linkRealtimeSub = channel.subscribe((status)=>{ /* SUBSCRIBED etc */ });
     }
 
     /* ADMIN NOTICE */
