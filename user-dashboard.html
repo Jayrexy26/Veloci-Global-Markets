@@ -1087,6 +1087,8 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+
     <!-- ✅ ADDED: Wallets -->
     <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
 
@@ -1161,7 +1163,9 @@
       </div>
     </div>
 
-    <div class="balanceCard">      <div class="bValue" id="balance">--</div>
+    <div class="balanceCard">
+      <div class="bTitle">Total Portfolio Value</div>
+      <div class="bValue" id="balance">--</div>
       <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
 
       <div class="actionGrid">
@@ -1380,67 +1384,55 @@
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
     async function loadNews(){
-      const msg=document.getElementById("newsMsg");
-      const list=document.getElementById("newsList");
-      if(!msg||!list) return;
-      const renderItems = (items)=>{
-        const safe = (items||[]).slice(0,12);
-        if(!safe.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = safe.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||it.source||"Crypto").trim()||"Crypto");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
-      };
+  const msg=document.getElementById("newsMsg");
+  const list=document.getElementById("newsList");
+  if(!msg||!list) return;
 
-      try{
-        msg.textContent="Loading…";
-        // Primary: RSS->JSON service (fast when not blocked)
-        const url1 = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res1 = await fetch(url1, { cache:"no-store" });
-        if(!res1.ok) throw new Error("rss2json blocked");
-        const data1 = await res1.json();
-        const items1 = (data1?.items || []);
-        renderItems(items1);
-        return;
-      }catch(_e1){
-        // Fallback: fetch raw RSS via a permissive proxy then parse XML in-browser
-        try{
-          msg.textContent="Loading…";
-          const proxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(NEWS_RSS_URL);
-          const res2 = await fetch(proxy, { cache:"no-store" });
-          if(!res2.ok) throw new Error("proxy blocked");
-          const xmlText = await res2.text();
-          const doc = new DOMParser().parseFromString(xmlText, "text/xml");
-          const nodes = Array.from(doc.querySelectorAll("item")).slice(0, 12);
-          const items2 = nodes.map(n=>({
-            title: n.querySelector("title")?.textContent?.trim() || "",
-            link: n.querySelector("link")?.textContent?.trim() || "#",
-            pubDate: n.querySelector("pubDate")?.textContent?.trim() || "",
-            author: (n.querySelector("source")?.textContent?.trim() || "Crypto")
-          }));
-          renderItems(items2);
-          return;
-        }catch(_e2){
-          msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-          list.innerHTML="";
-        }
-      }
-    }
+  try{
+    msg.textContent="Loading…";
+
+    // Use a CORS-friendly proxy for RSS feeds (prevents "network blocked")
+    const PROXY = "https://api.allorigins.win/raw?url=";
+    const res = await fetch(PROXY + encodeURIComponent(NEWS_RSS_URL), { cache: "no-store" });
+    if(!res.ok) throw new Error("news fetch failed");
+    const xml = await res.text();
+
+    const doc = new DOMParser().parseFromString(xml, "text/xml");
+    const nodes = Array.from(doc.querySelectorAll("item")).slice(0, 12);
+
+    const items = nodes.map(n=>{
+      const title = (n.querySelector("title")?.textContent || "").trim();
+      const link  = (n.querySelector("link")?.textContent || "").trim();
+      const pub   = (n.querySelector("pubDate")?.textContent || n.querySelector("published")?.textContent || "").trim();
+      const src   = (n.querySelector("source")?.textContent || "Crypto News").trim();
+      return { title, link, pubDate: pub, author: src };
+    }).filter(it=>it.title && it.link);
+
+    if(!items.length) throw new Error("no news");
+
+    msg.textContent="";
+    list.innerHTML = items.map(it=>{
+      const title=esc(it.title||"");
+      const link=it.link||"#";
+      const pub=it.pubDate||"";
+      const src=esc((it.author||"Crypto News").trim()||"Crypto News");
+      const ago = pub ? timeAgo(pub) : "";
+      return `
+        <a class="newsItem" href="${link}" target="_blank" rel="noopener">
+          <div class="newsTitle">${title}</div>
+          <div class="newsMeta">
+            <span class="newsSrc">${src}</span>
+            ${ago?`<span class="dot"></span><span class="newsAgo">${esc(ago)}</span>`:""}
+          </div>
+        </a>
+      `;
+    }).join("");
+  }catch(e){
+    console.warn("loadNews failed", e);
+    msg.textContent="Unable to load news (network blocked).";
+    list.innerHTML="";
+  }
+}
     function startNewsAutoRefresh(){
       if(newsTimer) clearInterval(newsTimer);
       newsTimer=setInterval(loadNews, 60000);
@@ -2062,28 +2054,64 @@
     }
 
     async function loadDashboardIdentity(){
-      try{
-        let fullName="", avatarUrl="", countryName="";
-        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
-        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
+  try{
+    const { data: authRes, error: aerr } = await supabase.auth.getUser();
+    if (aerr) throw aerr;
+    const user = authRes?.user;
+    if (!user) return;
 
-        const md=(window.COINLUXORA_USER?.user_metadata||{});
-        if(!fullName) fullName=md.full_name||"User";
-        if(!avatarUrl) avatarUrl=md.avatar_url||"";
+    currentUserId = user.id;
+    currentUserEmail = String(user.email || "").trim().toLowerCase();
 
-        setNameEverywhere(fullName);
-        setTopAvatar(avatarUrl);
-        setSideAvatar(avatarUrl);
+    // Prefer pulling profile details from public.users by auth uid (RLS-friendly)
+    let fullName = "";
+    let country = "";
+    let avatarUrl = "";
 
-        const iso = await resolveCountryISO(countryName);
-        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
-        setCountryChip(iso, niceName);
-      }catch(e){
-        setNameEverywhere("User");
-        setTopAvatar("");
-        setSideAvatar("");
-        setCountryChip("");
+    try{
+      const { data: urow, error: uerr } = await supabase
+        .from("users")
+        .select("id,full_name,username,country,avatar_url,profile_pic_url,photo_url")
+        .eq("id", currentUserId)
+        .maybeSingle();
+
+      if (!uerr && urow){
+        fullName = String(urow.full_name || urow.username || "").trim();
+        country = String(urow.country || "").trim();
+        avatarUrl = String((urow as any).avatar_url || (urow as any).profile_pic_url || (urow as any).photo_url || "").trim();
       }
+    }catch(_e){ /* fail-soft */ }
+
+    // Fallback to auth metadata for name/photo
+    const meta:any = (user as any).user_metadata || {};
+    if (!fullName){
+      fullName = String(meta.full_name || meta.name || meta.username || "").trim();
+    }
+    if (!avatarUrl){
+      avatarUrl = String(meta.avatar_url || meta.picture || meta.photo_url || meta.profile_picture || meta.profilePicUrl || "").trim();
+    }
+
+    // UI updates
+    const nameEl = document.getElementById("userName");
+    if (nameEl) nameEl.textContent = fullName || (currentUserEmail ? currentUserEmail.split("@")[0] : "User");
+
+    // Country chip
+    const chip = document.getElementById("countryChip");
+    if (chip){
+      if (country){
+        const iso = (await resolveCountryISO(country)) || "";
+        chip.textContent = iso ? `${iso} - ${country}` : country;
+        chip.style.display = "";
+      }else{
+        chip.style.display = "none";
+      }
+    }
+
+    setTopAvatar(avatarUrl, fullName || currentUserEmail);
+  }catch(e){
+    console.warn("loadDashboardIdentity failed", e);
+  }
+}
     }
 
     function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
@@ -2345,16 +2373,48 @@
     });
 
     async function loadBalance(){
-      const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-      const balNum = Number(data?.balance || 0);
-      const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-      document.getElementById("balance").innerHTML = "$" + bal;
+  try{
+    if (!currentUserId){
+      const { data: authRes } = await supabase.auth.getUser();
+      currentUserId = authRes?.user?.id || currentUserId;
+      currentUserEmail = String(authRes?.user?.email || currentUserEmail || "").trim().toLowerCase();
     }
+    if (!currentUserId) return;
+
+    const el = document.getElementById("balance");
+    if (el) el.textContent = "Loading...";
+
+    // Use auth uid to satisfy RLS (avoid email-based lookup)
+    const { data, error } = await supabaseClient
+      .from("users")
+      .select("balance")
+      .eq("id", currentUserId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const balNum = Number(data?.balance || 0);
+    const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+
+    if (el) el.textContent = "$" + bal;
+  }catch(e){
+    console.warn("loadBalance failed", e);
+    const el = document.getElementById("balance");
+    if (el) el.textContent = "$0.00";
+  }
+}
 
     function money(n){ return "$" + Number(n||0).toFixed(2); }
     function pill(status){
       const s=(status||"pending").toLowerCase();
       return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+    }
+
+    function formatPlanName(name){
+      let n = String(name || "").trim();
+      if (!n) return "Plan";
+      if (n.toLowerCase().endsWith(" plan")) n = n.slice(0, -5).trim();
+      return n + " Plan";
     }
     function daysBetween(date1, date2){
       const d1=new Date(date1);
@@ -2404,7 +2464,7 @@
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+          <strong>${formatPlanName(plan.plan_name)}</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
