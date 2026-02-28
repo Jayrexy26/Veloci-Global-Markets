@@ -1087,6 +1087,8 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+
     <!-- ✅ ADDED: Wallets -->
     <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
 
@@ -1337,7 +1339,7 @@
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-    const supabase=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1360,13 +1362,20 @@
     let top10Timer=null;
 
     /* ============================================================
-      ✅ NEWS
+      ✅ NEWS (FIXED)
+      - Removes "network blocked" by using CORS-friendly sources + fallbacks
+      - Uses timeout + offline cache so UI never hangs
     ============================================================ */
     let newsTimer=null;
-    const NEWS_RSS_URL="https://cryptopanic.com/news/rss/";
-    const RSS_TO_JSON="https://api.rss2json.com/v1/api.json?rss_url=";
 
-    async function timeAgo(ts){
+    // Sources (fallback chain)
+    const NEWS_FEED_RSS = "https://cryptopanic.com/news/rss/";
+    const NEWS_ALLORIGINS_RAW = "https://api.allorigins.win/raw?url="; // CORS-safe RSS proxy
+    const NEWS_CRYPTOCOMPARE = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
+    const NEWS_COINGECKO = "https://api.coingecko.com/api/v3/news";
+    const NEWS_CACHE_KEY = "vgm_news_cache_v1";
+
+    function timeAgo(ts){
       try{
         const t=new Date(ts).getTime();
         const now=Date.now();
@@ -1378,41 +1387,181 @@
         return s+"s ago";
       }catch(e){return ""}
     }
-    async function esc(s){
+    function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    function initNewsWidget(){
-      const container = document.getElementById("newsList");
-      const msg = document.getElementById("newsMsg");
-      if(msg) msg.textContent = "";
-      if(!container) return;
 
-      // TradingView Timeline widget (avoids CORS/network blocks from JSON news APIs)
-      container.innerHTML = `
-        <div id="tvNewsWidget" style="width:100%;height:420px;"></div>
-      `;
-
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.async = true;
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-      script.innerHTML = JSON.stringify({
-        "feedMode": "all_symbols",
-        "colorTheme": "dark",
-        "isTransparent": true,
-        "displayMode": "regular",
-        "width": "100%",
-        "height": 420,
-        "locale": "en"
-      });
-
-      const host = container.querySelector("#tvNewsWidget");
-      if(host) host.appendChild(script);
+    async function fetchWithTimeout(url, ms=9000, opts={}){
+      const ctrl = new AbortController();
+      const id = setTimeout(()=>ctrl.abort(), ms);
+      try{
+        const res = await fetch(url, { ...opts, signal: ctrl.signal, cache: "no-store" });
+        return res;
+      } finally {
+        clearTimeout(id);
+      }
     }
 
+    function parseRssItems(xmlText){
+      const doc = new DOMParser().parseFromString(xmlText, "text/xml");
+      const nodes = Array.from(doc.querySelectorAll("item")).slice(0, 12);
+      return nodes.map(n=>{
+        const title = (n.querySelector("title")?.textContent || "").trim();
+        const link  = (n.querySelector("link")?.textContent || "").trim();
+        const pub   = (n.querySelector("pubDate")?.textContent || "").trim();
+        return {
+          title,
+          link,
+          publishedAt: pub ? new Date(pub).toISOString() : "",
+          source: "CryptoPanic (RSS)"
+        };
+      }).filter(x=>x.title && x.link);
+    }
 
+    function normalizeCryptoCompare(json){
+      const items = (json && json.Data) ? json.Data : [];
+      return items.slice(0, 12).map(it=>({
+        title: (it.title||"").trim(),
+        link: (it.url||"").trim(),
+        publishedAt: it.published_on ? new Date(it.published_on*1000).toISOString() : "",
+        source: (it.source_info?.name || "CryptoCompare").trim()
+      })).filter(x=>x.title && x.link);
+    }
 
+    function normalizeCoinGecko(json){
+      // CoinGecko's /news shape can vary; handle common fields defensively.
+      const arr = Array.isArray(json) ? json : (json?.data || json?.articles || json?.news || []);
+      const items = Array.isArray(arr) ? arr : [];
+      return items.slice(0, 12).map(it=>{
+        const title = (it.title || it.headline || "").trim();
+        const link  = (it.url || it.link || "").trim();
+        const dt    = it.created_at || it.published_at || it.pubDate || it.date || "";
+        const src   = (it.author || it.source || it.site || "CoinGecko").toString().trim();
+        let iso="";
+        try{ iso = dt ? new Date(dt).toISOString() : ""; }catch(e){ iso=""; }
+        return { title, link, publishedAt: iso, source: src || "CoinGecko" };
+      }).filter(x=>x.title && x.link);
+    }
 
+    function renderNews(items, modeTag="News"){
+      const msg=document.getElementById("newsMsg");
+      const list=document.getElementById("newsList");
+      if(!msg||!list) return;
+
+      if(!items || !items.length){
+        msg.innerHTML="<span class='err'>No news available right now.</span>";
+        list.innerHTML="";
+        return;
+      }
+
+      msg.textContent="";
+      list.innerHTML = items.slice(0,12).map(it=>{
+        const title=esc(it.title||"");
+        const link=it.link||"#";
+        const src=esc((it.source||"Crypto").trim()||"Crypto");
+        const pub=it.publishedAt||"";
+        const ago = pub ? timeAgo(pub) : "";
+        return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
+          <div class="newsTop">
+            <div class="newsTitle">${title}</div>
+          </div>
+          <div class="newsMeta">
+            <span class="newsTag">${esc(modeTag)}</span>
+            <span>${src}</span>
+            ${ago?`<span>• ${ago}</span>`:""}
+          </div>
+          <div class="newsBottom">Tap to open full story</div>
+        </a>`;
+      }).join("");
+    }
+
+    function cacheNews(items){
+      try{
+        const safe = (items||[]).slice(0, 20).map(x=>({
+          title: String(x.title||""),
+          link: String(x.link||""),
+          publishedAt: String(x.publishedAt||""),
+          source: String(x.source||"")
+        }));
+        localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ t: Date.now(), items: safe }));
+      }catch(e){}
+    }
+    function readCachedNews(){
+      try{
+        const raw = localStorage.getItem(NEWS_CACHE_KEY);
+        if(!raw) return [];
+        const obj = JSON.parse(raw);
+        return Array.isArray(obj?.items) ? obj.items : [];
+      }catch(e){ return []; }
+    }
+
+    async function loadNews(){
+      const msg=document.getElementById("newsMsg");
+      const list=document.getElementById("newsList");
+      if(!msg||!list) return;
+
+      msg.textContent="Loading…";
+      list.innerHTML="";
+
+      // 1) RSS via AllOrigins (most CORS-friendly)
+      try{
+        const rssUrl = NEWS_ALLORIGINS_RAW + encodeURIComponent(NEWS_FEED_RSS);
+        const res = await fetchWithTimeout(rssUrl, 9000);
+        if(res.ok){
+          const xml = await res.text();
+          const items = parseRssItems(xml);
+          if(items.length){
+            renderNews(items, "News");
+            cacheNews(items);
+            return;
+          }
+        }
+      }catch(e){ /* fallthrough */ }
+
+      // 2) CryptoCompare public news (usually CORS OK)
+      try{
+        const res = await fetchWithTimeout(NEWS_CRYPTOCOMPARE, 9000);
+        if(res.ok){
+          const json = await res.json();
+          const items = normalizeCryptoCompare(json);
+          if(items.length){
+            renderNews(items, "News");
+            cacheNews(items);
+            return;
+          }
+        }
+      }catch(e){ /* fallthrough */ }
+
+      // 3) CoinGecko news (best-effort)
+      try{
+        const res = await fetchWithTimeout(NEWS_COINGECKO, 9000);
+        if(res.ok){
+          const json = await res.json();
+          const items = normalizeCoinGecko(json);
+          if(items.length){
+            renderNews(items, "News");
+            cacheNews(items);
+            return;
+          }
+        }
+      }catch(e){ /* fallthrough */ }
+
+      // 4) Offline cache
+      const cached = readCachedNews();
+      if(cached.length){
+        renderNews(cached, "Offline");
+        msg.innerHTML="<span style='color:var(--warn);font-weight:1000'>Live news unavailable — showing cached headlines.</span>";
+        return;
+      }
+
+      msg.innerHTML="<span class='err'>Unable to load news right now. Please check your network.</span>";
+      list.innerHTML="";
+    }
+
+    function startNewsAutoRefresh(){
+      if(newsTimer) clearInterval(newsTimer);
+      newsTimer=setInterval(loadNews, 60000);
+    }
 
     /* ============================================================
       ✅ ORDER BOOK PAIRS (SEARCHABLE)
@@ -1781,7 +1930,7 @@
       if(!asks.length || !bids.length) return null;
       return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
     }
-    async function handleDepthMessage_Bybit(raw){
+    function handleDepthMessage_Bybit(raw){
       const d=raw?.data;
       if(!d) return null;
       const asks=(d?.a || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
@@ -1789,7 +1938,7 @@
       if(!asks.length || !bids.length) return null;
       return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
     }
-    async function handleDepthMessage_OKX(raw){
+    function handleDepthMessage_OKX(raw){
       const d=raw?.data?.[0];
       if(!d) return null;
       const asks=(d?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
@@ -1891,40 +2040,7 @@
       document.body.classList.remove("menuOpen");
     }
 
-    
-    function showGate(title, message, opts){
-      const gate = document.getElementById("authGate");
-      const card = gate?.querySelector(".authCard");
-      if(!gate || !card) return;
-
-      gate.dataset.lock = "1";
-      const primaryText = opts?.primaryText || "Login";
-      const primaryHref = opts?.primaryHref || "login.html";
-
-      card.innerHTML = `
-        <div class="authLogoWrap">
-          <img class="authLogo" src="assets/vgm-logo.png" alt="Veloci"/>
-        </div>
-        <div class="authTitle">${escapeHtml(title || "Access required")}</div>
-        <div class="authMsg">${escapeHtml(message || "Please sign in to continue.")}</div>
-        <div class="authBtns">
-          <a class="authBtnPrimary" href="${primaryHref}">${escapeHtml(primaryText)}</a>
-          <button class="authBtnGhost" type="button" id="authGateRefreshBtn">Refresh</button>
-        </div>
-      `;
-      const refreshBtn = document.getElementById("authGateRefreshBtn");
-      if(refreshBtn) refreshBtn.onclick = ()=> window.location.reload();
-      gate.style.display = "flex";
-    }
-
-    function escapeHtml(str){
-      return String(str ?? "").replace(/[&<>"']/g, (c)=>({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]));
-    }
-function hideGate(){
-      const gate = document.getElementById("authGate");
-      if(gate) delete gate.dataset.lock;
+    function hideGate(){
       const g=document.getElementById("authGate");
       if(g) g.style.display="none";
     }
@@ -2012,19 +2128,19 @@ function hideGate(){
       el.style.display="inline-flex";
     }
 
-    async function normalizeCountryText(v){
+    function normalizeCountryText(v){
       if(!v) return "";
       return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
     }
 
-    async function isoToCountryName(iso){
+    function isoToCountryName(iso){
       if(!iso) return "";
       const c = iso.toUpperCase();
       const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
       return map[c] || "";
     }
 
-    async function countryNameToISO(name){
+    function countryNameToISO(name){
       if(!name) return "";
       const raw = String(name).trim();
       if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
@@ -2043,7 +2159,7 @@ function hideGate(){
       }catch(e){}
       return "";
     }
-    async function detectCountryFromLocale(){
+    function detectCountryFromLocale(){
       try{
         const loc = (navigator.language || "").toUpperCase();
         const parts = loc.split("-");
@@ -2052,8 +2168,7 @@ function hideGate(){
       return "";
     }
 
-    async async function resolveCountryISO(countryNameFromDB){
-      // Best-effort ISO country code for the dashboard chip
+    async function resolveCountryISO(countryNameFromDB){
       let iso = countryNameToISO(countryNameFromDB);
       if(iso) return iso;
       iso = await detectCountryFromIP();
@@ -2063,49 +2178,156 @@ function hideGate(){
       return "";
     }
 
-    async function loadDashboardIdentity(user){
-      const nameEl = document.getElementById("dashName");
-      const emailEl = document.getElementById("dashEmail");
-      const pfpEl = document.getElementById("dashPfp");
-
-      const md = (user?.user_metadata || {});
-      let name = String(md.full_name || md.name || md.username || user?.email || "User");
-      let avatar = String(md.avatar_url || md.picture || "");
-
-      // Try public.users (preferred for your dashboard uploads)
+    async function loadDashboardIdentity(){
       try{
-        const { data, error } = await supabase
-          .from("users")
-          .select("full_name,avatar_url,email")
-          .eq("id", user.id)
-          .order("created_at", { ascending:false })
-          .limit(1)
-          .maybeSingle();
+        let fullName="", avatarUrl="", countryName="";
+        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
 
-        if(!error && data){
-          if(data.full_name) name = String(data.full_name);
-          if(data.email) user.email = String(data.email);
-          if(data.avatar_url) avatar = String(data.avatar_url);
-        }
-      }catch(_e){}
+        const md=(window.COINLUXORA_USER?.user_metadata||{});
+        if(!fullName) fullName=md.full_name||"User";
+        if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
-      if(nameEl) nameEl.textContent = name;
-      if(emailEl) emailEl.textContent = (user?.email || "").toLowerCase();
+        setNameEverywhere(fullName);
+        setTopAvatar(avatarUrl);
+        setSideAvatar(avatarUrl);
 
-      if(pfpEl){
-        if(avatar){
-          pfpEl.style.backgroundImage = `url('${avatar}')`;
-          pfpEl.style.backgroundSize = "cover";
-          pfpEl.style.backgroundPosition = "center";
-          pfpEl.textContent = "";
-        }else{
-          pfpEl.style.backgroundImage = "none";
-          pfpEl.textContent = String(name).trim().charAt(0).toUpperCase() || "U";
-        }
+        const iso = await resolveCountryISO(countryName);
+        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+        setCountryChip(iso, niceName);
+      }catch(e){
+        setNameEverywhere("User");
+        setTopAvatar("");
+        setSideAvatar("");
+        setCountryChip("");
       }
     }
 
+    function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
+      const root=document.getElementById(elId);
+      root.innerHTML = `
+        <button class="ddBtn" type="button">
+          <div class="ddLeft">
+            <div class="ddIcon">◈</div>
+            <div class="ddName">Select</div>
+          </div>
+          <div>▾</div>
+        </button>
+        <div class="ddPanel">
+          <input class="ddSearch" placeholder="Search..." />
+          <div class="ddList"></div>
+        </div>
+      `;
+      const btn=root.querySelector(".ddBtn");
+      const panel=root.querySelector(".ddPanel");
+      const list=root.querySelector(".ddList");
+      const search=root.querySelector(".ddSearch");
+      const nameEl=root.querySelector(".ddName");
 
+      let renderItems = items;
+
+      function render(filter=""){
+        const q=filter.trim().toLowerCase();
+        if(!q){ renderItems = items; }
+        else{ renderItems = items.filter(x => getSearch(x).includes(q)); }
+        const MAX = Math.min(renderItems.length, 600);
+        const slice = renderItems.slice(0, MAX);
+
+        list.innerHTML = slice.map(x => {
+          const lab=getLabel(x);
+          return `<div class="ddItem" data-id="${encodeURIComponent(JSON.stringify(x))}">
+            <span>${lab}</span>
+            <small>tap</small>
+          </div>`;
+        }).join("") || `<div class="ddItem"><span>No results</span></div>`;
+
+        if(renderItems.length > MAX){
+          const remain = renderItems.length - MAX;
+          list.innerHTML += `<div class="ddItem" style="opacity:.7"><span>Scroll/search to narrow results (${remain} more)…</span></div>`;
+        }
+      }
+
+      function setSelected(obj){
+        nameEl.textContent = getLabel(obj);
+        onPick(obj);
+      }
+
+      if(initial) setSelected(initial);
+      render("");
+
+      btn.addEventListener("click",(e)=>{
+        e.stopPropagation();
+        panel.classList.toggle("show");
+        if(panel.classList.contains("show")){
+          search.value="";
+          render("");
+          setTimeout(()=>search.focus(),40);
+        }
+      });
+
+      search.addEventListener("input",()=>render(search.value));
+
+      list.addEventListener("click",(e)=>{
+        const item=e.target.closest(".ddItem");
+        if(!item) return;
+        const raw=item.getAttribute("data-id");
+        if(!raw) return;
+        try{
+          const obj=JSON.parse(decodeURIComponent(raw));
+          setSelected(obj);
+          panel.classList.remove("show");
+        }catch{}
+      });
+
+      document.addEventListener("click",(e)=>{
+        if(!root.contains(e.target)) panel.classList.remove("show");
+      });
+    }
+
+    const FAVORITES = [
+      { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
+      { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
+      { id:"tether", label:"Tether (USDT)", icon:"₮", symbol:"usdt" },
+      { id:"binancecoin", label:"BNB (BNB)", icon:"◎", symbol:"bnb" },
+      { id:"solana", label:"Solana (SOL)", icon:"⟠", symbol:"sol" },
+      { id:"ripple", label:"XRP (XRP)", icon:"✕", symbol:"xrp" }
+    ];
+
+    async function loadCoinGeckoLists(){
+      try{
+        const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
+        const fiats = await fiatRes.json();
+        FIATS = (fiats || []).map(x => String(x).toUpperCase());
+      }catch{
+        FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
+      }
+
+      try{
+        const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
+        const coins = await coinRes.json();
+        const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
+        const list = [];
+
+        for(const c of (coins||[])){
+          if(!c?.id || !c?.name) continue;
+          if(favMap.has(c.id)) continue;
+          const sym = (c.symbol||"").toLowerCase();
+          list.push({ id:c.id, label:`${c.name}${sym?` (${sym.toUpperCase()})`:""}`, icon:"◈", symbol:sym });
+        }
+        ALL_COINS = [...FAVORITES, ...list];
+      }catch{
+        ALL_COINS = [...FAVORITES];
+      }
+
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+
+      mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{ selectedCryptoA=x; }, selectedCryptoA);
+      mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedCryptoB=x; }, selectedCryptoB);
+      mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatA=x; }, selectedFiatA);
+      mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatB=x; }, selectedFiatB);
+
+      await loadFxRates();
+    }
 
     async function loadFxRates(){
       try{
@@ -2122,7 +2344,7 @@ function hideGate(){
       cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
       const tmp = selectedCryptoA; selectedCryptoA = selectedCryptoB; selectedCryptoB = tmp;
 
-      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label, icon:"$", symbol:f.toLowerCase() }));
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
 
       if(cryptoDirection === "crypto_to_fiat"){
         if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){ selectedCryptoA = FAVORITES[0]; }
@@ -2186,9 +2408,9 @@ function hideGate(){
       }
     }
 
-    async function swapFiat(){
+    function swapFiat(){
       const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
-      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label, icon:"$", symbol:f.toLowerCase() }));
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
       mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
       mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
       document.getElementById("fiatRate").textContent="Rate: --";
@@ -2224,7 +2446,7 @@ function hideGate(){
       }
     }
 
-    async function loadChart(){
+    function loadChart(){
       const pair=document.getElementById("obPair").value;
       const base=pair.replace("USDT","").toUpperCase();
       const tvSymbol = `BINANCE:${base}USDT`;
@@ -2239,72 +2461,30 @@ function hideGate(){
       startOrderBook();
     });
 
-    async function loadBalance(user){
-      const balEl = document.getElementById("balance");
-      if(balEl) balEl.textContent = "$0.00";
-
-      if(!user) return;
-
-      // Option A: Portfolio value = sum of per-asset crypto balances * live USD prices
-      // Source balances: public.user_crypto_balances
-      let rows = [];
-      try{
-        const { data, error } = await supabase
-          .from("user_crypto_balances")
-          .select("asset_key,balance")
-          .eq("user_id", user.id);
-
-        if(error) throw error;
-        rows = data || [];
-      }catch(e){
-        console.warn("loadBalance: unable to read user_crypto_balances:", e?.message || e);
-        return;
-      }
-
-      const symToCg = {
-        BTC:"bitcoin", ETH:"ethereum", BNB:"binancecoin", ADA:"cardano",
-        DOGE:"dogecoin", SOL:"solana", TON:"the-open-network",
-        TRX:"tron", USDT:"tether", USDC:"usd-coin"
-      };
-
-      const ids = Array.from(new Set(rows.map(r=>symToCg[String(r.asset_key||"").toUpperCase()]).filter(Boolean)));
-      if(!ids.length){
-        if(balEl) balEl.textContent = "$0.00";
-        return;
-      }
-
-      let prices = {};
-      try{
-        const url = "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=" + encodeURIComponent(ids.join(","));
-        const res = await fetch(url, { cache:"no-store" });
-        if(!res.ok) throw new Error("price fetch failed: " + res.status);
-        prices = await res.json();
-      }catch(e){
-        console.warn("loadBalance: price fetch failed:", e?.message || e);
-        return;
-      }
-
-      let total = 0;
-      for(const r of rows){
-        const sym = String(r.asset_key||"").toUpperCase();
-        const bal = Number(r.balance||0);
-        const id = symToCg[sym];
-        const px = Number(prices?.[id]?.usd || 0);
-        total += bal * px;
-      }
-
-      if(balEl){
-        balEl.textContent = "$" + total.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-      }
+    async function loadBalance(){
+      const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
+      const balNum = Number(data?.balance || 0);
+      const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+      document.getElementById("balance").innerHTML = "$" + bal;
     }
 
-
+    function money(n){ return "$" + Number(n||0).toFixed(2); }
+    function pill(status){
+      const s=(status||"pending").toLowerCase();
+      return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
+    }
+    function daysBetween(date1, date2){
+      const d1=new Date(date1);
+      const d2=new Date(date2);
+      const diff=(d2 - d1) / (1000*60*60*24);
+      return Math.max(0, Math.ceil(diff));
+    }
 
     async function loadActivePlan(){
       const planMsg=document.getElementById("planMsg");
       const planBox=document.getElementById("planBox");
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("investment_plans")
         .select("*")
         .eq("user_email", currentUserEmail)
@@ -2355,7 +2535,7 @@ function hideGate(){
       `;
     }
 
-    async function setBadge(elId, count){
+    function setBadge(elId, count){
       const el=document.getElementById(elId);
       if(!el) return;
       const n=Number(count||0);
@@ -2363,7 +2543,7 @@ function hideGate(){
       else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
     }
 
-    async function setBadgeFromKey(key,val){
+    function setBadgeFromKey(key,val){
       if(key==="deposits") setBadge("badgeDepositDock", val);
       else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
     }
@@ -2373,7 +2553,7 @@ function hideGate(){
       setBadge("badgeDepositDock", 0);
       setBadge("badgeWithdrawDock", 0);
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("user_badges")
         .select("badge_key, badge_value")
         .eq("user_id", currentUserId);
@@ -2382,15 +2562,15 @@ function hideGate(){
       (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
     }
 
-    async function subscribeToRealtimeBadges(){
+    function subscribeToRealtimeBadges(){
       if(!currentUserId) return;
 
       if(badgeChannel){
-        supabase.removeChannel(badgeChannel);
+        supabaseClient.removeChannel(badgeChannel);
         badgeChannel=null;
       }
 
-      badgeChannel = supabase
+      badgeChannel = supabaseClient
         .channel("realtime-user-badges-dashboard")
         .on("postgres_changes", {
           event: "*",
@@ -2407,7 +2587,7 @@ function hideGate(){
 
     async function clearBadge(badge_key){
       try{
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
         if(!accessToken) return;
 
@@ -2424,7 +2604,7 @@ function hideGate(){
     }
 
     async function logout(){
-      await supabase.auth.signOut();
+      await supabaseClient.auth.signOut();
       window.location.replace("login.html");
     }
 
@@ -2435,7 +2615,7 @@ function hideGate(){
     // ============================================================
     async function getMyKycStatus(userId){
       try{
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("user_kyc")
           .select("status")
           .eq("user_id", userId)
@@ -2449,7 +2629,7 @@ function hideGate(){
       }
     }
 
-    async function redirectToKyc(status){
+    function redirectToKyc(status){
       try{
         const s = encodeURIComponent(String(status || "none"));
         // Keep gate visible for premium feel; redirect fast.
@@ -2459,44 +2639,35 @@ function hideGate(){
       }
     }
 
-    async function initWithUser(user){
-      if(!user) return;
-
-      currentUserEmail = (user.email || "").toLowerCase();
-      currentUserId = user.id;
+    function initWithUser(user){
+      currentUserEmail=user.email;
+      currentUserId=user.id;
 
       setGreeting();
       startClock();
 
-      const chip = document.getElementById("userIdChip");
-      if(chip) chip.innerText = "ID: " + String(currentUserId || "").slice(0,6).toUpperCase();
+      document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
-      // Keep the loading gate a little longer for a smoother boot, BUT don't hide if locked.
-      setTimeout(()=>{
-        const gate = document.getElementById("authGate");
-        if(gate && gate.dataset.lock) return;
-        hideGate();
-      }, 1200);
+      /* ✅ Loading screen stays 3 seconds longer */
+      setTimeout(()=>hideGate(), 3000);
 
-      await loadDashboardIdentity(user);
-      await loadBalance(user);
+      loadDashboardIdentity();
+      loadBalance();
+      loadActivePlan();
+      loadRealtimeBadgesOnce();
+      subscribeToRealtimeBadges();
 
-      // Existing features (fail-soft so one failure doesn't kill the page)
-      try{ await loadActivePlan(); }catch(_e){}
-      try{ await loadRealtimeBadgesOnce(); }catch(_e){}
-      try{ await subscribeToRealtimeBadges(); }catch(_e){}
+      loadTop10MajorCryptos();
+      startTop10AutoRefresh();
 
-      try{ await loadTop10MajorCryptos(); startTop10AutoRefresh(); }catch(_e){}
+      loadNews();
+      startNewsAutoRefresh();
 
-      // News: replace fetch-based news with embedded widget (no CORS issues)
-      try{ initNewsWidget(); }catch(_e){}
-
-      try{
-        await loadCoinGeckoLists();
+      loadCoinGeckoLists().then(async ()=>{
         mountOBPairs();
-        await loadChart();
+        loadChart();
         startOrderBook();
-      }catch(_e){}
+      });
     }
 
     /* ============================================================
@@ -2504,53 +2675,50 @@ function hideGate(){
       If any API/network fails, we STILL hide authGate after 3 sec.
       So you never get trapped here again.
     ============================================================ */
-    (async function safetyAutoHideGate(){
-      setTimeout(()=>{
-        const gate = document.getElementById('authGate');
-        if(gate && gate.dataset.lock) return;
-        hideGate();
-      }, 3500);
+    (function safetyAutoHideGate(){
+      setTimeout(()=>hideGate(), 3500);
     })();
 
     (async function authGuard(){
       try{
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
-
         if(!session){
-          showGate("Session required","Please sign in to continue.",{ primaryText:"Go to Login", primaryHref:"login.html" });
+          hideGate(); /* ✅ allow UI to show if session missing */
+          window.location.replace("login.html");
           return;
         }
 
-        const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await supabaseClient.auth.getUser();
         const user = data?.user;
-
         if(error || !user){
-          showGate("Session required","Please sign in again to continue.",{ primaryText:"Go to Login", primaryHref:"login.html" });
+          hideGate();
+          window.location.replace("login.html");
           return;
         }
 
-        const confirmed = !!(user.email_confirmed_at);
+        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+
         if(!confirmed){
-          showGate("Verify your email","Please verify your email, then refresh this page.",{ primaryText:"Open Inbox", primaryHref:"mailto:" + (user.email || "") });
+          await supabaseClient.auth.signOut();
+          hideGate();
+          window.location.replace("verify.html?status=unverified");
           return;
         }
 
-        // Optional KYC gate
-        try{
-          const kycStatus = await getMyKycStatus(user.id, user.email || "");
-          if(kycStatus && kycStatus !== "approved"){
-            // If you want KYC enforced, keep this gate.
-            showGate("KYC required","Complete verification to access your dashboard.",{ primaryText:"Start Verification", primaryHref:"verification.html" });
-            return;
-          }
-        }catch(_e){ /* fail-soft */ }
+        // ✅ NEW: KYC approval gate (blocks everything unless approved)
+        const kycStatus = await getMyKycStatus(user.id);
+        if(kycStatus !== "approved"){
+          // Optional: if user is rejected/pending/none → lock to verification upload page
+          redirectToKyc(kycStatus);
+          return;
+        }
 
-        hideGate();
-        await initWithUser(user);
+        window.COINLUXORA_USER=user;
+        initWithUser(user);
       }catch(e){
-        console.error("authGuard fatal:", e);
-        showGate("Auth error","Unable to validate your session right now.",{ primaryText:"Go to Login", primaryHref:"login.html" });
+        hideGate();
+        window.location.replace("login.html");
       }
     })();
   </script>
