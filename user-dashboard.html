@@ -1942,137 +1942,70 @@
 
     
     // ============================================================
-    // ✅ AVATAR FIX (SHOWS AFTER UPLOAD + PERSISTS AFTER REFRESH)
-    // Problem:
-    // - Your dashboard expects avatar_url to be a direct URL.
-    // - Many uploads store a STORAGE PATH (e.g. "avatars/<userId>/pic.png"),
-    //   so the image won't load.
-    //
-    // Fix:
-    // - Convert storage paths -> usable public/signed URLs
-    // - If avatar_url is empty, auto-discover latest avatar in common buckets
+    // ✅ AVATAR FIX (SUPABASE STORAGE BUCKET: avatars)
+    // Your uploads are stored in: avatars/<user_id>/avatar.png or avatar.jpg
+    // The bucket is PUBLIC, so we can render directly with:
+    //   ${SUPABASE_URL}/storage/v1/object/public/avatars/<user_id>/<file>
+    // This avoids relying on DB fields that may be empty after refresh.
     // ============================================================
-    function stripQuery(u){
-      try{ return String(u||"").split("?")[0]; }catch(e){ return String(u||""); }
-    }
-    function isHttpUrl(u){
-      try{ return /^https?:\/\//i.test(String(u||"")); }catch(e){ return false; }
-    }
-    function looksLikeImage(name){
-      const n=String(name||"").toLowerCase();
-      return n.endsWith(".png")||n.endsWith(".jpg")||n.endsWith(".jpeg")||n.endsWith(".webp")||n.endsWith(".gif");
+    function buildAvatarCandidates(userId){
+      const uid = String(userId||"").trim();
+      if(!uid) return [];
+      const base = `${SUPABASE_URL}/storage/v1/object/public/avatars/${uid}/`;
+      return [
+        base + "avatar.png",
+        base + "avatar.jpg",
+        base + "avatar.jpeg",
+        base + "avatar.webp",
+        base + "avatar.gif"
+      ];
     }
 
-    async function tryPublicOrSigned(bucket, path){
-      try{
-        // Public URL (works if bucket/object is public)
-        const pub = supabaseClient.storage.from(bucket).getPublicUrl(path);
-        const pubUrl = pub?.data?.publicUrl || "";
-        if(pubUrl) return pubUrl;
-
-        // Signed URL (works for private buckets if storage policy allows the user)
-        const { data, error } = await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
-        if(!error && data?.signedUrl) return data.signedUrl;
-
-        return "";
-      }catch(e){
-        return "";
+    function setImgWithCandidates(imgEl, fallbackEl, candidates){
+      if(!imgEl || !fallbackEl) return;
+      const list = (candidates||[]).filter(Boolean);
+      if(!list.length){
+        imgEl.style.display="none";
+        fallbackEl.style.display="block";
+        return;
       }
-    }
+      let i = 0;
 
-    async function discoverLatestAvatar(userId){
-      if(!userId) return "";
-      const buckets = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
-      const foldersToTry = [userId, `${userId}/avatar`, `${userId}/avatars`, ""];
-
-      for(const b of buckets){
-        for(const folder of foldersToTry){
-          try{
-            const { data, error } = await supabaseClient.storage.from(b).list(folder || "", {
-              limit: 50,
-              sortBy: { column: "updated_at", order: "desc" }
-            });
-            if(error || !data || !data.length) continue;
-
-            // pick first image-like
-            const item = data.find(x => looksLikeImage(x?.name)) || data[0];
-            if(item?.name){
-              const path = folder ? `${folder}/${item.name}`.replace(/\/+/g,"/") : item.name;
-              const url = await tryPublicOrSigned(b, path);
-              if(url) return url;
-            }
-          }catch(e){}
+      const tryNext = ()=>{
+        if(i >= list.length){
+          imgEl.style.display="none";
+          fallbackEl.style.display="block";
+          return;
         }
-      }
-      return "";
+        const clean = String(list[i]).split("?")[0];
+        imgEl.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
+        imgEl.style.display="block";
+        fallbackEl.style.display="none";
+        i += 1;
+      };
+
+      imgEl.onerror = ()=>tryNext();
+      tryNext();
     }
 
-    async function resolveAvatarUrl(rawAvatarUrl, userId){
-      const raw = String(rawAvatarUrl||"").trim();
-
-      // If missing from DB/metadata, auto-discover in storage
-      if(!raw){
-        return await discoverLatestAvatar(userId);
-      }
-
-      // Already a usable URL or data URI
-      if(raw.startsWith("data:")) return raw;
-      if(isHttpUrl(raw)) return raw;
-      if(raw.includes("/storage/v1/object/")) return raw;
-
-      // Treat as storage path
-      const cleaned = raw.replace(/^\/+/, "");
-      const parts = cleaned.split("/").filter(Boolean);
-
-      // If saved as "bucket/path...", try that
-      if(parts.length >= 2){
-        const maybeBucket = parts[0];
-        const restPath = parts.slice(1).join("/");
-        const direct = await tryPublicOrSigned(maybeBucket, restPath);
-        if(direct) return direct;
-      }
-
-      // Otherwise, try common buckets with raw path and common folder patterns
-      const buckets = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
-      const candidatePaths = [cleaned];
-
-      if(userId){
-        candidatePaths.push(`${userId}/${cleaned}`);
-        if(parts.length === 1){
-          candidatePaths.push(`${userId}/avatar/${cleaned}`);
-          candidatePaths.push(`${userId}/avatars/${cleaned}`);
-        }
-      }
-
-      for(const p of candidatePaths){
-        for(const b of buckets){
-          const url = await tryPublicOrSigned(b, p);
-          if(url) return url;
-        }
-      }
-
-      // As a last resort, attempt discovery
-      return await discoverLatestAvatar(userId);
-    }
-
-    function setTopAvatar(avatarUrl){
+function setTopAvatar(avatarUrl){
       const fb=document.getElementById("avatarFallback");
       const img=document.getElementById("avatarImgBtn");
       if(!img || !fb) return;
 
-      img.onerror = null;
+      // If we receive a list of candidates, try them in order.
+      if(Array.isArray(avatarUrl)){
+        setImgWithCandidates(img, fb, avatarUrl);
+        return;
+      }
 
       const url = String(avatarUrl||"").trim();
       if(url){
-        const clean = stripQuery(url);
+        const clean = url.split("?")[0];
         img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
         img.style.display="block";
         fb.style.display="none";
-
-        img.onerror = () => {
-          img.style.display="none";
-          fb.style.display="block";
-        };
+        img.onerror = ()=>{ img.style.display="none"; fb.style.display="block"; };
       }else{
         img.style.display="none";
         fb.style.display="block";
@@ -2087,19 +2020,19 @@
       const img=document.getElementById("sideAvatarImg");
       if(!img || !fb) return;
 
-      img.onerror = null;
+      // If we receive a list of candidates, try them in order.
+      if(Array.isArray(avatarUrl)){
+        setImgWithCandidates(img, fb, avatarUrl);
+        return;
+      }
 
       const url = String(avatarUrl||"").trim();
       if(url){
-        const clean = stripQuery(url);
+        const clean = url.split("?")[0];
         img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
         img.style.display="block";
         fb.style.display="none";
-
-        img.onerror = () => {
-          img.style.display="none";
-          fb.style.display="block";
-        };
+        img.onerror = ()=>{ img.style.display="none"; fb.style.display="block"; };
       }else{
         img.style.display="none";
         fb.style.display="block";
@@ -2193,14 +2126,16 @@
         if(!fullName) fullName=md.full_name||"User";
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
-        // ✅ Resolve avatar URL from storage path OR auto-discover latest avatar
-        try{
-          const resolved = await resolveAvatarUrl(avatarUrl, currentUserId);
-          if(resolved) avatarUrl = resolved;
-        }catch(e){}
-
-
         setNameEverywhere(fullName);
+         // ✅ If avatarUrl is missing or not a direct URL, render from Storage bucket path:
+         // avatars/<user_id>/avatar.(png|jpg|jpeg|webp|gif)
+         const avatarCandidates = buildAvatarCandidates(currentUserId);
+         const hasDirect = (avatarUrl && (/^https?:\/\//i.test(String(avatarUrl)) || String(avatarUrl).includes("/storage/v1/object/")));
+         if(!hasDirect){
+           // pass the candidate list into the setters; they will try each until one loads
+           avatarUrl = avatarCandidates;
+         }
+
         setTopAvatar(avatarUrl);
         setSideAvatar(avatarUrl);
 
