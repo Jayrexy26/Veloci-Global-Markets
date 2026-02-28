@@ -1362,18 +1362,11 @@
     let top10Timer=null;
 
     /* ============================================================
-      ✅ NEWS (FIXED)
-      - Removes "network blocked" by using CORS-friendly sources + fallbacks
-      - Uses timeout + offline cache so UI never hangs
+      ✅ NEWS
     ============================================================ */
     let newsTimer=null;
-
-    // Sources (fallback chain)
-    const NEWS_FEED_RSS = "https://cryptopanic.com/news/rss/";
-    const NEWS_ALLORIGINS_RAW = "https://api.allorigins.win/raw?url="; // CORS-safe RSS proxy
-    const NEWS_CRYPTOCOMPARE = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
-    const NEWS_COINGECKO = "https://api.coingecko.com/api/v3/news";
-    const NEWS_CACHE_KEY = "vgm_news_cache_v1";
+    const NEWS_RSS_URL="https://cryptopanic.com/news/rss/";
+    const RSS_TO_JSON="https://api.rss2json.com/v1/api.json?rss_url=";
 
     function timeAgo(ts){
       try{
@@ -1390,177 +1383,60 @@
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
+    
+    // TradingView news embed (avoids RSS/network blocks)
+    let __tvNewsMounted = false;
 
-    async function fetchWithTimeout(url, ms=9000, opts={}){
-      const ctrl = new AbortController();
-      const id = setTimeout(()=>ctrl.abort(), ms);
-      try{
-        const res = await fetch(url, { ...opts, signal: ctrl.signal, cache: "no-store" });
-        return res;
-      } finally {
-        clearTimeout(id);
-      }
-    }
-
-    function parseRssItems(xmlText){
-      const doc = new DOMParser().parseFromString(xmlText, "text/xml");
-      const nodes = Array.from(doc.querySelectorAll("item")).slice(0, 12);
-      return nodes.map(n=>{
-        const title = (n.querySelector("title")?.textContent || "").trim();
-        const link  = (n.querySelector("link")?.textContent || "").trim();
-        const pub   = (n.querySelector("pubDate")?.textContent || "").trim();
-        return {
-          title,
-          link,
-          publishedAt: pub ? new Date(pub).toISOString() : "",
-          source: "CryptoPanic (RSS)"
-        };
-      }).filter(x=>x.title && x.link);
-    }
-
-    function normalizeCryptoCompare(json){
-      const items = (json && json.Data) ? json.Data : [];
-      return items.slice(0, 12).map(it=>({
-        title: (it.title||"").trim(),
-        link: (it.url||"").trim(),
-        publishedAt: it.published_on ? new Date(it.published_on*1000).toISOString() : "",
-        source: (it.source_info?.name || "CryptoCompare").trim()
-      })).filter(x=>x.title && x.link);
-    }
-
-    function normalizeCoinGecko(json){
-      // CoinGecko's /news shape can vary; handle common fields defensively.
-      const arr = Array.isArray(json) ? json : (json?.data || json?.articles || json?.news || []);
-      const items = Array.isArray(arr) ? arr : [];
-      return items.slice(0, 12).map(it=>{
-        const title = (it.title || it.headline || "").trim();
-        const link  = (it.url || it.link || "").trim();
-        const dt    = it.created_at || it.published_at || it.pubDate || it.date || "";
-        const src   = (it.author || it.source || it.site || "CoinGecko").toString().trim();
-        let iso="";
-        try{ iso = dt ? new Date(dt).toISOString() : ""; }catch(e){ iso=""; }
-        return { title, link, publishedAt: iso, source: src || "CoinGecko" };
-      }).filter(x=>x.title && x.link);
-    }
-
-    function renderNews(items, modeTag="News"){
+    function mountTradingViewNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
 
-      if(!items || !items.length){
-        msg.innerHTML="<span class='err'>No news available right now.</span>";
-        list.innerHTML="";
-        return;
-      }
+      // Prevent multiple mounts (intervals / re-init)
+      if(__tvNewsMounted) return;
+      __tvNewsMounted = true;
 
-      msg.textContent="";
-      list.innerHTML = items.slice(0,12).map(it=>{
-        const title=esc(it.title||"");
-        const link=it.link||"#";
-        const src=esc((it.source||"Crypto").trim()||"Crypto");
-        const pub=it.publishedAt||"";
-        const ago = pub ? timeAgo(pub) : "";
-        return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-          <div class="newsTop">
-            <div class="newsTitle">${title}</div>
-          </div>
-          <div class="newsMeta">
-            <span class="newsTag">${esc(modeTag)}</span>
-            <span>${src}</span>
-            ${ago?`<span>• ${ago}</span>`:""}
-          </div>
-          <div class="newsBottom">Tap to open full story</div>
-        </a>`;
-      }).join("");
-    }
+      msg.textContent = "";
+      list.innerHTML = `
+        <div class="tradingview-widget-container" style="width:100%">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      `;
 
-    function cacheNews(items){
-      try{
-        const safe = (items||[]).slice(0, 20).map(x=>({
-          title: String(x.title||""),
-          link: String(x.link||""),
-          publishedAt: String(x.publishedAt||""),
-          source: String(x.source||"")
-        }));
-        localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({ t: Date.now(), items: safe }));
-      }catch(e){}
-    }
-    function readCachedNews(){
-      try{
-        const raw = localStorage.getItem(NEWS_CACHE_KEY);
-        if(!raw) return [];
-        const obj = JSON.parse(raw);
-        return Array.isArray(obj?.items) ? obj.items : [];
-      }catch(e){ return []; }
+      // Create the TradingView Timeline widget script
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      s.async = true;
+      s.innerHTML = JSON.stringify({
+        feedMode: "market",
+        market: "crypto",
+        colorTheme: "dark",
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: 720,
+        locale: "en"
+      });
+      list.querySelector(".tradingview-widget-container").appendChild(s);
     }
 
     async function loadNews(){
-      const msg=document.getElementById("newsMsg");
-      const list=document.getElementById("newsList");
-      if(!msg||!list) return;
-
-      msg.textContent="Loading…";
-      list.innerHTML="";
-
-      // 1) RSS via AllOrigins (most CORS-friendly)
       try{
-        const rssUrl = NEWS_ALLORIGINS_RAW + encodeURIComponent(NEWS_FEED_RSS);
-        const res = await fetchWithTimeout(rssUrl, 9000);
-        if(res.ok){
-          const xml = await res.text();
-          const items = parseRssItems(xml);
-          if(items.length){
-            renderNews(items, "News");
-            cacheNews(items);
-            return;
-          }
-        }
-      }catch(e){ /* fallthrough */ }
-
-      // 2) CryptoCompare public news (usually CORS OK)
-      try{
-        const res = await fetchWithTimeout(NEWS_CRYPTOCOMPARE, 9000);
-        if(res.ok){
-          const json = await res.json();
-          const items = normalizeCryptoCompare(json);
-          if(items.length){
-            renderNews(items, "News");
-            cacheNews(items);
-            return;
-          }
-        }
-      }catch(e){ /* fallthrough */ }
-
-      // 3) CoinGecko news (best-effort)
-      try{
-        const res = await fetchWithTimeout(NEWS_COINGECKO, 9000);
-        if(res.ok){
-          const json = await res.json();
-          const items = normalizeCoinGecko(json);
-          if(items.length){
-            renderNews(items, "News");
-            cacheNews(items);
-            return;
-          }
-        }
-      }catch(e){ /* fallthrough */ }
-
-      // 4) Offline cache
-      const cached = readCachedNews();
-      if(cached.length){
-        renderNews(cached, "Offline");
-        msg.innerHTML="<span style='color:var(--warn);font-weight:1000'>Live news unavailable — showing cached headlines.</span>";
-        return;
+        // Always use TradingView news (no fetch calls, no CORS issues)
+        mountTradingViewNews();
+      }catch(e){
+        const msg=document.getElementById("newsMsg");
+        const list=document.getElementById("newsList");
+        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
+        if(list) list.innerHTML = "";
       }
-
-      msg.innerHTML="<span class='err'>Unable to load news right now. Please check your network.</span>";
-      list.innerHTML="";
     }
 
     function startNewsAutoRefresh(){
+      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
+      newsTimer = null;
     }
 
     /* ============================================================
