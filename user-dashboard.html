@@ -1319,11 +1319,6 @@
   </div>
 
   <script>
-
-function escapeHtml(str){
-  return String(str ?? "").replace(/[&<>"']/g, (m)=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]));
-}
-
     /* ============================================================
       ✅ STICKY MENU POLISH SCRIPT
     ============================================================ */
@@ -1389,36 +1384,40 @@ function escapeHtml(str){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
     async function loadNews(){
-  const box=document.getElementById("newsBox");
-  if(!box) return;
-  box.innerHTML = '<div class="newsItem muted">Loading news...</div>';
-  try{
-    // CryptoCompare public news endpoint (no key required for basic use)
-    const url = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
-    const res = await fetch(url, { cache: "no-store" });
-    if(!res.ok) throw new Error("news http " + res.status);
-    const json = await res.json();
-    const items = (json && json.Data) ? json.Data.slice(0, 10) : [];
-    if(!items.length){
-      box.innerHTML = '<div class="newsItem muted">No news available right now.</div>';
-      return;
+      const msg=document.getElementById("newsMsg");
+      const list=document.getElementById("newsList");
+      if(!msg||!list) return;
+      try{
+        msg.textContent="Loading…";
+        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = (data?.items || []).slice(0, 12);
+        if(!items.length) throw new Error("no news");
+        msg.textContent="";
+        list.innerHTML = items.map(it=>{
+          const title=esc(it.title||"");
+          const link=it.link||"#";
+          const pub=it.pubDate||it.published||"";
+          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
+          const ago = pub ? timeAgo(pub) : "";
+          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
+            <div class="newsTop">
+              <div class="newsTitle">${title}</div>
+            </div>
+            <div class="newsMeta">
+              <span class="newsTag">News</span>
+              <span>${src}</span>
+              ${ago?`<span>• ${ago}</span>`:""}
+            </div>
+            <div class="newsBottom">Tap to open full story</div>
+          </a>`;
+        }).join("");
+      }catch(e){
+        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
+        list.innerHTML="";
+      }
     }
-    box.innerHTML = items.map(n=>{
-      const title = escapeHtml(n.title || "News");
-      const source = escapeHtml((n.source_info && n.source_info.name) ? n.source_info.name : "Crypto");
-      const link = n.url || "#";
-      const time = n.published_on ? new Date(n.published_on*1000).toLocaleString() : "";
-      return `
-        <a class="newsItem" href="${link}" target="_blank" rel="noopener">
-          <div class="newsTitle">${title}</div>
-          <div class="newsMeta">${source}${time ? " • " + escapeHtml(time) : ""}</div>
-        </a>`;
-    }).join("");
-  }catch(e){
-    console.error("news load failed", e);
-    box.innerHTML = '<div class="newsItem err">Unable to load news (network blocked).</div>';
-  }
-}
     function startNewsAutoRefresh(){
       if(newsTimer) clearInterval(newsTimer);
       newsTimer=setInterval(loadNews, 60000);
@@ -1945,16 +1944,9 @@ function escapeHtml(str){
       const fallback=document.getElementById("avatarFallback");
       const img=document.getElementById("avatarImgBtn");
       if(avatarUrl){
-        const url = (String(avatarUrl).startsWith("http"))
-          ? String(avatarUrl)
-          : (SUPABASE_URL.replace(/\/$/,"") + "/storage/v1/object/public/" + String(avatarUrl).replace(/^\/+/, ""));
-        img.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+        img.src=avatarUrl+"?t="+Date.now();
         img.style.display="block";
         fallback.style.display="none";
-        img.onerror = () => {
-          img.style.display="none";
-          fallback.style.display="block";
-        };
       }else{
         img.style.display="none";
         fallback.style.display="block";
@@ -2389,7 +2381,7 @@ function escapeHtml(str){
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
@@ -2588,11 +2580,7 @@ function escapeHtml(str){
         hideGate();
         window.location.replace("login.html");
       }
-    }
-
-// Kick off
-authGuard();
-;
+    })();
   </script>
 </body>
 </html>
