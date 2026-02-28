@@ -1383,44 +1383,59 @@
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    async function loadNews(){
+    
+    // TradingView news embed (avoids RSS/network blocks)
+    let __tvNewsMounted = false;
+
+    function mountTradingViewNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
+
+      // Prevent multiple mounts (intervals / re-init)
+      if(__tvNewsMounted) return;
+      __tvNewsMounted = true;
+
+      msg.textContent = "";
+      list.innerHTML = `
+        <div class="tradingview-widget-container" style="width:100%">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      `;
+
+      // Create the TradingView Timeline widget script
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      s.async = true;
+      s.innerHTML = JSON.stringify({
+        feedMode: "all_symbols",
+        colorTheme: "dark",
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: 720,
+        locale: "en"
+      });
+      list.querySelector(".tradingview-widget-container").appendChild(s);
+    }
+
+    async function loadNews(){
       try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
+        // Always use TradingView news (no fetch calls, no CORS issues)
+        mountTradingViewNews();
       }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
+        const msg=document.getElementById("newsMsg");
+        const list=document.getElementById("newsList");
+        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
+        if(list) list.innerHTML = "";
       }
     }
+
     function startNewsAutoRefresh(){
+      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
+      newsTimer = null;
     }
 
     /* ============================================================
@@ -1940,77 +1955,14 @@
       setInterval(tick,1000);
     }
 
-    
-    // ============================================================
-    // ✅ AVATAR FIX (SUPABASE STORAGE BUCKET: avatars)
-    // Your uploads are stored in: avatars/<user_id>/avatar.png or avatar.jpg
-    // The bucket is PUBLIC, so we can render directly with:
-    //   ${SUPABASE_URL}/storage/v1/object/public/avatars/<user_id>/<file>
-    // This avoids relying on DB fields that may be empty after refresh.
-    // ============================================================
-    function buildAvatarCandidates(userId){
-      const uid = String(userId||"").trim();
-      if(!uid) return [];
-      const base = `${SUPABASE_URL}/storage/v1/object/public/avatars/${uid}/`;
-      return [
-        base + "avatar.png",
-        base + "avatar.jpg",
-        base + "avatar.jpeg",
-        base + "avatar.webp",
-        base + "avatar.gif"
-      ];
-    }
-
-    function setImgWithCandidates(imgEl, fallbackEl, candidates){
-      if(!imgEl || !fallbackEl) return;
-      const list = (candidates||[]).filter(Boolean);
-      if(!list.length){
-        imgEl.style.display="none";
-        fallbackEl.style.display="block";
-        return;
-      }
-      let i = 0;
-
-      const tryNext = ()=>{
-        if(i >= list.length){
-          imgEl.style.display="none";
-          fallbackEl.style.display="block";
-          return;
-        }
-        const clean = String(list[i]).split("?")[0];
-        imgEl.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
-        imgEl.style.display="block";
-        fallbackEl.style.display="none";
-        i += 1;
-      };
-
-      imgEl.onerror = ()=>tryNext();
-      tryNext();
-    }
-
-function setTopAvatar(avatarUrl){
-      const fb=document.getElementById("avatarFallback");
+    function setTopAvatar(avatarUrl){
+      const fallback=document.getElementById("avatarFallback");
       const img=document.getElementById("avatarImgBtn");
-      if(!img || !fb) return;
-
-      // If we receive a list of candidates, try them in order.
-      if(Array.isArray(avatarUrl)){
-        setImgWithCandidates(img, fb, avatarUrl);
-        return;
-      }
-
-      const url = String(avatarUrl||"").trim();
-      if(url){
-        const clean = url.split("?")[0];
-        img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
+      if(avatarUrl){
+        img.src=avatarUrl+"?t="+Date.now();
         img.style.display="block";
-        fb.style.display="none";
-        img.onerror = ()=>{ img.style.display="none"; fb.style.display="block"; };
+        fallback.style.display="none";
       }else{
-        img.style.display="none";
-        fb.style.display="block";
-      }
-    }else{
         img.style.display="none";
         fallback.style.display="block";
       }
@@ -2018,26 +1970,11 @@ function setTopAvatar(avatarUrl){
     function setSideAvatar(avatarUrl){
       const fb=document.getElementById("sideAvatarFallback");
       const img=document.getElementById("sideAvatarImg");
-      if(!img || !fb) return;
-
-      // If we receive a list of candidates, try them in order.
-      if(Array.isArray(avatarUrl)){
-        setImgWithCandidates(img, fb, avatarUrl);
-        return;
-      }
-
-      const url = String(avatarUrl||"").trim();
-      if(url){
-        const clean = url.split("?")[0];
-        img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
+      if(avatarUrl){
+        img.src=avatarUrl+"?t="+Date.now();
         img.style.display="block";
         fb.style.display="none";
-        img.onerror = ()=>{ img.style.display="none"; fb.style.display="block"; };
       }else{
-        img.style.display="none";
-        fb.style.display="block";
-      }
-    }else{
         img.style.display="none";
         fb.style.display="block";
       }
@@ -2118,6 +2055,122 @@ function setTopAvatar(avatarUrl){
 
     async function loadDashboardIdentity(){
       try{
+        // =========================
+        // ✅ AVATAR RESOLVER (FIX)
+        // - Ensures profile picture shows immediately AND after refresh
+        // - Supports:
+        //    1) Full URLs (https://...)
+        //    2) Stored paths (e.g. "<userId>/avatar.png" or "avatars/<userId>/avatar.png")
+        //    3) Automatic fallback to common files in avatars bucket:
+        //       <userId>/avatar.png, <userId>/avatar.jpg, <userId>/avatar.jpeg
+        // - Adds cache-busting so refreshed page does not show blank due to cached 404
+        // =========================
+        const AVATAR_BUCKET = "avatars";
+
+        function isHttpUrl(u){
+          return /^https?:\/\//i.test(String(u||"").trim());
+        }
+
+        function cleanStoragePath(p, userId){
+          let s = String(p||"").trim();
+          if(!s) return "";
+          if(isHttpUrl(s)) return s;
+          s = s.replace(/^\/+/, "");
+          if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
+          if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
+          if(!s.includes("/") && userId) s = `${userId}/${s}`;
+          return s;
+        }
+
+        function publicAvatarUrlFromPath(path){
+          try{
+            const p = String(path||"").trim();
+            if(!p) return "";
+            const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(p);
+            const url = data?.publicUrl || "";
+            return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+          }catch(e){
+            return "";
+          }
+        }
+
+        async function existsImage(url){
+          try{
+            const res = await fetch(url, { method: "GET", cache: "no-store" });
+            return !!(res && res.ok);
+          }catch(e){
+            return false;
+          }
+        }
+
+        async function resolveAvatarUrl(userId, dbValue, mdValue){
+          const raw = (dbValue && String(dbValue).trim()) ? dbValue : (mdValue && String(mdValue).trim() ? mdValue : "");
+          if(raw){
+            if(isHttpUrl(raw)){
+              return raw + (raw.includes("?") ? "&" : "?") + "t=" + Date.now();
+            }
+            const path = cleanStoragePath(raw, userId);
+            const pub = publicAvatarUrlFromPath(path);
+            if(pub) return pub;
+          }
+
+          const candidates = [
+            `${userId}/avatar.png`,
+            `${userId}/avatar.jpg`,
+            `${userId}/avatar.jpeg`,
+            `${userId}/Avatar.png`,
+            `${userId}/Avatar.jpg`,
+            `${userId}/Avatar.jpeg`
+          ];
+
+          for(const p of candidates){
+            const url = publicAvatarUrlFromPath(p);
+            if(!url) continue;
+            const ok = await existsImage(url);
+            if(ok) return url;
+          }
+
+          return "";
+        }
+
+        async function setTopAvatarRobust(userId, urlFromDb, urlFromMd){
+          const img = document.getElementById("avatarImgBtn");
+          const fallback = document.getElementById("avatarFallback");
+          const resolved = await resolveAvatarUrl(userId, urlFromDb, urlFromMd);
+
+          if(img){
+            if(resolved){
+              img.src = resolved;
+              img.style.display = "block";
+            }else{
+              img.removeAttribute("src");
+              img.style.display = "none";
+            }
+          }
+          if(fallback){
+            fallback.style.display = resolved ? "none" : "inline";
+          }
+        }
+
+        async function setSideAvatarRobust(userId, urlFromDb, urlFromMd){
+          const img = document.getElementById("sideAvatarImg");
+          const fallback = document.getElementById("sideAvatarFallback");
+          const resolved = await resolveAvatarUrl(userId, urlFromDb, urlFromMd);
+
+          if(img){
+            if(resolved){
+              img.src = resolved;
+              img.style.display = "block";
+            }else{
+              img.removeAttribute("src");
+              img.style.display = "none";
+            }
+          }
+          if(fallback){
+            fallback.style.display = resolved ? "none" : "inline";
+          }
+        }
+
         let fullName="", avatarUrl="", countryName="";
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
@@ -2127,17 +2180,8 @@ function setTopAvatar(avatarUrl){
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
         setNameEverywhere(fullName);
-         // ✅ If avatarUrl is missing or not a direct URL, render from Storage bucket path:
-         // avatars/<user_id>/avatar.(png|jpg|jpeg|webp|gif)
-         const avatarCandidates = buildAvatarCandidates(currentUserId);
-         const hasDirect = (avatarUrl && (/^https?:\/\//i.test(String(avatarUrl)) || String(avatarUrl).includes("/storage/v1/object/")));
-         if(!hasDirect){
-           // pass the candidate list into the setters; they will try each until one loads
-           avatarUrl = avatarCandidates;
-         }
-
-        setTopAvatar(avatarUrl);
-        setSideAvatar(avatarUrl);
+        await setTopAvatarRobust(currentUserId, avatarUrl, (window.COINLUXORA_USER?.user_metadata||{}).avatar_url || "");
+        await setSideAvatarRobust(currentUserId, avatarUrl, (window.COINLUXORA_USER?.user_metadata||{}).avatar_url || "");
 
         const iso = await resolveCountryISO(countryName);
         const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
@@ -2468,7 +2512,7 @@ function setTopAvatar(avatarUrl){
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
