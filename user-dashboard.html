@@ -1337,7 +1337,7 @@
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-    const supabase=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -2012,19 +2012,19 @@ function hideGate(){
       el.style.display="inline-flex";
     }
 
-    async function normalizeCountryText(v){
+    function normalizeCountryText(v){
       if(!v) return "";
       return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
     }
 
-    async function isoToCountryName(iso){
+    function isoToCountryName(iso){
       if(!iso) return "";
       const c = iso.toUpperCase();
       const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
       return map[c] || "";
     }
 
-    async function countryNameToISO(name){
+    function countryNameToISO(name){
       if(!name) return "";
       const raw = String(name).trim();
       if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
@@ -2052,8 +2052,7 @@ function hideGate(){
       return "";
     }
 
-    async async function resolveCountryISO(countryNameFromDB){
-      // Best-effort ISO country code for the dashboard chip
+    async function resolveCountryISO(countryNameFromDB){
       let iso = countryNameToISO(countryNameFromDB);
       if(iso) return iso;
       iso = await detectCountryFromIP();
@@ -2061,6 +2060,33 @@ function hideGate(){
       iso = detectCountryFromLocale();
       if(iso) return iso;
       return "";
+
+      // Also try profiles table for name/avatar (fail-soft). This fixes cases where your profile picture
+      // is stored in public.profiles instead of auth metadata.
+      try{
+        const { data: p, error: perr } = await supabase
+          .from("profiles")
+          .select("full_name, name, avatar_url, profile_pic_url, photo_url, country")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if(!perr && p){
+          const pname = String(p.full_name || p.name || "").trim();
+          const pavatar = String(p.avatar_url || p.profile_pic_url || p.photo_url || "").trim();
+
+          if(pname && nameEl && (String(nameEl.textContent||"").trim()==="" || String(nameEl.textContent||"").includes("@"))){
+            nameEl.textContent = pname;
+          }
+          if(pavatar && pfpEl){
+            pfpEl.style.backgroundImage = `url('${pavatar}')`;
+            pfpEl.style.backgroundSize = "cover";
+            pfpEl.style.backgroundPosition = "center";
+            pfpEl.textContent = "";
+          }
+        }
+      }catch(_e){}
+
+
     }
 
     async function loadDashboardIdentity(user){
@@ -2074,7 +2100,7 @@ function hideGate(){
 
       // Try public.users (preferred for your dashboard uploads)
       try{
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("users")
           .select("full_name,avatar_url,email")
           .eq("id", user.id)
@@ -2249,7 +2275,7 @@ function hideGate(){
       // Source balances: public.user_crypto_balances
       let rows = [];
       try{
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("user_crypto_balances")
           .select("asset_key,balance")
           .eq("user_id", user.id);
@@ -2304,7 +2330,7 @@ function hideGate(){
       const planMsg=document.getElementById("planMsg");
       const planBox=document.getElementById("planBox");
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("investment_plans")
         .select("*")
         .eq("user_email", currentUserEmail)
@@ -2373,7 +2399,7 @@ function hideGate(){
       setBadge("badgeDepositDock", 0);
       setBadge("badgeWithdrawDock", 0);
 
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("user_badges")
         .select("badge_key, badge_value")
         .eq("user_id", currentUserId);
@@ -2390,7 +2416,7 @@ function hideGate(){
         badgeChannel=null;
       }
 
-      badgeChannel = supabase
+      badgeChannel = supabaseClient
         .channel("realtime-user-badges-dashboard")
         .on("postgres_changes", {
           event: "*",
@@ -2435,7 +2461,7 @@ function hideGate(){
     // ============================================================
     async function getMyKycStatus(userId){
       try{
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("user_kyc")
           .select("status")
           .eq("user_id", userId)
