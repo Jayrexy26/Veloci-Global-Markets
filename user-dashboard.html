@@ -1366,7 +1366,7 @@
     const NEWS_RSS_URL="https://cryptopanic.com/news/rss/";
     const RSS_TO_JSON="https://api.rss2json.com/v1/api.json?rss_url=";
 
-    function timeAgo(ts){
+    async function timeAgo(ts){
       try{
         const t=new Date(ts).getTime();
         const now=Date.now();
@@ -1378,52 +1378,36 @@
         return s+"s ago";
       }catch(e){return ""}
     }
-    function esc(s){
+    async function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    async function loadNews(){
+    function initNewsWidget(){
       const container = document.getElementById("newsList");
       const msg = document.getElementById("newsMsg");
-      if(msg) msg.textContent = "Loading news…";
-      if(container) container.innerHTML = "";
+      if(msg) msg.textContent = "";
+      if(!container) return;
 
-      try{
-        // CryptoCompare public news feed (CORS-friendly)
-        const res = await fetch("https://min-api.cryptocompare.com/data/v2/news/?lang=EN", { cache:"no-store" });
-        if(!res.ok) throw new Error("News HTTP " + res.status);
-        const js = await res.json();
-        const items = (js?.Data || []).slice(0, 10);
+      // TradingView Timeline widget (avoids CORS/network blocks from JSON news APIs)
+      container.innerHTML = `
+        <div id="tvNewsWidget" style="width:100%;height:420px;"></div>
+      `;
 
-        if(!items.length){
-          if(msg) msg.textContent = "No news right now.";
-          return;
-        }
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.async = true;
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      script.innerHTML = JSON.stringify({
+        "feedMode": "all_symbols",
+        "colorTheme": "dark",
+        "isTransparent": true,
+        "displayMode": "regular",
+        "width": "100%",
+        "height": 420,
+        "locale": "en"
+      });
 
-        if(msg) msg.textContent = "";
-
-        const esc = ( s)=>String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);
-
-        for(const it of items){
-          const title = esc(it?.title || "News");
-          const url = String(it?.url || "#");
-          const source = esc(it?.source || "Crypto");
-          const t = it?.published_on ? new Date(Number(it.published_on)*1000) : null;
-          const timeTxt = t ? t.toLocaleString() : "";
-
-          const a = document.createElement("a");
-          a.className = "newsItem";
-          a.href = url;
-          a.target = "_blank";
-          a.rel = "noopener";
-          a.innerHTML = `
-            <div class="newsTop">${source}${timeTxt ? " • " + esc(timeTxt) : ""}</div>
-            <div class="newsBottom">${title}</div>
-          `;
-          container?.appendChild(a);
-        }
-      }catch(_e){
-        if(msg) msg.textContent = "Unable to load news (network blocked).";
-      }
+      const host = container.querySelector("#tvNewsWidget");
+      if(host) host.appendChild(script);
     }
 
 
@@ -1549,13 +1533,13 @@
       "ripple","usd-coin","dogecoin","cardano","tron"
     ];
 
-    function fmtMoneySmart(n){
+    async function fmtMoneySmart(n){
       const num=Number(n||0);
       if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
       if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
       return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
     }
-    function nfmt(n, dp=2){
+    async function nfmt(n, dp=2){
       return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp});
     }
 
@@ -1797,7 +1781,7 @@
       if(!asks.length || !bids.length) return null;
       return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
     }
-    function handleDepthMessage_Bybit(raw){
+    async function handleDepthMessage_Bybit(raw){
       const d=raw?.data;
       if(!d) return null;
       const asks=(d?.a || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
@@ -1805,7 +1789,7 @@
       if(!asks.length || !bids.length) return null;
       return { asks: asks.sort((x,y)=>x.p-y.p), bids: bids.sort((x,y)=>y.p-x.p) };
     }
-    function handleDepthMessage_OKX(raw){
+    async function handleDepthMessage_OKX(raw){
       const d=raw?.data?.[0];
       if(!d) return null;
       const asks=(d?.asks || []).map(x=>({p:Number(x[0]), q:Number(x[1])})).filter(x=>x.p>0 && x.q>0);
@@ -1907,7 +1891,40 @@
       document.body.classList.remove("menuOpen");
     }
 
-    function hideGate(){
+    
+    function showGate(title, message, opts){
+      const gate = document.getElementById("authGate");
+      const card = gate?.querySelector(".authCard");
+      if(!gate || !card) return;
+
+      gate.dataset.lock = "1";
+      const primaryText = opts?.primaryText || "Login";
+      const primaryHref = opts?.primaryHref || "login.html";
+
+      card.innerHTML = `
+        <div class="authLogoWrap">
+          <img class="authLogo" src="assets/vgm-logo.png" alt="Veloci"/>
+        </div>
+        <div class="authTitle">${escapeHtml(title || "Access required")}</div>
+        <div class="authMsg">${escapeHtml(message || "Please sign in to continue.")}</div>
+        <div class="authBtns">
+          <a class="authBtnPrimary" href="${primaryHref}">${escapeHtml(primaryText)}</a>
+          <button class="authBtnGhost" type="button" id="authGateRefreshBtn">Refresh</button>
+        </div>
+      `;
+      const refreshBtn = document.getElementById("authGateRefreshBtn");
+      if(refreshBtn) refreshBtn.onclick = ()=> window.location.reload();
+      gate.style.display = "flex";
+    }
+
+    function escapeHtml(str){
+      return String(str ?? "").replace(/[&<>"']/g, (c)=>({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+function hideGate(){
+      const gate = document.getElementById("authGate");
+      if(gate) delete gate.dataset.lock;
       const g=document.getElementById("authGate");
       if(g) g.style.display="none";
     }
@@ -1995,19 +2012,19 @@
       el.style.display="inline-flex";
     }
 
-    function normalizeCountryText(v){
+    async function normalizeCountryText(v){
       if(!v) return "";
       return String(v).replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]/g,"").replace(/[^\w\s-]/g," ").trim().toLowerCase();
     }
 
-    function isoToCountryName(iso){
+    async function isoToCountryName(iso){
       if(!iso) return "";
       const c = iso.toUpperCase();
       const map = { NG:"Nigeria", US:"United States", GB:"United Kingdom", CA:"Canada", DE:"Germany", FR:"France", ZA:"South Africa", KE:"Kenya", GH:"Ghana", AE:"United Arab Emirates", SA:"Saudi Arabia", IN:"India", AU:"Australia", BR:"Brazil", MX:"Mexico", JP:"Japan", SG:"Singapore" };
       return map[c] || "";
     }
 
-    function countryNameToISO(name){
+    async function countryNameToISO(name){
       if(!name) return "";
       const raw = String(name).trim();
       if(/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
@@ -2026,7 +2043,7 @@
       }catch(e){}
       return "";
     }
-    function detectCountryFromLocale(){
+    async function detectCountryFromLocale(){
       try{
         const loc = (navigator.language || "").toUpperCase();
         const parts = loc.split("-");
@@ -2072,26 +2089,36 @@
 
     }
 
-    async function loadDashboardIdentity(){
-      const { data: { user } } = await supabase.auth.getUser();
-      if(!user) return;
+    async function loadDashboardIdentity(user){
+      const nameEl = document.getElementById("dashName");
+      const emailEl = document.getElementById("dashEmail");
+      const pfpEl = document.getElementById("dashPfp");
 
-      // Prefer auth metadata (doesn't depend on DB columns existing)
-      const md = (user.user_metadata || {});
-      const name = (md.full_name || md.name || user.email || "User").toString();
-      const country = (md.country || md.location || "NG - Nigeria").toString();
-      const avatar = (md.avatar_url || md.avatar || md.photo_url || "").toString();
+      const md = (user?.user_metadata || {});
+      let name = String(md.full_name || md.name || md.username || user?.email || "User");
+      let avatar = String(md.avatar_url || md.picture || "");
 
-      const nameEl = document.getElementById("userName");
-      const countryEl = document.getElementById("countryTag");
-      const idEl = document.getElementById("userIdTag");
-      const pfpEl = document.getElementById("pfpCircle");
+      // Try public.users (preferred for your dashboard uploads)
+      try{
+        const { data, error } = await supabaseClient
+          .from("users")
+          .select("full_name,avatar_url,email")
+          .eq("id", user.id)
+          .order("created_at", { ascending:false })
+          .limit(1)
+          .maybeSingle();
+
+        if(!error && data){
+          if(data.full_name) name = String(data.full_name);
+          if(data.email) user.email = String(data.email);
+          if(data.avatar_url) avatar = String(data.avatar_url);
+        }
+      }catch(_e){}
 
       if(nameEl) nameEl.textContent = name;
-      if(countryEl) countryEl.textContent = country;
-      if(idEl) idEl.textContent = ("ID: " + String(user.id).slice(0,5).toUpperCase());
+      if(emailEl) emailEl.textContent = (user?.email || "").toLowerCase();
+
       if(pfpEl){
-        // If we have an avatar URL, use it; otherwise show first letter fallback
         if(avatar){
           pfpEl.style.backgroundImage = `url('${avatar}')`;
           pfpEl.style.backgroundSize = "cover";
@@ -2102,20 +2129,7 @@
           pfpEl.textContent = String(name).trim().charAt(0).toUpperCase() || "U";
         }
       }
-
-      // Also try to read extra info from public.users by ID if available (fail-soft)
-      try{
-        const { data, error } = await supabase
-          .from("users")
-          .select("email")
-          .eq("id", user.id)
-          .maybeSingle();
-        if(!error && data?.email && nameEl && (!md.full_name && !md.name)){
-          // If metadata has no name, keep email
-          nameEl.textContent = String(data.email);
-        }
-      }catch(_e){}
-      }
+    }
 
 
 
@@ -2198,7 +2212,7 @@
       }
     }
 
-    function swapFiat(){
+    async function swapFiat(){
       const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
       const FIAT_ITEMS = FIATS.map(f => ({ id:f, label, icon:"$", symbol:f.toLowerCase() }));
       mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
@@ -2236,7 +2250,7 @@
       }
     }
 
-    function loadChart(){
+    async function loadChart(){
       const pair=document.getElementById("obPair").value;
       const base=pair.replace("USDT","").toUpperCase();
       const tvSymbol = `BINANCE:${base}USDT`;
@@ -2251,93 +2265,63 @@
       startOrderBook();
     });
 
-    async function loadBalance(){
+    async function loadBalance(user){
       const balEl = document.getElementById("balance");
       if(balEl) balEl.textContent = "$0.00";
 
-      const { data: { user } } = await supabase.auth.getUser();
       if(!user) return;
 
-      // Option A: Total Portfolio Value = sum(crypto balances * live USD prices)
-      const mapToCgId = {
-        "BTC":"bitcoin",
-        "ETH":"ethereum",
-        "USDT":"tether",
-        "USDC":"usd-coin",
-        "BNB":"binancecoin",
-        "SOL":"solana",
-        "ADA":"cardano",
-        "DOGE":"dogecoin",
-        "TRX":"tron",
-        "TON":"the-open-network",
-      };
-
+      // Option A: Portfolio value = sum of per-asset crypto balances * live USD prices
+      // Source balances: public.user_crypto_balances
       let rows = [];
       try{
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("user_crypto_balances")
           .select("asset_key,balance")
           .eq("user_id", user.id);
 
         if(error) throw error;
-        rows = (data || []);
-      }catch(_e){
-        rows = [];
+        rows = data || [];
+      }catch(e){
+        console.warn("loadBalance: unable to read user_crypto_balances:", e?.message || e);
+        return;
       }
 
-      // Build CoinGecko ids for assets we have balances for
-      const cgIds = Array.from(new Set(
-        rows.map(r => String(r.asset_key || "").toUpperCase()).map(k => mapToCgId[k]).filter(Boolean)
-      ));
+      const symToCg = {
+        BTC:"bitcoin", ETH:"ethereum", BNB:"binancecoin", ADA:"cardano",
+        DOGE:"dogecoin", SOL:"solana", TON:"the-open-network",
+        TRX:"tron", USDT:"tether", USDC:"usd-coin"
+      };
+
+      const ids = Array.from(new Set(rows.map(r=>symToCg[String(r.asset_key||"").toUpperCase()]).filter(Boolean)));
+      if(!ids.length){
+        if(balEl) balEl.textContent = "$0.00";
+        return;
+      }
 
       let prices = {};
-      if(cgIds.length){
-        try{
-          const url = "https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(cgIds.join(",")) + "&vs_currencies=usd";
-          const res = await fetch(url, { cache: "no-store" });
-          const js = await res.json();
-          for(const id of cgIds){
-            const v = Number(js?.[id]?.usd ?? NaN);
-            if(Number.isFinite(v)) prices[id] = v;
-          }
-        }catch(_e){
-          prices = {};
-        }
-      }
-
-      let totalUsd = 0;
-      for(const r of rows){
-        const k = String(r.asset_key || "").toUpperCase();
-        const bal = Number(r.balance ?? 0);
-        if(!Number.isFinite(bal) || bal <= 0) continue;
-        const id = mapToCgId[k];
-        const px = Number(prices[id] ?? NaN);
-        if(Number.isFinite(px)) totalUsd += bal * px;
-      }
-
-      // Fallback: if prices blocked or no rows, use users.balance (by ID) instead of setting 0
-      if(!(totalUsd > 0)){
-        try{
-          const { data, error } = await supabase
-            .from("users")
-            .select("balance")
-            .eq("id", user.id)
-            .maybeSingle();
-          if(!error){
-            const v = Number((data)?.balance ?? 0);
-            if(Number.isFinite(v) && v > 0) totalUsd = v;
-          }
-        }catch(_e){}
-      }
-
-      // Render
-      const fmt = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
-      if(balEl) balEl.textContent = fmt.format(Number.isFinite(totalUsd) ? totalUsd : 0);
-
-      // Share for other pages (wallet etc.) if needed
       try{
-        localStorage.setItem("vgm_total_portfolio_usd", String(Number.isFinite(totalUsd) ? totalUsd : 0));
-      }catch(_e){}
+        const url = "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=" + encodeURIComponent(ids.join(","));
+        const res = await fetch(url, { cache:"no-store" });
+        if(!res.ok) throw new Error("price fetch failed: " + res.status);
+        prices = await res.json();
+      }catch(e){
+        console.warn("loadBalance: price fetch failed:", e?.message || e);
+        return;
+      }
+
+      let total = 0;
+      for(const r of rows){
+        const sym = String(r.asset_key||"").toUpperCase();
+        const bal = Number(r.balance||0);
+        const id = symToCg[sym];
+        const px = Number(prices?.[id]?.usd || 0);
+        total += bal * px;
+      }
+
+      if(balEl){
+        balEl.textContent = "$" + total.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+      }
     }
 
 
@@ -2397,7 +2381,7 @@
       `;
     }
 
-    function setBadge(elId, count){
+    async function setBadge(elId, count){
       const el=document.getElementById(elId);
       if(!el) return;
       const n=Number(count||0);
@@ -2405,7 +2389,7 @@
       else { el.style.display="flex"; el.innerText = n>99?"99+":String(n); }
     }
 
-    function setBadgeFromKey(key,val){
+    async function setBadgeFromKey(key,val){
       if(key==="deposits") setBadge("badgeDepositDock", val);
       else if(key==="withdrawals") setBadge("badgeWithdrawDock", val);
     }
@@ -2424,7 +2408,7 @@
       (data || []).forEach(row => setBadgeFromKey(row.badge_key, row.badge_value));
     }
 
-    function subscribeToRealtimeBadges(){
+    async function subscribeToRealtimeBadges(){
       if(!currentUserId) return;
 
       if(badgeChannel){
@@ -2491,7 +2475,7 @@
       }
     }
 
-    function redirectToKyc(status){
+    async function redirectToKyc(status){
       try{
         const s = encodeURIComponent(String(status || "none"));
         // Keep gate visible for premium feel; redirect fast.
@@ -2501,35 +2485,44 @@
       }
     }
 
-    function initWithUser(user){
-      currentUserEmail=user.email;
-      currentUserId=user.id;
+    async function initWithUser(user){
+      if(!user) return;
+
+      currentUserEmail = (user.email || "").toLowerCase();
+      currentUserId = user.id;
 
       setGreeting();
       startClock();
 
-      document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
+      const chip = document.getElementById("userIdChip");
+      if(chip) chip.innerText = "ID: " + String(currentUserId || "").slice(0,6).toUpperCase();
 
-      /* ✅ Loading screen stays 3 seconds longer */
-      setTimeout(()=>hideGate(), 3000);
+      // Keep the loading gate a little longer for a smoother boot, BUT don't hide if locked.
+      setTimeout(()=>{
+        const gate = document.getElementById("authGate");
+        if(gate && gate.dataset.lock) return;
+        hideGate();
+      }, 1200);
 
-      loadDashboardIdentity();
-      loadBalance();
-      loadActivePlan();
-      loadRealtimeBadgesOnce();
-      subscribeToRealtimeBadges();
+      await loadDashboardIdentity(user);
+      await loadBalance(user);
 
-      loadTop10MajorCryptos();
-      startTop10AutoRefresh();
+      // Existing features (fail-soft so one failure doesn't kill the page)
+      try{ await loadActivePlan(); }catch(_e){}
+      try{ await loadRealtimeBadgesOnce(); }catch(_e){}
+      try{ await subscribeToRealtimeBadges(); }catch(_e){}
 
-      loadNews();
-      startNewsAutoRefresh();
+      try{ await loadTop10MajorCryptos(); startTop10AutoRefresh(); }catch(_e){}
 
-      loadCoinGeckoLists().then(async ()=>{
+      // News: replace fetch-based news with embedded widget (no CORS issues)
+      try{ initNewsWidget(); }catch(_e){}
+
+      try{
+        await loadCoinGeckoLists();
         mountOBPairs();
-        loadChart();
+        await loadChart();
         startOrderBook();
-      });
+      }catch(_e){}
     }
 
     /* ============================================================
@@ -2537,52 +2530,55 @@
       If any API/network fails, we STILL hide authGate after 3 sec.
       So you never get trapped here again.
     ============================================================ */
-    (function safetyAutoHideGate(){
-      setTimeout(()=>hideGate(), 3500);
+    (async function safetyAutoHideGate(){
+      setTimeout(()=>{
+        const gate = document.getElementById('authGate');
+        if(gate && gate.dataset.lock) return;
+        hideGate();
+      }, 3500);
     })();
 
     (async function authGuard(){
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
+
         if(!session){
-          hideGate(); /* ✅ allow UI to show if session missing */
-          window.location.replace("login.html");
+          showGate("Session required","Please sign in to continue.",{ primaryText:"Go to Login", primaryHref:"login.html" });
           return;
         }
 
         const { data, error } = await supabaseClient.auth.getUser();
         const user = data?.user;
+
         if(error || !user){
-          hideGate();
-          window.location.replace("login.html");
+          showGate("Session required","Please sign in again to continue.",{ primaryText:"Go to Login", primaryHref:"login.html" });
           return;
         }
 
-        const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
-
+        const confirmed = !!(user.email_confirmed_at);
         if(!confirmed){
-          await supabaseClient.auth.signOut();
-          hideGate();
-          window.location.replace("verify.html?status=unverified");
+          showGate("Verify your email","Please verify your email, then refresh this page.",{ primaryText:"Open Inbox", primaryHref:"mailto:" + (user.email || "") });
           return;
         }
 
-        // ✅ NEW: KYC approval gate (blocks everything unless approved)
-        const kycStatus = await getMyKycStatus(user.id);
-        if(kycStatus !== "approved"){
-          // Optional: if user is rejected/pending/none → lock to verification upload page
-          redirectToKyc(kycStatus);
-          return;
-        }
+        // Optional KYC gate
+        try{
+          const kycStatus = await getMyKycStatus(user.id, user.email || "");
+          if(kycStatus && kycStatus !== "approved"){
+            // If you want KYC enforced, keep this gate.
+            showGate("KYC required","Complete verification to access your dashboard.",{ primaryText:"Start Verification", primaryHref:"verification.html" });
+            return;
+          }
+        }catch(_e){ /* fail-soft */ }
 
-        window.COINLUXORA_USER=user;
-        initWithUser(user);
-      }catch(e){
         hideGate();
-        window.location.replace("login.html");
+        await initWithUser(user);
+      }catch(e){
+        console.error("authGuard fatal:", e);
+        showGate("Auth error","Unable to validate your session right now.",{ primaryText:"Go to Login", primaryHref:"login.html" });
       }
-    })();
+    })();)();
   </script>
 </body>
 </html>
