@@ -1337,7 +1337,7 @@
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-    const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1533,13 +1533,13 @@
       "ripple","usd-coin","dogecoin","cardano","tron"
     ];
 
-    async function fmtMoneySmart(n){
+    function fmtMoneySmart(n){
       const num=Number(n||0);
       if(num >= 1000) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:2});
       if(num >= 1) return "$" + num.toLocaleString(undefined,{maximumFractionDigits:4});
       return "$" + num.toLocaleString(undefined,{maximumFractionDigits:8});
     }
-    async function nfmt(n, dp=2){
+    function nfmt(n, dp=2){
       return Number(n).toLocaleString(undefined,{minimumFractionDigits:dp, maximumFractionDigits:dp});
     }
 
@@ -2052,7 +2052,8 @@ function hideGate(){
       return "";
     }
 
-    async function resolveCountryISO(countryNameFromDB){
+    async async function resolveCountryISO(countryNameFromDB){
+      // Best-effort ISO country code for the dashboard chip
       let iso = countryNameToISO(countryNameFromDB);
       if(iso) return iso;
       iso = await detectCountryFromIP();
@@ -2060,33 +2061,6 @@ function hideGate(){
       iso = detectCountryFromLocale();
       if(iso) return iso;
       return "";
-
-      // Also try profiles table for name/avatar (fail-soft). This fixes cases where your profile picture
-      // is stored in public.profiles instead of auth metadata.
-      try{
-        const { data: p, error: perr } = await supabase
-          .from("profiles")
-          .select("full_name, name, avatar_url, profile_pic_url, photo_url, country")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if(!perr && p){
-          const pname = String(p.full_name || p.name || "").trim();
-          const pavatar = String(p.avatar_url || p.profile_pic_url || p.photo_url || "").trim();
-
-          if(pname && nameEl && (String(nameEl.textContent||"").trim()==="" || String(nameEl.textContent||"").includes("@"))){
-            nameEl.textContent = pname;
-          }
-          if(pavatar && pfpEl){
-            pfpEl.style.backgroundImage = `url('${pavatar}')`;
-            pfpEl.style.backgroundSize = "cover";
-            pfpEl.style.backgroundPosition = "center";
-            pfpEl.textContent = "";
-          }
-        }
-      }catch(_e){}
-
-
     }
 
     async function loadDashboardIdentity(user){
@@ -2100,7 +2074,7 @@ function hideGate(){
 
       // Try public.users (preferred for your dashboard uploads)
       try{
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from("users")
           .select("full_name,avatar_url,email")
           .eq("id", user.id)
@@ -2275,7 +2249,7 @@ function hideGate(){
       // Source balances: public.user_crypto_balances
       let rows = [];
       try{
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from("user_crypto_balances")
           .select("asset_key,balance")
           .eq("user_id", user.id);
@@ -2330,7 +2304,7 @@ function hideGate(){
       const planMsg=document.getElementById("planMsg");
       const planBox=document.getElementById("planBox");
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("investment_plans")
         .select("*")
         .eq("user_email", currentUserEmail)
@@ -2399,7 +2373,7 @@ function hideGate(){
       setBadge("badgeDepositDock", 0);
       setBadge("badgeWithdrawDock", 0);
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("user_badges")
         .select("badge_key, badge_value")
         .eq("user_id", currentUserId);
@@ -2412,11 +2386,11 @@ function hideGate(){
       if(!currentUserId) return;
 
       if(badgeChannel){
-        supabaseClient.removeChannel(badgeChannel);
+        supabase.removeChannel(badgeChannel);
         badgeChannel=null;
       }
 
-      badgeChannel = supabaseClient
+      badgeChannel = supabase
         .channel("realtime-user-badges-dashboard")
         .on("postgres_changes", {
           event: "*",
@@ -2433,7 +2407,7 @@ function hideGate(){
 
     async function clearBadge(badge_key){
       try{
-        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
         if(!accessToken) return;
 
@@ -2450,7 +2424,7 @@ function hideGate(){
     }
 
     async function logout(){
-      await supabaseClient.auth.signOut();
+      await supabase.auth.signOut();
       window.location.replace("login.html");
     }
 
@@ -2461,7 +2435,7 @@ function hideGate(){
     // ============================================================
     async function getMyKycStatus(userId){
       try{
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
           .from("user_kyc")
           .select("status")
           .eq("user_id", userId)
@@ -2540,7 +2514,7 @@ function hideGate(){
 
     (async function authGuard(){
       try{
-        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
         const session = sessionData?.session;
 
         if(!session){
@@ -2548,7 +2522,7 @@ function hideGate(){
           return;
         }
 
-        const { data, error } = await supabaseClient.auth.getUser();
+        const { data, error } = await supabase.auth.getUser();
         const user = data?.user;
 
         if(error || !user){
