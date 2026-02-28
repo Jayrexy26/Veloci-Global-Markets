@@ -1383,44 +1383,59 @@
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    async function loadNews(){
+    
+    // TradingView news embed (avoids RSS/network blocks)
+    let __tvNewsMounted = false;
+
+    function mountTradingViewNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
+
+      // Prevent multiple mounts (intervals / re-init)
+      if(__tvNewsMounted) return;
+      __tvNewsMounted = true;
+
+      msg.textContent = "";
+      list.innerHTML = `
+        <div class="tradingview-widget-container" style="width:100%">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      `;
+
+      // Create the TradingView Timeline widget script
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      s.async = true;
+      s.innerHTML = JSON.stringify({
+        feedMode: "all_symbols",
+        colorTheme: "dark",
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: 720,
+        locale: "en"
+      });
+      list.querySelector(".tradingview-widget-container").appendChild(s);
+    }
+
+    async function loadNews(){
       try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
+        // Always use TradingView news (no fetch calls, no CORS issues)
+        mountTradingViewNews();
       }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
+        const msg=document.getElementById("newsMsg");
+        const list=document.getElementById("newsList");
+        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
+        if(list) list.innerHTML = "";
       }
     }
+
     function startNewsAutoRefresh(){
+      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
+      newsTimer = null;
     }
 
     /* ============================================================
@@ -2040,63 +2055,87 @@
 
     async function loadDashboardIdentity(){
       try{
+
         // =========================
-        // ✅ AVATAR RESOLVER (FIX v2)
-        // - Works even if fetch is blocked by CORS
-        // - Tries Public URL first (public bucket), then Signed URL (private bucket/policy)
-        // - Uses image onload/onerror probing (no fetch)
-        // - Persists last working URL in localStorage so refresh never blanks
+        // ✅ AVATAR PERSIST + RESOLVE (FINAL FIX)
+        // Problem: users.avatar_url often stores a STORAGE PATH (e.g. "<userId>/avatar.png"),
+        // but setTopAvatar expects a FULL URL. After refresh, avatarUrl is blank or not a URL → image disappears.
+        //
+        // Fix:
+        // - If avatarUrl is a path, convert to PUBLIC URL (or SIGNED URL if policies block public).
+        // - If avatarUrl is empty, auto-detect latest file in avatars/<userId>/ by listing the folder.
+        // - Cache the last working URL in localStorage so refresh never blanks.
+        // - No changes to loading gate logic (prevents being stuck).
         // =========================
         const AVATAR_BUCKET = "avatars";
+        const AVATAR_CACHE_KEY = "vgm_avatar_cache_" + String(currentUserId||"").trim();
 
         function isHttpUrl(u){
           return /^https?:\/\//i.test(String(u||"").trim());
         }
 
-        function cleanStoragePath(p, userId){
+        function normalizeAvatarPath(p){
           let s = String(p||"").trim();
           if(!s) return "";
           if(isHttpUrl(s)) return s;
           s = s.replace(/^\/+/, "");
-          // Remove common prefixes if stored
-          if(s.toLowerCase().startsWith("public/")) s = s.slice("public/".length);
+          // strip bucket prefixes if saved that way
           if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
-          if(s.toLowerCase().startsWith("storage/v1/object/public/avatars/")) s = s.split("storage/v1/object/public/avatars/")[1] || s;
-          if(s.toLowerCase().startsWith("storage/v1/object/avatars/")) s = s.split("storage/v1/object/avatars/")[1] || s;
-          // If filename only, assume <userId>/filename
-          if(!s.includes("/") && userId) s = `${userId}/${s}`;
+          if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
+          if(s.toLowerCase().includes("storage/v1/object/public/avatars/")){
+            s = s.split("storage/v1/object/public/avatars/")[1] || s;
+          }
+          if(s.toLowerCase().includes("storage/v1/object/avatars/")){
+            s = s.split("storage/v1/object/avatars/")[1] || s;
+          }
+          // if it's just a filename, assume it's under <userId>/
+          if(!s.includes("/") && currentUserId) s = `${currentUserId}/${s}`;
           return s;
         }
 
-        function withBust(url){
+        function bust(url){
           if(!url) return "";
           return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
         }
 
-        function publicUrlFor(path){
+        function cacheSet(url){
           try{
-            const p = String(path||"").trim();
-            if(!p) return "";
-            const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(p);
-            return data?.publicUrl ? withBust(data.publicUrl) : "";
+            if(url) localStorage.setItem(AVATAR_CACHE_KEY, url.split("?")[0]);
+          }catch(e){}
+        }
+        function cacheGet(){
+          try{
+            const v = localStorage.getItem(AVATAR_CACHE_KEY) || "";
+            return v ? bust(v) : "";
           }catch(e){
             return "";
           }
+        }
+        function cacheClear(){
+          try{ localStorage.removeItem(AVATAR_CACHE_KEY); }catch(e){}
         }
 
         async function signedUrlFor(path){
           try{
-            const p = String(path||"").trim();
-            if(!p) return "";
-            const { data, error } = await supabaseClient.storage.from(AVATAR_BUCKET).createSignedUrl(p, 60 * 60); // 1 hour
+            const { data, error } = await supabaseClient.storage.from(AVATAR_BUCKET).createSignedUrl(path, 60*60);
             if(error) return "";
-            return data?.signedUrl ? withBust(data.signedUrl) : "";
+            return data?.signedUrl ? bust(data.signedUrl) : "";
           }catch(e){
             return "";
           }
         }
 
-        function probeImage(url, timeoutMs=4500){
+        function publicUrlFor(path){
+          try{
+            const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+            const url = data?.publicUrl || "";
+            return url ? bust(url) : "";
+          }catch(e){
+            return "";
+          }
+        }
+
+        function probeImage(url, timeoutMs=5000){
           return new Promise((resolve)=>{
             if(!url) return resolve(false);
             const img = new Image();
@@ -2105,148 +2144,78 @@
             const t=setTimeout(()=>finish(false), timeoutMs);
             img.onload=()=>{ clearTimeout(t); finish(true); };
             img.onerror=()=>{ clearTimeout(t); finish(false); };
-            // no-referrer is fine; avoids some strict referrer policies
-            try{ img.referrerPolicy = "no-referrer"; }catch(e){}
+            try{ img.referrerPolicy="no-referrer"; }catch(e){}
             img.src=url;
           });
         }
 
-        function avatarCacheKey(userId){
-          return `vgm_avatar_url_${String(userId||"").trim()}`;
-        }
-
-        function getCachedAvatar(userId){
+        async function pickAvatarFromFolder(){
           try{
-            const k=avatarCacheKey(userId);
-            const v=localStorage.getItem(k) || "";
-            return v ? withBust(v) : "";
+            if(!currentUserId) return "";
+            const { data, error } = await supabaseClient.storage
+              .from(AVATAR_BUCKET)
+              .list(String(currentUserId), { limit: 100, offset: 0, sortBy: { column: "updated_at", order: "desc" } });
+
+            if(error || !Array.isArray(data) || data.length===0) return "";
+
+            // Prefer typical names, otherwise take most recent
+            const names = data.map(x=>String(x?.name||"")).filter(Boolean);
+            const preferred = ["avatar.png","avatar.jpg","avatar.jpeg","profile.png","profile.jpg","profile.jpeg"];
+            const found = preferred.find(n=>names.includes(n));
+            const chosen = found || names[0];
+            return `${currentUserId}/${chosen}`;
           }catch(e){
             return "";
           }
         }
 
-        function setCachedAvatar(userId, url){
-          try{
-            const k=avatarCacheKey(userId);
-            if(url) localStorage.setItem(k, url.split("?")[0]); // store clean base URL
-          }catch(e){}
-        }
-
-        async function resolveAvatarUrl(userId, dbValue, mdValue){
-          // 0) localStorage cache first (fast, survives refresh)
-          const cached = getCachedAvatar(userId);
+        async function resolveAvatarUrl(rawAvatarUrl){
+          // 0) local cache first
+          const cached = cacheGet();
           if(cached){
             const ok = await probeImage(cached);
             if(ok) return cached;
+            cacheClear();
           }
 
-          // 1) Prefer explicit values (DB then metadata)
-          const raw = (dbValue && String(dbValue).trim()) ? dbValue : (mdValue && String(mdValue).trim() ? mdValue : "");
-          const candidates = [];
-
-          if(raw){
-            if(isHttpUrl(raw)){
-              candidates.push(withBust(raw));
-            }else{
-              const path = cleanStoragePath(raw, userId);
-              if(path){
-                candidates.push(publicUrlFor(path));
-              }
-            }
-          }
-
-          // 2) Common filenames in user folder
-          const base = String(userId||"").trim();
-          if(base){
-            [
-              `${base}/avatar.png`,
-              `${base}/avatar.jpg`,
-              `${base}/avatar.jpeg`,
-              `${base}/Avatar.png`,
-              `${base}/Avatar.jpg`,
-              `${base}/Avatar.jpeg`,
-              `${base}/profile.png`,
-              `${base}/profile.jpg`,
-              `${base}/profile.jpeg`
-            ].forEach(p => candidates.push(publicUrlFor(p)));
-          }
-
-          // 3) Try public URL candidates via onload/onerror (no fetch)
-          for(const u of candidates){
-            if(!u) continue;
+          // 1) If already full URL, use it
+          if(rawAvatarUrl && isHttpUrl(rawAvatarUrl)){
+            const u = bust(rawAvatarUrl);
             const ok = await probeImage(u);
-            if(ok){
-              setCachedAvatar(userId, u);
-              return u;
+            if(ok){ cacheSet(u); return u; }
+          }
+
+          // 2) If path, try PUBLIC then SIGNED
+          const path = normalizeAvatarPath(rawAvatarUrl);
+          if(path){
+            const pub = publicUrlFor(path);
+            if(pub){
+              const ok = await probeImage(pub);
+              if(ok){ cacheSet(pub); return pub; }
+            }
+            const signed = await signedUrlFor(path);
+            if(signed){
+              const ok = await probeImage(signed);
+              if(ok){ cacheSet(signed); return signed; }
             }
           }
 
-          // 4) If public failed, try Signed URLs (covers private bucket / restrictive policies)
-          const pathsToSign = [];
-          if(raw && !isHttpUrl(raw)){
-            const path = cleanStoragePath(raw, userId);
-            if(path) pathsToSign.push(path);
-          }
-          if(base){
-            pathsToSign.push(`${base}/avatar.png`, `${base}/avatar.jpg`, `${base}/avatar.jpeg`, `${base}/profile.png`, `${base}/profile.jpg`, `${base}/profile.jpeg`);
-          }
-
-          for(const p of pathsToSign){
-            const signed = await signedUrlFor(p);
-            if(!signed) continue;
-            const ok = await probeImage(signed);
-            if(ok){
-              setCachedAvatar(userId, signed);
-              return signed;
+          // 3) If nothing stored, auto-detect in folder and try again
+          const detectedPath = await pickAvatarFromFolder();
+          if(detectedPath){
+            const pub = publicUrlFor(detectedPath);
+            if(pub){
+              const ok = await probeImage(pub);
+              if(ok){ cacheSet(pub); return pub; }
+            }
+            const signed = await signedUrlFor(detectedPath);
+            if(signed){
+              const ok = await probeImage(signed);
+              if(ok){ cacheSet(signed); return signed; }
             }
           }
 
           return "";
-        }
-
-        async function applyAvatarTo(imgEl, fallbackEl, userId, urlFromDb, urlFromMd){
-          const resolved = await resolveAvatarUrl(userId, urlFromDb, urlFromMd);
-          if(imgEl){
-            if(resolved){
-              imgEl.src = resolved;
-              imgEl.style.display = "block";
-              imgEl.onerror = async ()=>{
-                // If it fails later (cache/policy), clear cache and retry once
-                try{ localStorage.removeItem(avatarCacheKey(userId)); }catch(e){}
-                const retry = await resolveAvatarUrl(userId, urlFromDb, urlFromMd);
-                if(retry){
-                  imgEl.src = retry;
-                  imgEl.style.display = "block";
-                  if(fallbackEl) fallbackEl.style.display = "none";
-                }else{
-                  imgEl.removeAttribute("src");
-                  imgEl.style.display = "none";
-                  if(fallbackEl) fallbackEl.style.display = "inline";
-                }
-              };
-              if(fallbackEl) fallbackEl.style.display = "none";
-            }else{
-              imgEl.removeAttribute("src");
-              imgEl.style.display = "none";
-              if(fallbackEl) fallbackEl.style.display = "inline";
-            }
-          }
-        }
-
-        async function setTopAvatarRobust(userId, urlFromDb, urlFromMd){
-          await applyAvatarTo(
-            document.getElementById("avatarImgBtn"),
-            document.getElementById("avatarFallback"),
-            userId, urlFromDb, urlFromMd
-          );
-        }
-
-        async function setSideAvatarRobust(userId, urlFromDb, urlFromMd){
-          await applyAvatarTo(
-            document.getElementById("sideAvatarImg"),
-            document.getElementById("sideAvatarFallback"),
-            userId, urlFromDb, urlFromMd
-          );
         }
 
         let fullName="", avatarUrl="", countryName="";
@@ -2258,8 +2227,9 @@
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
         setNameEverywhere(fullName);
-        await setTopAvatarRobust(currentUserId, avatarUrl, (window.COINLUXORA_USER?.user_metadata||{}).avatar_url || "");
-        await setSideAvatarRobust(currentUserId, avatarUrl, (window.COINLUXORA_USER?.user_metadata||{}).avatar_url || "");
+        const resolvedAvatar = await resolveAvatarUrl(avatarUrl);
+        setTopAvatar(resolvedAvatar);
+        setSideAvatar(resolvedAvatar);
 
         const iso = await resolveCountryISO(countryName);
         const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
