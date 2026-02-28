@@ -1383,59 +1383,44 @@
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    
-    // TradingView news embed (avoids RSS/network blocks)
-    let __tvNewsMounted = false;
-
-    function mountTradingViewNews(){
+    async function loadNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
-
-      // Prevent multiple mounts (intervals / re-init)
-      if(__tvNewsMounted) return;
-      __tvNewsMounted = true;
-
-      msg.textContent = "";
-      list.innerHTML = `
-        <div class="tradingview-widget-container" style="width:100%">
-          <div class="tradingview-widget-container__widget"></div>
-        </div>
-      `;
-
-      // Create the TradingView Timeline widget script
-      const s = document.createElement("script");
-      s.type = "text/javascript";
-      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-      s.async = true;
-      s.innerHTML = JSON.stringify({
-        feedMode: "all_symbols",
-        colorTheme: "dark",
-        isTransparent: true,
-        displayMode: "regular",
-        width: "100%",
-        height: 720,
-        locale: "en"
-      });
-      list.querySelector(".tradingview-widget-container").appendChild(s);
-    }
-
-    async function loadNews(){
       try{
-        // Always use TradingView news (no fetch calls, no CORS issues)
-        mountTradingViewNews();
+        msg.textContent="Loading…";
+        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = (data?.items || []).slice(0, 12);
+        if(!items.length) throw new Error("no news");
+        msg.textContent="";
+        list.innerHTML = items.map(it=>{
+          const title=esc(it.title||"");
+          const link=it.link||"#";
+          const pub=it.pubDate||it.published||"";
+          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
+          const ago = pub ? timeAgo(pub) : "";
+          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
+            <div class="newsTop">
+              <div class="newsTitle">${title}</div>
+            </div>
+            <div class="newsMeta">
+              <span class="newsTag">News</span>
+              <span>${src}</span>
+              ${ago?`<span>• ${ago}</span>`:""}
+            </div>
+            <div class="newsBottom">Tap to open full story</div>
+          </a>`;
+        }).join("");
       }catch(e){
-        const msg=document.getElementById("newsMsg");
-        const list=document.getElementById("newsList");
-        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
-        if(list) list.innerHTML = "";
+        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
+        list.innerHTML="";
       }
     }
-
     function startNewsAutoRefresh(){
-      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer = null;
+      newsTimer=setInterval(loadNews, 60000);
     }
 
     /* ============================================================
@@ -1955,14 +1940,144 @@
       setInterval(tick,1000);
     }
 
+    
+    // ============================================================
+    // ✅ AVATAR FIX (SHOWS AFTER UPLOAD + PERSISTS AFTER REFRESH)
+    // Problem:
+    // - Your dashboard expects avatar_url to be a direct URL.
+    // - Many uploads store a STORAGE PATH (e.g. "avatars/<userId>/pic.png"),
+    //   so the image won't load.
+    //
+    // Fix:
+    // - Convert storage paths -> usable public/signed URLs
+    // - If avatar_url is empty, auto-discover latest avatar in common buckets
+    // ============================================================
+    function stripQuery(u){
+      try{ return String(u||"").split("?")[0]; }catch(e){ return String(u||""); }
+    }
+    function isHttpUrl(u){
+      try{ return /^https?:\/\//i.test(String(u||"")); }catch(e){ return false; }
+    }
+    function looksLikeImage(name){
+      const n=String(name||"").toLowerCase();
+      return n.endsWith(".png")||n.endsWith(".jpg")||n.endsWith(".jpeg")||n.endsWith(".webp")||n.endsWith(".gif");
+    }
+
+    async function tryPublicOrSigned(bucket, path){
+      try{
+        // Public URL (works if bucket/object is public)
+        const pub = supabaseClient.storage.from(bucket).getPublicUrl(path);
+        const pubUrl = pub?.data?.publicUrl || "";
+        if(pubUrl) return pubUrl;
+
+        // Signed URL (works for private buckets if storage policy allows the user)
+        const { data, error } = await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
+        if(!error && data?.signedUrl) return data.signedUrl;
+
+        return "";
+      }catch(e){
+        return "";
+      }
+    }
+
+    async function discoverLatestAvatar(userId){
+      if(!userId) return "";
+      const buckets = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
+      const foldersToTry = [userId, `${userId}/avatar`, `${userId}/avatars`, ""];
+
+      for(const b of buckets){
+        for(const folder of foldersToTry){
+          try{
+            const { data, error } = await supabaseClient.storage.from(b).list(folder || "", {
+              limit: 50,
+              sortBy: { column: "updated_at", order: "desc" }
+            });
+            if(error || !data || !data.length) continue;
+
+            // pick first image-like
+            const item = data.find(x => looksLikeImage(x?.name)) || data[0];
+            if(item?.name){
+              const path = folder ? `${folder}/${item.name}`.replace(/\/+/g,"/") : item.name;
+              const url = await tryPublicOrSigned(b, path);
+              if(url) return url;
+            }
+          }catch(e){}
+        }
+      }
+      return "";
+    }
+
+    async function resolveAvatarUrl(rawAvatarUrl, userId){
+      const raw = String(rawAvatarUrl||"").trim();
+
+      // If missing from DB/metadata, auto-discover in storage
+      if(!raw){
+        return await discoverLatestAvatar(userId);
+      }
+
+      // Already a usable URL or data URI
+      if(raw.startsWith("data:")) return raw;
+      if(isHttpUrl(raw)) return raw;
+      if(raw.includes("/storage/v1/object/")) return raw;
+
+      // Treat as storage path
+      const cleaned = raw.replace(/^\/+/, "");
+      const parts = cleaned.split("/").filter(Boolean);
+
+      // If saved as "bucket/path...", try that
+      if(parts.length >= 2){
+        const maybeBucket = parts[0];
+        const restPath = parts.slice(1).join("/");
+        const direct = await tryPublicOrSigned(maybeBucket, restPath);
+        if(direct) return direct;
+      }
+
+      // Otherwise, try common buckets with raw path and common folder patterns
+      const buckets = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
+      const candidatePaths = [cleaned];
+
+      if(userId){
+        candidatePaths.push(`${userId}/${cleaned}`);
+        if(parts.length === 1){
+          candidatePaths.push(`${userId}/avatar/${cleaned}`);
+          candidatePaths.push(`${userId}/avatars/${cleaned}`);
+        }
+      }
+
+      for(const p of candidatePaths){
+        for(const b of buckets){
+          const url = await tryPublicOrSigned(b, p);
+          if(url) return url;
+        }
+      }
+
+      // As a last resort, attempt discovery
+      return await discoverLatestAvatar(userId);
+    }
+
     function setTopAvatar(avatarUrl){
-      const fallback=document.getElementById("avatarFallback");
+      const fb=document.getElementById("avatarFallback");
       const img=document.getElementById("avatarImgBtn");
-      if(avatarUrl){
-        img.src=stripQuery(avatarUrl) + "?t=" + Date.now();
+      if(!img || !fb) return;
+
+      img.onerror = null;
+
+      const url = String(avatarUrl||"").trim();
+      if(url){
+        const clean = stripQuery(url);
+        img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
         img.style.display="block";
-        fallback.style.display="none";
+        fb.style.display="none";
+
+        img.onerror = () => {
+          img.style.display="none";
+          fb.style.display="block";
+        };
       }else{
+        img.style.display="none";
+        fb.style.display="block";
+      }
+    }else{
         img.style.display="none";
         fallback.style.display="block";
       }
@@ -1970,102 +2085,30 @@
     function setSideAvatar(avatarUrl){
       const fb=document.getElementById("sideAvatarFallback");
       const img=document.getElementById("sideAvatarImg");
-      if(avatarUrl){
-        img.src=stripQuery(avatarUrl) + "?t=" + Date.now();
+      if(!img || !fb) return;
+
+      img.onerror = null;
+
+      const url = String(avatarUrl||"").trim();
+      if(url){
+        const clean = stripQuery(url);
+        img.src = clean + (clean.includes("?") ? "&" : "?") + "t=" + Date.now();
         img.style.display="block";
         fb.style.display="none";
+
+        img.onerror = () => {
+          img.style.display="none";
+          fb.style.display="block";
+        };
       }else{
         img.style.display="none";
         fb.style.display="block";
       }
+    }else{
+        img.style.display="none";
+        fb.style.display="block";
+      }
     }
-
-     // ============================================================
-     // ✅ AVATAR URL RESOLVER (FIXES "UPLOAD NOT SHOWING" + "EMPTY AFTER REFRESH")
-     // Supports:
-     // - Full http(s) URLs (kept as-is)
-     // - Supabase Storage object paths like:
-     //     "avatars/userid.png" or "userid/avatar.png" or "avatar.png"
-     // It tries public URL first; if inaccessible, falls back to signed URL.
-     // ============================================================
-     function isHttpUrl(u){
-       try{ return /^https?:\/\//i.test(String(u||"")); }catch(e){ return false; }
-     }
-     function stripQuery(u){
-       try{ return String(u||"").split("?")[0]; }catch(e){ return String(u||""); }
-     }
-     async function headOk(url){
-       try{
-         const res = await fetch(url, { method:"HEAD", cache:"no-store", mode:"cors" });
-         return !!res && res.ok;
-       }catch(e){
-         return false;
-       }
-     }
-
-     async function tryPublicOrSigned(bucket, path){
-       try{
-         const pub = supabaseClient.storage.from(bucket).getPublicUrl(path);
-         const pubUrl = pub?.data?.publicUrl || "";
-         if(pubUrl){
-           const ok = await headOk(pubUrl + (pubUrl.includes("?") ? "&" : "?") + "t=" + Date.now());
-           if(ok) return pubUrl;
-         }
-
-         const { data, error } = await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
-         if(!error && data?.signedUrl) return data.signedUrl;
-
-         return "";
-       }catch(e){
-         return "";
-       }
-     }
-
-     async function resolveAvatarUrl(rawAvatarUrl, userId){
-       const raw = String(rawAvatarUrl || "").trim();
-       if(!raw) return "";
-       if(raw.startsWith("data:")) return raw;
-       if(isHttpUrl(raw)) return raw;
-
-       if(raw.includes("/storage/v1/object/")) return raw;
-
-       const cleaned = raw.replace(/^\/+/, "");
-       const bucketsToTry = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
-
-       const candidates = [];
-       candidates.push({ bucket:null, path: cleaned });
-
-       const parts = cleaned.split("/");
-       if(parts.length >= 2){
-         const maybeBucket = parts[0];
-         const restPath = parts.slice(1).join("/");
-         candidates.push({ bucket: maybeBucket, path: restPath });
-       }
-
-       if(userId){
-         candidates.push({ bucket:null, path: `${userId}/${cleaned}` });
-         if(parts.length === 1){
-           candidates.push({ bucket:null, path: `${userId}/avatar/${cleaned}` });
-           candidates.push({ bucket:null, path: `${userId}/avatars/${cleaned}` });
-         }
-       }
-
-       for(const c of candidates){
-         if(c.bucket){
-           const got = await tryPublicOrSigned(c.bucket, c.path);
-           if(got) return got;
-         }
-       }
-
-       for(const c of candidates){
-         for(const b of bucketsToTry){
-           const got = await tryPublicOrSigned(b, c.path);
-           if(got) return got;
-         }
-       }
-
-       return "";
-     }
 
     function setNameEverywhere(fullName){
       const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
@@ -2150,11 +2193,11 @@
         if(!fullName) fullName=md.full_name||"User";
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
-         // ✅ Normalize/resolve avatar URL (supports storage paths + private buckets)
-         try{
-           const resolved = await resolveAvatarUrl(avatarUrl, currentUserId);
-           if(resolved) avatarUrl = resolved;
-         }catch(e){}
+        // ✅ Resolve avatar URL from storage path OR auto-discover latest avatar
+        try{
+          const resolved = await resolveAvatarUrl(avatarUrl, currentUserId);
+          if(resolved) avatarUrl = resolved;
+        }catch(e){}
 
 
         setNameEverywhere(fullName);
