@@ -1324,6 +1324,19 @@
   </div>
 
   <script>
+// --- Robust loader: wait for Supabase JS to be available (prevents "stuck" gate if CDN is slow/blocked)
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+async function waitForSupabase(maxMs=8000){
+  const start = Date.now();
+  while (Date.now() - start < maxMs){
+    if (typeof supabase !== "undefined" && supabase && typeof supabase.createClient === "function") return true;
+    await sleep(100);
+  }
+  return false;
+}
+
+(async()=>{
+
     /* ============================================================
       ✅ STICKY MENU POLISH SCRIPT
     ============================================================ */
@@ -1343,10 +1356,22 @@
     ============================================================ */
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-    const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-    const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ✅ KYC gate config (redirect target)
+    
+    // Wait for Supabase JS to load (prevents "stuck" screen if CDN is slow/blocked)
+    const __sb_ok = await waitForSupabase(12000);
+    if (!__sb_ok){
+      console.error("Supabase JS failed to load (network blocked or CDN issue).");
+      const g = document.getElementById("authGate");
+      if (g){
+        const s = g.querySelector(".sub");
+        if (s) s.textContent = "Network blocked: could not load authentication library. Disable blockers/VPN and refresh.";
+      }
+      return;
+    }
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
+    let supabaseClient;
+// ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
 
     let currentUserEmail="";
@@ -2696,7 +2721,14 @@ async function authGuard(){
     hideGate();
   }
 })();
-  </script>
+  
+})().catch((e)=>{
+  console.error('Dashboard fatal error:', e);
+  const g=document.getElementById('authGate');
+  if(g){ const s=g.querySelector('.sub'); if(s) s.textContent='A script error occurred. Open console to see details.'; }
+});
+
+</script>
 <!-- Admin Notice Modal (site-wide, admin-controlled; per-user dismiss) -->
 <div id="adminNoticeOverlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,.55); backdrop-filter: blur(10px);">
   <div id="adminNoticeModal" style="max-width:640px; width:calc(100% - 36px); margin:9vh auto 0; border-radius:22px; overflow:hidden; border:1px solid rgba(255,255,255,.14); box-shadow:0 26px 90px rgba(0,0,0,.55);">
