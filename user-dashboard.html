@@ -1955,19 +1955,81 @@
       setInterval(tick,1000);
     }
 
-    function setTopAvatar(avatarUrl){
-      const fallback=document.getElementById("avatarFallback");
-      const img=document.getElementById("avatarImgBtn");
-      if(avatarUrl){
-        img.src=avatarUrl+"?t="+Date.now();
-        img.style.display="block";
-        fallback.style.display="none";
-      }else{
-        img.style.display="none";
-        fallback.style.display="block";
-      }
+    function isLikelyUrl(s){
+  return /^https?:\/\//i.test(s) || /^data:/i.test(s);
+}
+
+function buildAvatarCandidates(raw){
+  const v = String(raw||"").trim();
+  if(!v) return [];
+  if(isLikelyUrl(v)) return [v];
+
+  // If you saved only a storage path/key (e.g. "avatars/user123.png" or "user123.png")
+  // try a few common buckets.
+  const key = v.replace(/^\/+/, "");
+  const buckets = ["avatars","avatar","profile","profiles","profile-pics","profile_pics","user-avatars","user_avatars","public"];
+  const out = [];
+  for(const b of buckets){
+    try{
+      const obj = supabaseClient.storage.from(b).getPublicUrl(key);
+      const url = obj?.data?.publicUrl;
+      if(url) out.push(url);
+    }catch(e){}
+  }
+
+  // Also try as-is relative path (for locally hosted assets)
+  out.push(key);
+
+  // De-dupe
+  return Array.from(new Set(out));
+}
+
+function applyAvatarSmart(imgEl, fallbackEl, rawUrl){
+  const candidates = buildAvatarCandidates(rawUrl);
+  if(!imgEl || !fallbackEl) return;
+
+  if(!candidates.length){
+    imgEl.style.display="none";
+    fallbackEl.style.display="block";
+    return;
+  }
+
+  let idx = 0;
+  const tryNext = ()=>{
+    if(idx >= candidates.length){
+      imgEl.style.display="none";
+      fallbackEl.style.display="block";
+      return;
     }
-    function setSideAvatar(avatarUrl){
+    const base = candidates[idx++];
+    const src = base + (base.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+    imgEl.onload = ()=>{
+      imgEl.style.display="block";
+      fallbackEl.style.display="none";
+    };
+    imgEl.onerror = ()=>{
+      tryNext();
+    };
+    imgEl.src = src;
+  };
+
+  tryNext();
+}
+
+function setTopAvatar(avatarUrl){
+  const fallback=document.getElementById("avatarFallback");
+  const img=document.getElementById("avatarImgBtn");
+  applyAvatarSmart(img, fallback, avatarUrl);
+}
+function setSideAvatar(avatarUrl){
+  const fb=document.getElementById("sideAvatarFallback");
+  const img=document.getElementById("sideAvatarImg");
+  applyAvatarSmart(img, fb, avatarUrl);
+}
+
+function setNameEverywhere(fullName){
+(avatarUrl){
       const fb=document.getElementById("sideAvatarFallback");
       const img=document.getElementById("sideAvatarImg");
       if(avatarUrl){
