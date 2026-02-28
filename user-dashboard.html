@@ -1959,7 +1959,7 @@
       const fallback=document.getElementById("avatarFallback");
       const img=document.getElementById("avatarImgBtn");
       if(avatarUrl){
-        img.src=avatarUrl+"?t="+Date.now();
+        img.src=stripQuery(avatarUrl) + "?t=" + Date.now();
         img.style.display="block";
         fallback.style.display="none";
       }else{
@@ -1971,7 +1971,7 @@
       const fb=document.getElementById("sideAvatarFallback");
       const img=document.getElementById("sideAvatarImg");
       if(avatarUrl){
-        img.src=avatarUrl+"?t="+Date.now();
+        img.src=stripQuery(avatarUrl) + "?t=" + Date.now();
         img.style.display="block";
         fb.style.display="none";
       }else{
@@ -1979,6 +1979,93 @@
         fb.style.display="block";
       }
     }
+
+     // ============================================================
+     // ✅ AVATAR URL RESOLVER (FIXES "UPLOAD NOT SHOWING" + "EMPTY AFTER REFRESH")
+     // Supports:
+     // - Full http(s) URLs (kept as-is)
+     // - Supabase Storage object paths like:
+     //     "avatars/userid.png" or "userid/avatar.png" or "avatar.png"
+     // It tries public URL first; if inaccessible, falls back to signed URL.
+     // ============================================================
+     function isHttpUrl(u){
+       try{ return /^https?:\/\//i.test(String(u||"")); }catch(e){ return false; }
+     }
+     function stripQuery(u){
+       try{ return String(u||"").split("?")[0]; }catch(e){ return String(u||""); }
+     }
+     async function headOk(url){
+       try{
+         const res = await fetch(url, { method:"HEAD", cache:"no-store", mode:"cors" });
+         return !!res && res.ok;
+       }catch(e){
+         return false;
+       }
+     }
+
+     async function tryPublicOrSigned(bucket, path){
+       try{
+         const pub = supabaseClient.storage.from(bucket).getPublicUrl(path);
+         const pubUrl = pub?.data?.publicUrl || "";
+         if(pubUrl){
+           const ok = await headOk(pubUrl + (pubUrl.includes("?") ? "&" : "?") + "t=" + Date.now());
+           if(ok) return pubUrl;
+         }
+
+         const { data, error } = await supabaseClient.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
+         if(!error && data?.signedUrl) return data.signedUrl;
+
+         return "";
+       }catch(e){
+         return "";
+       }
+     }
+
+     async function resolveAvatarUrl(rawAvatarUrl, userId){
+       const raw = String(rawAvatarUrl || "").trim();
+       if(!raw) return "";
+       if(raw.startsWith("data:")) return raw;
+       if(isHttpUrl(raw)) return raw;
+
+       if(raw.includes("/storage/v1/object/")) return raw;
+
+       const cleaned = raw.replace(/^\/+/, "");
+       const bucketsToTry = ["avatars","profile-pictures","profile_pictures","profiles","images","public"];
+
+       const candidates = [];
+       candidates.push({ bucket:null, path: cleaned });
+
+       const parts = cleaned.split("/");
+       if(parts.length >= 2){
+         const maybeBucket = parts[0];
+         const restPath = parts.slice(1).join("/");
+         candidates.push({ bucket: maybeBucket, path: restPath });
+       }
+
+       if(userId){
+         candidates.push({ bucket:null, path: `${userId}/${cleaned}` });
+         if(parts.length === 1){
+           candidates.push({ bucket:null, path: `${userId}/avatar/${cleaned}` });
+           candidates.push({ bucket:null, path: `${userId}/avatars/${cleaned}` });
+         }
+       }
+
+       for(const c of candidates){
+         if(c.bucket){
+           const got = await tryPublicOrSigned(c.bucket, c.path);
+           if(got) return got;
+         }
+       }
+
+       for(const c of candidates){
+         for(const b of bucketsToTry){
+           const got = await tryPublicOrSigned(b, c.path);
+           if(got) return got;
+         }
+       }
+
+       return "";
+     }
 
     function setNameEverywhere(fullName){
       const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
@@ -2062,6 +2149,13 @@
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
+
+         // ✅ Normalize/resolve avatar URL (supports storage paths + private buckets)
+         try{
+           const resolved = await resolveAvatarUrl(avatarUrl, currentUserId);
+           if(resolved) avatarUrl = resolved;
+         }catch(e){}
+
 
         setNameEverywhere(fullName);
         setTopAvatar(avatarUrl);
@@ -2396,7 +2490,7 @@
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
@@ -2596,40 +2690,6 @@
         window.location.replace("login.html");
       }
     })();
-  
-/* ===== PROFILE IMAGE FIX ===== */
-function applyAvatar(url){
-  try{
-    const btnImg = document.getElementById("avatarImgBtn");
-    const sideImg = document.getElementById("sideAvatarImg");
-    const fallback1 = document.getElementById("avatarFallback");
-    const fallback2 = document.getElementById("sideAvatarFallback");
-
-    if(url){
-      if(btnImg){
-        btnImg.src = url + "?t=" + Date.now();
-        btnImg.style.display = "block";
-      }
-      if(sideImg){
-        sideImg.src = url + "?t=" + Date.now();
-        sideImg.style.display = "block";
-      }
-      if(fallback1) fallback1.style.display = "none";
-      if(fallback2) fallback2.style.display = "none";
-    }
-  }catch(e){
-    console.log("Avatar error:", e);
-  }
-}
-
-/* ===== LOADING SAFETY FALLBACK ===== */
-window.addEventListener("load", function(){
-  setTimeout(function(){
-    const gate = document.getElementById("authGate");
-    if(gate) gate.style.display = "none";
-  }, 3500);
-});
-
-</script>
+  </script>
 </body>
 </html>
