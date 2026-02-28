@@ -1384,44 +1384,53 @@
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
     async function loadNews(){
-      const msg=document.getElementById("newsMsg");
-      const list=document.getElementById("newsList");
-      if(!msg||!list) return;
+      const container = document.getElementById("newsList");
+      const msg = document.getElementById("newsMsg");
+      if(msg) msg.textContent = "Loading news…";
+      if(container) container.innerHTML = "";
+
       try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
-      }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
+        // CryptoCompare public news feed (CORS-friendly)
+        const res = await fetch("https://min-api.cryptocompare.com/data/v2/news/?lang=EN", { cache:"no-store" });
+        if(!res.ok) throw new Error("News HTTP " + res.status);
+        const js = await res.json();
+        const items = (js?.Data || []).slice(0, 10);
+
+        if(!items.length){
+          if(msg) msg.textContent = "No news right now.";
+          return;
+        }
+
+        if(msg) msg.textContent = "";
+
+        const esc = (s:string)=>String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" } as any)[c]);
+
+        for(const it of items){
+          const title = esc(it?.title || "News");
+          const url = String(it?.url || "#");
+          const source = esc(it?.source || "Crypto");
+          const t = it?.published_on ? new Date(Number(it.published_on)*1000) : null;
+          const timeTxt = t ? t.toLocaleString() : "";
+
+          const a = document.createElement("a");
+          a.className = "newsItem";
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.innerHTML = `
+            <div class="newsTop">${source}${timeTxt ? " • " + esc(timeTxt) : ""}</div>
+            <div class="newsBottom">${title}</div>
+          `;
+          container?.appendChild(a);
+        }
+      }catch(_e){
+        if(msg) msg.textContent = "Unable to load news (network blocked).";
       }
     }
-    function startNewsAutoRefresh(){
-      if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
-    }
+
+
+
+
 
     /* ============================================================
       ✅ ORDER BOOK PAIRS (SEARCHABLE)
@@ -2039,155 +2048,51 @@
     }
 
     async function loadDashboardIdentity(){
-      try{
-        let fullName="", avatarUrl="", countryName="";
-        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
-        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
+      const { data: { user } } = await supabase.auth.getUser();
+      if(!user) return;
 
-        const md=(window.COINLUXORA_USER?.user_metadata||{});
-        if(!fullName) fullName=md.full_name||"User";
-        if(!avatarUrl) avatarUrl=md.avatar_url||"";
+      // Prefer auth metadata (doesn't depend on DB columns existing)
+      const md = (user.user_metadata || {});
+      const name = (md.full_name || md.name || user.email || "User").toString();
+      const country = (md.country || md.location || "NG - Nigeria").toString();
+      const avatar = (md.avatar_url || md.avatar || md.photo_url || "").toString();
 
-        setNameEverywhere(fullName);
-        setTopAvatar(avatarUrl);
-        setSideAvatar(avatarUrl);
+      const nameEl = document.getElementById("userName");
+      const countryEl = document.getElementById("countryTag");
+      const idEl = document.getElementById("userIdTag");
+      const pfpEl = document.getElementById("pfpCircle");
 
-        const iso = await resolveCountryISO(countryName);
-        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
-        setCountryChip(iso, niceName);
-      }catch(e){
-        setNameEverywhere("User");
-        setTopAvatar("");
-        setSideAvatar("");
-        setCountryChip("");
-      }
-    }
-
-    function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
-      const root=document.getElementById(elId);
-      root.innerHTML = `
-        <button class="ddBtn" type="button">
-          <div class="ddLeft">
-            <div class="ddIcon">◈</div>
-            <div class="ddName">Select</div>
-          </div>
-          <div>▾</div>
-        </button>
-        <div class="ddPanel">
-          <input class="ddSearch" placeholder="Search..." />
-          <div class="ddList"></div>
-        </div>
-      `;
-      const btn=root.querySelector(".ddBtn");
-      const panel=root.querySelector(".ddPanel");
-      const list=root.querySelector(".ddList");
-      const search=root.querySelector(".ddSearch");
-      const nameEl=root.querySelector(".ddName");
-
-      let renderItems = items;
-
-      function render(filter=""){
-        const q=filter.trim().toLowerCase();
-        if(!q){ renderItems = items; }
-        else{ renderItems = items.filter(x => getSearch(x).includes(q)); }
-        const MAX = Math.min(renderItems.length, 600);
-        const slice = renderItems.slice(0, MAX);
-
-        list.innerHTML = slice.map(x => {
-          const lab=getLabel(x);
-          return `<div class="ddItem" data-id="${encodeURIComponent(JSON.stringify(x))}">
-            <span>${lab}</span>
-            <small>tap</small>
-          </div>`;
-        }).join("") || `<div class="ddItem"><span>No results</span></div>`;
-
-        if(renderItems.length > MAX){
-          const remain = renderItems.length - MAX;
-          list.innerHTML += `<div class="ddItem" style="opacity:.7"><span>Scroll/search to narrow results (${remain} more)…</span></div>`;
+      if(nameEl) nameEl.textContent = name;
+      if(countryEl) countryEl.textContent = country;
+      if(idEl) idEl.textContent = ("ID: " + String(user.id).slice(0,5).toUpperCase());
+      if(pfpEl){
+        // If we have an avatar URL, use it; otherwise show first letter fallback
+        if(avatar){
+          pfpEl.style.backgroundImage = `url('${avatar}')`;
+          pfpEl.style.backgroundSize = "cover";
+          pfpEl.style.backgroundPosition = "center";
+          pfpEl.textContent = "";
+        }else{
+          pfpEl.style.backgroundImage = "none";
+          pfpEl.textContent = String(name).trim().charAt(0).toUpperCase() || "U";
         }
       }
 
-      function setSelected(obj){
-        nameEl.textContent = getLabel(obj);
-        onPick(obj);
-      }
-
-      if(initial) setSelected(initial);
-      render("");
-
-      btn.addEventListener("click",(e)=>{
-        e.stopPropagation();
-        panel.classList.toggle("show");
-        if(panel.classList.contains("show")){
-          search.value="";
-          render("");
-          setTimeout(()=>search.focus(),40);
+      // Also try to read extra info from public.users by ID if available (fail-soft)
+      try{
+        const { data, error } = await supabase
+          .from("users")
+          .select("email")
+          .eq("id", user.id)
+          .maybeSingle();
+        if(!error && data?.email && nameEl && (!md.full_name && !md.name)){
+          // If metadata has no name, keep email
+          nameEl.textContent = String(data.email);
         }
-      });
-
-      search.addEventListener("input",()=>render(search.value));
-
-      list.addEventListener("click",(e)=>{
-        const item=e.target.closest(".ddItem");
-        if(!item) return;
-        const raw=item.getAttribute("data-id");
-        if(!raw) return;
-        try{
-          const obj=JSON.parse(decodeURIComponent(raw));
-          setSelected(obj);
-          panel.classList.remove("show");
-        }catch{}
-      });
-
-      document.addEventListener("click",(e)=>{
-        if(!root.contains(e.target)) panel.classList.remove("show");
-      });
+      }catch(_e){}
     }
 
-    const FAVORITES = [
-      { id:"bitcoin", label:"Bitcoin (BTC)", icon:"₿", symbol:"btc" },
-      { id:"ethereum", label:"Ethereum (ETH)", icon:"Ξ", symbol:"eth" },
-      { id:"tether", label:"Tether (USDT)", icon:"₮", symbol:"usdt" },
-      { id:"binancecoin", label:"BNB (BNB)", icon:"◎", symbol:"bnb" },
-      { id:"solana", label:"Solana (SOL)", icon:"⟠", symbol:"sol" },
-      { id:"ripple", label:"XRP (XRP)", icon:"✕", symbol:"xrp" }
-    ];
 
-    async function loadCoinGeckoLists(){
-      try{
-        const fiatRes = await fetch("https://api.coingecko.com/api/v3/simple/supported_vs_currencies");
-        const fiats = await fiatRes.json();
-        FIATS = (fiats || []).map(x => String(x).toUpperCase());
-      }catch{
-        FIATS = ["USD","NGN","EUR","GBP","CAD","AUD","JPY","CNY","INR"];
-      }
-
-      try{
-        const coinRes = await fetch("https://api.coingecko.com/api/v3/coins/list?include_platform=false");
-        const coins = await coinRes.json();
-        const favMap = new Map(FAVORITES.map(f=>[f.id,f]));
-        const list = [];
-
-        for(const c of (coins||[])){
-          if(!c?.id || !c?.name) continue;
-          if(favMap.has(c.id)) continue;
-          const sym = (c.symbol||"").toLowerCase();
-          list.push({ id:c.id, label:`${c.name}${sym?` (${sym.toUpperCase()})`:""}`, icon:"◈", symbol:sym });
-        }
-        ALL_COINS = [...FAVORITES, ...list];
-      }catch{
-        ALL_COINS = [...FAVORITES];
-      }
-
-      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
-
-      mountDropdown("ddCryptoA", ALL_COINS, x=>x.label, x=>(`${x.label} ${x.symbol} ${x.id}`).toLowerCase(), x=>{ selectedCryptoA=x; }, selectedCryptoA);
-      mountDropdown("ddCryptoB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedCryptoB=x; }, selectedCryptoB);
-      mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatA=x; }, selectedFiatA);
-      mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{ selectedFiatB=x; }, selectedFiatB);
-
-      await loadFxRates();
-    }
 
     async function loadFxRates(){
       try{
@@ -2322,23 +2227,95 @@
     });
 
     async function loadBalance(){
-      const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-      const balNum = Number(data?.balance || 0);
-      const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-      document.getElementById("balance").innerHTML = "$" + bal;
+      const balEl = document.getElementById("balance");
+      if(balEl) balEl.textContent = "$0.00";
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if(!user) return;
+
+      // Option A: Total Portfolio Value = sum(crypto balances * live USD prices)
+      const mapToCgId = {
+        "BTC":"bitcoin",
+        "ETH":"ethereum",
+        "USDT":"tether",
+        "USDC":"usd-coin",
+        "BNB":"binancecoin",
+        "SOL":"solana",
+        "ADA":"cardano",
+        "DOGE":"dogecoin",
+        "TRX":"tron",
+        "TON":"the-open-network",
+      };
+
+      let rows:any[] = [];
+      try{
+        const { data, error } = await supabase
+          .from("user_crypto_balances")
+          .select("asset_key,balance")
+          .eq("user_id", user.id);
+
+        if(error) throw error;
+        rows = (data || []) as any[];
+      }catch(_e){
+        rows = [];
+      }
+
+      // Build CoinGecko ids for assets we have balances for
+      const cgIds = Array.from(new Set(
+        rows.map(r => String(r.asset_key || "").toUpperCase()).map(k => mapToCgId[k]).filter(Boolean)
+      ));
+
+      let prices: Record<string, number> = {};
+      if(cgIds.length){
+        try{
+          const url = "https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(cgIds.join(",")) + "&vs_currencies=usd";
+          const res = await fetch(url, { cache: "no-store" });
+          const js = await res.json();
+          for(const id of cgIds){
+            const v = Number(js?.[id]?.usd ?? NaN);
+            if(Number.isFinite(v)) prices[id] = v;
+          }
+        }catch(_e){
+          prices = {};
+        }
+      }
+
+      let totalUsd = 0;
+      for(const r of rows){
+        const k = String(r.asset_key || "").toUpperCase();
+        const bal = Number(r.balance ?? 0);
+        if(!Number.isFinite(bal) || bal <= 0) continue;
+        const id = mapToCgId[k];
+        const px = Number(prices[id] ?? NaN);
+        if(Number.isFinite(px)) totalUsd += bal * px;
+      }
+
+      // Fallback: if prices blocked or no rows, use users.balance (by ID) instead of setting 0
+      if(!(totalUsd > 0)){
+        try{
+          const { data, error } = await supabase
+            .from("users")
+            .select("balance")
+            .eq("id", user.id)
+            .maybeSingle();
+          if(!error){
+            const v = Number((data as any)?.balance ?? 0);
+            if(Number.isFinite(v) && v > 0) totalUsd = v;
+          }
+        }catch(_e){}
+      }
+
+      // Render
+      const fmt = new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+      if(balEl) balEl.textContent = fmt.format(Number.isFinite(totalUsd) ? totalUsd : 0);
+
+      // Share for other pages (wallet etc.) if needed
+      try{
+        localStorage.setItem("vgm_total_portfolio_usd", String(Number.isFinite(totalUsd) ? totalUsd : 0));
+      }catch(_e){}
     }
 
-    function money(n){ return "$" + Number(n||0).toFixed(2); }
-    function pill(status){
-      const s=(status||"pending").toLowerCase();
-      return `<span style="padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);font-weight:1000;font-size:12px">${s}</span>`;
-    }
-    function daysBetween(date1, date2){
-      const d1=new Date(date1);
-      const d2=new Date(date2);
-      const diff=(d2 - d1) / (1000*60*60*24);
-      return Math.max(0, Math.ceil(diff));
-    }
+
 
     async function loadActivePlan(){
       const planMsg=document.getElementById("planMsg");
