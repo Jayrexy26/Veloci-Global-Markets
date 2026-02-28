@@ -1087,8 +1087,6 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
-
     <!-- ✅ ADDED: Wallets -->
     <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
 
@@ -1403,7 +1401,7 @@
 
         if(msg) msg.textContent = "";
 
-        const esc = (s:string)=>String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" } as any)[c]);
+        const esc = ( s)=>String(s||"").replace(/[&<>"']/g,(c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);
 
         for(const it of items){
           const title = esc(it?.title || "News");
@@ -2045,6 +2043,33 @@
       iso = detectCountryFromLocale();
       if(iso) return iso;
       return "";
+
+      // Also try profiles table for name/avatar (fail-soft). This fixes cases where your profile picture
+      // is stored in public.profiles instead of auth metadata.
+      try{
+        const { data: p, error: perr } = await supabase
+          .from("profiles")
+          .select("full_name, name, avatar_url, profile_pic_url, photo_url, country")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if(!perr && p){
+          const pname = String(p.full_name || p.name || "").trim();
+          const pavatar = String(p.avatar_url || p.profile_pic_url || p.photo_url || "").trim();
+
+          if(pname && nameEl && (String(nameEl.textContent||"").trim()==="" || String(nameEl.textContent||"").includes("@"))){
+            nameEl.textContent = pname;
+          }
+          if(pavatar && pfpEl){
+            pfpEl.style.backgroundImage = `url('${pavatar}')`;
+            pfpEl.style.backgroundSize = "cover";
+            pfpEl.style.backgroundPosition = "center";
+            pfpEl.textContent = "";
+          }
+        }
+      }catch(_e){}
+
+
     }
 
     async function loadDashboardIdentity(){
@@ -2090,7 +2115,7 @@
           nameEl.textContent = String(data.email);
         }
       }catch(_e){}
-    }
+      }
 
 
 
@@ -2109,7 +2134,7 @@
       cryptoDirection = (cryptoDirection === "crypto_to_fiat") ? "fiat_to_crypto" : "crypto_to_fiat";
       const tmp = selectedCryptoA; selectedCryptoA = selectedCryptoB; selectedCryptoB = tmp;
 
-      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label, icon:"$", symbol:f.toLowerCase() }));
 
       if(cryptoDirection === "crypto_to_fiat"){
         if(!selectedCryptoA?.id || typeof selectedCryptoA.id !== "string" || selectedCryptoA.id.length<=4){ selectedCryptoA = FAVORITES[0]; }
@@ -2175,7 +2200,7 @@
 
     function swapFiat(){
       const tmp = selectedFiatA; selectedFiatA = selectedFiatB; selectedFiatB = tmp;
-      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label:f, icon:"$", symbol:f.toLowerCase() }));
+      const FIAT_ITEMS = FIATS.map(f => ({ id:f, label, icon:"$", symbol:f.toLowerCase() }));
       mountDropdown("ddFiatA", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatA=x;}, selectedFiatA);
       mountDropdown("ddFiatB", FIAT_ITEMS, x=>x.label, x=>(`${x.label} ${x.id}`).toLowerCase(), x=>{selectedFiatB=x;}, selectedFiatB);
       document.getElementById("fiatRate").textContent="Rate: --";
@@ -2247,7 +2272,7 @@
         "TON":"the-open-network",
       };
 
-      let rows:any[] = [];
+      let rows = [];
       try{
         const { data, error } = await supabase
           .from("user_crypto_balances")
@@ -2255,7 +2280,7 @@
           .eq("user_id", user.id);
 
         if(error) throw error;
-        rows = (data || []) as any[];
+        rows = (data || []);
       }catch(_e){
         rows = [];
       }
@@ -2265,7 +2290,7 @@
         rows.map(r => String(r.asset_key || "").toUpperCase()).map(k => mapToCgId[k]).filter(Boolean)
       ));
 
-      let prices: Record<string, number> = {};
+      let prices = {};
       if(cgIds.length){
         try{
           const url = "https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(cgIds.join(",")) + "&vs_currencies=usd";
@@ -2299,7 +2324,7 @@
             .eq("id", user.id)
             .maybeSingle();
           if(!error){
-            const v = Number((data as any)?.balance ?? 0);
+            const v = Number((data)?.balance ?? 0);
             if(Number.isFinite(v) && v > 0) totalUsd = v;
           }
         }catch(_e){}
