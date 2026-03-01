@@ -2052,10 +2052,39 @@
     }
 
     async function loadDashboardIdentity(){
+      // ✅ Avatar path → public URL (stable)
+      function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+      function looksLikeGoogle(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+      function normalizeAvatarPath(userId, val){
+        let s=String(val||"").trim();
+        if(!s || isHttpUrl(s)) return "";
+        s=s.replace(/^\/+/, "");
+        if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+        if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+        if(!s.includes("/") && userId) s=`${userId}/${s}`;
+        return s;
+      }
+      function publicUrlFromPath(path){
+        try{
+          if(!path) return "";
+          const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+          const url=data?.publicUrl||"";
+          return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
+        }catch(e){ return ""; }
+      }
+
       try{
         let fullName="", avatarUrl="", countryName="";
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
+        // Convert DB stored path to public URL
+        if(avatarUrl && !isHttpUrl(avatarUrl) && currentUserId){
+          const p = normalizeAvatarPath(currentUserId, avatarUrl);
+          const u = publicUrlFromPath(p);
+          if(u) avatarUrl = u;
+        }
+        // Ignore google avatar urls on dashboard; prefer storage
+        if(looksLikeGoogle(avatarUrl)) avatarUrl = "";
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
