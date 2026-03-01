@@ -2375,8 +2375,8 @@
     });
 
     async function loadBalance(){
-      // ✅ Wallet balance first (multiple schema fallbacks), then fallback to users.balance
-      // This is defensive so the dashboard never gets stuck if a table/column is missing.
+      // ✅ Wallet balance first (multiple schema fallbacks), then fallback to users/profiles balances.
+      // Keeps dashboard resilient so it never gets stuck if a table/column is missing or policies differ.
       try{
         let total = null;
 
@@ -2384,7 +2384,10 @@
         if(currentUserId){
           // a) wallet_balances: many rows (one per asset)
           try{
-            let r = await supabaseClient.from("wallet_balances").select("usd_value").eq("user_id", currentUserId);
+            const r = await supabaseClient
+              .from("wallet_balances")
+              .select("usd_value")
+              .eq("user_id", currentUserId);
             if(!r.error && Array.isArray(r.data) && r.data.length){
               total = r.data.reduce((s,x)=>s + Number(x?.usd_value || 0), 0);
             }
@@ -2393,7 +2396,10 @@
           // b) wallet_balances.balance_usd (alternate column name)
           if(total===null){
             try{
-              let r = await supabaseClient.from("wallet_balances").select("balance_usd").eq("user_id", currentUserId);
+              const r = await supabaseClient
+                .from("wallet_balances")
+                .select("balance_usd")
+                .eq("user_id", currentUserId);
               if(!r.error && Array.isArray(r.data) && r.data.length){
                 total = r.data.reduce((s,x)=>s + Number(x?.balance_usd || 0), 0);
               }
@@ -2403,33 +2409,82 @@
           // c) wallets table: one row per user
           if(total===null){
             try{
-              const r = await supabaseClient.from("wallets").select("total_usd").eq("user_id", currentUserId).maybeSingle();
+              const r = await supabaseClient
+                .from("wallets")
+                .select("total_usd")
+                .eq("user_id", currentUserId)
+                .maybeSingle();
               if(!r.error && r.data) total = Number(r.data?.total_usd || 0);
             }catch(e){}
           }
           if(total===null){
             try{
-              const r = await supabaseClient.from("wallets").select("balance_usd").eq("user_id", currentUserId).maybeSingle();
+              const r = await supabaseClient
+                .from("wallets")
+                .select("balance_usd")
+                .eq("user_id", currentUserId)
+                .maybeSingle();
               if(!r.error && r.data) total = Number(r.data?.balance_usd || 0);
             }catch(e){}
           }
         }
 
-        // 2) Fallback to the old behavior (users.balance) so nothing breaks
-        if(total===null){
-          const { data } = await supabaseClient.from("users").select("balance").eq("email", currentUserEmail).maybeSingle();
-          total = Number(data?.balance || 0);
+        // 2) Fallbacks to user tables (different projects name these differently)
+        // Prefer ID-based lookup (more reliable than email)
+        if(total===null && currentUserId){
+          try{
+            const r = await supabaseClient
+              .from("users")
+              .select("balance")
+              .eq("id", currentUserId)
+              .maybeSingle();
+            if(!r.error && r.data) total = Number(r.data?.balance || 0);
+          }catch(e){}
         }
 
+        // Email-based lookup (old behavior)
+        if(total===null){
+          try{
+            const r = await supabaseClient
+              .from("users")
+              .select("balance")
+              .eq("email", currentUserEmail)
+              .maybeSingle();
+            if(!r.error && r.data) total = Number(r.data?.balance || 0);
+          }catch(e){}
+        }
+
+        // Profiles table fallback (common in Supabase apps)
+        if(total===null && currentUserId){
+          // try a few common column names without breaking if they don't exist
+          const profileCols = ["balance","account_balance","wallet_balance","total_balance","usd_balance","balance_usd"];
+          for(const col of profileCols){
+            try{
+              const r = await supabaseClient
+                .from("profiles")
+                .select(col)
+                .eq("id", currentUserId)
+                .maybeSingle();
+              if(!r.error && r.data && r.data[col] != null){
+                total = Number(r.data[col] || 0);
+                break;
+              }
+            }catch(e){}
+          }
+        }
+
+        // 3) Render (always show something)
         const bal = Number(total || 0).toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-        document.getElementById("balance").innerHTML = "$" + bal;
+        const el = document.getElementById("balance");
+        if(el) el.innerHTML = "$" + bal;
       }catch(e){
         // Never leave it blank (prevents "Loading…" feeling)
-        document.getElementById("balance").innerHTML = "$0.00";
+        const el = document.getElementById("balance");
+        if(el) el.innerHTML = "$0.00";
       }
     }
 
-    function money(n){ return "$" + Number(n||0).toFixed(2); }
+function money(n){ return "$" + Number(n||0).toFixed(2); }
     function pill(status){
       const s=(status||"pending").toLowerCase();
       const cls = (s === "active") ? "planActiveGlow" : "";
