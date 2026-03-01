@@ -1087,6 +1087,7 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
 
     <!-- ✅ ADDED: Wallets -->
     <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
@@ -1339,6 +1340,75 @@
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ============================================================
+  ✅ AVATAR SYNC FIX (Profile -> Dashboard)
+  - Profile page now stores users.avatar_url as a STORAGE PATH like: <uid>/avatar.png
+  - This dashboard may still receive FULL public URLs (legacy).
+  - This helper supports BOTH and always cache-busts so it never "sticks" on old photos.
+  - IMPORTANT: This does NOT affect the authGate; page will never get stuck if avatar fails.
+============================================================ */
+const AVATAR_BUCKET = "avatars";
+function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+function extractAvatarPathFromPublicUrl(u){
+  try{
+    const s=String(u||"").trim();
+    const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+    if(m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
+    return "";
+  }catch(e){ return ""; }
+}
+function normalizeAvatarPath(userId, v){
+  let s=String(v||"").trim();
+  if(!s) return "";
+  if(isHttpUrl(s)){
+    // If a Supabase public URL was stored in DB, extract the storage path
+    const p = extractAvatarPathFromPublicUrl(s);
+    return p || "";
+  }
+  s=s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+  if(!s.includes("/") && userId) s=`${userId}/${s}`;
+  return s;
+}
+function publicAvatarUrlFromPath(path){
+  try{
+    if(!path) return "";
+    const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+    const url = data?.publicUrl || "";
+    return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
+  }catch(e){ return ""; }
+}
+function applyAvatarUI(url){
+  // Top-right avatar button
+  const topImg = document.getElementById("avatarImgBtn");
+  const topFb  = document.getElementById("avatarFallback");
+  if(topImg && topFb){
+    if(url){
+      topImg.src = url;
+      topImg.style.display = "block";
+      topFb.style.display = "none";
+    }else{
+      topImg.style.display = "none";
+      topFb.style.display = "block";
+    }
+  }
+  // Sidebar avatar
+  const sideImg = document.getElementById("sideAvatarImg");
+  const sideFb  = document.getElementById("sideAvatarFallback");
+  if(sideImg && sideFb){
+    if(url){
+      sideImg.src = url;
+      sideImg.style.display = "block";
+      sideFb.style.display = "none";
+    }else{
+      sideImg.style.display = "none";
+      sideFb.style.display = "block";
+    }
+  }
+}
+
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1359,6 +1429,15 @@
     let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
     let top10Timer=null;
+
+    // ✅ FAILSAFE_HIDE_GATE: never get stuck on loading
+    setTimeout(()=>{
+      try{
+        const g=document.getElementById('authGate');
+        if(g && g.style.display!=='none') g.style.display='none';
+      }catch(e){}
+    }, 4500);
+
 
     /* ============================================================
       ✅ NEWS
@@ -2037,64 +2116,29 @@
       return "";
     }
 
-    
-async function resolveAvatarUrlMaybePath(raw){
-  try{
-    const v = String(raw || "").trim();
-    if(!v) return "";
-    if(/^https?:\/\//i.test(v)) return v;
-    // treat as storage path in "avatars" bucket
-    const { data } = supabaseClient.storage.from("avatars").getPublicUrl(v);
-    return (data?.publicUrl || "");
-  }catch(e){
-    return "";
-  }
-}
+    async function loadDashboardIdentity(){
+      try{
+        let fullName="", avatarUrl="", countryName="";
+        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
 
+        const md=(window.COINLUXORA_USER?.user_metadata||{});
+        if(!fullName) fullName=md.full_name||"User";
+        if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
-async function loadDashboardIdentity(){
-  try{
-    let fullName="", avatarRaw="", countryName="";
+        setNameEverywhere(fullName);
+        setTopAvatar(avatarUrl);
+        setSideAvatar(avatarUrl);
 
-    // Prefer DB (users.avatar_url may be either a full URL OR a storage path)
-    const { data: row, error } = await supabaseClient
-      .from("users")
-      .select("full_name, avatar_url, country")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-
-    if(!error && row){
-      fullName = row.full_name || "";
-      avatarRaw = row.avatar_url || "";
-      countryName = row.country || "";
-    }
-
-    // Fallback to auth metadata (profile uploader stores avatar_path)
-    const md = (window.COINLUXORA_USER?.user_metadata || {});
-    if(!fullName) fullName = md.full_name || "User";
-
-    // ✅ Avatar priority:
-    // 1) DB avatar_url (url or path)
-    // 2) metadata avatar_path (path)
-    // 3) metadata avatar_url (legacy url)
-    if(!avatarRaw) avatarRaw = md.avatar_path || md.avatar_url || "";
-
-    const avatarUrl = await resolveAvatarUrlMaybePath(avatarRaw);
-
-    setNameEverywhere(fullName);
-    setTopAvatar(avatarUrl);
-    setSideAvatar(avatarUrl);
-
-    const iso = await resolveCountryISO(countryName);
-    const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
-    setCountryChip(iso, niceName);
-  }catch(e){
-    setNameEverywhere("User");
-    setTopAvatar("");
-    setSideAvatar("");
-    setCountryChip("");
-  }
-}
+        const iso = await resolveCountryISO(countryName);
+        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+        setCountryChip(iso, niceName);
+      }catch(e){
+        setNameEverywhere("User");
+        setTopAvatar("");
+        setSideAvatar("");
+        setCountryChip("");
+      }
     }
 
     function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
