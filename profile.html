@@ -1236,7 +1236,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     const path = `${currentUser.id}/avatar.${ext}`;
 
     const { error: upErr } = await supabaseClient.storage.from("avatars")
-      .upload(path, file, { upsert:true, cacheControl:"3600" });
+      .upload(path, file, { upsert:true, cacheControl:"0" });
 
     if(upErr){
       setMsg("err","Avatar upload failed: " + upErr.message);
@@ -1273,7 +1273,9 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     }
 
     setMsg("ok","Profile photo updated ✅");
-    showPopup("Uploaded ✔️", "Your profile photo has been updated.");
+    try{ localStorage.removeItem("vgm_avatar_cache_" + String(currentUser.id||"").trim()); }catch(e){}
+try{ localStorage.removeItem("vgm_avatar_url_" + String(currentUser.id||"").trim()); }catch(e){}
+showPopup("Uploaded ✔️", "Your profile photo has been updated.");
 
   }catch(err){
     setMsg("err","Upload failed.");
