@@ -5,7 +5,73 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VGM | User Dashboard</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+/* ============================================================
+   ✅ AVATAR SYNC (Dashboard)
+   - Reads users.avatar_url (path only)
+   - Builds public URL
+   - Updates header + sidebar avatars
+   - Cache bust safe
+============================================================ */
+const AVATAR_BUCKET = "avatars";
+
+function buildAvatarUrl(path){
+  if(!path) return "";
+  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  const url = data?.publicUrl || "";
+  return url ? (url + "?t=" + Date.now()) : "";
+}
+
+async function loadDashboardAvatar(){
+  try{
+    if(!currentUserEmail) return;
+
+    const { data } = await supabaseClient
+      .from("users")
+      .select("avatar_url")
+      .eq("email", currentUserEmail)
+      .maybeSingle();
+
+    if(!data || !data.avatar_url) return;
+
+    const avatarUrl = buildAvatarUrl(data.avatar_url);
+
+    const btnImg = document.getElementById("avatarImgBtn");
+    const btnFallback = document.getElementById("avatarFallback");
+    const sideImg = document.getElementById("sideAvatarImg");
+    const sideFallback = document.getElementById("sideAvatarFallback");
+
+    if(avatarUrl){
+      if(btnImg){
+        btnImg.src = avatarUrl;
+        btnImg.style.display="block";
+      }
+      if(btnFallback) btnFallback.style.display="none";
+
+      if(sideImg){
+        sideImg.src = avatarUrl;
+        sideImg.style.display="block";
+      }
+      if(sideFallback) sideFallback.style.display="none";
+    }
+  }catch(e){}
+}
+
+
+// 🔥 Ensure avatar loads after auth completes
+setTimeout(()=>{
+  try{ loadDashboardAvatar(); }catch(e){}
+}, 1200);
+
+// 🔥 Auto-style ACTIVE word inside plan box
+const planObserver = new MutationObserver(()=>{
+  const box = document.getElementById("planBox");
+  if(!box) return;
+  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
+});
+planObserver.observe(document.body,{childList:true,subtree:true});
+
+</script>
 
   <style>
     :root{
@@ -1040,7 +1106,20 @@
       color:rgba(234,240,255,.80)
     }
     .newsBottom{font-weight:900;font-size:12px;color:rgba(234,240,255,.65)}
-  </style>
+  
+    /* ✅ Pulsating ACTIVE label */
+    .pulseActive{
+      color:#22c55e;
+      font-weight:1000;
+      animation:pulseActiveGlow 1.4s ease-in-out infinite;
+    }
+    @keyframes pulseActiveGlow{
+      0%{opacity:.7; text-shadow:0 0 6px rgba(34,197,94,.4)}
+      50%{opacity:1; text-shadow:0 0 16px rgba(34,197,94,.9)}
+      100%{opacity:.7; text-shadow:0 0 6px rgba(34,197,94,.4)}
+    }
+
+</style>
 </head>
 
 <body>
@@ -1087,8 +1166,10 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-<!-- ✅ ADDED: Wallets -->
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallet<small>Your wallet</small></div></a>
+    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
+
+    <!-- ✅ ADDED: Wallets -->
+    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
 
     <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
     <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
@@ -1157,7 +1238,73 @@
           "colorTheme": "dark",
           "locale": "en"
         }
-        </script>
+        
+/* ============================================================
+   ✅ AVATAR SYNC (Dashboard)
+   - Reads users.avatar_url (path only)
+   - Builds public URL
+   - Updates header + sidebar avatars
+   - Cache bust safe
+============================================================ */
+const AVATAR_BUCKET = "avatars";
+
+function buildAvatarUrl(path){
+  if(!path) return "";
+  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  const url = data?.publicUrl || "";
+  return url ? (url + "?t=" + Date.now()) : "";
+}
+
+async function loadDashboardAvatar(){
+  try{
+    if(!currentUserEmail) return;
+
+    const { data } = await supabaseClient
+      .from("users")
+      .select("avatar_url")
+      .eq("email", currentUserEmail)
+      .maybeSingle();
+
+    if(!data || !data.avatar_url) return;
+
+    const avatarUrl = buildAvatarUrl(data.avatar_url);
+
+    const btnImg = document.getElementById("avatarImgBtn");
+    const btnFallback = document.getElementById("avatarFallback");
+    const sideImg = document.getElementById("sideAvatarImg");
+    const sideFallback = document.getElementById("sideAvatarFallback");
+
+    if(avatarUrl){
+      if(btnImg){
+        btnImg.src = avatarUrl;
+        btnImg.style.display="block";
+      }
+      if(btnFallback) btnFallback.style.display="none";
+
+      if(sideImg){
+        sideImg.src = avatarUrl;
+        sideImg.style.display="block";
+      }
+      if(sideFallback) sideFallback.style.display="none";
+    }
+  }catch(e){}
+}
+
+
+// 🔥 Ensure avatar loads after auth completes
+setTimeout(()=>{
+  try{ loadDashboardAvatar(); }catch(e){}
+}, 1200);
+
+// 🔥 Auto-style ACTIVE word inside plan box
+const planObserver = new MutationObserver(()=>{
+  const box = document.getElementById("planBox");
+  if(!box) return;
+  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
+});
+planObserver.observe(document.body,{childList:true,subtree:true});
+
+</script>
       </div>
     </div>
 
@@ -2052,58 +2199,10 @@
     }
 
     async function loadDashboardIdentity(){
-      // ✅ Avatar path → public URL (stable)
-      function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
-      function looksLikeGoogle(u){ return /googleusercontent\.com/i.test(String(u||"")); }
-      function extractAvatarPathFromUrl(u){
-        try{
-          const s=String(u||"").trim();
-          const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
-          if(m && m[1]) return decodeURIComponent(m[1].split('?')[0]);
-          return "";
-        }catch(e){ return ""; }
-      }
-
-      function normalizeAvatarPath(userId, val){
-        let s=String(val||"").trim();
-        if(!s) return "";
-        if(isHttpUrl(s)){
-          const p=extractAvatarPathFromUrl(s);
-          return p ? p : "";
-        }
-        s=s.replace(/^\/+/, "");
-        if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
-        if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
-        if(!s.includes("/") && userId) s=`${userId}/${s}`;
-        return s;
-      }
-      function publicUrlFromPath(path){
-        try{
-          if(!path) return "";
-          const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
-          const url=data?.publicUrl||"";
-          return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
-        }catch(e){ return ""; }
-      }
-
       try{
         let fullName="", avatarUrl="", countryName="";
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
-        // Convert DB stored path to public URL
-        // Ignore google avatar urls on dashboard; prefer storage
-        if(looksLikeGoogle(avatarUrl)) avatarUrl = "";
-        // Convert DB stored value (path OR full public URL) to a fresh public URL
-        if(avatarUrl && currentUserId){
-          const p = normalizeAvatarPath(currentUserId, avatarUrl);
-          if(p){
-            const u = publicUrlFromPath(p);
-            if(u) avatarUrl = u;
-          }else if(isHttpUrl(avatarUrl)){
-            // If it is an http URL but not extractable, just bust cache
-            avatarUrl = avatarUrl + (avatarUrl.includes('?')?'&':'?') + 't=' + Date.now();
-          }
-        }
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
@@ -2642,6 +2741,72 @@
         window.location.replace("login.html");
       }
     })();
-  </script>
+  
+/* ============================================================
+   ✅ AVATAR SYNC (Dashboard)
+   - Reads users.avatar_url (path only)
+   - Builds public URL
+   - Updates header + sidebar avatars
+   - Cache bust safe
+============================================================ */
+const AVATAR_BUCKET = "avatars";
+
+function buildAvatarUrl(path){
+  if(!path) return "";
+  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  const url = data?.publicUrl || "";
+  return url ? (url + "?t=" + Date.now()) : "";
+}
+
+async function loadDashboardAvatar(){
+  try{
+    if(!currentUserEmail) return;
+
+    const { data } = await supabaseClient
+      .from("users")
+      .select("avatar_url")
+      .eq("email", currentUserEmail)
+      .maybeSingle();
+
+    if(!data || !data.avatar_url) return;
+
+    const avatarUrl = buildAvatarUrl(data.avatar_url);
+
+    const btnImg = document.getElementById("avatarImgBtn");
+    const btnFallback = document.getElementById("avatarFallback");
+    const sideImg = document.getElementById("sideAvatarImg");
+    const sideFallback = document.getElementById("sideAvatarFallback");
+
+    if(avatarUrl){
+      if(btnImg){
+        btnImg.src = avatarUrl;
+        btnImg.style.display="block";
+      }
+      if(btnFallback) btnFallback.style.display="none";
+
+      if(sideImg){
+        sideImg.src = avatarUrl;
+        sideImg.style.display="block";
+      }
+      if(sideFallback) sideFallback.style.display="none";
+    }
+  }catch(e){}
+}
+
+
+// 🔥 Ensure avatar loads after auth completes
+setTimeout(()=>{
+  try{ loadDashboardAvatar(); }catch(e){}
+}, 1200);
+
+// 🔥 Auto-style ACTIVE word inside plan box
+const planObserver = new MutationObserver(()=>{
+  const box = document.getElementById("planBox");
+  if(!box) return;
+  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
+});
+planObserver.observe(document.body,{childList:true,subtree:true});
+
+</script>
 </body>
 </html>
