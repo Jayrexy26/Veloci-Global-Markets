@@ -1512,7 +1512,7 @@
 <input id="tradePair" type="hidden" value=""/>
 </div>
 <div class="tradeRow">
-<input class="inp" id="tradeAmount" min="0" placeholder="Optional size (e.g. 0.1)" step="0.0001" type="number"/>
+<input class="inp" id="tradeAmount" min="0" placeholder="Trade size (e.g. 0.1)" required step="0.0001" type="number"/>
 </div>
 <div class="tradeActions">
 <button class="tradeBtn tradeBuy" onclick="tradeIntent('BUY')" type="button">Buy</button>
@@ -2268,9 +2268,8 @@
       setPair(init.value, init.label);
       render("");
 
-      
-      function closeTradePairPanel(){
-        closeTradePairPanel();
+      function closePanel(){
+        panel.classList.remove("show");
         // move panel back under wrap so layout stays consistent
         if(panel.__homeParent && panel.__homeParent !== panel.parentNode){
           panel.__homeParent.appendChild(panel);
@@ -2280,29 +2279,62 @@
         panel.style.left = "";
         panel.style.width = "";
         panel.style.zIndex = "";
+        panel.style.maxHeight = "";
       }
+
+      function positionPanel(){
+        const r = btn.getBoundingClientRect();
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const scrollX = window.scrollX || document.documentElement.scrollLeft || 0;
+
+        const belowSpace = window.innerHeight - r.bottom - 16;
+        const aboveSpace = r.top - 16;
+
+        panel.style.position = "absolute";
+        panel.style.left = (r.left + scrollX) + "px";
+        panel.style.width = (r.width) + "px";
+        panel.style.zIndex = "999999";
+
+        if(belowSpace >= 180){
+          panel.style.top = (r.bottom + scrollY + 8) + "px";
+          panel.style.maxHeight = Math.min(360, belowSpace) + "px";
+        }else{
+          // open above if space below is tight
+          panel.style.top = (r.top + scrollY - Math.min(360, Math.max(180, aboveSpace)) - 8) + "px";
+          panel.style.maxHeight = Math.min(360, Math.max(180, aboveSpace)) + "px";
+        }
+      }
+
+      function bindAutoClose(){
+        if(panel.__bound) return;
+        panel.__bound = true;
+
+        window.addEventListener("scroll", ()=>{
+          if(panel.classList.contains("show")) closePanel();
+        }, { passive: true });
+
+        window.addEventListener("resize", ()=>{
+          if(panel.classList.contains("show")) closePanel();
+        });
+      }
+      bindAutoClose();
 
       btn.addEventListener("click",(e)=>{
         e.stopPropagation();
         const open = !panel.classList.contains("show");
 
         if(open){
-          // portal to <body> and use fixed positioning so it never underlays other sections
+          // portal to <body> so it never underlays other sections
           panel.__homeParent = panel.__homeParent || panel.parentNode;
-          const r = btn.getBoundingClientRect();
-          panel.style.position = "fixed";
-          panel.style.top = (r.bottom + 8) + "px";
-          panel.style.left = (r.left) + "px";
-          panel.style.width = (r.width) + "px";
-          panel.style.zIndex = "999999";
           document.body.appendChild(panel);
+          positionPanel();
 
           panel.classList.add("show");
           search.value="";
           render("");
           setTimeout(()=>search.focus(),40);
         }else{
-          closeTradePairPanel();
+          closePanel();
         }
       });
 
@@ -2315,12 +2347,12 @@
         const label=item.getAttribute("data-label");
         if(!val) return;
         setPair(val,label);
-        closeTradePairPanel();
+        closePanel();
       });
 
       document.addEventListener("click",(e)=>{
         if(wrap.contains(e.target) || panel.contains(e.target)) return;
-        closeTradePairPanel();
+        closePanel();
       });
     }
 
@@ -2338,16 +2370,17 @@
     function tradeIntent(side){
       const pair = String(document.getElementById("tradePair")?.value || "").trim();
       const amountRaw = String(document.getElementById("tradeAmount")?.value || "").trim();
-      const amount = amountRaw ? Number(amountRaw) : null;
+      const amount = Number(amountRaw);
 
       if(!pair){ alert("Pick a pair first."); return; }
-      if(amountRaw && !Number.isFinite(amount)){ alert("Invalid size."); return; }
+      if(!amountRaw){ alert("Enter trade size first."); return; }
+      if(!Number.isFinite(amount) || amount <= 0){ alert("Invalid size."); return; }
 
       __pendingTrade = {
         market: TRADE_MARKET.toUpperCase(),
         pair,
         side,
-        size: amountRaw ? amount : null,
+        size: amount,
         ts: new Date().toISOString()
       };
 
