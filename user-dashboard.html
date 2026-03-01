@@ -1,13 +1,12 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VGM | User Dashboard</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VGM | User Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
     :root{
       --bg:#050a18;
       --stroke:rgba(255,255,255,.12);
@@ -527,7 +526,7 @@
     .ddName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ddPanel{
       position:absolute; top:56px; left:0; right:0;
-      z-index:100;
+      z-index:99999;
       border-radius:18px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(2,6,23,.94);
@@ -1236,109 +1235,186 @@
     .tModalBtn.ok{background:linear-gradient(180deg, rgba(56,189,248,1), rgba(91,108,255,1))}
     .tModalBtn:hover{filter:brightness(1.05)}
 
+
+
+    /* ===== Trading Percentage Orb (admin-controlled later) ===== */
+    .tradePctOrb{
+      position: fixed;
+      right: -10px;
+      top: 52%;
+      transform: translateY(-50%);
+      width: 70px;
+      height: 70px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: radial-gradient(circle at 30% 30%, rgba(56,189,248,.35), rgba(91,108,255,.18) 48%, rgba(2,6,23,.85) 78%);
+      box-shadow: 0 18px 55px rgba(0,0,0,.55), 0 0 0 6px rgba(91,108,255,.08);
+      backdrop-filter: blur(14px);
+      z-index: 99998;
+      cursor: pointer;
+      user-select: none;
+      display: grid;
+      place-items: center;
+      animation: tradeOrbSwing 2.35s ease-in-out infinite;
+    }
+    .tradePctOrb:before{
+      content:"";
+      position:absolute;
+      inset:-6px;
+      border-radius:999px;
+      background: conic-gradient(from 180deg, rgba(56,189,248,.0), rgba(56,189,248,.55), rgba(124,77,255,.55), rgba(56,189,248,.0));
+      filter: blur(10px);
+      opacity: .55;
+      animation: tradeOrbGlow 2.4s ease-in-out infinite;
+      pointer-events:none;
+    }
+    .tradePctInner{
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.55);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:2px;
+      text-align:center;
+    }
+    .tradePctLabel{
+      font-size: 10px;
+      letter-spacing: .35px;
+      font-weight: 1000;
+      color: rgba(234,240,255,.72);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .tradePctValue{
+      font-size: 16px;
+      font-weight: 1100;
+      letter-spacing: .2px;
+      color: rgba(234,240,255,.95);
+      line-height: 1;
+      text-shadow: 0 0 14px rgba(56,189,248,.25);
+    }
+    .tradePctSym{ font-size: 12px; opacity: .85; margin-left: 1px; }
+
+    @keyframes tradeOrbSwing{
+      0%{ transform: translateY(-50%) rotate(-9deg) translateX(0px); }
+      50%{ transform: translateY(-50%) rotate(9deg) translateX(-6px); }
+      100%{ transform: translateY(-50%) rotate(-9deg) translateX(0px); }
+    }
+    @keyframes tradeOrbGlow{
+      0%{ opacity: .35; }
+      50%{ opacity: .75; }
+      100%{ opacity: .35; }
+    }
+    @media (max-width: 720px){
+      .tradePctOrb{ width: 60px; height: 60px; right: -14px; top: 58%; }
+      .tradePctInner{ width: 48px; height: 48px; }
+      .tradePctValue{ font-size: 14px; }
+    }
+
 </style>
 </head>
-
 <body>
-  <div class="bgFlow"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="blob b4"></div>
-  <div class="shimmer"></div>
-
-  <!-- Loading -->
-  <div id="authGate">
-    <div class="gateCard">
-      <div class="gateLogo">
-        <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
-      </div>
-      <div class="gateTxt">Veloci Global Markets</div>
-      <div class="gateSub">Precision trading. Real-time execution.</div>
-      <div class="spinner"></div>
-    </div>
-  </div>
-
-  <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-  <!-- Sidebar -->
-  <div id="sidebar" class="sidebar">
-    <div class="sideTop">
-      <div class="sideBrand">
-        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="VGM Logo">
-      </div>
-      <button class="closeBtn" onclick="closeMenu()">✕</button>
-    </div>
-
-    <div class="userTag">
-      <div class="userTagLeft">
-        <div class="t1">Logged in as</div>
-        <div id="sideName" class="t2">---</div>
-      </div>
-      <div class="sideAvatar" title="Profile photo">
-        <span id="sideAvatarFallback">👤</span>
-        <img id="sideAvatarImg" alt="Avatar"/>
-      </div>
-    </div>
-
-    <div class="menuGroupTitle">Navigation</div>
-    <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+<div class="bgFlow"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="blob b4"></div>
+<div class="shimmer"></div>
+<!-- Loading -->
+<div id="authGate">
+<div class="gateCard">
+<div class="gateLogo">
+<img alt="Veloci Global Markets Logo" class="logoImg" src="assets/vgm-logo.png"/>
+</div>
+<div class="gateTxt">Veloci Global Markets</div>
+<div class="gateSub">Precision trading. Real-time execution.</div>
+<div class="spinner"></div>
+</div>
+</div>
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+<div class="sideTop">
+<div class="sideBrand">
+<img alt="VGM Logo" class="sideLogoWide" src="assets/vgm-logo.png"/>
+</div>
+<button class="closeBtn" onclick="closeMenu()">✕</button>
+</div>
+<div class="userTag">
+<div class="userTagLeft">
+<div class="t1">Logged in as</div>
+<div class="t2" id="sideName">---</div>
+</div>
+<div class="sideAvatar" title="Profile photo">
+<span id="sideAvatarFallback">👤</span>
+<img alt="Avatar" id="sideAvatarImg">
+</img></div>
+</div>
+<div class="menuGroupTitle">Navigation</div>
+<a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
 <!-- ✅ ADDED: Wallets -->
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
-    <a class="sideItem" href="trade-history.html"><div class="i">🧾</div><div>Trade History<small>Your positions</small></div></a>
+<a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
+<a class="sideItem" href="trade-history.html"><div class="i">🧾</div><div>Trade History<small>Your positions</small></div></a>
+<a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+<a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
+<a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets &amp; help</small></div></a>
+<a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+<a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
+<button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+<div class="container">
+<div class="stickyMenu" id="stickyMenu">
+<div class="topRow">
+<div class="brand">
+<img alt="Veloci Global Markets" class="brandLogoWide" src="assets/vgm-logo.png"/>
+</div>
+<div class="headerActions">
+<button class="avatarBtn" onclick="goProfile()" title="Profile">
+<span class="avatarFallback" id="avatarFallback">👤</span>
+<img alt="Avatar" class="avatarImgBtn" id="avatarImgBtn">
+</img></button>
+<button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
+</div>
+</div>
+</div>
+<div class="helloCard">
+<div class="helloLeft">
+<div class="helloLogo" title="Verified &amp; Secure">🛡️</div>
+<div>
+<div class="chips">
+<div class="miniChip">🟢 active</div>
+<div class="miniChip" id="countryChip" style="display:none"></div>
+</div>
+<div class="helloTitle" id="greetingTitle">Greetings…</div>
+<div class="helloSub" id="helloName">Loading…</div>
+</div>
+</div>
+<div class="helloRight">
+<div class="helloRightTop">
+<div class="idChip" id="userIdChip">ID:</div>
+<button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+</div>
+<div class="datetimeChip" id="dateTimeNow">--- | ---</div>
+</div>
+</div>
+<!-- ✅ TRADINGVIEW FLOW TICKER (PLAIN, NO BOX) -->
+<div class="tvTickerPlain">
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
 
-    <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
-    <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
-    <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-    <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
-    <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
-    <button class="sideLogout" onclick="logout()">Logout</button>
-  </div>
-
-  <div class="container">
-    <div id="stickyMenu" class="stickyMenu">
-      <div class="topRow">
-        <div class="brand">
-          <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
-        </div>
-
-        <div class="headerActions">
-          <button class="avatarBtn" onclick="goProfile()" title="Profile">
-            <span id="avatarFallback" class="avatarFallback">👤</span>
-            <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
-          </button>
-          <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="helloCard">
-      <div class="helloLeft">
-        <div class="helloLogo" title="Verified & Secure">🛡️</div>
-
-        <div>
-          <div class="chips">
-            <div class="miniChip">🟢 active</div>
-            <div class="miniChip" id="countryChip" style="display:none"></div>
-          </div>
-          <div class="helloTitle" id="greetingTitle">Greetings…</div>
-          <div class="helloSub" id="helloName">Loading…</div>
-        </div>
-      </div>
-      <div class="helloRight">
-        <div class="helloRightTop">
-          <div class="idChip" id="userIdChip">ID:</div>
-          <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
-        </div>
-        <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
-      </div>
-    </div>
-
-    <!-- ✅ TRADINGVIEW FLOW TICKER (PLAIN, NO BOX) -->
-    <div class="tvTickerPlain">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+<div aria-label="Trading percentage indicator" class="tradePctOrb" id="tradePctOrb">
+<div class="tradePctInner">
+<div class="tradePctLabel">TRD</div>
+<div class="tradePctValue"><span id="tradePctNum">25</span><span class="tradePctSym">%</span></div>
+</div>
+</div>
+<script async="" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" type="text/javascript">
         {
           "symbols": [
             { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
@@ -1355,218 +1431,190 @@
           "locale": "en"
         }
         </script>
-      </div>
-    </div>
-
-    <div class="balanceCard">
-      <div class="bTitle">Total Portfolio Value</div>
-      <div class="bValue" id="balance">--</div>
-      <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
-
-      <div class="actionGrid">
-        <div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
-        <div class="action" onclick="goDepositAndClear()"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
-        <div class="action" onclick="goPlans()"><div class="aIcon aPlans">📈</div><div class="aText">Plans</div></div>
-        <div class="action" onclick="goSupportAndClear()"><div class="aIcon aSupport">💬</div><div class="aText">Support</div></div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h2>Active Investment Plan</h2>
-      <div id="planMsg" class="small">Loading…</div>
-      <div id="planBox"></div>
-    </div>
-
-    <div class="box">
-      <h2>Top 10 Major Cryptos</h2>
-      <div class="small">Live market prices (auto refresh every 20 seconds).</div>
-      <div id="top10Msg" class="small">Loading…</div>
-      <div id="top10List" class="crypto10Grid"></div>
-    </div>
-
-    <div class="box">
-      <h2>Crypto Converter</h2>
-      <div class="small">Search & convert from ALL coins to ALL fiat currencies.</div>
-      <div class="convGrid">
-        <div class="convRow">
-          <div class="ddWrap" id="ddCryptoA"></div>
-          <button class="swapBtn" onclick="swapCrypto()">⇄</button>
-          <div class="ddWrap" id="ddCryptoB"></div>
-        </div>
-        <div class="convRow">
-          <input id="cryptoAmount" class="inp" type="number" min="0" step="0.00000001" placeholder="Enter amount"/>
-        </div>
-        <button class="convBtn" onclick="convertCrypto()">⚡ Convert</button>
-        <div class="card">
-          <div class="rateLine"><span class="rateDot"></span> <span id="cryptoRate">Rate: --</span></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="cryptoResult">--</strong></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Reverse: <strong id="cryptoReverse">--</strong></div>
-          <div class="small" style="margin-top:10px;font-size:13px;color:rgba(234,240,255,.55)">
+</div>
+</div>
+<div class="balanceCard">
+<div class="bTitle">Total Portfolio Value</div>
+<div class="bValue" id="balance">--</div>
+<div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
+<div class="actionGrid">
+<div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
+<div class="action" onclick="goDepositAndClear()"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
+<div class="action" onclick="goPlans()"><div class="aIcon aPlans">📈</div><div class="aText">Plans</div></div>
+<div class="action" onclick="goSupportAndClear()"><div class="aIcon aSupport">💬</div><div class="aText">Support</div></div>
+</div>
+</div>
+<div class="box">
+<h2>Active Investment Plan</h2>
+<div class="small" id="planMsg">Loading…</div>
+<div id="planBox"></div>
+</div>
+<div class="box">
+<h2>Top 10 Major Cryptos</h2>
+<div class="small">Live market prices (auto refresh every 20 seconds).</div>
+<div class="small" id="top10Msg">Loading…</div>
+<div class="crypto10Grid" id="top10List"></div>
+</div>
+<div class="box">
+<h2>Crypto Converter</h2>
+<div class="small">Search &amp; convert from ALL coins to ALL fiat currencies.</div>
+<div class="convGrid">
+<div class="convRow">
+<div class="ddWrap" id="ddCryptoA"></div>
+<button class="swapBtn" onclick="swapCrypto()">⇄</button>
+<div class="ddWrap" id="ddCryptoB"></div>
+</div>
+<div class="convRow">
+<input class="inp" id="cryptoAmount" min="0" placeholder="Enter amount" step="0.00000001" type="number"/>
+</div>
+<button class="convBtn" onclick="convertCrypto()">⚡ Convert</button>
+<div class="card">
+<div class="rateLine"><span class="rateDot"></span> <span id="cryptoRate">Rate: --</span></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="cryptoResult">--</strong></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Reverse: <strong id="cryptoReverse">--</strong></div>
+<div class="small" style="margin-top:10px;font-size:13px;color:rgba(234,240,255,.55)">
             Tip: Search by coin name or symbol (example: “btc”, “eth”, “sol”, “xrp”).
           </div>
-        </div>
-      </div>
-    </div>
-    <div class="box">
-      <h2>Fiat Currency Converter</h2>
-      <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
-      <div class="convGrid">
-        <div class="convRow">
-          <div class="ddWrap" id="ddFiatA"></div>
-          <button class="swapBtn" onclick="swapFiat()">⇄</button>
-          <div class="ddWrap" id="ddFiatB"></div>
-        </div>
-        <div class="convRow">
-          <input id="fiatAmount" class="inp" type="number" min="0" step="0.01" placeholder="Enter amount"/>
-        </div>
-        <button class="convBtn" onclick="convertFiat()">💱 Convert Fiat</button>
-        <div class="card">
-          <div class="rateLine"><span class="rateDot"></span> <span id="fiatRate">Rate: --</span></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="fiatResult">--</strong></div>
-        </div>
-      </div>
-    </div>
-
-    
-    <div class="box" id="tradeSection">
-      <h2>Trade</h2>
-      <div class="small">Open a position by selecting a market, pair and direction. Confirm before placing.</div>
-
-      <div class="tradeWrap">
-        <div class="tradeRow">
-          <div class="tradeSeg" role="tablist" aria-label="Market type">
-            <button class="tradeSegBtn active" id="tradeSegCrypto" type="button">Crypto</button>
-            <button class="tradeSegBtn" id="tradeSegForex" type="button">Forex</button>
-          </div>
-        </div>
-
-        <div class="tradeRow">
-          <div class="ddWrap" id="tradePairWrap"></div>
-          <select id="tradePair" style="display:none"></select>
-        </div>
-
-        <div class="tradeRow">
-          <input id="tradeAmount" class="inp" type="number" min="0" step="0.0001" placeholder="Optional size (e.g. 0.1)"/>
-        </div>
-
-        <div class="tradeActions">
-          <button class="tradeBtn tradeBuy" type="button" onclick="tradeIntent('BUY')">Buy</button>
-          <button class="tradeBtn tradeSell" type="button" onclick="tradeIntent('SELL')">Sell</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ✅ Trade confirm modal -->
-    <div id="tradeModalOverlay" class="tModalOverlay" style="display:none;"></div>
-    <div id="tradeModal" class="tModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="tradeModalTitle">
-      <div class="tModalCard">
-        <div class="tModalHead">
-          <div>
-            <div class="tModalTitle" id="tradeModalTitle">Confirm Trade</div>
-            <div class="tModalSub" id="tradeModalSub">Review details before placing</div>
-          </div>
-          <button class="tModalClose" type="button" onclick="closeTradeModal()">✕</button>
-        </div>
-
-        <div class="tModalBody">
-          <div class="tDetailGrid" id="tradeModalDetails"></div>
-          <div class="tModalHint">This is a confirmation step only. Trade history page will be added next.</div>
-        </div>
-
-        <div class="tModalFoot">
-          <button class="tModalBtn ghost" type="button" onclick="closeTradeModal()">Cancel</button>
-          <button class="tModalBtn ok" type="button" onclick="confirmTrade()">Confirm</button>
-        </div>
-      </div>
-    </div>
-
+</div>
+</div>
+</div>
 <div class="box">
-      <h2>Live Crypto Order Book</h2>
-      <div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
-
-      <div class="convRow" style="margin-top:12px">
-        <div class="ddWrap" id="obPairWrap"></div>
-        <select id="obPair" style="display:none">
-          <option value="BTCUSDT">BTC/USDT</option>
-          <option value="ETHUSDT">ETH/USDT</option>
-          <option value="BNBUSDT">BNB/USDT</option>
-          <option value="XRPUSDT">XRP/USDT</option>
-          <option value="SOLUSDT">SOL/USDT</option>
-        </select>
-      </div>
-
-      <div class="chartWrap">
-        <div class="chartHead">
-          <span>Mini Candlestick Chart</span>
-          <span id="chartPair">BTC/USDT</span>
-        </div>
-        <iframe id="tvChart" class="chartFrame"></iframe>
-      </div>
-
-      <div class="orderBookWrap">
-        <div class="obHead">
-          <span>Order Book</span>
-          <div class="obStatus">
-            <span class="pulseDot"></span>
-            <span id="obStatusTxt">Connecting…</span>
-          </div>
-        </div>
-
-        <div class="obGrid">
-          <div class="obCol">
-            <div class="obColHead"><span>Asks</span><span>Price / Amount / Total</span></div>
-            <div id="obAsks" class="obRows"></div>
-          </div>
-
-          <div class="obMid">
-            <div class="midPrice" id="obMidPrice">--</div>
-            <div class="spreadPill" id="obSpread">Spread: --</div>
-          </div>
-
-          <div class="obCol">
-            <div class="obColHead"><span>Bids</span><span>Price / Amount / Total</span></div>
-            <div id="obBids" class="obRows"></div>
-          </div>
-        </div>
-
-        <div class="obFoot">
-          <div id="obExchange">Source: --</div>
-          <div id="obUpdated">Updated: --</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h2>Live Crypto News</h2>
-      <div class="small">Latest crypto headlines (auto refresh every 60 seconds).</div>
-      <div id="newsMsg" class="small">Loading…</div>
-      <div id="newsList" class="newsGrid"></div>
-    </div>
-  </div>
-
-  <!-- DOCK -->
-  <div class="dock">
-    <div class="dockInner">
-      <div class="dockBar">
-        <div class="dockItem" onclick="goDepositAndClear()">
-          <div id="badgeDepositDock" class="dockBadge">0</div>
-          <div class="ico">💳</div><div>Deposit</div>
-        </div>
-
-        <div class="dockItem" onclick="goWithdrawAndClear()">
-          <div id="badgeWithdrawDock" class="dockBadge">0</div>
-          <div class="ico">➡</div><div>Withdraw</div>
-        </div>
-
-        <div class="dockHome" onclick="goDashboard()" title="Home">🏠</div>
-
-        <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
-        <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
+<h2>Fiat Currency Converter</h2>
+<div class="small">Search &amp; convert from ALL fiat currencies to ALL fiat currencies.</div>
+<div class="convGrid">
+<div class="convRow">
+<div class="ddWrap" id="ddFiatA"></div>
+<button class="swapBtn" onclick="swapFiat()">⇄</button>
+<div class="ddWrap" id="ddFiatB"></div>
+</div>
+<div class="convRow">
+<input class="inp" id="fiatAmount" min="0" placeholder="Enter amount" step="0.01" type="number"/>
+</div>
+<button class="convBtn" onclick="convertFiat()">💱 Convert Fiat</button>
+<div class="card">
+<div class="rateLine"><span class="rateDot"></span> <span id="fiatRate">Rate: --</span></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="fiatResult">--</strong></div>
+</div>
+</div>
+</div>
+<div class="box" id="tradeSection">
+<h2>Trade</h2>
+<div class="small">Open a position by selecting a market, pair and direction. Confirm before placing.</div>
+<div class="tradeWrap">
+<div class="tradeRow">
+<div aria-label="Market type" class="tradeSeg" role="tablist">
+<button class="tradeSegBtn active" id="tradeSegCrypto" type="button">Crypto</button>
+<button class="tradeSegBtn" id="tradeSegForex" type="button">Forex</button>
+</div>
+</div>
+<div class="tradeRow">
+<div class="ddWrap" id="tradePairWrap"></div>
+<select id="tradePair" style="display:none"></select>
+</div>
+<div class="tradeRow">
+<input class="inp" id="tradeAmount" min="0" placeholder="Optional size (e.g. 0.1)" step="0.0001" type="number"/>
+</div>
+<div class="tradeActions">
+<button class="tradeBtn tradeBuy" onclick="tradeIntent('BUY')" type="button">Buy</button>
+<button class="tradeBtn tradeSell" onclick="tradeIntent('SELL')" type="button">Sell</button>
+</div>
+</div>
+</div>
+<!-- ✅ Trade confirm modal -->
+<div class="tModalOverlay" id="tradeModalOverlay" style="display:none;"></div>
+<div aria-labelledby="tradeModalTitle" aria-modal="true" class="tModal" id="tradeModal" role="dialog" style="display:none;">
+<div class="tModalCard">
+<div class="tModalHead">
+<div>
+<div class="tModalTitle" id="tradeModalTitle">Confirm Trade</div>
+<div class="tModalSub" id="tradeModalSub">Review details before placing</div>
+</div>
+<button class="tModalClose" onclick="closeTradeModal()" type="button">✕</button>
+</div>
+<div class="tModalBody">
+<div class="tDetailGrid" id="tradeModalDetails"></div>
+<div class="tModalHint">This is a confirmation step only. Trade history page will be added next.</div>
+</div>
+<div class="tModalFoot">
+<button class="tModalBtn ghost" onclick="closeTradeModal()" type="button">Cancel</button>
+<button class="tModalBtn ok" onclick="confirmTrade()" type="button">Confirm</button>
+</div>
+</div>
+</div>
+<div class="box">
+<h2>Live Crypto Order Book</h2>
+<div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
+<div class="convRow" style="margin-top:12px">
+<div class="ddWrap" id="obPairWrap"></div>
+<select id="obPair" style="display:none">
+<option value="BTCUSDT">BTC/USDT</option>
+<option value="ETHUSDT">ETH/USDT</option>
+<option value="BNBUSDT">BNB/USDT</option>
+<option value="XRPUSDT">XRP/USDT</option>
+<option value="SOLUSDT">SOL/USDT</option>
+</select>
+</div>
+<div class="chartWrap">
+<div class="chartHead">
+<span>Mini Candlestick Chart</span>
+<span id="chartPair">BTC/USDT</span>
+</div>
+<iframe class="chartFrame" id="tvChart"></iframe>
+</div>
+<div class="orderBookWrap">
+<div class="obHead">
+<span>Order Book</span>
+<div class="obStatus">
+<span class="pulseDot"></span>
+<span id="obStatusTxt">Connecting…</span>
+</div>
+</div>
+<div class="obGrid">
+<div class="obCol">
+<div class="obColHead"><span>Asks</span><span>Price / Amount / Total</span></div>
+<div class="obRows" id="obAsks"></div>
+</div>
+<div class="obMid">
+<div class="midPrice" id="obMidPrice">--</div>
+<div class="spreadPill" id="obSpread">Spread: --</div>
+</div>
+<div class="obCol">
+<div class="obColHead"><span>Bids</span><span>Price / Amount / Total</span></div>
+<div class="obRows" id="obBids"></div>
+</div>
+</div>
+<div class="obFoot">
+<div id="obExchange">Source: --</div>
+<div id="obUpdated">Updated: --</div>
+</div>
+</div>
+</div>
+<div class="box">
+<h2>Live Crypto News</h2>
+<div class="small">Latest crypto headlines (auto refresh every 60 seconds).</div>
+<div class="small" id="newsMsg">Loading…</div>
+<div class="newsGrid" id="newsList"></div>
+</div>
+</div>
+<!-- DOCK -->
+<div class="dock">
+<div class="dockInner">
+<div class="dockBar">
+<div class="dockItem" onclick="goDepositAndClear()">
+<div class="dockBadge" id="badgeDepositDock">0</div>
+<div class="ico">💳</div><div>Deposit</div>
+</div>
+<div class="dockItem" onclick="goWithdrawAndClear()">
+<div class="dockBadge" id="badgeWithdrawDock">0</div>
+<div class="ico">➡</div><div>Withdraw</div>
+</div>
+<div class="dockHome" onclick="goDashboard()" title="Home">🏠</div>
+<div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
+<div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
+</div>
+</div>
+</div>
+<script>
     /* ============================================================
       ✅ STICKY MENU POLISH SCRIPT
     ============================================================ */
@@ -3200,6 +3248,40 @@
         window.location.replace("login.html");
       }
     })();
-  </script>
+  
+
+    // ===== Trading percentage orb (admin-controlled later) =====
+    (function(){
+      const el = document.getElementById("tradePctOrb");
+      const num = document.getElementById("tradePctNum");
+      if(!el || !num) return;
+
+      // Placeholder value (later: fetch from admin-controlled setting)
+      const stored = localStorage.getItem("vgm_trade_pct");
+      const v = stored ? Number(stored) : 25;
+      if(Number.isFinite(v)) num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
+
+      el.addEventListener("click", ()=>{
+        // Cool confirm-style info modal (reuses existing modal if present)
+        try{
+          if(typeof openConfirmModal === "function"){
+            openConfirmModal({
+              title: "Trading Percentage",
+              lines: [
+                { label:"Current", value: num.textContent + "%" },
+                { label:"Note", value: "Admin control will be added later." }
+              ],
+              confirmText: "Close",
+              cancelText: ""
+            });
+          }else{
+            alert("Trading Percentage: " + num.textContent + "%\n(Admin control will be added later.)");
+          }
+        }catch(e){
+          alert("Trading Percentage: " + num.textContent + "%");
+        }
+      });
+    })();
+    </script>
 </body>
 </html>
