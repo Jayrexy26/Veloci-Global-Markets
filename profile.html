@@ -668,7 +668,8 @@
     <div class="i">👛</div>
     <div>Wallet<small>Your wallet</small></div>
   </a>
-<a class="sideItem" href="deposits.html">
+
+  <a class="sideItem" href="deposits.html">
     <div class="i">💳</div>
     <div>Deposit<small>Fund your account</small></div>
   </a>
@@ -985,10 +986,16 @@ function showPopup(title, sub){
   setTimeout(()=> popOverlay.classList.remove("show"), 1150);
 }
 
-/* Avatar helpers (profile + sidebar sync) */
+/* Avatar helpers (profile + sidebar sync)
+   ✅ Fixes:
+   - Supports DB storing FULL public URL OR storage PATH
+   - Avoids Google avatar URLs breaking after refresh
+   - Always cache-busts by appending ?t=...
+*/
 const AVATAR_BUCKET = "avatars";
 function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
-function extractAvatarPathFromPublicUrl(u){
+function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+function extractPathFromPublicUrl(u){
   try{
     const s=String(u||"").trim();
     const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
@@ -999,7 +1006,11 @@ function extractAvatarPathFromPublicUrl(u){
 function normalizeAvatarPath(userId, v){
   let s=String(v||"").trim();
   if(!s) return "";
-  if(isHttpUrl(s)) return extractAvatarPathFromPublicUrl(s) || "";
+  if(isHttpUrl(s)){
+    // If it is a Supabase public URL, extract the storage path
+    const p = extractPathFromPublicUrl(s);
+    return p || "";
+  }
   s=s.replace(/^\/+/, "");
   if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
   if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
@@ -1014,12 +1025,11 @@ function publicAvatarUrl(path){
     return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
   }catch(e){ return ""; }
 }
-
 function setSideAvatar(avatarUrl){
   const fb=document.getElementById("sideAvatarFallback");
   const img=document.getElementById("sideAvatarImg");
   if(avatarUrl){
-    img.src = avatarUrl;
+    img.src = avatarUrl; // already cache-busted
     img.style.display="block";
     fb.style.display="none";
   }else{
@@ -1029,6 +1039,7 @@ function setSideAvatar(avatarUrl){
 }
 
 /* Load profile */
+
 async function loadProfile(){
   if(!currentUser) return;
 
@@ -1045,9 +1056,17 @@ async function loadProfile(){
   const full_name = (dbRow?.full_name || md.full_name || "User");
   const phone     = (dbRow?.phone || md.phone || "");
   const country   = (dbRow?.country || md.country || "");
+  // ✅ Avatar: prefer stable Supabase Storage avatar path. Ignore google avatar URLs.
   const avatarVal = (dbRow?.avatar_url || md.avatar_path || md.avatar_url || "");
+  let avatarUrl = "";
   const avatarPath = normalizeAvatarPath(currentUser.id, avatarVal);
-  const avatarUrl = avatarPath ? publicAvatarUrl(avatarPath) : (isHttpUrl(avatarVal) ? (avatarVal + (avatarVal.includes("?")?"&":"?") + "t=" + Date.now()) : "");
+  if(avatarPath){
+    avatarUrl = publicAvatarUrl(avatarPath);
+  }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+    avatarUrl = avatarVal + (avatarVal.includes("?")?"&":"?") + "t=" + Date.now();
+  }else{
+    avatarUrl = "";
+  }
 
   document.getElementById("bigName").textContent = full_name;
   document.getElementById("bigEmail").textContent = currentUser.email;
@@ -1151,11 +1170,11 @@ async function logout(){
   window.location.replace("login.html");
 }
 
-/* AVATAR UPLOAD (SCRATCH FIX)
-   - Always converts to PNG and uploads to: <uid>/avatar.png
-   - Stores PATH in users.avatar_url and metadata avatar_path (stable)
-   - Uses cacheControl 0 + cache-bust for instant refresh
-   - No deletes needed (avoids policy issues)
+/* AVATAR UPLOAD (REBUILT - SAFE)
+   ✅ Uploads to a single stable path: <uid>/avatar.png
+   ✅ Converts any image to PNG (512x512 square) to avoid extension mismatches
+   ✅ Uses cacheControl:"0" + cache busting so new uploads show immediately
+   ✅ Saves PATH to DB (users.avatar_url) and to auth metadata (avatar_path)
 */
 document.getElementById("avatarInput").addEventListener("change", async (e)=>{
   try{
@@ -1173,16 +1192,14 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
       return;
     }
 
-    // Load image into canvas and export as PNG (stable extension)
+    // Convert to PNG via canvas (stable format)
     const bitmap = await createImageBitmap(file);
     const size = 512;
     const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = size; canvas.height = size;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0,0,size,size);
 
-    // Cover-crop to square
     const sw = bitmap.width, sh = bitmap.height;
     const s = Math.min(sw, sh);
     const sx = Math.floor((sw - s) / 2);
@@ -1198,7 +1215,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     const path = `${currentUser.id}/avatar.png`;
 
     const { error: upErr } = await supabaseClient.storage
-      .from("avatars")
+      .from(AVATAR_BUCKET)
       .upload(path, blob, { upsert:true, cacheControl:"0", contentType:"image/png" });
 
     if(upErr){
@@ -1212,14 +1229,14 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
       return;
     }
 
-    // Update UI immediately
+    // Update UI instantly
     document.getElementById("avatarEmoji").style.display="none";
     const img=document.getElementById("avatarImg");
     img.src = avatarUrl;
     img.style.display="block";
     setSideAvatar(avatarUrl);
 
-    // Save PATH (stable) in DB + metadata
+    // Save PATH (stable) in DB and metadata
     const { error: dbError } = await supabaseClient
       .from("users")
       .upsert([{ email: currentUser.email, avatar_url: path }], { onConflict:"email" });
@@ -1241,49 +1258,9 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     setMsg("err","Upload failed: " + (err?.message || ""));
   }
 });
-    if(upErr){
-      setMsg("err","Avatar upload failed: " + upErr.message);
-      return;
-    }
-
-    const { data: pub } = supabaseClient.storage.from("avatars").getPublicUrl(path);
-    const avatarUrl = pub?.publicUrl;
-    if(!avatarUrl){
-      setMsg("err","Could not fetch avatar url.");
-      return;
-    }
-
-    document.getElementById("avatarEmoji").style.display="none";
-    const img=document.getElementById("avatarImg");
-    img.src = avatarUrl;
-    img.style.display="block";
-
-    setSideAvatar(avatarUrl);
-
-    const { error: dbError } = await supabaseClient
-      .from("users")
-      .upsert([{ email: currentUser.email, avatar_url: avatarUrl }], { onConflict:"email" });
-
-    if(dbError){
-      setMsg("err","DB avatar save failed: " + dbError.message);
-      return;
-    }
-
-    const { error: mdError } = await supabaseClient.auth.updateUser({ data: { avatar_url: avatarUrl } });
-    if(mdError){
-      setMsg("err","Metadata avatar save failed: " + mdError.message);
-      return;
-    }
-
-    setMsg("ok","Profile photo updated ✅");
-    showPopup("Uploaded ✔️", "Your profile photo has been updated.");
-
-  }catch(err){
-    setMsg("err","Upload failed.");
-  }
-});
 
 /* CHANGE PIN */
+
 const changePinBtn = document.getElementById("changePinBtn");
 const pinOverlayEl = document.getElementById("pinOverlay");
 const savePinBtn = document.getElementById("savePinBtn");
@@ -1401,6 +1378,33 @@ savePinBtn.addEventListener("click", async ()=>{
   }
 });
 </script>
+
+<!-- ✅ ADMIN NOTICE MODAL (site-wide, OFF by default) -->
+<div class="popOverlay" id="noticeOverlay" style="display:none;">
+  <div class="popModal" style="max-width:520px;">
+    <div class="popInner" style="text-align:left">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+        <div id="noticeHeader" style="font-weight:1000;font-size:1.25rem;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(90deg, rgba(91,108,255,.35), rgba(124,77,255,.30), rgba(56,189,248,.22));animation: noticePulse 1.7s ease-in-out infinite;">
+          Notice
+        </div>
+        <button type="button" onclick="disableNotice()" class="pinCloseBtn" style="width:42px;height:42px;">✕</button>
+      </div>
+      <div id="noticeBody" class="popSub" style="text-align:left;margin-top:0;">—</div>
+      <div style="margin-top:14px;display:flex;gap:10px;">
+        <button type="button" class="pinCancelBtn" style="flex:1" onclick="disableNotice()">Don’t show again</button>
+        <button type="button" class="pinSaveBtn" style="flex:1" onclick="hideNotice()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes noticePulse{
+  0%{filter:brightness(1); box-shadow:0 0 0 rgba(91,108,255,0);}
+  50%{filter:brightness(1.15); box-shadow:0 0 24px rgba(91,108,255,.18);}
+  100%{filter:brightness(1); box-shadow:0 0 0 rgba(91,108,255,0);}
+}
+</style>
+
 
 </body>
 </html>
