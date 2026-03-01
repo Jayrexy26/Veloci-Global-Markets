@@ -290,6 +290,7 @@
     }
 
     #appView[data-view="users"] .grid,
+    #appView[data-view="cryptoops"] .grid,
     #appView[data-view="plans"] .grid,
     #appView[data-view="support"] .grid,
     #appView[data-view="deposits"] .grid,
@@ -728,6 +729,11 @@
             <div class="countPill" id="cnt-users">0</div>
           </div>
 
+          <div class="navBtn" id="nav-cryptoops" onclick="switchView('cryptoops')">
+            <div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div>
+            <div class="countPill" id="cnt-cryptoops">0</div>
+          </div>
+
           <div class="navBtn" id="nav-plans" onclick="switchView('plans')">
             <div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div>
             <div class="countPill" id="cnt-plans">0</div>
@@ -758,12 +764,6 @@
             <div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div>
             <div class="countPill" id="cnt-withdrawals">0</div>
           </div>
-
-          <div class="navBtn" id="nav-portfolio" onclick="switchView('portfolio')">
-            <div class="navLeft"><div class="navIcon">💼</div><div class="navText">Portfolio</div></div>
-            <div class="countPill" id="cnt-portfolio">0</div>
-          </div>
-
           <div class="navBtn" id="nav-kyc" onclick="switchView('kyc')">
             <div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div>
             <div class="countPill" id="cnt-kyc">0</div>
@@ -880,6 +880,38 @@
                       </tr>
                     </thead>
                     <tbody id="userRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <section id="view-cryptoops" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">🪙 Crypto Credit / Debit / Set</div>
+                  <div class="small" id="cryptoOpsStatus">Uses loaded users. Choose asset + amount, then apply.</div>
+                </div>
+                <div class="rowTools">
+                  <button class="btnGhost" onclick="safeLoad(loadUsers)">Refresh Users</button>
+                </div>
+              </div>
+
+              <div class="small" style="margin-bottom:10px">
+                This is separated from <strong>Users</strong> for clean operations. Search bar filters by username/email.
+              </div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:360px">User</th>
+                        <th style="width:140px">Asset</th>
+                        <th style="width:180px">Amount</th>
+                        <th style="width:320px">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="cryptoOpsRows"></tbody>
                   </table>
                 </div>
               </div>
@@ -1103,58 +1135,6 @@
                 </div>
               </div>
             </section>
-
-            <section id="view-portfolio" class="card hidden">
-              <div class="cardHead">
-                <div>
-                  <div class="cardTitle">💼 Portfolio</div>
-                  <div class="small" id="pfStatus">Not loaded.</div>
-                </div>
-                <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadPortfolios)">Refresh</button>
-                </div>
-              </div>
-
-              <div class="inline" style="margin-bottom:10px">
-                <input id="pfEmail" class="grow" placeholder="Search by user email" oninput="loadPortfolios()"/>
-              </div>
-
-              <form onsubmit="savePortfolio(event)">
-                <input type="hidden" id="pfId">
-                <div class="inline">
-                  <input id="pfUserEmail" class="grow" placeholder="User Email" required>
-                  <select id="pfAsset" class="w140" required>
-                    <option value="btc">BTC</option>
-                    <option value="eth">ETH</option>
-                    <option value="usdt">USDT</option>
-                  </select>
-                  <input id="pfAmount" class="w140" type="number" step="0.00000001" placeholder="Amount" required>
-                  <input id="pfBuyPrice" class="w140" type="number" step="0.01" placeholder="Buy (USD)" required>
-                  <input id="pfNotes" class="grow" placeholder="Notes">
-                  <button class="btnOk" type="submit">Save</button>
-                </div>
-              </form>
-
-              <div style="height:12px"></div>
-
-              <div class="tableWrap">
-                <div class="tableScroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style="width:320px">User</th>
-                        <th style="width:90px">Asset</th>
-                        <th style="width:120px">Amount</th>
-                        <th style="width:120px">Buy</th>
-                        <th style="width:520px">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody id="pfRows"></tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-
             <section id="view-kyc" class="card hidden">
               <div class="cardHead">
                 <div>
@@ -1230,7 +1210,6 @@ const CACHE = {
   plans: [],
   deposits: [],
   withdrawals: [],
-  portfolio: [],
   wallets: [],
   kyc: [],
   wallet_links: []
@@ -1352,7 +1331,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","plans","wallets","walletlinks","support","deposits","withdrawals","portfolio","kyc"];
+  const views = ["overview","users","cryptoops","plans","wallets","walletlinks","support","deposits","withdrawals","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1650,13 +1629,13 @@ function lockConsole(){
 function refreshVisibleOnly(){
   renderOverview();
   if(ACTIVE_VIEW === "users") renderUsers(CACHE.users);
+  if(ACTIVE_VIEW === "cryptoops") renderCryptoOps(CACHE.users);
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
   if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
-  if(ACTIVE_VIEW === "portfolio") renderPortfolio(CACHE.portfolio);
   if(ACTIVE_VIEW === "kyc") renderKyc(CACHE.kyc);
 }
 
@@ -1692,7 +1671,6 @@ function refreshAll(){
   safeLoad(loadSupport);
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
-  safeLoad(loadPortfolios);
   safeLoad(loadKyc);
 }
 
@@ -1718,7 +1696,7 @@ function renderOverview(){
   document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
   document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
-  document.getElementById("cnt-portfolio").textContent = String(CACHE.portfolio.filter(matchSearch).length);
+  document.getElementById("cnt-cryptoops").textContent = String(CACHE.users.filter(matchSearch).length);
   document.getElementById("cnt-kyc").textContent = String(CACHE.kyc.filter(matchSearch).length);
 
   const tbody = document.getElementById("riskRows");
@@ -1804,14 +1782,48 @@ function renderUsers(data){
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
+         </td>
+      </tr>
+    `;
+  });
 
-          <!-- ✅ Crypto balance ops (per-asset) -->
-          <div class="rowTools wrap" style="margin-top:8px;">
-            <select class="miniSel" id="casset-${uid}" aria-label="Crypto asset">${cryptoAssetOptionsHtml()}</select>
-            <input class="miniIn" type="number" step="0.00000001" id="camt-${uid}" placeholder="0.00" aria-label="Crypto amount">
-            <button class="btnOk" onclick="cryptoCreditUser('${uid}','${esc(email)}')">+ Crypto</button>
-            <button class="btnErr" onclick="cryptoDebitUser('${uid}','${esc(email)}')">- Crypto</button>
-            <button class="btnGhost" onclick="cryptoSetUser('${uid}','${esc(email)}')">Set Crypto</button>
+}
+
+
+function renderCryptoOps(data){
+  const status = document.getElementById("cryptoOpsStatus");
+  const tbody = document.getElementById("cryptoOpsRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){
+    status.textContent = "No users loaded yet. Click “Refresh Users”.";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  status.textContent = `Loaded ${filtered.length} user(s) ✅ Choose asset + amount then run ops.`;
+  tbody.innerHTML = "";
+
+  filtered.forEach(u=>{
+    const uid = esc(u.id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td>
+          <select id="casset-${uid}" aria-label="Crypto asset">
+            ${cryptoAssetOptionsHtml()}
+          </select>
+        </td>
+        <td>
+          <input type="number" step="0.00000001" id="camt-${uid}" placeholder="0.00" aria-label="Crypto amount">
+        </td>
+        <td>
+          <div class="rowTools">
+            <button class="btnOk" onclick="cryptoCreditUser('${uid}','${esc(email)}')">Credit</button>
+            <button class="btnErr" onclick="cryptoDebitUser('${uid}','${esc(email)}')">Debit</button>
+            <button class="btnGhost" onclick="cryptoSetUser('${uid}','${esc(email)}')">Set</button>
           </div>
         </td>
       </tr>
@@ -2482,57 +2494,6 @@ async function rejectWithdrawal(id){
   feed("withdrawal_reject -> " + id);
   modalShow("Withdrawal Rejected", "Rejected.");
   safeLoad(loadWithdrawals);
-}
-
-/* PORTFOLIO */
-async function loadPortfolios(){
-  document.getElementById("pfStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const search = (document.getElementById("pfEmail").value||"").trim();
-  const res = await apiCall("portfolios_list", { search });
-  CACHE.portfolio = res.data || [];
-  renderPortfolio(CACHE.portfolio);
-  feed("portfolios_list loaded (" + CACHE.portfolio.length + ")");
-  renderOverview();
-}
-function renderPortfolio(data){
-  const status = document.getElementById("pfStatus");
-  const tbody = document.getElementById("pfRows");
-  const filtered = (data||[]).filter(matchSearch);
-
-  if(filtered.length === 0){
-    status.textContent = "No holdings found.";
-    tbody.innerHTML = "";
-    return;
-  }
-
-  status.textContent = `Loaded ${filtered.length} holding(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(p=>{
-    const email = String(p.user_email||"").trim().toLowerCase();
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>${esc((p.asset||"").toUpperCase())}</strong></td>
-        <td>${esc(p.amount||"")}</td>
-        <td>$${Number(p.buy_price||0).toFixed(2)}</td>
-        <td><span class="ellipsisWide">${esc(p.notes||"-")}</span></td>
-      </tr>
-    `;
-  });
-}
-async function savePortfolio(e){
-  e.preventDefault();
-  const id = document.getElementById("pfId").value || "";
-  const user_email = document.getElementById("pfUserEmail").value.trim();
-  const asset = document.getElementById("pfAsset").value.trim().toLowerCase();
-  const amount = Number(document.getElementById("pfAmount").value||0);
-  const buy_price = Number(document.getElementById("pfBuyPrice").value||0);
-  const notes = document.getElementById("pfNotes").value.trim();
-  await apiCall("portfolio_save", { id, user_email, asset, amount, buy_price, notes });
-  feed("portfolio_save");
-  modalShow("Saved", "Holding saved.");
-  e.target.reset();
-  safeLoad(loadPortfolios);
 }
 
 /* KYC */
