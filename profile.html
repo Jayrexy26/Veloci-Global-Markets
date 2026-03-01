@@ -664,12 +664,11 @@
     <div>Dashboard<small>Main overview</small></div>
   </a>
 
-  <a class="sideItem" href="portfolio.html">
-    <div class="i">📊</div>
-    <div>Portfolio<small>Your assets</small></div>
+  <a class="sideItem" href="wallet.html">
+    <div class="i">👛</div>
+    <div>Wallet<small>Your wallet</small></div>
   </a>
-
-  <a class="sideItem" href="deposits.html">
+<a class="sideItem" href="deposits.html">
     <div class="i">💳</div>
     <div>Deposit<small>Fund your account</small></div>
   </a>
@@ -951,6 +950,7 @@ document.addEventListener("keydown",(e)=>{
 
 /* NAV */
 function goDashboard(){ window.location.href="user-dashboard.html"; }
+function goWallet(){ window.location.href="wallet.html"; }
 function goDeposit(){ window.location.href="deposits.html"; }
 function goWithdraw(){ window.location.href="withdraw.html"; }
 function goPlans(){ window.location.href="plans.html"; }
@@ -986,11 +986,97 @@ function showPopup(title, sub){
 }
 
 /* Avatar helpers (profile + sidebar sync) */
+function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+
+function normalizeAvatarPath(userId, val){
+  let s = String(val||"").trim();
+  if(!s) return "";
+  if(isHttpUrl(s)) return ""; // keep only paths here
+  s = s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
+  if(s.toLowerCase().includes("storage/v1/object/public/avatars/")){
+    s = s.split("storage/v1/object/public/avatars/")[1] || s;
+  }
+  if(s.toLowerCase().includes("storage/v1/object/avatars/")){
+    s = s.split("storage/v1/object/avatars/")[1] || s;
+  }
+  if(!s.includes("/") && userId) s = `${userId}/${s}`;
+  return s;
+}
+
+function publicUrlFromPath(path){
+  try{
+    if(!path) return "";
+    const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+    const url = data?.publicUrl || "";
+    return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+  }catch(e){ return ""; }
+}
+
+async function pickAvatarPathFromFolder(userId){
+  try{
+    if(!userId) return "";
+    const { data, error } = await supabaseClient.storage.from("avatars")
+      .list(String(userId), { limit: 100, offset: 0, sortBy: { column: "updated_at", order: "desc" } });
+    if(error || !Array.isArray(data) || data.length===0) return "";
+    const names = data.map(x=>String(x?.name||"")).filter(Boolean);
+    const preferred = ["avatar.png","avatar.jpg","avatar.jpeg","profile.png","profile.jpg","profile.jpeg"];
+    const found = preferred.find(n=>names.includes(n));
+    const chosen = found || names[0];
+    return `${userId}/${chosen}`;
+  }catch(e){ return ""; }
+}
+
+async function resolveAvatarUrl(userId, dbAvatarVal, md){
+  const mdPath = md?.avatar_path || "";
+  const mdVal  = md?.avatar_url || "";
+  const dbPath = normalizeAvatarPath(userId, dbAvatarVal);
+  const metaPath = normalizeAvatarPath(userId, mdPath || mdVal);
+
+  if(dbPath){
+    const u = publicUrlFromPath(dbPath);
+    if(u) return { url:u, path:dbPath };
+  }
+  if(metaPath){
+    const u = publicUrlFromPath(metaPath);
+    if(u) return { url:u, path:metaPath };
+  }
+
+  if(looksLikeGoogleAvatar(dbAvatarVal) || looksLikeGoogleAvatar(mdVal) || !dbAvatarVal){
+    const detected = await pickAvatarPathFromFolder(userId);
+    if(detected){
+      const u = publicUrlFromPath(detected);
+      if(u) return { url:u, path:detected };
+    }
+  }
+
+  const legacy = (dbAvatarVal && isHttpUrl(dbAvatarVal) && !looksLikeGoogleAvatar(dbAvatarVal)) ? dbAvatarVal
+               : (mdVal && isHttpUrl(mdVal) && !looksLikeGoogleAvatar(mdVal)) ? mdVal : "";
+  if(legacy) return { url: legacy + (legacy.includes("?") ? "&" : "?") + "t=" + Date.now(), path:"" };
+
+  return { url:"", path:"" };
+}
+
 function setSideAvatar(avatarUrl){
   const fb=document.getElementById("sideAvatarFallback");
   const img=document.getElementById("sideAvatarImg");
   if(avatarUrl){
-    img.src = avatarUrl + "?t=" + Date.now();
+    img.src = avatarUrl;
+    img.style.display="block";
+    fb.style.display="none";
+  }else{
+    img.style.display="none";
+    fb.style.display="block";
+  }
+}
+
+function setSideAvatar(avatarUrl){
+  const fb=document.getElementById("sideAvatarFallback");
+  const img=document.getElementById("sideAvatarImg");
+  if(avatarUrl){
+    img.src = avatarUrl;
     img.style.display="block";
     fb.style.display="none";
   }else{
@@ -1016,7 +1102,16 @@ async function loadProfile(){
   const full_name = (dbRow?.full_name || md.full_name || "User");
   const phone     = (dbRow?.phone || md.phone || "");
   const country   = (dbRow?.country || md.country || "");
-  const avatarUrl = (dbRow?.avatar_url || md.avatar_url || "");
+  // ✅ Avatar: use Supabase Storage avatar (stable). Google avatar URLs can break after refresh.
+  const avatarVal = (dbRow?.avatar_url || md.avatar_path || md.avatar_url || "");
+  const resolved = await resolveAvatarUrl(currentUser.id, avatarVal, md);
+  const avatarUrl = resolved.url;
+  if(resolved.path){
+    try{
+      await supabaseClient.from("users").upsert([{ email: currentUser.email, avatar_url: resolved.path }], { onConflict:"email" });
+      await supabaseClient.auth.updateUser({ data: { avatar_path: resolved.path } });
+    }catch(e){}
+  }
 
   document.getElementById("bigName").textContent = full_name;
   document.getElementById("bigEmail").textContent = currentUser.email;
@@ -1032,7 +1127,7 @@ async function loadProfile(){
   if(avatarUrl){
     document.getElementById("avatarEmoji").style.display="none";
     const img=document.getElementById("avatarImg");
-    img.src = avatarUrl + "?t=" + Date.now();
+    img.src = avatarUrl;
     img.style.display="block";
   }
 
@@ -1149,7 +1244,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     }
 
     const { data: pub } = supabaseClient.storage.from("avatars").getPublicUrl(path);
-    const avatarUrl = pub?.publicUrl;
+    const avatarUrl = pub?.publicUrl ? (pub.publicUrl + (pub.publicUrl.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
     if(!avatarUrl){
       setMsg("err","Could not fetch avatar url.");
       return;
@@ -1157,21 +1252,21 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
 
     document.getElementById("avatarEmoji").style.display="none";
     const img=document.getElementById("avatarImg");
-    img.src = avatarUrl + "?t=" + Date.now();
+    img.src = avatarUrl;
     img.style.display="block";
 
     setSideAvatar(avatarUrl);
 
     const { error: dbError } = await supabaseClient
       .from("users")
-      .upsert([{ email: currentUser.email, avatar_url: avatarUrl }], { onConflict:"email" });
+      .upsert([{ email: currentUser.email, avatar_url: path }], { onConflict:"email" });
 
     if(dbError){
       setMsg("err","DB avatar save failed: " + dbError.message);
       return;
     }
 
-    const { error: mdError } = await supabaseClient.auth.updateUser({ data: { avatar_url: avatarUrl } });
+    const { error: mdError } = await supabaseClient.auth.updateUser({ data: { avatar_path: path } });
     if(mdError){
       setMsg("err","Metadata avatar save failed: " + mdError.message);
       return;
