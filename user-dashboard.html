@@ -2055,9 +2055,22 @@
       // ✅ Avatar path → public URL (stable)
       function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
       function looksLikeGoogle(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+      function extractAvatarPathFromUrl(u){
+        try{
+          const s=String(u||"").trim();
+          const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+          if(m && m[1]) return decodeURIComponent(m[1].split('?')[0]);
+          return "";
+        }catch(e){ return ""; }
+      }
+
       function normalizeAvatarPath(userId, val){
         let s=String(val||"").trim();
-        if(!s || isHttpUrl(s)) return "";
+        if(!s) return "";
+        if(isHttpUrl(s)){
+          const p=extractAvatarPathFromUrl(s);
+          return p ? p : "";
+        }
         s=s.replace(/^\/+/, "");
         if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
         if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
@@ -2078,13 +2091,19 @@
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
         // Convert DB stored path to public URL
-        if(avatarUrl && !isHttpUrl(avatarUrl) && currentUserId){
-          const p = normalizeAvatarPath(currentUserId, avatarUrl);
-          const u = publicUrlFromPath(p);
-          if(u) avatarUrl = u;
-        }
         // Ignore google avatar urls on dashboard; prefer storage
         if(looksLikeGoogle(avatarUrl)) avatarUrl = "";
+        // Convert DB stored value (path OR full public URL) to a fresh public URL
+        if(avatarUrl && currentUserId){
+          const p = normalizeAvatarPath(currentUserId, avatarUrl);
+          if(p){
+            const u = publicUrlFromPath(p);
+            if(u) avatarUrl = u;
+          }else if(isHttpUrl(avatarUrl)){
+            // If it is an http URL but not extractable, just bust cache
+            avatarUrl = avatarUrl + (avatarUrl.includes('?')?'&':'?') + 't=' + Date.now();
+          }
+        }
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
