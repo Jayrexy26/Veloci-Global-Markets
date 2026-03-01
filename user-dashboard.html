@@ -5,73 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>VGM | User Dashboard</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-/* ============================================================
-   ✅ AVATAR SYNC (Dashboard)
-   - Reads users.avatar_url (path only)
-   - Builds public URL
-   - Updates header + sidebar avatars
-   - Cache bust safe
-============================================================ */
-const AVATAR_BUCKET = "avatars";
-
-function buildAvatarUrl(path){
-  if(!path) return "";
-  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-  const url = data?.publicUrl || "";
-  return url ? (url + "?t=" + Date.now()) : "";
-}
-
-async function loadDashboardAvatar(){
-  try{
-    if(!currentUserEmail) return;
-
-    const { data } = await supabaseClient
-      .from("users")
-      .select("avatar_url")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-
-    if(!data || !data.avatar_url) return;
-
-    const avatarUrl = buildAvatarUrl(data.avatar_url);
-
-    const btnImg = document.getElementById("avatarImgBtn");
-    const btnFallback = document.getElementById("avatarFallback");
-    const sideImg = document.getElementById("sideAvatarImg");
-    const sideFallback = document.getElementById("sideAvatarFallback");
-
-    if(avatarUrl){
-      if(btnImg){
-        btnImg.src = avatarUrl;
-        btnImg.style.display="block";
-      }
-      if(btnFallback) btnFallback.style.display="none";
-
-      if(sideImg){
-        sideImg.src = avatarUrl;
-        sideImg.style.display="block";
-      }
-      if(sideFallback) sideFallback.style.display="none";
-    }
-  }catch(e){}
-}
-
-
-// 🔥 Ensure avatar loads after auth completes
-setTimeout(()=>{
-  try{ loadDashboardAvatar(); }catch(e){}
-}, 1200);
-
-// 🔥 Auto-style ACTIVE word inside plan box
-const planObserver = new MutationObserver(()=>{
-  const box = document.getElementById("planBox");
-  if(!box) return;
-  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
-});
-planObserver.observe(document.body,{childList:true,subtree:true});
-
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root{
@@ -1106,20 +1040,7 @@ planObserver.observe(document.body,{childList:true,subtree:true});
       color:rgba(234,240,255,.80)
     }
     .newsBottom{font-weight:900;font-size:12px;color:rgba(234,240,255,.65)}
-  
-    /* ✅ Pulsating ACTIVE label */
-    .pulseActive{
-      color:#22c55e;
-      font-weight:1000;
-      animation:pulseActiveGlow 1.4s ease-in-out infinite;
-    }
-    @keyframes pulseActiveGlow{
-      0%{opacity:.7; text-shadow:0 0 6px rgba(34,197,94,.4)}
-      50%{opacity:1; text-shadow:0 0 16px rgba(34,197,94,.9)}
-      100%{opacity:.7; text-shadow:0 0 6px rgba(34,197,94,.4)}
-    }
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -1142,31 +1063,6 @@ planObserver.observe(document.body,{childList:true,subtree:true});
     </div>
   </div>
 
-<!-- ✅ FAILSAFE: never get stuck on loading screen (runs before any other JS) -->
-<script>
-  (function(){
-    function hide(){
-      try{
-        var g=document.getElementById('authGate');
-        if(g){
-          g.style.setProperty('display','none','important');
-          g.style.setProperty('visibility','hidden','important');
-          g.style.setProperty('pointer-events','none','important');
-        }
-        // also re-enable scroll just in case
-        document.documentElement.style.overflow = 'auto';
-        document.body.style.overflow = 'auto';
-      }catch(e){}
-    }
-    // Hide after 2.5s no matter what
-    setTimeout(hide, 2500);
-    // If any script errors, hide immediately so UI is usable
-    window.addEventListener('error', function(){ hide(); }, true);
-    window.addEventListener('unhandledrejection', function(){ hide(); });
-    // If DOM becomes interactive, hide as well
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(hide, 0); });
-  })();
-</script>
   <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
   <!-- Sidebar -->
@@ -1263,73 +1159,7 @@ planObserver.observe(document.body,{childList:true,subtree:true});
           "colorTheme": "dark",
           "locale": "en"
         }
-        
-/* ============================================================
-   ✅ AVATAR SYNC (Dashboard)
-   - Reads users.avatar_url (path only)
-   - Builds public URL
-   - Updates header + sidebar avatars
-   - Cache bust safe
-============================================================ */
-const AVATAR_BUCKET = "avatars";
-
-function buildAvatarUrl(path){
-  if(!path) return "";
-  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-  const url = data?.publicUrl || "";
-  return url ? (url + "?t=" + Date.now()) : "";
-}
-
-async function loadDashboardAvatar(){
-  try{
-    if(!currentUserEmail) return;
-
-    const { data } = await supabaseClient
-      .from("users")
-      .select("avatar_url")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-
-    if(!data || !data.avatar_url) return;
-
-    const avatarUrl = buildAvatarUrl(data.avatar_url);
-
-    const btnImg = document.getElementById("avatarImgBtn");
-    const btnFallback = document.getElementById("avatarFallback");
-    const sideImg = document.getElementById("sideAvatarImg");
-    const sideFallback = document.getElementById("sideAvatarFallback");
-
-    if(avatarUrl){
-      if(btnImg){
-        btnImg.src = avatarUrl;
-        btnImg.style.display="block";
-      }
-      if(btnFallback) btnFallback.style.display="none";
-
-      if(sideImg){
-        sideImg.src = avatarUrl;
-        sideImg.style.display="block";
-      }
-      if(sideFallback) sideFallback.style.display="none";
-    }
-  }catch(e){}
-}
-
-
-// 🔥 Ensure avatar loads after auth completes
-setTimeout(()=>{
-  try{ loadDashboardAvatar(); }catch(e){}
-}, 1200);
-
-// 🔥 Auto-style ACTIVE word inside plan box
-const planObserver = new MutationObserver(()=>{
-  const box = document.getElementById("planBox");
-  if(!box) return;
-  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
-});
-planObserver.observe(document.body,{childList:true,subtree:true});
-
-</script>
+        </script>
       </div>
     </div>
 
@@ -2766,72 +2596,6 @@ planObserver.observe(document.body,{childList:true,subtree:true});
         window.location.replace("login.html");
       }
     })();
-  
-/* ============================================================
-   ✅ AVATAR SYNC (Dashboard)
-   - Reads users.avatar_url (path only)
-   - Builds public URL
-   - Updates header + sidebar avatars
-   - Cache bust safe
-============================================================ */
-const AVATAR_BUCKET = "avatars";
-
-function buildAvatarUrl(path){
-  if(!path) return "";
-  const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-  const url = data?.publicUrl || "";
-  return url ? (url + "?t=" + Date.now()) : "";
-}
-
-async function loadDashboardAvatar(){
-  try{
-    if(!currentUserEmail) return;
-
-    const { data } = await supabaseClient
-      .from("users")
-      .select("avatar_url")
-      .eq("email", currentUserEmail)
-      .maybeSingle();
-
-    if(!data || !data.avatar_url) return;
-
-    const avatarUrl = buildAvatarUrl(data.avatar_url);
-
-    const btnImg = document.getElementById("avatarImgBtn");
-    const btnFallback = document.getElementById("avatarFallback");
-    const sideImg = document.getElementById("sideAvatarImg");
-    const sideFallback = document.getElementById("sideAvatarFallback");
-
-    if(avatarUrl){
-      if(btnImg){
-        btnImg.src = avatarUrl;
-        btnImg.style.display="block";
-      }
-      if(btnFallback) btnFallback.style.display="none";
-
-      if(sideImg){
-        sideImg.src = avatarUrl;
-        sideImg.style.display="block";
-      }
-      if(sideFallback) sideFallback.style.display="none";
-    }
-  }catch(e){}
-}
-
-
-// 🔥 Ensure avatar loads after auth completes
-setTimeout(()=>{
-  try{ loadDashboardAvatar(); }catch(e){}
-}, 1200);
-
-// 🔥 Auto-style ACTIVE word inside plan box
-const planObserver = new MutationObserver(()=>{
-  const box = document.getElementById("planBox");
-  if(!box) return;
-  box.innerHTML = box.innerHTML.replace(/\bactive\b/gi, '<span class="pulseActive">active</span>');
-});
-planObserver.observe(document.body,{childList:true,subtree:true});
-
-</script>
+  </script>
 </body>
 </html>
