@@ -1145,12 +1145,26 @@ planObserver.observe(document.body,{childList:true,subtree:true});
 <!-- ✅ FAILSAFE: never get stuck on loading screen (runs before any other JS) -->
 <script>
   (function(){
-    function hide(){ try{ var g=document.getElementById('authGate'); if(g) g.style.display='none'; }catch(e){} }
-    // Hide after 4s no matter what
-    setTimeout(hide, 4000);
+    function hide(){
+      try{
+        var g=document.getElementById('authGate');
+        if(g){
+          g.style.setProperty('display','none','important');
+          g.style.setProperty('visibility','hidden','important');
+          g.style.setProperty('pointer-events','none','important');
+        }
+        // also re-enable scroll just in case
+        document.documentElement.style.overflow = 'auto';
+        document.body.style.overflow = 'auto';
+      }catch(e){}
+    }
+    // Hide after 2.5s no matter what
+    setTimeout(hide, 2500);
     // If any script errors, hide immediately so UI is usable
-    window.addEventListener('error', function(){ hide(); });
+    window.addEventListener('error', function(){ hide(); }, true);
     window.addEventListener('unhandledrejection', function(){ hide(); });
+    // If DOM becomes interactive, hide as well
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(hide, 0); });
   })();
 </script>
   <div id="overlay" class="overlay" onclick="closeMenu()"></div>
