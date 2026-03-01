@@ -1340,75 +1340,6 @@
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-/* ============================================================
-  ✅ AVATAR SYNC FIX (Profile -> Dashboard)
-  - Profile page now stores users.avatar_url as a STORAGE PATH like: <uid>/avatar.png
-  - This dashboard may still receive FULL public URLs (legacy).
-  - This helper supports BOTH and always cache-busts so it never "sticks" on old photos.
-  - IMPORTANT: This does NOT affect the authGate; page will never get stuck if avatar fails.
-============================================================ */
-const AVATAR_BUCKET = "avatars";
-function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
-function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
-function extractAvatarPathFromPublicUrl(u){
-  try{
-    const s=String(u||"").trim();
-    const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
-    if(m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
-    return "";
-  }catch(e){ return ""; }
-}
-function normalizeAvatarPath(userId, v){
-  let s=String(v||"").trim();
-  if(!s) return "";
-  if(isHttpUrl(s)){
-    // If a Supabase public URL was stored in DB, extract the storage path
-    const p = extractAvatarPathFromPublicUrl(s);
-    return p || "";
-  }
-  s=s.replace(/^\/+/, "");
-  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
-  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
-  if(!s.includes("/") && userId) s=`${userId}/${s}`;
-  return s;
-}
-function publicAvatarUrlFromPath(path){
-  try{
-    if(!path) return "";
-    const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-    const url = data?.publicUrl || "";
-    return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
-  }catch(e){ return ""; }
-}
-function applyAvatarUI(url){
-  // Top-right avatar button
-  const topImg = document.getElementById("avatarImgBtn");
-  const topFb  = document.getElementById("avatarFallback");
-  if(topImg && topFb){
-    if(url){
-      topImg.src = url;
-      topImg.style.display = "block";
-      topFb.style.display = "none";
-    }else{
-      topImg.style.display = "none";
-      topFb.style.display = "block";
-    }
-  }
-  // Sidebar avatar
-  const sideImg = document.getElementById("sideAvatarImg");
-  const sideFb  = document.getElementById("sideAvatarFallback");
-  if(sideImg && sideFb){
-    if(url){
-      sideImg.src = url;
-      sideImg.style.display = "block";
-      sideFb.style.display = "none";
-    }else{
-      sideImg.style.display = "none";
-      sideFb.style.display = "block";
-    }
-  }
-}
-
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1429,15 +1360,6 @@ function applyAvatarUI(url){
     let selectedFiatB={ id:"NGN", label:"NGN", icon:"₦" };
 
     let top10Timer=null;
-
-    // ✅ FAILSAFE_HIDE_GATE: never get stuck on loading
-    setTimeout(()=>{
-      try{
-        const g=document.getElementById('authGate');
-        if(g && g.style.display!=='none') g.style.display='none';
-      }catch(e){}
-    }, 4500);
-
 
     /* ============================================================
       ✅ NEWS
@@ -1461,44 +1383,59 @@ function applyAvatarUI(url){
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    async function loadNews(){
+    
+    // TradingView news embed (avoids RSS/network blocks)
+    let __tvNewsMounted = false;
+
+    function mountTradingViewNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
+
+      // Prevent multiple mounts (intervals / re-init)
+      if(__tvNewsMounted) return;
+      __tvNewsMounted = true;
+
+      msg.textContent = "";
+      list.innerHTML = `
+        <div class="tradingview-widget-container" style="width:100%">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      `;
+
+      // Create the TradingView Timeline widget script
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      s.async = true;
+      s.innerHTML = JSON.stringify({
+        feedMode: "all_symbols",
+        colorTheme: "dark",
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: 720,
+        locale: "en"
+      });
+      list.querySelector(".tradingview-widget-container").appendChild(s);
+    }
+
+    async function loadNews(){
       try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
+        // Always use TradingView news (no fetch calls, no CORS issues)
+        mountTradingViewNews();
       }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
+        const msg=document.getElementById("newsMsg");
+        const list=document.getElementById("newsList");
+        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
+        if(list) list.innerHTML = "";
       }
     }
+
     function startNewsAutoRefresh(){
+      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
+      newsTimer = null;
     }
 
     /* ============================================================
@@ -2459,7 +2396,7 @@ function applyAvatarUI(url){
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
