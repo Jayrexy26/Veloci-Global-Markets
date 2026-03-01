@@ -1087,7 +1087,6 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
 
     <!-- ✅ ADDED: Wallets -->
     <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
@@ -1383,59 +1382,44 @@
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    
-    // TradingView news embed (avoids RSS/network blocks)
-    let __tvNewsMounted = false;
-
-    function mountTradingViewNews(){
+    async function loadNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
-
-      // Prevent multiple mounts (intervals / re-init)
-      if(__tvNewsMounted) return;
-      __tvNewsMounted = true;
-
-      msg.textContent = "";
-      list.innerHTML = `
-        <div class="tradingview-widget-container" style="width:100%">
-          <div class="tradingview-widget-container__widget"></div>
-        </div>
-      `;
-
-      // Create the TradingView Timeline widget script
-      const s = document.createElement("script");
-      s.type = "text/javascript";
-      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-      s.async = true;
-      s.innerHTML = JSON.stringify({
-        feedMode: "all_symbols",
-        colorTheme: "dark",
-        isTransparent: true,
-        displayMode: "regular",
-        width: "100%",
-        height: 720,
-        locale: "en"
-      });
-      list.querySelector(".tradingview-widget-container").appendChild(s);
-    }
-
-    async function loadNews(){
       try{
-        // Always use TradingView news (no fetch calls, no CORS issues)
-        mountTradingViewNews();
+        msg.textContent="Loading…";
+        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = (data?.items || []).slice(0, 12);
+        if(!items.length) throw new Error("no news");
+        msg.textContent="";
+        list.innerHTML = items.map(it=>{
+          const title=esc(it.title||"");
+          const link=it.link||"#";
+          const pub=it.pubDate||it.published||"";
+          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
+          const ago = pub ? timeAgo(pub) : "";
+          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
+            <div class="newsTop">
+              <div class="newsTitle">${title}</div>
+            </div>
+            <div class="newsMeta">
+              <span class="newsTag">News</span>
+              <span>${src}</span>
+              ${ago?`<span>• ${ago}</span>`:""}
+            </div>
+            <div class="newsBottom">Tap to open full story</div>
+          </a>`;
+        }).join("");
       }catch(e){
-        const msg=document.getElementById("newsMsg");
-        const list=document.getElementById("newsList");
-        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
-        if(list) list.innerHTML = "";
+        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
+        list.innerHTML="";
       }
     }
-
     function startNewsAutoRefresh(){
-      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer = null;
+      newsTimer=setInterval(loadNews, 60000);
     }
 
     /* ============================================================
@@ -2053,29 +2037,64 @@
       return "";
     }
 
-    async function loadDashboardIdentity(){
-      try{
-        let fullName="", avatarUrl="", countryName="";
-        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
-        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
+    
+async function resolveAvatarUrlMaybePath(raw){
+  try{
+    const v = String(raw || "").trim();
+    if(!v) return "";
+    if(/^https?:\/\//i.test(v)) return v;
+    // treat as storage path in "avatars" bucket
+    const { data } = supabaseClient.storage.from("avatars").getPublicUrl(v);
+    return (data?.publicUrl || "");
+  }catch(e){
+    return "";
+  }
+}
 
-        const md=(window.COINLUXORA_USER?.user_metadata||{});
-        if(!fullName) fullName=md.full_name||"User";
-        if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
-        setNameEverywhere(fullName);
-        setTopAvatar(avatarUrl);
-        setSideAvatar(avatarUrl);
+async function loadDashboardIdentity(){
+  try{
+    let fullName="", avatarRaw="", countryName="";
 
-        const iso = await resolveCountryISO(countryName);
-        const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
-        setCountryChip(iso, niceName);
-      }catch(e){
-        setNameEverywhere("User");
-        setTopAvatar("");
-        setSideAvatar("");
-        setCountryChip("");
-      }
+    // Prefer DB (users.avatar_url may be either a full URL OR a storage path)
+    const { data: row, error } = await supabaseClient
+      .from("users")
+      .select("full_name, avatar_url, country")
+      .eq("email", currentUserEmail)
+      .maybeSingle();
+
+    if(!error && row){
+      fullName = row.full_name || "";
+      avatarRaw = row.avatar_url || "";
+      countryName = row.country || "";
+    }
+
+    // Fallback to auth metadata (profile uploader stores avatar_path)
+    const md = (window.COINLUXORA_USER?.user_metadata || {});
+    if(!fullName) fullName = md.full_name || "User";
+
+    // ✅ Avatar priority:
+    // 1) DB avatar_url (url or path)
+    // 2) metadata avatar_path (path)
+    // 3) metadata avatar_url (legacy url)
+    if(!avatarRaw) avatarRaw = md.avatar_path || md.avatar_url || "";
+
+    const avatarUrl = await resolveAvatarUrlMaybePath(avatarRaw);
+
+    setNameEverywhere(fullName);
+    setTopAvatar(avatarUrl);
+    setSideAvatar(avatarUrl);
+
+    const iso = await resolveCountryISO(countryName);
+    const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
+    setCountryChip(iso, niceName);
+  }catch(e){
+    setNameEverywhere("User");
+    setTopAvatar("");
+    setSideAvatar("");
+    setCountryChip("");
+  }
+}
     }
 
     function mountDropdown(elId, items, getLabel, getSearch, onPick, initial){
@@ -2396,7 +2415,7 @@
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
