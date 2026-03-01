@@ -1087,10 +1087,8 @@
 
     <div class="menuGroupTitle">Navigation</div>
     <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
-
-    <!-- ✅ ADDED: Wallets -->
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
+<!-- ✅ ADDED: Wallets -->
+    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallet<small>Your wallet</small></div></a>
 
     <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
     <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
@@ -2055,169 +2053,6 @@
 
     async function loadDashboardIdentity(){
       try{
-
-        // =========================
-        // ✅ AVATAR PERSIST + RESOLVE (FINAL FIX)
-        // Problem: users.avatar_url often stores a STORAGE PATH (e.g. "<userId>/avatar.png"),
-        // but setTopAvatar expects a FULL URL. After refresh, avatarUrl is blank or not a URL → image disappears.
-        //
-        // Fix:
-        // - If avatarUrl is a path, convert to PUBLIC URL (or SIGNED URL if policies block public).
-        // - If avatarUrl is empty, auto-detect latest file in avatars/<userId>/ by listing the folder.
-        // - Cache the last working URL in localStorage so refresh never blanks.
-        // - No changes to loading gate logic (prevents being stuck).
-        // =========================
-        const AVATAR_BUCKET = "avatars";
-        const AVATAR_CACHE_KEY = "vgm_avatar_cache_" + String(currentUserId||"").trim();
-
-        function isHttpUrl(u){
-          return /^https?:\/\//i.test(String(u||"").trim());
-        }
-
-        function normalizeAvatarPath(p){
-          let s = String(p||"").trim();
-          if(!s) return "";
-          if(isHttpUrl(s)) return s;
-          s = s.replace(/^\/+/, "");
-          // strip bucket prefixes if saved that way
-          if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
-          if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
-          if(s.toLowerCase().includes("storage/v1/object/public/avatars/")){
-            s = s.split("storage/v1/object/public/avatars/")[1] || s;
-          }
-          if(s.toLowerCase().includes("storage/v1/object/avatars/")){
-            s = s.split("storage/v1/object/avatars/")[1] || s;
-          }
-          // if it's just a filename, assume it's under <userId>/
-          if(!s.includes("/") && currentUserId) s = `${currentUserId}/${s}`;
-          return s;
-        }
-
-        function bust(url){
-          if(!url) return "";
-          return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
-        }
-
-        function cacheSet(url){
-          try{
-            if(url) localStorage.setItem(AVATAR_CACHE_KEY, url.split("?")[0]);
-          }catch(e){}
-        }
-        function cacheGet(){
-          try{
-            const v = localStorage.getItem(AVATAR_CACHE_KEY) || "";
-            return v ? bust(v) : "";
-          }catch(e){
-            return "";
-          }
-        }
-        function cacheClear(){
-          try{ localStorage.removeItem(AVATAR_CACHE_KEY); }catch(e){}
-        }
-
-        async function signedUrlFor(path){
-          try{
-            const { data, error } = await supabaseClient.storage.from(AVATAR_BUCKET).createSignedUrl(path, 60*60);
-            if(error) return "";
-            return data?.signedUrl ? bust(data.signedUrl) : "";
-          }catch(e){
-            return "";
-          }
-        }
-
-        function publicUrlFor(path){
-          try{
-            const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-            const url = data?.publicUrl || "";
-            return url ? bust(url) : "";
-          }catch(e){
-            return "";
-          }
-        }
-
-        function probeImage(url, timeoutMs=5000){
-          return new Promise((resolve)=>{
-            if(!url) return resolve(false);
-            const img = new Image();
-            let done=false;
-            const finish=(ok)=>{ if(done) return; done=true; try{ img.onload=null; img.onerror=null; }catch(e){} resolve(ok); };
-            const t=setTimeout(()=>finish(false), timeoutMs);
-            img.onload=()=>{ clearTimeout(t); finish(true); };
-            img.onerror=()=>{ clearTimeout(t); finish(false); };
-            try{ img.referrerPolicy="no-referrer"; }catch(e){}
-            img.src=url;
-          });
-        }
-
-        async function pickAvatarFromFolder(){
-          try{
-            if(!currentUserId) return "";
-            const { data, error } = await supabaseClient.storage
-              .from(AVATAR_BUCKET)
-              .list(String(currentUserId), { limit: 100, offset: 0, sortBy: { column: "updated_at", order: "desc" } });
-
-            if(error || !Array.isArray(data) || data.length===0) return "";
-
-            // Prefer typical names, otherwise take most recent
-            const names = data.map(x=>String(x?.name||"")).filter(Boolean);
-            const preferred = ["avatar.png","avatar.jpg","avatar.jpeg","profile.png","profile.jpg","profile.jpeg"];
-            const found = preferred.find(n=>names.includes(n));
-            const chosen = found || names[0];
-            return `${currentUserId}/${chosen}`;
-          }catch(e){
-            return "";
-          }
-        }
-
-        async function resolveAvatarUrl(rawAvatarUrl){
-          // 0) local cache first
-          const cached = cacheGet();
-          if(cached){
-            const ok = await probeImage(cached);
-            if(ok) return cached;
-            cacheClear();
-          }
-
-          // 1) If already full URL, use it
-          if(rawAvatarUrl && isHttpUrl(rawAvatarUrl)){
-            const u = bust(rawAvatarUrl);
-            const ok = await probeImage(u);
-            if(ok){ cacheSet(u); return u; }
-          }
-
-          // 2) If path, try PUBLIC then SIGNED
-          const path = normalizeAvatarPath(rawAvatarUrl);
-          if(path){
-            const pub = publicUrlFor(path);
-            if(pub){
-              const ok = await probeImage(pub);
-              if(ok){ cacheSet(pub); return pub; }
-            }
-            const signed = await signedUrlFor(path);
-            if(signed){
-              const ok = await probeImage(signed);
-              if(ok){ cacheSet(signed); return signed; }
-            }
-          }
-
-          // 3) If nothing stored, auto-detect in folder and try again
-          const detectedPath = await pickAvatarFromFolder();
-          if(detectedPath){
-            const pub = publicUrlFor(detectedPath);
-            if(pub){
-              const ok = await probeImage(pub);
-              if(ok){ cacheSet(pub); return pub; }
-            }
-            const signed = await signedUrlFor(detectedPath);
-            if(signed){
-              const ok = await probeImage(signed);
-              if(ok){ cacheSet(signed); return signed; }
-            }
-          }
-
-          return "";
-        }
-
         let fullName="", avatarUrl="", countryName="";
         const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
         if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
@@ -2227,9 +2062,8 @@
         if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
         setNameEverywhere(fullName);
-        const resolvedAvatar = await resolveAvatarUrl(avatarUrl);
-        setTopAvatar(resolvedAvatar);
-        setSideAvatar(resolvedAvatar);
+        setTopAvatar(avatarUrl);
+        setSideAvatar(avatarUrl);
 
         const iso = await resolveCountryISO(countryName);
         const niceName = (countryName && countryName.trim()) ? countryName.trim() : isoToCountryName(iso);
