@@ -1342,14 +1342,11 @@
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ============================================================
   ✅ AVATAR SYNC (PROFILE -> DASHBOARD)
-  Profile upload stores users.avatar_url as a STORAGE PATH like: <uid>/avatar.png
-  This dashboard supports BOTH:
-  - storage path (preferred)
-  - legacy full public URL
-  Always cache-busts so new uploads show instantly.
-  NOTE: Avatar failures NEVER block authGate.
+  - Supports users.avatar_url stored as STORAGE PATH: <uid>/avatar.png
+  - Supports legacy FULL public URL
+  - Prevents relative-path 404s by always converting paths -> full public URL
 ============================================================ */
-const AVATAR_BUCKET = "avatars";
+const AVATAR_BUCKET="avatars";
 function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
 function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
 function extractAvatarPathFromPublicUrl(u){
@@ -1364,8 +1361,8 @@ function normalizeAvatarPath(userId, v){
   let s=String(v||"").trim();
   if(!s) return "";
   if(isHttpUrl(s)){
-    const p = extractAvatarPathFromPublicUrl(s);
-    return p || "";
+    const p=extractAvatarPathFromPublicUrl(s);
+    return p||"";
   }
   s=s.replace(/^\/+/, "");
   if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
@@ -1377,40 +1374,9 @@ function publicAvatarUrlFromPath(path){
   try{
     if(!path) return "";
     const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-    const url = data?.publicUrl || "";
+    const url=data?.publicUrl||"";
     return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
   }catch(e){ return ""; }
-}
-function applyAvatarUI(url){
-  try{
-    // Top-right avatar button
-    const topImg = document.getElementById("avatarImgBtn");
-    const topFb  = document.getElementById("avatarFallback");
-    if(topImg && topFb){
-      if(url){
-        topImg.src = url;
-        topImg.style.display = "block";
-        topFb.style.display = "none";
-      }else{
-        topImg.style.display = "none";
-        topFb.style.display = "block";
-      }
-    }
-
-    // Sidebar avatar
-    const sideImg = document.getElementById("sideAvatarImg");
-    const sideFb  = document.getElementById("sideAvatarFallback");
-    if(sideImg && sideFb){
-      if(url){
-        sideImg.src = url;
-        sideImg.style.display = "block";
-        sideFb.style.display = "none";
-      }else{
-        sideImg.style.display = "none";
-        sideFb.style.display = "block";
-      }
-    }
-  }catch(e){}
 }
 
 
@@ -1456,59 +1422,44 @@ function applyAvatarUI(url){
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    
-    // TradingView news embed (avoids RSS/network blocks)
-    let __tvNewsMounted = false;
-
-    function mountTradingViewNews(){
+    async function loadNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
-
-      // Prevent multiple mounts (intervals / re-init)
-      if(__tvNewsMounted) return;
-      __tvNewsMounted = true;
-
-      msg.textContent = "";
-      list.innerHTML = `
-        <div class="tradingview-widget-container" style="width:100%">
-          <div class="tradingview-widget-container__widget"></div>
-        </div>
-      `;
-
-      // Create the TradingView Timeline widget script
-      const s = document.createElement("script");
-      s.type = "text/javascript";
-      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-      s.async = true;
-      s.innerHTML = JSON.stringify({
-        feedMode: "all_symbols",
-        colorTheme: "dark",
-        isTransparent: true,
-        displayMode: "regular",
-        width: "100%",
-        height: 720,
-        locale: "en"
-      });
-      list.querySelector(".tradingview-widget-container").appendChild(s);
-    }
-
-    async function loadNews(){
       try{
-        // Always use TradingView news (no fetch calls, no CORS issues)
-        mountTradingViewNews();
+        msg.textContent="Loading…";
+        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = (data?.items || []).slice(0, 12);
+        if(!items.length) throw new Error("no news");
+        msg.textContent="";
+        list.innerHTML = items.map(it=>{
+          const title=esc(it.title||"");
+          const link=it.link||"#";
+          const pub=it.pubDate||it.published||"";
+          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
+          const ago = pub ? timeAgo(pub) : "";
+          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
+            <div class="newsTop">
+              <div class="newsTitle">${title}</div>
+            </div>
+            <div class="newsMeta">
+              <span class="newsTag">News</span>
+              <span>${src}</span>
+              ${ago?`<span>• ${ago}</span>`:""}
+            </div>
+            <div class="newsBottom">Tap to open full story</div>
+          </a>`;
+        }).join("");
       }catch(e){
-        const msg=document.getElementById("newsMsg");
-        const list=document.getElementById("newsList");
-        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
-        if(list) list.innerHTML = "";
+        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
+        list.innerHTML="";
       }
     }
-
     function startNewsAutoRefresh(){
-      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer = null;
+      newsTimer=setInterval(loadNews, 60000);
     }
 
     /* ============================================================
@@ -2029,25 +1980,59 @@ function applyAvatarUI(url){
     }
 
     function setTopAvatar(avatarUrl){
-      const fallback=document.getElementById("avatarFallback");
-      const img=document.getElementById("avatarImgBtn");
-      if(avatarUrl){
-        img.src=avatarUrl+"?t="+Date.now();
-        img.style.display="block";
-        fallback.style.display="none";
+  const fallback=document.getElementById("avatarFallback");
+  const img=document.getElementById("avatarImgBtn");
+
+  let finalUrl="";
+  try{
+    if(avatarUrl && !looksLikeGoogleAvatar(avatarUrl)){
+      if(isHttpUrl(avatarUrl)){
+        finalUrl = avatarUrl + (avatarUrl.includes("?")?"&":"?") + "t=" + Date.now();
       }else{
+        const p = normalizeAvatarPath(currentUserId, avatarUrl);
+        finalUrl = p ? publicAvatarUrlFromPath(p) : "";
+      }
+    }
+  }catch(e){ finalUrl=""; }
+
+  if(finalUrl){
+    img.src = finalUrl;
+    img.style.display="block";
+    fallback.style.display="none";
+  }else{
+    img.style.display="none";
+    fallback.style.display="block";
+  }
+}else{
         img.style.display="none";
         fallback.style.display="block";
       }
     }
     function setSideAvatar(avatarUrl){
-      const fb=document.getElementById("sideAvatarFallback");
-      const img=document.getElementById("sideAvatarImg");
-      if(avatarUrl){
-        img.src=avatarUrl+"?t="+Date.now();
-        img.style.display="block";
-        fb.style.display="none";
+  const fallback=document.getElementById("sideAvatarFallback");
+  const img=document.getElementById("sideAvatarImg");
+
+  let finalUrl="";
+  try{
+    if(avatarUrl && !looksLikeGoogleAvatar(avatarUrl)){
+      if(isHttpUrl(avatarUrl)){
+        finalUrl = avatarUrl + (avatarUrl.includes("?")?"&":"?") + "t=" + Date.now();
       }else{
+        const p = normalizeAvatarPath(currentUserId, avatarUrl);
+        finalUrl = p ? publicAvatarUrlFromPath(p) : "";
+      }
+    }
+  }catch(e){ finalUrl=""; }
+
+  if(finalUrl){
+    img.src = finalUrl;
+    img.style.display="block";
+    fallback.style.display="none";
+  }else{
+    img.style.display="none";
+    fallback.style.display="block";
+  }
+}else{
         img.style.display="none";
         fb.style.display="block";
       }
@@ -2134,7 +2119,7 @@ function applyAvatarUI(url){
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
-        if(!avatarUrl) avatarUrl=(md.avatar_path || md.avatar_url || "");
+        if(!avatarUrl) avatarUrl=md.avatar_url||"";
 
         setNameEverywhere(fullName);
         setTopAvatar(avatarUrl);
@@ -2469,7 +2454,7 @@ function applyAvatarUI(url){
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
