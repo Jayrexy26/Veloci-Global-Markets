@@ -1340,46 +1340,6 @@
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-/* ============================================================
-  ✅ AVATAR SYNC (PROFILE -> DASHBOARD)
-  - Supports users.avatar_url stored as STORAGE PATH: <uid>/avatar.png
-  - Supports legacy FULL public URL
-  - Prevents relative-path 404s by always converting paths -> full public URL
-  NOTE: Avatar issues never block the page.
-============================================================ */
-const AVATAR_BUCKET="avatars";
-function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
-function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
-function extractAvatarPathFromPublicUrl(u){
-  try{
-    const s=String(u||"").trim();
-    const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
-    if(m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
-    return "";
-  }catch(e){ return ""; }
-}
-function normalizeAvatarPath(userId, v){
-  let s=String(v||"").trim();
-  if(!s) return "";
-  if(isHttpUrl(s)){
-    const p=extractAvatarPathFromPublicUrl(s);
-    return p||"";
-  }
-  s=s.replace(/^\/+/, "");
-  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
-  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
-  if(!s.includes("/") && userId) s=`${userId}/${s}`;
-  return s;
-}
-function publicAvatarUrlFromPath(path){
-  try{
-    if(!path) return "";
-    const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
-    const url=data?.publicUrl||"";
-    return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
-  }catch(e){ return ""; }
-}
-
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1423,44 +1383,59 @@ function publicAvatarUrlFromPath(path){
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
     }
-    async function loadNews(){
+    
+    // TradingView news embed (avoids RSS/network blocks)
+    let __tvNewsMounted = false;
+
+    function mountTradingViewNews(){
       const msg=document.getElementById("newsMsg");
       const list=document.getElementById("newsList");
       if(!msg||!list) return;
+
+      // Prevent multiple mounts (intervals / re-init)
+      if(__tvNewsMounted) return;
+      __tvNewsMounted = true;
+
+      msg.textContent = "";
+      list.innerHTML = `
+        <div class="tradingview-widget-container" style="width:100%">
+          <div class="tradingview-widget-container__widget"></div>
+        </div>
+      `;
+
+      // Create the TradingView Timeline widget script
+      const s = document.createElement("script");
+      s.type = "text/javascript";
+      s.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+      s.async = true;
+      s.innerHTML = JSON.stringify({
+        feedMode: "all_symbols",
+        colorTheme: "dark",
+        isTransparent: true,
+        displayMode: "regular",
+        width: "100%",
+        height: 720,
+        locale: "en"
+      });
+      list.querySelector(".tradingview-widget-container").appendChild(s);
+    }
+
+    async function loadNews(){
       try{
-        msg.textContent="Loading…";
-        const url = RSS_TO_JSON + encodeURIComponent(NEWS_RSS_URL);
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = (data?.items || []).slice(0, 12);
-        if(!items.length) throw new Error("no news");
-        msg.textContent="";
-        list.innerHTML = items.map(it=>{
-          const title=esc(it.title||"");
-          const link=it.link||"#";
-          const pub=it.pubDate||it.published||"";
-          const src=esc((it.author||"CryptoPanic").trim()||"CryptoPanic");
-          const ago = pub ? timeAgo(pub) : "";
-          return `<a class="newsItem" href="${link}" target="_blank" rel="noopener">
-            <div class="newsTop">
-              <div class="newsTitle">${title}</div>
-            </div>
-            <div class="newsMeta">
-              <span class="newsTag">News</span>
-              <span>${src}</span>
-              ${ago?`<span>• ${ago}</span>`:""}
-            </div>
-            <div class="newsBottom">Tap to open full story</div>
-          </a>`;
-        }).join("");
+        // Always use TradingView news (no fetch calls, no CORS issues)
+        mountTradingViewNews();
       }catch(e){
-        msg.innerHTML="<span class='err'>Unable to load news (network blocked).</span>";
-        list.innerHTML="";
+        const msg=document.getElementById("newsMsg");
+        const list=document.getElementById("newsList");
+        if(msg) msg.innerHTML = "<span class='err'>Unable to load news.</span>";
+        if(list) list.innerHTML = "";
       }
     }
+
     function startNewsAutoRefresh(){
+      // TradingView widget auto-updates; keep function for compatibility
       if(newsTimer) clearInterval(newsTimer);
-      newsTimer=setInterval(loadNews, 60000);
+      newsTimer = null;
     }
 
     /* ============================================================
@@ -1981,57 +1956,29 @@ function publicAvatarUrlFromPath(path){
     }
 
     function setTopAvatar(avatarUrl){
-  const fallback=document.getElementById("avatarFallback");
-  const img=document.getElementById("avatarImgBtn");
-
-  let finalUrl="";
-  try{
-    if(avatarUrl && !looksLikeGoogleAvatar(avatarUrl)){
-      if(isHttpUrl(avatarUrl)){
-        finalUrl = avatarUrl + (avatarUrl.includes("?")?"&":"?") + "t=" + Date.now();
+      const fallback=document.getElementById("avatarFallback");
+      const img=document.getElementById("avatarImgBtn");
+      if(avatarUrl){
+        img.src=avatarUrl+"?t="+Date.now();
+        img.style.display="block";
+        fallback.style.display="none";
       }else{
-        const p = normalizeAvatarPath(currentUserId, avatarUrl);
-        finalUrl = p ? publicAvatarUrlFromPath(p) : "";
+        img.style.display="none";
+        fallback.style.display="block";
       }
     }
-  }catch(e){ finalUrl=""; }
-
-  if(finalUrl){
-    img.src = finalUrl;
-    img.style.display="block";
-    fallback.style.display="none";
-  }else{
-    img.style.display="none";
-    fallback.style.display="block";
-  }
-}
-
     function setSideAvatar(avatarUrl){
-  const fallback=document.getElementById("sideAvatarFallback");
-  const img=document.getElementById("sideAvatarImg");
-
-  let finalUrl="";
-  try{
-    if(avatarUrl && !looksLikeGoogleAvatar(avatarUrl)){
-      if(isHttpUrl(avatarUrl)){
-        finalUrl = avatarUrl + (avatarUrl.includes("?")?"&":"?") + "t=" + Date.now();
+      const fb=document.getElementById("sideAvatarFallback");
+      const img=document.getElementById("sideAvatarImg");
+      if(avatarUrl){
+        img.src=avatarUrl+"?t="+Date.now();
+        img.style.display="block";
+        fb.style.display="none";
       }else{
-        const p = normalizeAvatarPath(currentUserId, avatarUrl);
-        finalUrl = p ? publicAvatarUrlFromPath(p) : "";
+        img.style.display="none";
+        fb.style.display="block";
       }
     }
-  }catch(e){ finalUrl=""; }
-
-  if(finalUrl){
-    img.src = finalUrl;
-    img.style.display="block";
-    fallback.style.display="none";
-  }else{
-    img.style.display="none";
-    fallback.style.display="block";
-  }
-}
-
 
     function setNameEverywhere(fullName){
       const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
@@ -2449,7 +2396,7 @@ function publicAvatarUrlFromPath(path){
 
       planBox.innerHTML=`
         <div class="card">
-          <strong>${plan.plan_name} Plan</strong> ${pill(plan.status)}
+          <strong>${plan.plan_name}</strong> ${pill(plan.status)}
           <div class="small" style="margin-top:10px">Amount: <strong>${money(amount)}</strong></div>
 
           <!-- ✅ CHANGED: display multiple instead of % -->
