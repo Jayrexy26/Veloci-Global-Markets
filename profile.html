@@ -988,11 +988,24 @@ function showPopup(title, sub){
 /* Avatar helpers (profile + sidebar sync) */
 function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
 function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+function extractAvatarPathFromUrl(u){
+  try{
+    const s=String(u||"").trim();
+    if(!/^https?:\/\//i.test(s)) return "";
+    const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+    if(m && m[1]) return decodeURIComponent(m[1].split('?')[0]);
+    return "";
+  }catch(e){ return ""; }
+}
 
 function normalizeAvatarPath(userId, val){
   let s = String(val||"").trim();
   if(!s) return "";
-  if(isHttpUrl(s)) return ""; // keep only paths here
+  // If a full Supabase public URL was stored, extract its path
+  if(isHttpUrl(s)){
+    const p = extractAvatarPathFromUrl(s);
+    return p ? p : "";
+  }
   s = s.replace(/^\/+/, "");
   if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
   if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
@@ -1233,7 +1246,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     }
 
     const ext = file.name.split(".").pop().toLowerCase();
-    const path = `${currentUser.id}/avatar.${ext}`;
+    const path = stablePath;
 
     const { error: upErr } = await supabaseClient.storage.from("avatars")
       .upload(path, file, { upsert:true, cacheControl:"0" });
@@ -1275,6 +1288,7 @@ document.getElementById("avatarInput").addEventListener("change", async (e)=>{
     setMsg("ok","Profile photo updated ✅");
     try{ localStorage.removeItem("vgm_avatar_cache_" + String(currentUser.id||"").trim()); }catch(e){}
 try{ localStorage.removeItem("vgm_avatar_url_" + String(currentUser.id||"").trim()); }catch(e){}
+try{ localStorage.removeItem("vgm_avatar_cache_" + String(currentUser.id||"").trim()); }catch(e){}
 showPopup("Uploaded ✔️", "Your profile photo has been updated.");
 
   }catch(err){
