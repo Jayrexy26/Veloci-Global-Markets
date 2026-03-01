@@ -1340,6 +1340,79 @@
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ============================================================
+  ✅ AVATAR SYNC (PROFILE -> DASHBOARD)
+  Profile upload stores users.avatar_url as a STORAGE PATH like: <uid>/avatar.png
+  This dashboard supports BOTH:
+  - storage path (preferred)
+  - legacy full public URL
+  Always cache-busts so new uploads show instantly.
+  NOTE: Avatar failures NEVER block authGate.
+============================================================ */
+const AVATAR_BUCKET = "avatars";
+function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+function looksLikeGoogleAvatar(u){ return /googleusercontent\.com/i.test(String(u||"")); }
+function extractAvatarPathFromPublicUrl(u){
+  try{
+    const s=String(u||"").trim();
+    const m=s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+    if(m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
+    return "";
+  }catch(e){ return ""; }
+}
+function normalizeAvatarPath(userId, v){
+  let s=String(v||"").trim();
+  if(!s) return "";
+  if(isHttpUrl(s)){
+    const p = extractAvatarPathFromPublicUrl(s);
+    return p || "";
+  }
+  s=s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+  if(!s.includes("/") && userId) s=`${userId}/${s}`;
+  return s;
+}
+function publicAvatarUrlFromPath(path){
+  try{
+    if(!path) return "";
+    const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+    const url = data?.publicUrl || "";
+    return url ? (url + (url.includes("?")?"&":"?") + "t=" + Date.now()) : "";
+  }catch(e){ return ""; }
+}
+function applyAvatarUI(url){
+  try{
+    // Top-right avatar button
+    const topImg = document.getElementById("avatarImgBtn");
+    const topFb  = document.getElementById("avatarFallback");
+    if(topImg && topFb){
+      if(url){
+        topImg.src = url;
+        topImg.style.display = "block";
+        topFb.style.display = "none";
+      }else{
+        topImg.style.display = "none";
+        topFb.style.display = "block";
+      }
+    }
+
+    // Sidebar avatar
+    const sideImg = document.getElementById("sideAvatarImg");
+    const sideFb  = document.getElementById("sideAvatarFallback");
+    if(sideImg && sideFb){
+      if(url){
+        sideImg.src = url;
+        sideImg.style.display = "block";
+        sideFb.style.display = "none";
+      }else{
+        sideImg.style.display = "none";
+        sideFb.style.display = "block";
+      }
+    }
+  }catch(e){}
+}
+
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -2061,7 +2134,7 @@
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
-        if(!avatarUrl) avatarUrl=md.avatar_url||"";
+        if(!avatarUrl) avatarUrl=(md.avatar_path || md.avatar_url || "");
 
         setNameEverywhere(fullName);
         setTopAvatar(avatarUrl);
