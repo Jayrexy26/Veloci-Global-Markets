@@ -1466,24 +1466,17 @@
       __balances={};
       try{
         if(!CURRENT_USER_ID) return;
-
         const { data, error } = await supabaseClient
           .from("user_crypto_balances")
           .select("asset_key,balance")
           .eq("user_id", CURRENT_USER_ID);
-
         if(error) throw error;
-
-        // Sum balances per normalized symbol (e.g., USDT_TRC20 + USDT_ERC20 => USDT)
         (data||[]).forEach(r=>{
           const sym=normalizeSymbol(r.asset_key);
-          const add=Number(r.balance||0);
-          __balances[sym]=(Number(__balances[sym]||0) + (Number.isFinite(add)?add:0));
+          __balances[sym]=Number(r.balance||0);
         });
       }catch(e){
-        // Most common reason: RLS policy blocks selects on user_crypto_balances.
         __balances={};
-        console.warn("Could not load user_crypto_balances (RLS?)", e);
       }
     }
 
@@ -1540,24 +1533,29 @@
         await loadBalancesSafe();
         await fetchPricesUSD(__wallets.map(w=>w.asset_key));
 
-        // Total wallet balance: prefer true crypto balances (user_crypto_balances) + live prices
-        let total=0;
-        for(const w of __wallets){
-          const sym=normalizeSymbol(w.asset_key);
-          const bal=Number(__balances[sym]||0);
-          const px=Number(__prices?.[sym]?.usd||0);
-          total += (bal && px) ? (bal*px) : 0;
-        }
-        __totalUsd=total;
-        setTotalBalanceDisplay(money(total));
-        document.getElementById("totalHint").textContent="Live prices • 24h change";
-
-        // Best-effort sync to dashboard balance (users.balance) if your RLS allows the user to update their own row.
-        try{
-          if(CURRENT_USER_ID && Number.isFinite(total)){
-            await supabaseClient.from("users").update({ balance: total }).eq("id", CURRENT_USER_ID);
+        // Total wallet balance MUST MATCH dashboard: users.balance
+        const userUsd = await loadUserUsdBalanceFromUsersTable();
+        if(Number.isFinite(userUsd)){
+          __totalUsd = Number(userUsd);
+          setTotalBalanceDisplay(money(__totalUsd));
+          document.getElementById("totalHint").textContent="Linked with dashboard balance";
+        }else{
+          // fallback: compute from balances/prices if users.balance not readable
+          // IMPORTANT: don't double-count the same coin across multiple networks (e.g. USDT_ERC20 + USDT_BEP20)
+          let total=0;
+          const seen=new Set();
+          for(const w of __wallets){
+            const sym=normalizeSymbol(w.asset_key);
+            if(!sym || seen.has(sym)) continue;
+            seen.add(sym);
+            const bal=Number(__balances[sym]||0);
+            const px=Number(__prices?.[sym]?.usd||0);
+            total += bal*px;
           }
-        }catch(_e){}
+          __totalUsd=total;
+          setTotalBalanceDisplay(money(total));
+          document.getElementById("totalHint").textContent="Live prices • 24h change";
+        }
 
         render(__wallets);
         toast("Loaded ✅");
