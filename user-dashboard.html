@@ -2375,10 +2375,58 @@
     });
 
     async function loadBalance(){
-      const { data } = await supabaseClient.from("users").select("*").eq("email", currentUserEmail).single();
-      const balNum = Number(data?.balance || 0);
-      const bal = balNum.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-      document.getElementById("balance").innerHTML = "$" + bal;
+      // ✅ Wallet balance first (multiple schema fallbacks), then fallback to users.balance
+      // This is defensive so the dashboard never gets stuck if a table/column is missing.
+      try{
+        let total = null;
+
+        // 1) Try wallet tables (if you have them)
+        if(currentUserId){
+          // a) wallet_balances: many rows (one per asset)
+          try{
+            let r = await supabaseClient.from("wallet_balances").select("usd_value").eq("user_id", currentUserId);
+            if(!r.error && Array.isArray(r.data) && r.data.length){
+              total = r.data.reduce((s,x)=>s + Number(x?.usd_value || 0), 0);
+            }
+          }catch(e){}
+
+          // b) wallet_balances.balance_usd (alternate column name)
+          if(total===null){
+            try{
+              let r = await supabaseClient.from("wallet_balances").select("balance_usd").eq("user_id", currentUserId);
+              if(!r.error && Array.isArray(r.data) && r.data.length){
+                total = r.data.reduce((s,x)=>s + Number(x?.balance_usd || 0), 0);
+              }
+            }catch(e){}
+          }
+
+          // c) wallets table: one row per user
+          if(total===null){
+            try{
+              const r = await supabaseClient.from("wallets").select("total_usd").eq("user_id", currentUserId).maybeSingle();
+              if(!r.error && r.data) total = Number(r.data?.total_usd || 0);
+            }catch(e){}
+          }
+          if(total===null){
+            try{
+              const r = await supabaseClient.from("wallets").select("balance_usd").eq("user_id", currentUserId).maybeSingle();
+              if(!r.error && r.data) total = Number(r.data?.balance_usd || 0);
+            }catch(e){}
+          }
+        }
+
+        // 2) Fallback to the old behavior (users.balance) so nothing breaks
+        if(total===null){
+          const { data } = await supabaseClient.from("users").select("balance").eq("email", currentUserEmail).maybeSingle();
+          total = Number(data?.balance || 0);
+        }
+
+        const bal = Number(total || 0).toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+        document.getElementById("balance").innerHTML = "$" + bal;
+      }catch(e){
+        // Never leave it blank (prevents "Loading…" feeling)
+        document.getElementById("balance").innerHTML = "$0.00";
+      }
     }
 
     function money(n){ return "$" + Number(n||0).toFixed(2); }
