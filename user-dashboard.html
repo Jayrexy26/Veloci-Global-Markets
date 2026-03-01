@@ -1509,7 +1509,7 @@
 </div>
 <div class="tradeRow">
 <div class="ddWrap" id="tradePairWrap"></div>
-<select id="tradePair" style="display:none"></select>
+<input id="tradePair" type="hidden" value=""/>
 </div>
 <div class="tradeRow">
 <input class="inp" id="tradeAmount" min="0" placeholder="Optional size (e.g. 0.1)" step="0.0001" type="number"/>
@@ -2268,13 +2268,41 @@
       setPair(init.value, init.label);
       render("");
 
+      
+      function closeTradePairPanel(){
+        closeTradePairPanel();
+        // move panel back under wrap so layout stays consistent
+        if(panel.__homeParent && panel.__homeParent !== panel.parentNode){
+          panel.__homeParent.appendChild(panel);
+        }
+        panel.style.position = "";
+        panel.style.top = "";
+        panel.style.left = "";
+        panel.style.width = "";
+        panel.style.zIndex = "";
+      }
+
       btn.addEventListener("click",(e)=>{
         e.stopPropagation();
-        panel.classList.toggle("show");
-        if(panel.classList.contains("show")){
+        const open = !panel.classList.contains("show");
+
+        if(open){
+          // portal to <body> and use fixed positioning so it never underlays other sections
+          panel.__homeParent = panel.__homeParent || panel.parentNode;
+          const r = btn.getBoundingClientRect();
+          panel.style.position = "fixed";
+          panel.style.top = (r.bottom + 8) + "px";
+          panel.style.left = (r.left) + "px";
+          panel.style.width = (r.width) + "px";
+          panel.style.zIndex = "999999";
+          document.body.appendChild(panel);
+
+          panel.classList.add("show");
           search.value="";
           render("");
           setTimeout(()=>search.focus(),40);
+        }else{
+          closeTradePairPanel();
         }
       });
 
@@ -2287,11 +2315,12 @@
         const label=item.getAttribute("data-label");
         if(!val) return;
         setPair(val,label);
-        panel.classList.remove("show");
+        closeTradePairPanel();
       });
 
       document.addEventListener("click",(e)=>{
-        if(!wrap.contains(e.target)) panel.classList.remove("show");
+        if(wrap.contains(e.target) || panel.contains(e.target)) return;
+        closeTradePairPanel();
       });
     }
 
