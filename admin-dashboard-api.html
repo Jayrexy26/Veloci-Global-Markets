@@ -906,6 +906,7 @@
                     <thead>
                       <tr>
                         <th style="width:360px">User</th>
+                        <th style="width:160px">Current Balance</th>
                         <th style="width:140px">Asset</th>
                         <th style="width:180px">Amount</th>
                         <th style="width:320px">Actions</th>
@@ -1790,6 +1791,30 @@ function renderUsers(data){
 }
 
 
+function getCryptoBalanceForUser(userObj, assetKey){
+  const ak = String(assetKey||"").trim().toUpperCase();
+  if(!ak) return 0;
+
+  const m = userObj?.crypto_balances;
+  if(!m) return 0;
+
+  // Map/object form: { BTC: 0.1, USDT: 50 }
+  if(typeof m === "object" && !Array.isArray(m)){
+    const v = m[ak];
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // Array form: [{asset_key:"BTC", balance:0.1}]
+  if(Array.isArray(m)){
+    const row = m.find(r => String(r?.asset_key||r?.asset||"").trim().toUpperCase() === ak);
+    const n = Number(row?.balance ?? row?.amount ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  return 0;
+}
+
 function renderCryptoOps(data){
   const status = document.getElementById("cryptoOpsStatus");
   const tbody = document.getElementById("cryptoOpsRows");
@@ -1808,11 +1833,16 @@ function renderCryptoOps(data){
     const uid = esc(u.id||"");
     const email = String(u.email||"").trim().toLowerCase();
 
+    // default asset (same as first option)
+    const defaultAsset = (CRYPTO_ASSETS && CRYPTO_ASSETS.length) ? CRYPTO_ASSETS[0] : "BTC";
+    const bal = getCryptoBalanceForUser(u, defaultAsset);
+
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(email)}</td>
+        <td><strong class="mono" id="cbal-${uid}">${Number(bal).toFixed(8)}</strong></td>
         <td>
-          <select id="casset-${uid}" aria-label="Crypto asset">
+          <select id="casset-${uid}" aria-label="Crypto asset" onchange="onCryptoAssetChange('${uid}')">
             ${cryptoAssetOptionsHtml()}
           </select>
         </td>
@@ -1829,6 +1859,26 @@ function renderCryptoOps(data){
       </tr>
     `;
   });
+
+  // After rendering, keep a fast lookup map for asset change updates.
+  // (We store by uid in the DOM dataset so the handler can resolve quickly.)
+  filtered.forEach(u=>{
+    const uid = String(u.id||"");
+    const rowEl = document.getElementById(`cbal-${uid}`);
+    if(rowEl) rowEl.dataset.cryptoBalances = JSON.stringify(u.crypto_balances || {});
+  });
+}
+
+function onCryptoAssetChange(uid){
+  const sel = document.getElementById(`casset-${uid}`);
+  const balEl = document.getElementById(`cbal-${uid}`);
+  if(!sel || !balEl) return;
+  const asset = String(sel.value||"").trim().toUpperCase();
+
+  let m = {};
+  try{ m = JSON.parse(balEl.dataset.cryptoBalances || "{}"); }catch(_e){ m = {}; }
+  const n = Number(m?.[asset] ?? 0);
+  balEl.textContent = (Number.isFinite(n) ? n : 0).toFixed(8);
 }
 
 async function creditUser(email,id){
