@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>VGM | History</title>
+  <title>VGM | Trade History</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -201,10 +201,6 @@
       user-select:none;
     }
     .btn:hover{filter: brightness(1.05); transform: translateY(-1px)}
-    .btn.primary{
-      background: linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
-      border-color: rgba(255,255,255,.14);
-    }
 
     .searchRow{
       display:flex;
@@ -280,7 +276,7 @@
     }
     tbody tr:hover td{ background: rgba(255,255,255,.04); }
 
-    .statusPill{
+    .dirPill{
       display:inline-flex;
       align-items:center;
       justify-content:center;
@@ -291,25 +287,25 @@
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.06);
       color: rgba(234,240,255,.92);
+      gap: 8px;
     }
-    .statusPill.ok{
-      background: rgba(34,197,94,.18);
-      border-color: rgba(34,197,94,.35);
+    .dirPill.buy{
+      background: rgba(34,197,94,.16);
+      border-color: rgba(34,197,94,.34);
       color: rgba(34,197,94,1);
-      box-shadow: 0 0 18px rgba(34,197,94,.16);
+      box-shadow: 0 0 18px rgba(34,197,94,.14);
     }
-    .statusPill.err{
-      background: rgba(248,113,113,.18);
-      border-color: rgba(248,113,113,.35);
+    .dirPill.sell{
+      background: rgba(248,113,113,.16);
+      border-color: rgba(248,113,113,.34);
       color: rgba(248,113,113,1);
-      box-shadow: 0 0 18px rgba(248,113,113,.16);
+      box-shadow: 0 0 18px rgba(248,113,113,.14);
     }
-    .statusPill.warn{
-      background: rgba(245,158,11,.18);
-      border-color: rgba(245,158,11,.35);
-      color: rgba(245,158,11,1);
-      box-shadow: 0 0 18px rgba(245,158,11,.16);
-    }
+
+    .pnl{ font-family: var(--mono); font-weight: 1000; }
+    .pnl.pos{ color: rgba(34,197,94,1); }
+    .pnl.neg{ color: rgba(248,113,113,1); }
+    .pnl.zero{ color: rgba(234,240,255,.72); }
 
     .viewBtn{
       padding: 10px 18px;
@@ -324,19 +320,6 @@
     }
     .viewBtn:hover{background: rgba(255,255,255,.08); transform: translateY(-1px)}
     .mono{font-family: var(--mono)}
-    .typeBadge{
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      margin-right: 10px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      font-size: 12px;
-      font-weight: 1000;
-      color: rgba(234,240,255,.80);
-    }
 
     /* ===== Modal ===== */
     .modalOverlay{
@@ -408,7 +391,6 @@
     .kv .k{font-size: 11px; font-weight: 1000; color: rgba(234,240,255,.65)}
     .kv .v{margin-top: 6px; font-size: 14px; font-weight: 1000; color: rgba(234,240,255,.92); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 
-    /* ===== Footer ===== */
     .footer{
       text-align:center;
       color: rgba(234,240,255,.50);
@@ -417,13 +399,12 @@
       margin-top: 14px;
     }
 
-    /* ===== Mobile ===== */
     @media(max-width: 720px){
       .cardTitle{font-size: 24px}
       table{min-width: 920px}
     }
 
-    /* ===== Slide menu (simple) ===== */
+    /* ===== Slide menu ===== */
     .menuOverlay{
       position:fixed; inset:0;
       background: rgba(0,0,0,.60);
@@ -467,6 +448,23 @@
     .side a:hover{background: rgba(255,255,255,.08)}
     .side a.active{border-color: rgba(91,108,255,.55); background: rgba(91,108,255,.16)}
     .side small{display:block; color: rgba(234,240,255,.55); font-weight: 900; margin-top: 2px}
+
+    .emptyRow{
+      padding: 18px;
+      color: rgba(234,240,255,.65);
+      font-weight: 900;
+    }
+    .blocked{
+      margin-top: 12px;
+      padding: 14px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: rgba(234,240,255,.85);
+      font-weight: 1000;
+      display:none;
+    }
+    .blocked b{color:#fff}
   </style>
 </head>
 
@@ -483,7 +481,7 @@
 
     <a href="user-dashboard.html"><span>🏠</span><div>Dashboard<small>Overview</small></div></a>
     <a href="wallet.html"><span>👛</span><div>Wallet<small>Assets</small></div></a>
-    <a class="active" href="history.html"><span>📜</span><div>History<small>Transactions</small></div></a>
+    <a class="active" href="trade-history.html"><span>📜</span><div>Trade History<small>Trades</small></div></a>
     <a href="deposits.html"><span>💳</span><div>Deposit<small>Fund account</small></div></a>
     <a href="withdraw.html"><span>➡</span><div>Withdraw<small>Request payout</small></div></a>
     <a href="support.html"><span>🧑‍💻</span><div>Support<small>Help desk</small></div></a>
@@ -497,7 +495,7 @@
         <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
         <div class="t">
           <b>Veloci Global Markets</b>
-          <span id="subTop">Transaction History</span>
+          <span id="subTop">Trade History</span>
         </div>
       </div>
       <div class="actions">
@@ -510,14 +508,15 @@
     </div>
 
     <div class="card">
-      <div class="cardTitle">Transaction History</div>
+      <div class="cardTitle">Trade History</div>
 
       <div class="controlsRow">
         <div class="tabs">
           <button class="tab active" id="tab_all" onclick="setTab('all')">All</button>
-          <button class="tab" id="tab_pending" onclick="setTab('pending')">Pending</button>
-          <button class="tab" id="tab_approved" onclick="setTab('approved')">Approved</button>
-          <button class="tab" id="tab_rejected" onclick="setTab('rejected')">Rejected</button>
+          <button class="tab" id="tab_open" onclick="setTab('open')">Open</button>
+          <button class="tab" id="tab_closed" onclick="setTab('closed')">Closed</button>
+          <button class="tab" id="tab_win" onclick="setTab('win')">Wins</button>
+          <button class="tab" id="tab_loss" onclick="setTab('loss')">Losses</button>
         </div>
 
         <div class="rightBtns">
@@ -527,28 +526,30 @@
       </div>
 
       <div class="searchRow">
-        <input class="search" id="q" placeholder="Search tx hash / amount / asset..." oninput="render()"/>
+        <input class="search" id="q" placeholder="Search market / pair / direction / size / P&L..." oninput="render()"/>
+      </div>
+
+      <div class="blocked" id="blocked">
+        <b>Trades are not active</b> on your account yet. Once admin activates your trades, your allocated trade history will appear here.
       </div>
 
       <div class="hint" id="hintLine">
-        <span>Showing history</span> <span class="check">✓</span>
+        <span>Showing trades</span> <span class="check">✓</span>
       </div>
 
       <div class="tableWrap">
         <table>
           <thead>
             <tr>
-              <th>Asset</th>
-              <th>Amount</th>
-              <th>Network</th>
-              <th>Status</th>
-              <th>TX Hash</th>
+              <th>Market</th>
+              <th>Pair</th>
+              <th>Direction</th>
+              <th>Size</th>
+              <th>Profit/Loss</th>
               <th>Action</th>
             </tr>
           </thead>
-          <tbody id="tbody">
-            <!-- no loading screen; we'll populate quietly -->
-          </tbody>
+          <tbody id="tbody"></tbody>
         </table>
       </div>
 
@@ -561,7 +562,7 @@
   <div class="modal" id="modal" role="dialog" aria-modal="true">
     <div class="modalCard">
       <div class="modalHead">
-        <b id="mTitle">Transaction</b>
+        <b id="mTitle">Trade</b>
         <button class="closeBtn" onclick="closeModal()">✕</button>
       </div>
       <div class="modalBody">
@@ -571,52 +572,31 @@
   </div>
 
   <script>
-    /******************************************************************
-     * SUPABASE CONFIG
-     * - If you already use window.SUPABASE_URL / window.SUPABASE_ANON_KEY on other pages,
-     *   set them globally and this file will pick them up.
-     ******************************************************************/
     const SUPABASE_URL = (window.SUPABASE_URL || "https://xdcscknfomlzwysczegc.supabase.co").trim();
     const SUPABASE_ANON_KEY = (window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4").trim();
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    /******************************************************************
-     * AUTH + EMAIL VERIFICATION GUARD (one-block)
-     ******************************************************************/
+    // ✅ Auth + email verification guard (one-block)
     async function requireAuthAndVerified() {
       const { data: { session }, error: sErr } = await sb.auth.getSession();
-      if (sErr || !session || !session.user) {
-        window.location.href = "login.html";
-        return null;
-      }
+      if (sErr || !session || !session.user) { window.location.href = "login.html"; return null; }
       const emailConfirmedAt = session.user.email_confirmed_at || session.user.confirmed_at || null;
-      if (session.user.email && !emailConfirmedAt) {
-        window.location.href = "login.html";
-        return null;
-      }
+      if (session.user.email && !emailConfirmedAt) { window.location.href = "login.html"; return null; }
       return session.user;
     }
 
-    /******************************************************************
-     * STATE
-     ******************************************************************/
     let USER = null;
     let TAB = "all";
     let ALL = [];
     let VIEW = [];
+    let TRADES_ACTIVE = true;
 
-    function openMenu(){
-      document.getElementById("menuOverlay").style.display = "block";
-      document.getElementById("side").classList.add("open");
-    }
-    function closeMenu(){
-      document.getElementById("menuOverlay").style.display = "none";
-      document.getElementById("side").classList.remove("open");
-    }
+    function openMenu(){ document.getElementById("menuOverlay").style.display="block"; document.getElementById("side").classList.add("open"); }
+    function closeMenu(){ document.getElementById("menuOverlay").style.display="none"; document.getElementById("side").classList.remove("open"); }
 
     function setTab(t){
       TAB = t;
-      ["all","pending","approved","rejected"].forEach(x=>{
+      ["all","open","closed","win","loss"].forEach(x=>{
         const el = document.getElementById("tab_"+x);
         if(!el) return;
         if(x===t) el.classList.add("active"); else el.classList.remove("active");
@@ -624,43 +604,68 @@
       render();
     }
 
-    function clearSearch(){
-      const q = document.getElementById("q");
-      if(q) q.value = "";
-      render();
-    }
+    function clearSearch(){ const q = document.getElementById("q"); if(q) q.value=""; render(); }
 
-    function statusToClass(st){
-      const s = (st || "").toLowerCase();
-      if(["approved","completed","success","succeeded"].includes(s)) return "ok";
-      if(["rejected","failed","error","declined"].includes(s)) return "err";
-      if(["pending","processing","review","verifying","queued"].includes(s)) return "warn";
-      return "";
-    }
-
-    function fmtMaybe(n){
+    function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+    function fmtMaybe(n){ const x = Number(n); if(!isFinite(x)) return String(n ?? ""); return x.toLocaleString(undefined,{maximumFractionDigits:8}); }
+    function fmtUSD(n){
       const x = Number(n);
       if(!isFinite(x)) return String(n ?? "");
-      return x.toLocaleString(undefined,{maximumFractionDigits:8});
+      const sign = x < 0 ? "-" : "";
+      const abs = Math.abs(x);
+      return sign + "$" + abs.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+    function dirClass(d){
+      const x = (d||"").toLowerCase();
+      if(x === "buy" || x === "long") return "buy";
+      if(x === "sell" || x === "short") return "sell";
+      return "";
+    }
+    function prettyDir(d){
+      const x = (d||"").toLowerCase();
+      if(x === "long") return "BUY (LONG)";
+      if(x === "short") return "SELL (SHORT)";
+      if(x === "buy") return "BUY";
+      if(x === "sell") return "SELL";
+      return (d||"—").toString().toUpperCase();
+    }
+    function pnlClass(p){
+      const x = Number(p);
+      if(!isFinite(x) || x === 0) return "zero";
+      return x > 0 ? "pos" : "neg";
     }
 
-    function esc(s){
-      return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    function showBlocked(show){
+      const el = document.getElementById("blocked");
+      if(!el) return;
+      el.style.display = show ? "block" : "none";
     }
 
-    function typeBadge(type){
-      const t = (type || "").toLowerCase();
-      const icon = t==="deposit" ? "💳" : t==="withdrawal" ? "➡" : t==="swap" ? "🔁" : t==="trade" ? "🧾" : "📌";
-      const label = t ? (t.charAt(0).toUpperCase()+t.slice(1)) : "Activity";
-      return `<span class="typeBadge">${icon} ${esc(label)}</span>`;
-    }
-
-    /******************************************************************
-     * DATA FETCH (best-effort)
-     ******************************************************************/
-    async function safeFetch(table, eqKey="user_id"){
+    // ✅ Trades activation check (best-effort)
+    async function checkTradesActive(){
       try{
-        const { data, error } = await sb.from(table).select("*").eq(eqKey, USER.id).order("created_at", { ascending:false }).limit(250);
+        const { data } = await sb.from("users")
+          .select("trades_active,trading_active,trades_enabled")
+          .eq("email", USER.email)
+          .maybeSingle();
+        const active = !!(data?.trades_active ?? data?.trading_active ?? data?.trades_enabled);
+        TRADES_ACTIVE = active;
+        showBlocked(!active);
+        return active;
+      }catch(e){
+        TRADES_ACTIVE = true;
+        showBlocked(false);
+        return true;
+      }
+    }
+
+    async function safeFetchTrades(table){
+      try{
+        const { data, error } = await sb.from(table)
+          .select("*")
+          .eq("user_id", USER.id)
+          .order("created_at", { ascending:false })
+          .limit(500);
         if(error) return [];
         return Array.isArray(data) ? data : [];
       }catch(e){
@@ -668,122 +673,101 @@
       }
     }
 
-    function normalize(kind, row){
-      const created_at = row.created_at || row.time || row.timestamp || row.inserted_at || row.updated_at || null;
-      const status = row.status || row.state || row.result || "pending";
-      const asset = row.asset || row.symbol || row.coin || row.currency || row.network || "—";
-      const network = row.network || row.chain || row.asset_network || asset || "—";
-      const amount = row.amount ?? row.qty ?? row.value ?? row.total ?? row.usd_amount ?? null;
-      const tx = row.tx_hash || row.txid || row.hash || row.reference || row.ref || row.id || "—";
+    function normalize(row){
+      const market = row.market || row.asset_class || row.category || "Market";
+      const pair = row.pair || row.symbol || row.instrument || row.asset || "—";
+      const direction = row.direction || row.side || row.position || row.trade_direction || "—";
+      const size = row.size ?? row.lot_size ?? row.quantity ?? row.qty ?? row.volume ?? "—";
+      const pnl = row.profit_loss ?? row.pnl ?? row.profit ?? row.net_pnl ?? row.pl ?? 0;
+      const status = row.status || row.trade_status || (row.closed_at ? "closed" : "open") || "—";
+      const created_at = row.created_at || row.opened_at || row.timestamp || row.time || null;
+      const id = row.id || row.trade_id || row.ref || row.reference || "—";
 
       const details = {
-        "Type": kind,
+        "Trade ID": id,
+        "Market": market,
+        "Pair": pair,
+        "Direction": direction,
+        "Size": size,
+        "Profit/Loss": fmtUSD(pnl),
         "Status": status,
-        "Asset": asset,
-        "Network": network,
-        "Amount": amount ?? "",
-        "Tx Hash / Ref": tx,
-        "Created": created_at ? new Date(created_at).toLocaleString() : ""
+        "Time": created_at ? new Date(created_at).toLocaleString() : "—"
       };
-      if(row.address) details["Address"] = row.address;
-      if(row.to_address) details["To"] = row.to_address;
-      if(row.from_address) details["From"] = row.from_address;
+
+      if(row.entry_price != null) details["Entry Price"] = row.entry_price;
+      if(row.exit_price != null) details["Exit Price"] = row.exit_price;
+      if(row.leverage != null) details["Leverage"] = row.leverage;
       if(row.note) details["Note"] = row.note;
-      if(row.admin_note) details["Admin Note"] = row.admin_note;
 
-      const search = [kind,status,asset,network,amount,tx,row.note||"",row.admin_note||""].join(" ").toLowerCase();
-
-      return {
-        kind,
-        status,
-        asset,
-        network,
-        amount,
-        tx,
-        created_at,
-        details,
-        search
-      };
+      const search = [market,pair,direction,size,pnl,status,id,row.note||""].join(" ").toLowerCase();
+      return { market, pair, direction, size, pnl, status, created_at, id, details, search };
     }
 
-    async function loadHistory(){
-      // quietly fetch; no full screen loader
-      const merged = [];
+    async function loadTrades(){
+      let rows = await safeFetchTrades("trade_history");
+      if(!rows.length) rows = await safeFetchTrades("user_trade_history");
+      if(!rows.length) rows = await safeFetchTrades("trades");
 
-      // Prefer a unified transactions table if you have one
-      const tx = await safeFetch("transactions");
-      if(tx.length){
-        for(const r of tx){
-          const kind = (r.type || r.tx_type || r.kind || r.category || "activity").toString().toLowerCase();
-          merged.push(normalize(kind, r));
-        }
-      } else {
-        // Fallbacks
-        const dep = await safeFetch("deposit_confirmations");
-        for(const r of dep) merged.push(normalize("deposit", r));
-
-        const dep2 = await safeFetch("deposits");
-        for(const r of dep2) merged.push(normalize("deposit", r));
-
-        const wd = await safeFetch("withdrawals");
-        for(const r of wd) merged.push(normalize("withdrawal", r));
-
-        const ledger = await safeFetch("user_ledger");
-        for(const r of ledger) merged.push(normalize((r.entry_type || "balance").toString().toLowerCase(), r));
-      }
-
-      merged.sort((a,b)=>{
+      ALL = rows.map(normalize).sort((a,b)=>{
         const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
         const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
         return tb - ta;
       });
 
-      ALL = merged;
       render();
     }
 
-    /******************************************************************
-     * RENDER
-     ******************************************************************/
     function render(){
       const q = (document.getElementById("q").value || "").trim().toLowerCase();
 
       VIEW = ALL.filter(r=>{
-        const st = (r.status || "").toLowerCase();
-        if(TAB==="pending"){
-          if(!["pending","processing","review","verifying","queued"].includes(st)) return false;
-        }else if(TAB==="approved"){
-          if(!["approved","completed","success","succeeded","paid","done"].includes(st)) return false;
-        }else if(TAB==="rejected"){
-          if(!["rejected","failed","error","declined","canceled","cancelled"].includes(st)) return false;
-        }
         if(q && !(r.search || "").includes(q)) return false;
+
+        const st = (r.status || "").toLowerCase();
+        const pnl = Number(r.pnl);
+
+        if(TAB === "open"){ if(st !== "open") return false; }
+        else if(TAB === "closed"){ if(st !== "closed" && st !== "completed") return false; }
+        else if(TAB === "win"){ if(!(isFinite(pnl) && pnl > 0)) return false; }
+        else if(TAB === "loss"){ if(!(isFinite(pnl) && pnl < 0)) return false; }
+
         return true;
       });
 
       const tb = document.getElementById("tbody");
       tb.innerHTML = "";
 
-      document.getElementById("hintLine").innerHTML = `Showing history <span class="check">✓</span>`;
+      const hint = document.getElementById("hintLine");
+      hint.innerHTML = `<span>Showing trades (${VIEW.length})</span> <span class="check">✓</span>`;
+
+      if(!TRADES_ACTIVE){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6"><div class="emptyRow">Trades are not active for this account.</div></td>`;
+        tb.appendChild(tr);
+        return;
+      }
 
       if(!VIEW.length){
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="6" style="padding:18px; color: rgba(234,240,255,.65); font-weight: 900;">No records found.</td>`;
+        tr.innerHTML = `<td colspan="6"><div class="emptyRow">No trades found.</div></td>`;
         tb.appendChild(tr);
         return;
       }
 
       for(const r of VIEW){
+        const dirCls = dirClass(r.direction);
+        const dirTxt = prettyDir(r.direction);
+
+        const pnlTxt = fmtUSD(r.pnl);
+        const pnlCls = pnlClass(r.pnl);
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>
-            ${typeBadge(r.kind)}
-            <span class="mono">${esc(String(r.asset).toUpperCase())}</span>
-          </td>
-          <td class="mono">${esc(fmtMaybe(r.amount))}</td>
-          <td class="mono">${esc(String(r.network).toUpperCase())}</td>
-          <td><span class="statusPill ${statusToClass(r.status)}">${esc(String(r.status).toUpperCase())}</span></td>
-          <td class="mono" title="${esc(r.tx)}">${esc(String(r.tx).slice(0, 34))}</td>
+          <td>${esc(String(r.market || "—"))}</td>
+          <td class="mono">${esc(String(r.pair || "—").toUpperCase())}</td>
+          <td><span class="dirPill ${dirCls}">${dirTxt}</span></td>
+          <td class="mono">${esc(fmtMaybe(r.size))}</td>
+          <td class="pnl ${pnlCls}">${esc(pnlTxt)}</td>
           <td><button class="viewBtn">View</button></td>
         `;
         tr.querySelector(".viewBtn").addEventListener("click", ()=> openModal(r));
@@ -792,17 +776,20 @@
     }
 
     function openModal(r){
-      document.getElementById("mTitle").textContent = (r.kind || "Transaction").toString().toUpperCase() + " • " + (r.status || "").toString().toUpperCase();
+      document.getElementById("mTitle").textContent =
+        (r.pair || "TRADE").toString().toUpperCase() + " • " + prettyDir(r.direction);
+
       const grid = document.getElementById("mGrid");
       grid.innerHTML = "";
-      const keys = Object.keys(r.details || {});
-      for(const k of keys){
+      for(const k of Object.keys(r.details || {})){
         const v = r.details[k];
         const div = document.createElement("div");
         div.className = "kv";
-        div.innerHTML = `<div class="k">${esc(k)}</div><div class="v ${k.toLowerCase().includes("tx")||k.toLowerCase().includes("ref") ? "mono":""}" title="${esc(v)}">${esc(v)}</div>`;
+        const mono = (k.toLowerCase().includes("id") || k.toLowerCase().includes("pair")) ? "mono" : "";
+        div.innerHTML = `<div class="k">${esc(k)}</div><div class="v ${mono}" title="${esc(v)}">${esc(v)}</div>`;
         grid.appendChild(div);
       }
+
       document.getElementById("modalOverlay").style.display = "block";
       document.getElementById("modal").style.display = "flex";
     }
@@ -812,25 +799,20 @@
     }
 
     async function refresh(){
-      await loadHistory();
+      await checkTradesActive();
+      await loadTrades();
     }
 
-    /******************************************************************
-     * INIT
-     ******************************************************************/
     (async function(){
       USER = await requireAuthAndVerified();
       if(!USER) return;
 
-      // avatar
       const letter = (USER.email || "J").trim().slice(0,1).toUpperCase();
       document.getElementById("avatarLetter").textContent = letter;
-
       document.getElementById("avatar").addEventListener("click", ()=> window.location.href="profile.html");
 
-      // try profile photo from users table
       try{
-        const { data } = await sb.from("users").select("avatar_url,full_name").eq("email", USER.email).maybeSingle();
+        const { data } = await sb.from("users").select("avatar_url").eq("email", USER.email).maybeSingle();
         if(data?.avatar_url){
           const img = document.getElementById("avatarImg");
           img.src = data.avatar_url;
@@ -839,7 +821,8 @@
         }
       }catch(e){}
 
-      await loadHistory();
+      await checkTradesActive();
+      await loadTrades();
     })();
   </script>
 </body>
