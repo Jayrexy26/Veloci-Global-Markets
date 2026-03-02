@@ -9,33 +9,41 @@
   <style>
     :root{
       --bg:#050a18;
+      --bg2:#020617;
       --stroke:rgba(255,255,255,.12);
       --text:#eaf0ff;
       --muted:rgba(234,240,255,.65);
       --muted2:rgba(234,240,255,.45);
+
       --ok:#22c55e;
       --err:#f87171;
       --warn:#f59e0b;
+
       --blue:#5b6cff;
       --purple:#7c4dff;
-      --green:#34d399;
       --cyan:#38bdf8;
+      --green:#34d399;
       --pink:#ff4da6;
+
       --shadow: 0 26px 90px rgba(0,0,0,.55);
       --shadow2: 0 16px 55px rgba(0,0,0,.45);
+      --r:22px;
+      --r2:26px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     }
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family:var(--sans);
       color:var(--text);
       padding:16px;
-      padding-bottom:140px;
       overflow-x:hidden;
       background: var(--bg);
     }
 
-    /* ===== UPPER ECHELON BACKGROUND (same vibe as deposits) ===== */
+    /* ===== Background like deposits ===== */
     .bgFlow{
       position:fixed; inset:0; z-index:-4;
       background:
@@ -44,1191 +52,795 @@
         radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.16), transparent 60%),
         linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
     }
-    .blob{
-      position:fixed;
-      width:520px;height:520px;border-radius:999px;
-      filter: blur(72px);
-      opacity:.60;
-      z-index:-3;
-      mix-blend-mode: screen;
-      will-change: transform;
-    }
-    .blob.b1{ background: rgba(91,108,255,.92); left:-150px; top:-160px; animation: drift1 10s ease-in-out infinite; }
-    .blob.b2{ background: rgba(124,77,255,.82); right:-220px; top:5%; animation: drift2 12s ease-in-out infinite; }
-    .blob.b3{ background: rgba(52,211,153,.55); left:10%; bottom:-250px; animation: drift3 14s ease-in-out infinite; }
-    .blob.b4{ background: rgba(255,77,166,.58); right:10%; bottom:-260px; animation: drift4 11s ease-in-out infinite; }
-    @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(250px,140px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
-    @keyframes drift2{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-280px,170px) scale(1.14)}100%{transform:translate(0,0) scale(1)}}
-    @keyframes drift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(210px,-210px) scale(1.10)}100%{transform:translate(0,0) scale(1)}}
-    @keyframes drift4{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-180px,-130px) scale(1.09)}100%{transform:translate(0,0) scale(1)}}
 
-    .shimmer{
-      position:fixed; inset:-30px; z-index:-2;
-      opacity:.28;
-      background:
-        radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
-        radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
-        linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
-      animation: shimmerMove 6s ease-in-out infinite alternate;
-      pointer-events:none;
-    }
-    @keyframes shimmerMove{ from{transform:translateY(0px) translateX(0px)} to{transform:translateY(42px) translateX(22px)} }
+    .container{max-width: 1220px; margin:0 auto}
 
-    .container{max-width:920px;margin:0 auto}
-    @media (min-width: 1100px){ .container{max-width:1250px;} }
-    @media (min-width: 1500px){ .container{max-width:1380px;} }
-
-    /* ============================================================
-      ✅ STICKY MENU POLISH (same vibe)
-    ============================================================ */
-    .stickyMenu{
-      position:sticky;
-      top:12px;
-      z-index:3000;
-      margin-bottom:10px;
-    }
-    .stickyMenu::before{
-      content:"";
-      position:absolute;
-      inset:-10px -10px -8px -10px;
-      border-radius:26px;
-      background:rgba(5,10,24,.58);
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 18px 70px rgba(0,0,0,.55);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      z-index:-1;
-      pointer-events:none;
-      opacity:0;
-      transform: translateY(-6px);
-      transition: .18s ease;
-    }
-    .stickyMenu.isStuck::before{ opacity:1; transform: translateY(0); }
-    .topRow{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
-
-    .brand{ display:flex; align-items:center; gap:0; padding:0; border:none; background:transparent; box-shadow:none; min-width:unset; position:relative; }
-    .brandLogoWide{
-      height:54px; width:auto; max-width:520px; display:block; object-fit:contain;
-      transform: translateX(-18px) scale(4);
-      transform-origin: left center;
-      filter: drop-shadow(0 18px 35px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(91,108,255,.22));
-    }
-    @media(max-width:520px){
-      .brandLogoWide{ transform: translateX(-12px) scale(3); transform-origin:left center; }
-    }
-
-    .headerActions{display:flex;gap:10px;align-items:center}
-    .avatarBtn{
-      width:46px;height:46px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
-      cursor:pointer;
-      box-shadow:0 16px 40px rgba(124,77,255,.32);
-      display:grid;place-items:center;
-      position:relative;overflow:hidden;
-    }
-    .avatarBtn:hover{filter:brightness(1.05)}
-    .avatarFallback{font-size:18px;line-height:1;z-index:2;}
-    .avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
-    .iconBtn{
-      width:46px;height:46px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.18);
-      color:white;font-weight:1000;
-      cursor:pointer;
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      backdrop-filter: blur(10px);
-    }
-    .iconBtn:hover{background:rgba(255,255,255,.08)}
-
-    body.menuOpen #stickyMenu{ visibility:hidden; pointer-events:none; }
-    body.menuOpen .dock{ display:none; }
-
-    /* ===== HELLO CARD ===== */
-    .helloCard{
-      border-radius:20px;
-      padding:16px 16px;
-      overflow:hidden;
-      background:
-        radial-gradient(800px 220px at 20% 20%, rgba(255,255,255,.18), transparent 60%),
-        linear-gradient(90deg, rgba(109,87,255,1), rgba(255,77,166,0.98));
-      color:white;
-      box-shadow:0 22px 70px rgba(109,87,255,.22);
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-    }
-    .helloLeft{display:flex;align-items:center;gap:12px;}
-    .helloLogo{
-      width:48px;height:48px;border-radius:18px;
-      background:rgba(255,255,255,.20);
-      border:1px solid rgba(255,255,255,.22);
-      display:grid;place-items:center;
-      font-weight:1000;
-      font-size:22px;
-    }
-    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-    .miniChip{
-      font-size:12px;font-weight:1000;
-      padding:6px 10px;border-radius:999px;
-      background:rgba(255,255,255,.18);
-      border:1px solid rgba(255,255,255,.22);
-      display:flex;gap:6px;align-items:center;
-    }
-    .helloTitle{font-weight:1000;font-size:18px}
-    .helloSub{font-size:12px;font-weight:900;opacity:.92}
-    .helloRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
-    .helloRightTop{display:flex;align-items:center;gap:10px}
-    .idChip{
-      padding:8px 12px;border-radius:999px;
-      background:rgba(255,255,255,.18);
-      border:1px solid rgba(255,255,255,.22);
-      font-weight:1000;font-size:12px;
-    }
-    .logoutBtn{
-      width:46px;height:46px;border-radius:999px;border:none;
-      cursor:pointer;
-      background:rgba(239,68,68,0.95);
-      color:#fff;
-      font-weight:1000;
-      box-shadow:0 16px 40px rgba(239,68,68,.22);
-    }
-    .datetimeChip{
-      padding:6px 10px;border-radius:999px;
-      background:rgba(255,255,255,.16);
-      border:1px solid rgba(255,255,255,.20);
-      font-weight:1000;font-size:12px;
-      color:#fff;
-      white-space:nowrap;
-    }
-
-    /* ===== BOX / CARD ===== */
-    .box{
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:24px;
-      padding:16px;
-      background:
-        radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
-        radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
-        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 26px 90px rgba(0,0,0,.55);
-      backdrop-filter: blur(12px);
-      margin-top:14px;
-    }
-    .box h2{margin:0;font-size:20px;font-weight:1000}
-    .small{color:var(--muted);font-size:13px;margin-top:8px}
-
-    .pillTabs{
-      margin-top:12px;
+    /* ===== Top glass bar ===== */
+    .topbar{
+      position: sticky;
+      top: 12px;
+      z-index: 3000;
+      border-radius: 999px;
+      padding: 14px 16px;
+      background: rgba(0,0,0,.26);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 18px 70px rgba(0,0,0,.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .tabBtn{
-      height:44px;
-      padding:0 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      color:rgba(234,240,255,.86);
-      font-weight:1000;
-      cursor:pointer;
-      box-shadow:0 12px 30px rgba(0,0,0,.22);
-      transition:.15s ease;
-    }
-    .tabBtn:hover{filter:brightness(1.05)}
-    .tabBtn.active{
-      border-color: rgba(56,189,248,.55);
-      background: linear-gradient(180deg, rgba(56,189,248,.18), rgba(91,108,255,.12));
-      color:#cfefff;
-    }
-
-    .filters{
-      margin-top:12px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
       align-items:center;
-    }
-    .inp{
-      flex:1;
-      min-width:220px;
-      height:46px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.22);
-      color:var(--text);
-      padding:10px 12px;
-      font-weight:1000;
-      outline:none;
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-    }
-    .btn{
-      height:46px;
-      padding:0 14px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.08);
-      color:#fff;
-      font-weight:1000;
-      cursor:pointer;
-      box-shadow:0 16px 40px rgba(0,0,0,.28);
-      transition:.15s ease;
-    }
-    .btn:hover{transform: translateY(-1px); filter:brightness(1.05)}
-    .btn.primary{ background: linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1)); }
-    .btn.ghost{ background: rgba(255,255,255,.06); }
-
-    .historyList{
-      margin-top:12px;
-      display:grid;
-      gap:10px;
-    }
-    .hItem{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      padding:12px;
-      background:rgba(0,0,0,.22);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      display:flex;
-      align-items:flex-start;
       justify-content:space-between;
-      gap:12px;
-      cursor:pointer;
-      transition:.15s ease;
+      gap: 12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand img{
+      height:44px; width:auto; display:block;
+      filter: drop-shadow(0 18px 35px rgba(0,0,0,.55));
+    }
+    .brand .t{
+      display:flex; flex-direction:column; min-width:0;
+    }
+    .brand .t b{
+      font-size: 13px;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand .t span{
+      font-size: 11px;
+      color: var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .actions{display:flex; align-items:center; gap: 10px;}
+    .avatar{
+      width:44px;height:44px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(124,77,255,1), rgba(91,108,255,1));
+      display:grid; place-items:center;
+      font-weight:900;
+      box-shadow: 0 16px 40px rgba(124,77,255,.26);
       overflow:hidden;
       position:relative;
-    }
-    .hItem:hover{ background:rgba(255,255,255,.06); transform: translateY(-1px); }
-    .hLeft{ display:flex; gap:12px; align-items:flex-start; min-width:0; }
-    .hIcon{
-      width:44px;height:44px;border-radius:16px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-size:18px;
-      flex:0 0 auto;
-    }
-    .hMain{ min-width:0; }
-    .hTitle{ font-weight:1000; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .hSub{ margin-top:6px; color:rgba(234,240,255,.65); font-weight:900; font-size:12px; display:flex; gap:8px; flex-wrap:wrap; }
-    .hSub .dot{width:8px;height:8px;border-radius:999px;background:rgba(52,211,153,1); box-shadow:0 0 14px rgba(52,211,153,.45); margin-top:3px}
-    .hRight{ text-align:right; flex:0 0 auto; }
-    .hAmt{ font-weight:1000; font-size:14px; }
-    .hTime{ margin-top:6px; font-weight:900; font-size:12px; color:rgba(234,240,255,.55); }
-    .statusPill{
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.08);
-      font-weight:1000;
-      font-size:12px;
-      color:rgba(234,240,255,.85);
-      margin-top:8px;
-      justify-content:flex-end;
-    }
-    .statusDot{width:9px;height:9px;border-radius:999px;background:rgba(245,158,11,1); box-shadow:0 0 18px rgba(245,158,11,.45)}
-    .statusPill.ok .statusDot{ background:rgba(34,197,94,1); box-shadow:0 0 18px rgba(34,197,94,.55) }
-    .statusPill.err .statusDot{ background:rgba(248,113,113,1); box-shadow:0 0 18px rgba(248,113,113,.55) }
-
-    /* ===== SIDEBAR (slide in) ===== */
-    .overlay{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.65);
-      display:none; z-index:999;
-      backdrop-filter: blur(4px);
-    }
-    .overlay.show{display:block;}
-    .sidebar{
-      position:fixed; top:0; left:-315px;
-      width:292px; height:100vh;
-      padding:16px;
-      z-index:1000;
-      transition: .28s ease;
-      border-right:1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
-        radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
-        linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
-      box-shadow:0 26px 90px rgba(0,0,0,.60);
-      backdrop-filter: blur(16px);
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
-    }
-    .sidebar::-webkit-scrollbar{width:8px}
-    .sidebar::-webkit-scrollbar-track{background:transparent}
-    .sidebar::-webkit-scrollbar-thumb{
-      background:rgba(255,255,255,.16);
-      border-radius:999px;
-      border:2px solid rgba(0,0,0,0);
-      background-clip:padding-box;
-    }
-    .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
-    .sidebar.open{ left:0; }
-
-    .sideTop{ display:flex;align-items:center;justify-content:space-between; gap:10px;margin-bottom:12px; }
-    .sideBrand{ display:flex; align-items:center; gap:0; padding:0; border:none; background:transparent; box-shadow:none; min-width:unset; }
-    .sideLogoWide{
-      height:128px;
-      width:auto;
-      max-width:230px;
-      display:block;
-      object-fit:contain;
-      filter: drop-shadow(0 18px 35px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(91,108,255,.18));
-    }
-    .closeBtn{
-      background:rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.14);
-      color:rgba(234,240,255,.95);
-      border-radius:14px;
-      width:44px;height:44px;
-      cursor:pointer;
-      display:grid;place-items:center;
-      font-weight:1000;
-    }
-    .closeBtn:hover{background:rgba(255,255,255,.08)}
-
-    .userTag{
-      padding:12px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 18px 55px rgba(0,0,0,.35);
-      margin:14px 0 14px;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-    }
-    .userTagLeft{min-width:0}
-    .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
-    .userTag .t2{
-      margin-top:6px;font-weight:1000;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      max-width:180px;
-    }
-    .sideAvatar{
-      width:46px;height:46px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.25);
-      display:grid;place-items:center;
-      position:relative;overflow:hidden;
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      flex:0 0 auto;
-    }
-    .sideAvatar span{font-size:18px}
-    .sideAvatar img{ position:absolute; inset:0; width:100%;height:100%; object-fit:cover; display:none; }
-
-    .menuGroupTitle{
-      margin:10px 0 8px;
-      font-size:12px;font-weight:1000;
-      color:rgba(234,240,255,.50);
-      letter-spacing:.8px;
-      text-transform:uppercase;
-    }
-    .sideItem{
-      display:flex;align-items:center;gap:12px;
-      padding:12px 12px;border-radius:18px;
-      color:rgba(234,240,255,.82);
-      text-decoration:none;
-      font-weight:1000;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      margin-bottom:10px;
-      position:relative;overflow:hidden;
-    }
-    .sideItem:hover{background:rgba(255,255,255,.08)}
-    .sideItem .i{
-      width:42px;height:42px;border-radius:16px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-size:18px;
-    }
-    .sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
-    .activeLink{
-      border:1px solid rgba(56,189,248,.55);
-      background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
-      color:#cfefff;
-    }
-    .activeLink::after{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
-      pointer-events:none;
-    }
-    .sideLogout{
-      margin-top:10px;
-      background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
-      color:#020617;border:none;width:100%;
-      padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
-      box-shadow:0 18px 55px rgba(239,68,68,.18);
-    }
-    .sideLogout:hover{filter:brightness(1.03)}
-
-    /* ===== DOCK ===== */
-    .dock{
-      position:fixed;
-      left:0; right:0; bottom:14px;
-      z-index:2000;
-      pointer-events:none;
-    }
-    .dockInner{ pointer-events:auto; max-width:980px; margin:0 auto; padding:0 14px; }
-    .dockBar{
-      height:76px;
-      border-radius:28px;
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow:0 20px 70px rgba(0,0,0,.45);
-      backdrop-filter: blur(14px);
-      display:flex;
-      align-items:center;
-      justify-content:space-around;
-      padding:10px 18px;
-      gap:12px;
-      overflow:visible;
-    }
-    .dockItem{
-      flex:1 1 0;
-      min-width:56px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      border-radius:18px;
-      padding:10px 0;
-      color:rgba(234,240,255,.55);
-      font-size:12px;
-      font-weight:1000;
       cursor:pointer;
       user-select:none;
-      position:relative;
     }
-    .dockItem .ico{font-size:18px;opacity:.95}
-    .dockItem:hover{background:rgba(255,255,255,.06)}
-    .dockActive{color:#9bdcff;background:rgba(56,189,248,.10)}
-    .dockHome{
-      width:78px;height:78px;border-radius:26px;
-      background:linear-gradient(180deg, rgba(109,87,255,1), rgba(91,108,255,1));
-      box-shadow:0 22px 55px rgba(109,87,255,.30);
-      display:grid;place-items:center;
-      margin-top:-32px;
-      border:1px solid rgba(255,255,255,.16);
-      cursor:pointer;user-select:none;
-      flex:0 0 auto;
-      pointer-events:auto;
-      overflow:hidden;
-      color:#fff;
-      font-size:28px;
-      font-weight:1000;
+    .avatar img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none;}
+    .menuBtn{
+      width:44px;height:44px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      color: #fff;
+      font-weight: 1000;
+      cursor:pointer;
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    .dockHome:hover{filter:brightness(1.05)}
-    .dockBadge{
-      position:absolute;
-      top:2px;
-      right:18px;
-      min-width:18px;
-      height:18px;
-      padding:0 6px;
-      border-radius:999px;
-      background:#f87171;
-      color:#020617;
-      font-weight:1000;
-      font-size:11px;
-      display:none;
+    .menuBtn:hover{background: rgba(255,255,255,.08)}
+
+    /* ===== Big card ===== */
+    .card{
+      margin-top: 16px;
+      border-radius: var(--r2);
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 320px at 20% 10%, rgba(56,189,248,.14), transparent 60%),
+        radial-gradient(900px 320px at 88% 18%, rgba(255,77,166,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 18px;
+    }
+
+    .cardTitle{
+      font-size: 28px;
+      font-weight: 1000;
+      margin: 2px 0 14px 0;
+      letter-spacing:.2px;
+    }
+
+    /* ===== Tabs + Controls ===== */
+    .controlsRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      flex-wrap:wrap;
+    }
+    .tabs{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .tab{
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: rgba(234,240,255,.90);
+      font-weight: 1000;
+      cursor:pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      transition: .15s ease;
+      user-select:none;
+    }
+    .tab:hover{filter: brightness(1.05); transform: translateY(-1px)}
+    .tab.active{
+      background: linear-gradient(180deg, rgba(91,108,255,.55), rgba(124,77,255,.25));
+      border-color: rgba(91,108,255,.55);
+      color:#eaf0ff;
+    }
+
+    .rightBtns{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      margin-left:auto;
+    }
+    .btn{
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: #fff;
+      font-weight: 1000;
+      cursor:pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      transition: .15s ease;
+      user-select:none;
+    }
+    .btn:hover{filter: brightness(1.05); transform: translateY(-1px)}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+      border-color: rgba(255,255,255,.14);
+    }
+
+    .searchRow{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      margin-top: 12px;
+      flex-wrap:wrap;
+    }
+    .search{
+      flex: 1;
+      min-width: 260px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      font-weight: 900;
+      outline:none;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+
+    .hint{
+      margin-top: 12px;
+      color: var(--green);
+      font-weight: 1000;
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .hint .check{
+      width: 16px; height: 16px; border-radius: 4px;
+      display:grid; place-items:center;
+      background: rgba(34,197,94,.18);
+      border: 1px solid rgba(34,197,94,.35);
+      color: rgba(34,197,94,1);
+      box-shadow: 0 0 18px rgba(34,197,94,.20);
+      font-size: 12px;
+    }
+
+    /* ===== Table ===== */
+    .tableWrap{
+      margin-top: 14px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      overflow:auto;
+      box-shadow: 0 16px 45px rgba(0,0,0,.38);
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+    thead th{
+      text-align:left;
+      padding: 16px 16px;
+      color: rgba(234,240,255,.62);
+      font-size: 14px;
+      font-weight: 1000;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    tbody td{
+      padding: 16px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      font-size: 15px;
+      color: rgba(234,240,255,.92);
+      white-space: nowrap;
+    }
+    tbody tr:hover td{ background: rgba(255,255,255,.04); }
+
+    .statusPill{
+      display:inline-flex;
       align-items:center;
       justify-content:center;
-      border:1px solid rgba(255,255,255,.18);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 1000;
+      font-size: 13px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.92);
+    }
+    .statusPill.ok{
+      background: rgba(34,197,94,.18);
+      border-color: rgba(34,197,94,.35);
+      color: rgba(34,197,94,1);
+      box-shadow: 0 0 18px rgba(34,197,94,.16);
+    }
+    .statusPill.err{
+      background: rgba(248,113,113,.18);
+      border-color: rgba(248,113,113,.35);
+      color: rgba(248,113,113,1);
+      box-shadow: 0 0 18px rgba(248,113,113,.16);
+    }
+    .statusPill.warn{
+      background: rgba(245,158,11,.18);
+      border-color: rgba(245,158,11,.35);
+      color: rgba(245,158,11,1);
+      box-shadow: 0 0 18px rgba(245,158,11,.16);
     }
 
-    @media (max-width:360px){
-      .dockBar{ padding:10px 14px; gap:10px; }
-      .dockItem{ min-width:52px; font-size:11px; }
-      .dockItem .ico{ font-size:17px; }
+    .viewBtn{
+      padding: 10px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color: #fff;
+      font-weight: 1000;
+      cursor:pointer;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      transition: .15s ease;
+    }
+    .viewBtn:hover{background: rgba(255,255,255,.08); transform: translateY(-1px)}
+    .mono{font-family: var(--mono)}
+    .typeBadge{
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      margin-right: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      font-size: 12px;
+      font-weight: 1000;
+      color: rgba(234,240,255,.80);
     }
 
-    /* ===== MODAL (details) ===== */
-    .tModalOverlay{
+    /* ===== Modal ===== */
+    .modalOverlay{
       position:fixed; inset:0;
-      background:rgba(0,0,0,.70);
+      background: rgba(0,0,0,.70);
       backdrop-filter: blur(6px);
-      z-index:99990;
+      -webkit-backdrop-filter: blur(6px);
       display:none;
+      z-index: 9999;
     }
-    .tModal{
+    .modal{
       position:fixed;
       inset:0;
       display:none;
       align-items:center;
       justify-content:center;
-      z-index:99999;
-      padding:18px;
+      padding: 18px;
+      z-index: 10000;
     }
-    .tModalCard{
-      width:min(720px, 94vw);
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.14);
+    .modalCard{
+      width: min(780px, 94vw);
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,.14);
       background:
         radial-gradient(900px 340px at 20% 10%, rgba(56,189,248,.16), transparent 60%),
         radial-gradient(900px 340px at 85% 30%, rgba(255,77,166,.12), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 26px 90px rgba(0,0,0,.65);
+      box-shadow: 0 26px 90px rgba(0,0,0,.65);
       overflow:hidden;
     }
-    .tModalHead{
-      padding:14px 14px;
+    .modalHead{
+      padding: 14px 14px;
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:12px;
-      border-bottom:1px solid rgba(255,255,255,.10);
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
       background: linear-gradient(90deg, rgba(91,108,255,.85), rgba(255,77,166,.60));
-      position:relative;
+      position: relative;
       animation: headPulse 1.6s ease-in-out infinite;
     }
     @keyframes headPulse{0%{filter:brightness(.95)}50%{filter:brightness(1.08)}100%{filter:brightness(.95)}}
-    .tModalTitle{font-weight:1000; font-size:16px; color:#fff;}
-    .tModalClose{
-      width:42px;height:42px;border-radius:14px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.22);
-      color:#fff;
-      font-weight:1000;
+    .modalHead b{font-size: 16px}
+    .closeBtn{
+      width: 42px; height: 42px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.22);
+      color: #fff;
+      font-weight: 1000;
       cursor:pointer;
     }
-    .tModalClose:hover{background:rgba(255,255,255,.10)}
-    .tModalBody{padding:14px;}
-    .tDetailGrid{display:grid;grid-template-columns: 1fr 1fr;gap:10px;}
-    @media (max-width:520px){ .tDetailGrid{grid-template-columns:1fr;} }
-    .tDetail{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      border-radius:18px;
-      padding:12px;
-      box-shadow:0 16px 40px rgba(0,0,0,.25);
+    .closeBtn:hover{background: rgba(255,255,255,.10)}
+    .modalBody{padding: 14px;}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media(max-width: 620px){ .grid{grid-template-columns: 1fr;} }
+    .kv{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.25);
       overflow:hidden;
     }
-    .tDetail .k{font-size:11px; font-weight:1000; color:rgba(234,240,255,.65)}
-    .tDetail .v{margin-top:6px; font-size:14px; font-weight:1000; color:rgba(234,240,255,.92); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .tModalHint{margin-top:12px; font-size:12px; font-weight:900; color:rgba(234,240,255,.65)}
+    .kv .k{font-size: 11px; font-weight: 1000; color: rgba(234,240,255,.65)}
+    .kv .v{margin-top: 6px; font-size: 14px; font-weight: 1000; color: rgba(234,240,255,.92); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 
-    /* ===== toast ===== */
-    .toast{
-      position:fixed;
-      left:50%;
-      bottom:108px;
-      transform:translateX(-50%);
-      z-index:99999;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(2,6,23,.72);
-      backdrop-filter: blur(14px);
-      box-shadow:0 26px 90px rgba(0,0,0,.55);
-      border-radius:18px;
-      padding:10px 12px;
-      color:#fff;
-      font-weight:1000;
-      display:none;
-      gap:10px;
-      align-items:center;
-      max-width:min(720px,92vw);
+    /* ===== Footer ===== */
+    .footer{
+      text-align:center;
+      color: rgba(234,240,255,.50);
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 14px;
     }
-    .tDot{width:10px;height:10px;border-radius:999px;background:rgba(56,189,248,1);box-shadow:0 0 18px rgba(56,189,248,.55)}
-    .toast.err .tDot{background:rgba(248,113,113,1);box-shadow:0 0 18px rgba(248,113,113,.55)}
-    .toast.ok .tDot{background:rgba(34,197,94,1);box-shadow:0 0 18px rgba(34,197,94,.55)}
+
+    /* ===== Mobile ===== */
+    @media(max-width: 720px){
+      .cardTitle{font-size: 24px}
+      table{min-width: 920px}
+    }
+
+    /* ===== Slide menu (simple) ===== */
+    .menuOverlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.60);
+      display:none;
+      z-index: 9000;
+    }
+    .side{
+      position:fixed;
+      top:0; right:-320px;
+      width: 300px; height: 100vh;
+      padding: 16px;
+      background: rgba(2,6,23,.94);
+      border-left: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 26px 90px rgba(0,0,0,.65);
+      transition: .22s ease;
+      z-index: 9001;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      overflow:auto;
+    }
+    .side.open{ right: 0; }
+    .sideTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .sideTop img{height:40px}
+    .side a{
+      display:flex; align-items:center; gap: 10px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      text-decoration:none;
+      color: rgba(234,240,255,.88);
+      font-weight: 1000;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.20);
+      margin-bottom: 10px;
+    }
+    .side a:hover{background: rgba(255,255,255,.08)}
+    .side a.active{border-color: rgba(91,108,255,.55); background: rgba(91,108,255,.16)}
+    .side small{display:block; color: rgba(234,240,255,.55); font-weight: 900; margin-top: 2px}
   </style>
 </head>
 
 <body>
   <div class="bgFlow"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="blob b4"></div>
-  <div class="shimmer"></div>
 
-  <div class="overlay" id="overlay" onclick="closeMenu()"></div>
-
-  <!-- Sidebar -->
-  <div class="sidebar" id="sidebar">
+  <!-- Right slide menu -->
+  <div class="menuOverlay" id="menuOverlay" onclick="closeMenu()"></div>
+  <aside class="side" id="side">
     <div class="sideTop">
-      <div class="sideBrand">
-        <img alt="VGM Logo" class="sideLogoWide" src="assets/vgm-logo.png"/>
-      </div>
+      <img src="assets/vgm-logo.png" alt="VGM"/>
       <button class="closeBtn" onclick="closeMenu()">✕</button>
     </div>
 
-    <div class="userTag">
-      <div class="userTagLeft">
-        <div class="t1">Logged in as</div>
-        <div class="t2" id="sideName">---</div>
-      </div>
-      <div class="sideAvatar" title="Profile photo">
-        <span id="sideAvatarFallback">👤</span>
-        <img alt="Avatar" id="sideAvatarImg"/>
-      </div>
-    </div>
-
-    <div class="menuGroupTitle">Navigation</div>
-    <a class="sideItem" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
-    <a class="sideItem activeLink" href="history.html"><div class="i">📜</div><div>History<small>All activity</small></div></a>
-    <a class="sideItem" href="trade-history.html"><div class="i">🧾</div><div>Trade History<small>Your positions</small></div></a>
-    <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
-    <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
-    <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-    <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
-    <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
-
-    <button class="sideLogout" onclick="logout()">Logout</button>
-  </div>
+    <a href="user-dashboard.html"><span>🏠</span><div>Dashboard<small>Overview</small></div></a>
+    <a href="wallet.html"><span>👛</span><div>Wallet<small>Assets</small></div></a>
+    <a class="active" href="history.html"><span>📜</span><div>History<small>Transactions</small></div></a>
+    <a href="deposits.html"><span>💳</span><div>Deposit<small>Fund account</small></div></a>
+    <a href="withdraw.html"><span>➡</span><div>Withdraw<small>Request payout</small></div></a>
+    <a href="support.html"><span>🧑‍💻</span><div>Support<small>Help desk</small></div></a>
+    <a href="plans.html"><span>💼</span><div>Plans<small>Invest</small></div></a>
+    <a href="profile.html"><span>👤</span><div>Profile<small>Settings</small></div></a>
+  </aside>
 
   <div class="container">
-    <div class="stickyMenu" id="stickyMenu">
-      <div class="topRow">
-        <div class="brand">
-          <img alt="Veloci Global Markets" class="brandLogoWide" src="assets/vgm-logo.png"/>
+    <div class="topbar">
+      <div class="brand">
+        <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+        <div class="t">
+          <b>Veloci Global Markets</b>
+          <span id="subTop">Transaction History</span>
         </div>
-        <div class="headerActions">
-          <button class="avatarBtn" onclick="goProfile()" title="Profile">
-            <span class="avatarFallback" id="avatarFallback">👤</span>
-            <img alt="Avatar" class="avatarImgBtn" id="avatarImgBtn"/>
-          </button>
-          <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
+      </div>
+      <div class="actions">
+        <div class="avatar" id="avatar" title="Profile">
+          <span id="avatarLetter">J</span>
+          <img id="avatarImg" alt="avatar"/>
         </div>
+        <button class="menuBtn" onclick="openMenu()" title="Menu">≡</button>
       </div>
     </div>
 
-    <div class="helloCard">
-      <div class="helloLeft">
-        <div class="helloLogo" title="Verified & Secure">🛡️</div>
-        <div>
-          <div class="chips">
-            <div class="miniChip">🟢 active</div>
-            <div class="miniChip" id="countryChip" style="display:none"></div>
-          </div>
-          <div class="helloTitle" id="greetingTitle">Activity Center</div>
-          <div class="helloSub" id="helloName">Loading…</div>
+    <div class="card">
+      <div class="cardTitle">Transaction History</div>
+
+      <div class="controlsRow">
+        <div class="tabs">
+          <button class="tab active" id="tab_all" onclick="setTab('all')">All</button>
+          <button class="tab" id="tab_pending" onclick="setTab('pending')">Pending</button>
+          <button class="tab" id="tab_approved" onclick="setTab('approved')">Approved</button>
+          <button class="tab" id="tab_rejected" onclick="setTab('rejected')">Rejected</button>
+        </div>
+
+        <div class="rightBtns">
+          <button class="btn" onclick="refresh()">Refresh</button>
+          <button class="btn" onclick="clearSearch()">Clear</button>
         </div>
       </div>
-      <div class="helloRight">
-        <div class="helloRightTop">
-          <div class="idChip" id="userIdChip">ID:</div>
-          <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
-        </div>
-        <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
-      </div>
-    </div>
 
-    <div class="box">
-      <h2>Account History</h2>
-      <div class="small">Deposits, withdrawals, trades, and balance events — all in one place.</div>
-
-      <div class="pillTabs">
-        <button class="tabBtn active" id="tab_all" onclick="setFilter('all')">All</button>
-        <button class="tabBtn" id="tab_deposit" onclick="setFilter('deposit')">Deposits</button>
-        <button class="tabBtn" id="tab_withdrawal" onclick="setFilter('withdrawal')">Withdrawals</button>
-        <button class="tabBtn" id="tab_trade" onclick="setFilter('trade')">Trades</button>
-        <button class="tabBtn" id="tab_balance" onclick="setFilter('balance')">Balance</button>
+      <div class="searchRow">
+        <input class="search" id="q" placeholder="Search tx hash / amount / asset..." oninput="render()"/>
       </div>
 
-      <div class="filters">
-        <input class="inp" id="q" placeholder="Search by reference, coin, status, amount, note…" oninput="renderList()"/>
-        <button class="btn ghost" onclick="clearSearch()">Clear</button>
-        <button class="btn primary" onclick="refresh()">Refresh</button>
+      <div class="hint" id="hintLine">
+        <span>Showing history</span> <span class="check">✓</span>
       </div>
 
-      <div class="small" id="msg">Loading…</div>
-      <div class="historyList" id="list"></div>
-    </div>
-
-    <div style="margin-top:14px;color:rgba(234,240,255,.50);font-size:12px;font-weight:900;text-align:center;">
-      © 2026 Veloci Global Markets. All rights reserved
-    </div>
-  </div>
-
-  <!-- DOCK -->
-  <div class="dock">
-    <div class="dockInner">
-      <div class="dockBar">
-        <div class="dockItem" onclick="goDepositAndClear()">
-          <div class="dockBadge" id="badgeDepositDock">0</div>
-          <div class="ico">💳</div><div>Deposit</div>
-        </div>
-        <div class="dockItem" onclick="goWithdrawAndClear()">
-          <div class="dockBadge" id="badgeWithdrawDock">0</div>
-          <div class="ico">➡</div><div>Withdraw</div>
-        </div>
-        <div class="dockHome" onclick="goDashboard()" title="Home">🏠</div>
-        <div class="dockItem dockActive" onclick="goHistory()"><div class="ico">📜</div><div>History</div></div>
-        <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Amount</th>
+              <th>Network</th>
+              <th>Status</th>
+              <th>TX Hash</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- no loading screen; we'll populate quietly -->
+          </tbody>
+        </table>
       </div>
+
+      <div class="footer">© 2026 Veloci Global Markets. All rights reserved</div>
     </div>
   </div>
 
   <!-- Details Modal -->
-  <div class="tModalOverlay" id="detailOverlay" onclick="closeDetail()"></div>
-  <div class="tModal" id="detailModal" aria-modal="true" role="dialog">
-    <div class="tModalCard">
-      <div class="tModalHead">
-        <div>
-          <div class="tModalTitle" id="dTitle">History Details</div>
-          <div class="small" id="dSub" style="margin:4px 0 0 0; color:rgba(255,255,255,.9); font-weight:900;">---</div>
-        </div>
-        <button class="tModalClose" onclick="closeDetail()">✕</button>
+  <div class="modalOverlay" id="modalOverlay" onclick="closeModal()"></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <b id="mTitle">Transaction</b>
+        <button class="closeBtn" onclick="closeModal()">✕</button>
       </div>
-      <div class="tModalBody">
-        <div class="tDetailGrid" id="dGrid"></div>
-        <div class="tModalHint" id="dHint"></div>
+      <div class="modalBody">
+        <div class="grid" id="mGrid"></div>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div class="toast" id="toast">
-    <div class="tDot" id="toastDot"></div>
-    <div id="toastTxt">...</div>
-  </div>
+  <script>
+    /******************************************************************
+     * SUPABASE CONFIG
+     * - If you already use window.SUPABASE_URL / window.SUPABASE_ANON_KEY on other pages,
+     *   set them globally and this file will pick them up.
+     ******************************************************************/
+    const SUPABASE_URL = (window.SUPABASE_URL || "https://xdcscknfomlzwysczegc.supabase.co").trim();
+    const SUPABASE_ANON_KEY = (window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4").trim();
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-<script>
-  /* ============================================================
-    ✅ STICKY MENU POLISH SCRIPT
-  ============================================================ */
-  (function(){
-    const sticky = document.getElementById("stickyMenu");
-    if(!sticky) return;
-    const onScroll = ()=>{
-      if(window.scrollY > 14) sticky.classList.add("isStuck");
-      else sticky.classList.remove("isStuck");
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, {passive:true});
-  })();
-
-  /* ============================================================
-    ✅ AUTH + SUPABASE
-    - No loading screen on this page (requested).
-  ============================================================ */
-  const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ✅ KYC gate config (same as other pages)
-  const KYC_VERIFY_PAGE = "verification.html";
-
-  let currentUserEmail = "";
-  let currentUserId = "";
-  let currentProfile = null;
-
-  /* ============================================================
-    ✅ UTIL
-  ============================================================ */
-  const esc = (s)=> String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
-  function fmtMoney(n, sym="$"){
-    const x = Number(n);
-    if(!isFinite(x)) return sym + "0.00";
-    return sym + x.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
-  }
-  function fmtMaybe(n){
-    const x = Number(n);
-    if(!isFinite(x)) return String(n ?? "");
-    return x.toLocaleString(undefined,{maximumFractionDigits:8});
-  }
-  function fmtTime(ts){
-    try{
-      const d = new Date(ts);
-      if(isNaN(d.getTime())) return String(ts ?? "");
-      return d.toLocaleString();
-    }catch(e){ return String(ts ?? ""); }
-  }
-  function toast(msg, kind=""){
-    const t = document.getElementById("toast");
-    const txt = document.getElementById("toastTxt");
-    if(!t || !txt) return;
-    t.classList.remove("ok","err");
-    if(kind) t.classList.add(kind);
-    txt.textContent = msg;
-    t.style.display = "flex";
-    clearTimeout(window.__toastTimer);
-    window.__toastTimer = setTimeout(()=>{ t.style.display="none"; }, 2600);
-  }
-
-  /* ============================================================
-    ✅ MENU
-  ============================================================ */
-  function openMenu(){
-    document.body.classList.add("menuOpen");
-    document.getElementById("overlay")?.classList.add("show");
-    document.getElementById("sidebar")?.classList.add("open");
-  }
-  function closeMenu(){
-    document.body.classList.remove("menuOpen");
-    document.getElementById("overlay")?.classList.remove("show");
-    document.getElementById("sidebar")?.classList.remove("open");
-  }
-
-  /* ============================================================
-    ✅ NAV
-  ============================================================ */
-  function goDashboard(){ window.location.href = "user-dashboard.html"; }
-  function goProfile(){ window.location.href = "profile.html"; }
-  function goHistory(){ window.location.href = "history.html"; }
-  function goDepositAndClear(){ window.location.href = "deposits.html"; }
-  function goWithdrawAndClear(){ window.location.href = "withdraw.html"; }
-
-  async function logout(){
-    try{ await supabaseClient.auth.signOut(); }catch(e){}
-    window.location.href = "login.html";
-  }
-
-  /* ============================================================
-    ✅ PAGE STATE
-  ============================================================ */
-  let FILTER = "all";
-  let RAW = [];
-  let VIEW = [];
-
-  function setFilter(f){
-    FILTER = f;
-    ["all","deposit","withdrawal","trade","balance"].forEach(x=>{
-      const b = document.getElementById("tab_"+x);
-      if(!b) return;
-      if(x===f) b.classList.add("active"); else b.classList.remove("active");
-    });
-    renderList();
-  }
-
-  function clearSearch(){
-    const q = document.getElementById("q");
-    if(q) q.value = "";
-    renderList();
-  }
-
-  function matchesFilter(item){
-    if(FILTER==="all") return true;
-    return item.kind === FILTER;
-  }
-
-  function matchesQuery(item, q){
-    if(!q) return true;
-    const hay = (item.search || "").toLowerCase();
-    return hay.includes(q.toLowerCase());
-  }
-
-  function renderList(){
-    const list = document.getElementById("list");
-    const msg = document.getElementById("msg");
-    const q = (document.getElementById("q")?.value || "").trim();
-
-    VIEW = RAW.filter(x=>matchesFilter(x)).filter(x=>matchesQuery(x,q));
-    if(msg){
-      if(!RAW.length) msg.textContent = "No history yet.";
-      else if(!VIEW.length) msg.textContent = "No matches for your filter/search.";
-      else msg.textContent = VIEW.length + " record(s). Tap any row for details.";
+    /******************************************************************
+     * AUTH + EMAIL VERIFICATION GUARD (one-block)
+     ******************************************************************/
+    async function requireAuthAndVerified() {
+      const { data: { session }, error: sErr } = await sb.auth.getSession();
+      if (sErr || !session || !session.user) {
+        window.location.href = "login.html";
+        return null;
+      }
+      const emailConfirmedAt = session.user.email_confirmed_at || session.user.confirmed_at || null;
+      if (session.user.email && !emailConfirmedAt) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return session.user;
     }
 
-    if(!list) return;
-    list.innerHTML = "";
+    /******************************************************************
+     * STATE
+     ******************************************************************/
+    let USER = null;
+    let TAB = "all";
+    let ALL = [];
+    let VIEW = [];
 
-    for(const it of VIEW){
-      const icon = it.kind==="deposit" ? "💳" :
-                   it.kind==="withdrawal" ? "➡" :
-                   it.kind==="trade" ? "🧾" :
-                   it.kind==="balance" ? "💰" : "📌";
-
-      const title = it.title || "Activity";
-      const amountTxt = it.amount_display || "";
-      const timeTxt = it.time_display || "";
-
-      const st = (it.status || "processing").toLowerCase();
-      const cls = st==="approved" || st==="completed" || st==="success" ? "ok"
-                : (st==="rejected" || st==="failed" || st==="cancelled") ? "err" : "";
-
-      const pill = `<div class="statusPill ${cls}">
-          <span class="statusDot"></span>
-          <span>${esc(it.status || "Processing")}</span>
-        </div>`;
-
-      const el = document.createElement("div");
-      el.className = "hItem";
-      el.innerHTML = `
-        <div class="hLeft">
-          <div class="hIcon">${icon}</div>
-          <div class="hMain">
-            <div class="hTitle">${esc(title)}</div>
-            <div class="hSub">
-              <span>${esc(it.subline || "")}</span>
-            </div>
-          </div>
-        </div>
-        <div class="hRight">
-          <div class="hAmt">${esc(amountTxt)}</div>
-          <div class="hTime">${esc(timeTxt)}</div>
-          ${pill}
-        </div>
-      `;
-      el.addEventListener("click", ()=>openDetail(it));
-      list.appendChild(el);
+    function openMenu(){
+      document.getElementById("menuOverlay").style.display = "block";
+      document.getElementById("side").classList.add("open");
     }
-  }
+    function closeMenu(){
+      document.getElementById("menuOverlay").style.display = "none";
+      document.getElementById("side").classList.remove("open");
+    }
 
-  /* ============================================================
-    ✅ DETAILS MODAL
-  ============================================================ */
-  function openDetail(it){
-    document.getElementById("dTitle").textContent = it.title || "History Details";
-    document.getElementById("dSub").textContent = (it.kind || "activity").toUpperCase() + " • " + (it.status || "Processing");
-    const grid = document.getElementById("dGrid");
-    const hint = document.getElementById("dHint");
-    if(grid){
+    function setTab(t){
+      TAB = t;
+      ["all","pending","approved","rejected"].forEach(x=>{
+        const el = document.getElementById("tab_"+x);
+        if(!el) return;
+        if(x===t) el.classList.add("active"); else el.classList.remove("active");
+      });
+      render();
+    }
+
+    function clearSearch(){
+      const q = document.getElementById("q");
+      if(q) q.value = "";
+      render();
+    }
+
+    function statusToClass(st){
+      const s = (st || "").toLowerCase();
+      if(["approved","completed","success","succeeded"].includes(s)) return "ok";
+      if(["rejected","failed","error","declined"].includes(s)) return "err";
+      if(["pending","processing","review","verifying","queued"].includes(s)) return "warn";
+      return "";
+    }
+
+    function fmtMaybe(n){
+      const x = Number(n);
+      if(!isFinite(x)) return String(n ?? "");
+      return x.toLocaleString(undefined,{maximumFractionDigits:8});
+    }
+
+    function esc(s){
+      return String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    }
+
+    function typeBadge(type){
+      const t = (type || "").toLowerCase();
+      const icon = t==="deposit" ? "💳" : t==="withdrawal" ? "➡" : t==="swap" ? "🔁" : t==="trade" ? "🧾" : "📌";
+      const label = t ? (t.charAt(0).toUpperCase()+t.slice(1)) : "Activity";
+      return `<span class="typeBadge">${icon} ${esc(label)}</span>`;
+    }
+
+    /******************************************************************
+     * DATA FETCH (best-effort)
+     ******************************************************************/
+    async function safeFetch(table, eqKey="user_id"){
+      try{
+        const { data, error } = await sb.from(table).select("*").eq(eqKey, USER.id).order("created_at", { ascending:false }).limit(250);
+        if(error) return [];
+        return Array.isArray(data) ? data : [];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function normalize(kind, row){
+      const created_at = row.created_at || row.time || row.timestamp || row.inserted_at || row.updated_at || null;
+      const status = row.status || row.state || row.result || "pending";
+      const asset = row.asset || row.symbol || row.coin || row.currency || row.network || "—";
+      const network = row.network || row.chain || row.asset_network || asset || "—";
+      const amount = row.amount ?? row.qty ?? row.value ?? row.total ?? row.usd_amount ?? null;
+      const tx = row.tx_hash || row.txid || row.hash || row.reference || row.ref || row.id || "—";
+
+      const details = {
+        "Type": kind,
+        "Status": status,
+        "Asset": asset,
+        "Network": network,
+        "Amount": amount ?? "",
+        "Tx Hash / Ref": tx,
+        "Created": created_at ? new Date(created_at).toLocaleString() : ""
+      };
+      if(row.address) details["Address"] = row.address;
+      if(row.to_address) details["To"] = row.to_address;
+      if(row.from_address) details["From"] = row.from_address;
+      if(row.note) details["Note"] = row.note;
+      if(row.admin_note) details["Admin Note"] = row.admin_note;
+
+      const search = [kind,status,asset,network,amount,tx,row.note||"",row.admin_note||""].join(" ").toLowerCase();
+
+      return {
+        kind,
+        status,
+        asset,
+        network,
+        amount,
+        tx,
+        created_at,
+        details,
+        search
+      };
+    }
+
+    async function loadHistory(){
+      // quietly fetch; no full screen loader
+      const merged = [];
+
+      // Prefer a unified transactions table if you have one
+      const tx = await safeFetch("transactions");
+      if(tx.length){
+        for(const r of tx){
+          const kind = (r.type || r.tx_type || r.kind || r.category || "activity").toString().toLowerCase();
+          merged.push(normalize(kind, r));
+        }
+      } else {
+        // Fallbacks
+        const dep = await safeFetch("deposit_confirmations");
+        for(const r of dep) merged.push(normalize("deposit", r));
+
+        const dep2 = await safeFetch("deposits");
+        for(const r of dep2) merged.push(normalize("deposit", r));
+
+        const wd = await safeFetch("withdrawals");
+        for(const r of wd) merged.push(normalize("withdrawal", r));
+
+        const ledger = await safeFetch("user_ledger");
+        for(const r of ledger) merged.push(normalize((r.entry_type || "balance").toString().toLowerCase(), r));
+      }
+
+      merged.sort((a,b)=>{
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      });
+
+      ALL = merged;
+      render();
+    }
+
+    /******************************************************************
+     * RENDER
+     ******************************************************************/
+    function render(){
+      const q = (document.getElementById("q").value || "").trim().toLowerCase();
+
+      VIEW = ALL.filter(r=>{
+        const st = (r.status || "").toLowerCase();
+        if(TAB==="pending"){
+          if(!["pending","processing","review","verifying","queued"].includes(st)) return false;
+        }else if(TAB==="approved"){
+          if(!["approved","completed","success","succeeded","paid","done"].includes(st)) return false;
+        }else if(TAB==="rejected"){
+          if(!["rejected","failed","error","declined","canceled","cancelled"].includes(st)) return false;
+        }
+        if(q && !(r.search || "").includes(q)) return false;
+        return true;
+      });
+
+      const tb = document.getElementById("tbody");
+      tb.innerHTML = "";
+
+      document.getElementById("hintLine").innerHTML = `Showing history <span class="check">✓</span>`;
+
+      if(!VIEW.length){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6" style="padding:18px; color: rgba(234,240,255,.65); font-weight: 900;">No records found.</td>`;
+        tb.appendChild(tr);
+        return;
+      }
+
+      for(const r of VIEW){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            ${typeBadge(r.kind)}
+            <span class="mono">${esc(String(r.asset).toUpperCase())}</span>
+          </td>
+          <td class="mono">${esc(fmtMaybe(r.amount))}</td>
+          <td class="mono">${esc(String(r.network).toUpperCase())}</td>
+          <td><span class="statusPill ${statusToClass(r.status)}">${esc(String(r.status).toUpperCase())}</span></td>
+          <td class="mono" title="${esc(r.tx)}">${esc(String(r.tx).slice(0, 34))}</td>
+          <td><button class="viewBtn">View</button></td>
+        `;
+        tr.querySelector(".viewBtn").addEventListener("click", ()=> openModal(r));
+        tb.appendChild(tr);
+      }
+    }
+
+    function openModal(r){
+      document.getElementById("mTitle").textContent = (r.kind || "Transaction").toString().toUpperCase() + " • " + (r.status || "").toString().toUpperCase();
+      const grid = document.getElementById("mGrid");
       grid.innerHTML = "";
-      const pairs = it.details || {};
-      const keys = Object.keys(pairs);
+      const keys = Object.keys(r.details || {});
       for(const k of keys){
-        const v = pairs[k];
-        const card = document.createElement("div");
-        card.className = "tDetail";
-        card.innerHTML = `<div class="k">${esc(k)}</div><div class="v" title="${esc(v)}">${esc(v)}</div>`;
-        grid.appendChild(card);
+        const v = r.details[k];
+        const div = document.createElement("div");
+        div.className = "kv";
+        div.innerHTML = `<div class="k">${esc(k)}</div><div class="v ${k.toLowerCase().includes("tx")||k.toLowerCase().includes("ref") ? "mono":""}" title="${esc(v)}">${esc(v)}</div>`;
+        grid.appendChild(div);
       }
+      document.getElementById("modalOverlay").style.display = "block";
+      document.getElementById("modal").style.display = "flex";
     }
-    if(hint) hint.textContent = it.hint || "";
-    document.getElementById("detailOverlay").style.display = "block";
-    document.getElementById("detailModal").style.display = "flex";
-  }
-  function closeDetail(){
-    document.getElementById("detailOverlay").style.display = "none";
-    document.getElementById("detailModal").style.display = "none";
-  }
-
-  /* ============================================================
-    ✅ HISTORY LOADERS (best-effort)
-    - We try multiple likely tables/views; if some don't exist, we ignore.
-  ============================================================ */
-  async function safeSelect(table, select, opts={}){
-    try{
-      let q = supabaseClient.from(table).select(select);
-      if(opts.eq) for(const [k,v] of Object.entries(opts.eq)) q = q.eq(k,v);
-      if(opts.order) q = q.order(opts.order, { ascending: false });
-      if(opts.limit) q = q.limit(opts.limit);
-      const res = await q;
-      if(res.error) return { data: null, error: res.error };
-      return { data: res.data || [], error: null };
-    }catch(e){
-      return { data: null, error: e };
-    }
-  }
-
-  function normalizeRow(kind, row){
-    // Common fields in many schemas:
-    const created = row.created_at || row.created || row.inserted_at || row.timestamp || row.time || row.updated_at || null;
-    const status = row.status || row.state || row.result || "Processing";
-    const ref = row.reference || row.ref || row.tx_hash || row.id || row.uuid || "";
-
-    const coin = row.coin || row.asset || row.symbol || row.currency || row.network || "";
-    const amt = row.amount ?? row.usd_amount ?? row.value ?? row.total ?? row.qty ?? row.quantity ?? row.amount_usd ?? null;
-
-    const amount_display =
-      (row.usd_value!=null) ? fmtMoney(row.usd_value, "$") :
-      (row.amount_usd!=null) ? fmtMoney(row.amount_usd, "$") :
-      (row.usd_amount!=null) ? fmtMoney(row.usd_amount, "$") :
-      (amt!=null && coin) ? (fmtMaybe(amt) + " " + String(coin).toUpperCase()) :
-      (amt!=null) ? fmtMaybe(amt) : "";
-
-    const title =
-      kind==="deposit" ? "Deposit" :
-      kind==="withdrawal" ? "Withdrawal" :
-      kind==="trade" ? "Trade" :
-      kind==="balance" ? "Balance Update" : "Activity";
-
-    const sublineBits = [];
-    if(ref) sublineBits.push("Ref: " + String(ref).slice(0, 26));
-    if(coin) sublineBits.push(String(coin).toUpperCase());
-    const subline = sublineBits.join(" • ");
-
-    const details = {
-      "Type": kind,
-      "Status": status,
-      "Reference": ref,
-      "Asset": coin ? String(coin).toUpperCase() : "",
-      "Amount": amount_display,
-      "Created": created ? fmtTime(created) : "",
-    };
-
-    // Keep extra known fields if present
-    if(row.network) details["Network"] = row.network;
-    if(row.address) details["Address"] = row.address;
-    if(row.tx_hash) details["Tx Hash"] = row.tx_hash;
-    if(row.note) details["Note"] = row.note;
-    if(row.admin_note) details["Admin Note"] = row.admin_note;
-
-    const search = [
-      title, status, ref, coin,
-      row.note || "", row.admin_note || "",
-      amount_display
-    ].join(" ").toLowerCase();
-
-    return {
-      kind,
-      title,
-      status,
-      ref,
-      coin,
-      amount_display,
-      time_display: created ? fmtTime(created) : "",
-      subline,
-      details,
-      hint: "If something looks wrong here, contact Support and include the reference.",
-      search,
-      _created: created ? new Date(created).getTime() : 0
-    };
-  }
-
-  async function loadHistory(){
-    const msg = document.getElementById("msg");
-    if(msg) msg.textContent = "Loading…";
-
-    // Try these sources (best effort)
-    const tasks = [
-      safeSelect("deposit_confirmations", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"deposit", ...r})),
-      safeSelect("deposits", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"deposit", ...r})),
-      safeSelect("withdrawals", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"withdrawal", ...r})),
-      safeSelect("withdrawal_requests", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"withdrawal", ...r})),
-      safeSelect("trade_history", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"trade", ...r})),
-      safeSelect("trades", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"trade", ...r})),
-      safeSelect("wallet_transactions", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"balance", ...r})),
-      safeSelect("ledger_entries", "*", { eq: { user_id: currentUserId }, order: "created_at", limit: 200 }).then(r=>({kind:"balance", ...r})),
-    ];
-
-    const results = await Promise.all(tasks);
-
-    const merged = [];
-    for(const r of results){
-      if(!r || !Array.isArray(r.data) || !r.data.length) continue;
-      for(const row of r.data){
-        merged.push(normalizeRow(r.kind, row));
-      }
+    function closeModal(){
+      document.getElementById("modalOverlay").style.display = "none";
+      document.getElementById("modal").style.display = "none";
     }
 
-    merged.sort((a,b)=> (b._created||0) - (a._created||0));
-    RAW = merged;
-
-    renderList();
-  }
-
-  /* ============================================================
-    ✅ USER HEADER + SIMPLE KYC CHECK
-  ============================================================ */
-  function setAvatar(url){
-    const btnImg = document.getElementById("avatarImgBtn");
-    const btnFallback = document.getElementById("avatarFallback");
-    const sideImg = document.getElementById("sideAvatarImg");
-    const sideFallback = document.getElementById("sideAvatarFallback");
-
-    if(url){
-      if(btnImg){ btnImg.src = url; btnImg.style.display = "block"; }
-      if(btnFallback) btnFallback.style.display = "none";
-      if(sideImg){ sideImg.src = url; sideImg.style.display = "block"; }
-      if(sideFallback) sideFallback.style.display = "none";
-    }else{
-      if(btnImg) btnImg.style.display = "none";
-      if(btnFallback) btnFallback.style.display = "block";
-      if(sideImg) sideImg.style.display = "none";
-      if(sideFallback) sideFallback.style.display = "block";
-    }
-  }
-
-  async function hydrateUserUI(){
-    const helloName = document.getElementById("helloName");
-    const sideName = document.getElementById("sideName");
-    const userIdChip = document.getElementById("userIdChip");
-    if(userIdChip) userIdChip.textContent = "ID: " + (currentUserId ? String(currentUserId).slice(0,10) : "---");
-
-    // Try pull from users table by email (same pattern used in deposits page)
-    try{
-      const { data: row } = await supabaseClient
-        .from("users")
-        .select("full_name, avatar_url, country")
-        .eq("email", currentUserEmail)
-        .maybeSingle();
-
-      currentProfile = row || null;
-
-      const name = row?.full_name || currentUserEmail || "User";
-      if(helloName) helloName.textContent = name;
-      if(sideName) sideName.textContent = name;
-
-      if(row?.country){
-        const chip = document.getElementById("countryChip");
-        if(chip){ chip.style.display="inline-flex"; chip.textContent = "🌍 " + row.country; }
-      }
-      setAvatar(row?.avatar_url || "");
-    }catch(e){
-      if(helloName) helloName.textContent = currentUserEmail || "User";
-      if(sideName) sideName.textContent = currentUserEmail || "User";
-      setAvatar("");
-    }
-  }
-
-  function startClock(){
-    const el = document.getElementById("dateTimeNow");
-    if(!el) return;
-    const tick = ()=>{ el.textContent = new Date().toLocaleString(); };
-    tick();
-    setInterval(tick, 1000);
-  }
-
-  async function authGuardNoOverlay(){
-    const { data } = await supabaseClient.auth.getSession();
-    const sess = data?.session;
-    if(!sess || !sess.user){
-      // no overlay, just redirect
-      window.location.href = "login.html";
-      return false;
-    }
-    currentUserEmail = sess.user.email || "";
-    currentUserId = sess.user.id || "";
-
-    // email verification guard (non-blocking message + redirect)
-    const emailVerified = !!(sess.user.email_confirmed_at || sess.user.confirmed_at);
-    if(!emailVerified){
-      toast("Please verify your email to continue.", "err");
-      setTimeout(()=>{ window.location.href = "login.html"; }, 900);
-      return false;
+    async function refresh(){
+      await loadHistory();
     }
 
-    // Optional KYC gate (same pattern, best-effort)
-    try{
-      const { data: kyc } = await supabaseClient
-        .from("user_kyc")
-        .select("status")
-        .eq("user_id", currentUserId)
-        .maybeSingle();
-      const st = (kyc?.status || "").toLowerCase();
-      if(st && st !== "approved"){
-        // don't hard block; just hint and allow history
-      }
-    }catch(e){}
+    /******************************************************************
+     * INIT
+     ******************************************************************/
+    (async function(){
+      USER = await requireAuthAndVerified();
+      if(!USER) return;
 
-    return true;
-  }
+      // avatar
+      const letter = (USER.email || "J").trim().slice(0,1).toUpperCase();
+      document.getElementById("avatarLetter").textContent = letter;
 
-  async function refresh(){
-    await loadHistory();
-    toast("History refreshed.", "ok");
-  }
+      document.getElementById("avatar").addEventListener("click", ()=> window.location.href="profile.html");
 
-  /* ============================================================
-    ✅ INIT
-  ============================================================ */
-  (async function(){
-    startClock();
-    const ok = await authGuardNoOverlay();
-    if(!ok) return;
-    await hydrateUserUI();
-    await loadHistory();
-  })();
-</script>
+      // try profile photo from users table
+      try{
+        const { data } = await sb.from("users").select("avatar_url,full_name").eq("email", USER.email).maybeSingle();
+        if(data?.avatar_url){
+          const img = document.getElementById("avatarImg");
+          img.src = data.avatar_url;
+          img.style.display = "block";
+          document.getElementById("avatarLetter").style.display = "none";
+        }
+      }catch(e){}
+
+      await loadHistory();
+    })();
+  </script>
 </body>
 </html>
