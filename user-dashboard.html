@@ -2217,6 +2217,8 @@
 
     let TRADE_MARKET = "crypto"; // "crypto" | "forex"
     let __pendingTrade = null;
+    let __tradeActive = true;
+    let __tradePercent = 25;
 
     function mountTradePairs(){
       const wrap=document.getElementById("tradePairWrap");
@@ -2375,6 +2377,7 @@
       if(!pair){ alert("Pick a pair first."); return; }
       if(!amountRaw){ alert("Enter trade size first."); return; }
       if(!Number.isFinite(amount) || amount <= 0){ alert("Invalid size."); return; }
+      if(!__tradeActive){ alert("Trading is currently disabled for your account."); return; }
 
       __pendingTrade = {
         market: TRADE_MARKET.toUpperCase(),
@@ -2425,9 +2428,52 @@
       document.removeEventListener("keydown", tradeEscClose);
     }
 
-    function confirmTrade(){
-      closeTradeModal();
-      alert("Trade request submitted ✅ (history page coming next)");
+    async function confirmTrade(){
+      try{
+        if(!__pendingTrade){ closeTradeModal(); return; }
+
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if(!accessToken){
+          closeTradeModal();
+          alert("Session expired. Please login again.");
+          window.location.replace("login.html");
+          return;
+        }
+
+        // send to Edge Function (writes to trades table using service role, after verifying JWT)
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/trade-request`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            market: String(__pendingTrade.market || "").toLowerCase(),
+            pair: String(__pendingTrade.pair || ""),
+            direction: String(__pendingTrade.side || "").toLowerCase(),
+            size: Number(__pendingTrade.size || 0)
+          })
+        });
+
+        const out = await r.json().catch(()=> ({}));
+
+        if(!r.ok || out?.success === false){
+          const msg = out?.error || out?.details || "Could not submit trade request.";
+          closeTradeModal();
+          alert(msg);
+          return;
+        }
+
+        closeTradeModal();
+        alert("Trade request submitted ✅");
+        // go to history page so user sees it
+        window.location.href = "history.html";
+      }catch(e){
+        closeTradeModal();
+        alert("Could not submit trade request.");
+      }
     }
 
     (function initTrade(){
@@ -3197,7 +3243,48 @@
       window.location.replace("login.html");
     }
 
+    
     // ============================================================
+    // ✅ TRADE SETTINGS (from admin-controlled user settings)
+    // - Reads trades_active + trade_percent from Edge Function: user-trade-settings
+    // - Updates the swinging TRD orb and blocks trade placement when disabled
+    async function loadTradeSettings(){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if(!accessToken) return;
+
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/user-trade-settings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({})
+        });
+
+        const out = await r.json().catch(()=> ({}));
+        if(!r.ok || out?.success === false) return;
+
+        __tradeActive = !!out?.data?.trades_active;
+        const p = Number(out?.data?.trade_percent ?? out?.data?.trading_percent ?? 0);
+        __tradePercent = Number.isFinite(p) ? p : 0;
+
+        const num = document.getElementById("tradePctNum");
+        if(num) num.textContent = String(Math.round(__tradePercent));
+
+        const orb = document.getElementById("tradePctOrb");
+        if(orb){
+          orb.style.opacity = __tradeActive ? "1" : ".45";
+          orb.style.filter = __tradeActive ? "none" : "grayscale(1)";
+        }
+      }catch(e){
+        // best-effort only
+      }
+    }
+
+// ============================================================
     // ✅ KYC APPROVAL GATE (NEW)
     // - Blocks dashboard unless user_kyc.status === "approved"
     // - Redirects to verification.html with status
@@ -3234,6 +3321,7 @@
 
       setGreeting();
       startClock();
+      loadTradeSettings();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
