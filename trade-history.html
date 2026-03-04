@@ -644,11 +644,26 @@
     // ✅ Trades activation check (best-effort)
     async function checkTradesActive(){
       try{
-        const { data } = await sb.from("users")
-          .select("trades_active,trading_active,trades_enabled")
-          .eq("email", USER.email)
-          .maybeSingle();
-        const active = !!(data?.trades_active ?? data?.trading_active ?? data?.trades_enabled);
+        const { data: sessionData } = await sb.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if(!accessToken){
+          TRADES_ACTIVE = true;
+          showBlocked(false);
+          return true;
+        }
+
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/user-trade-settings`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({})
+        });
+
+        const out = await r.json().catch(()=> ({}));
+        const active = !!(out?.data?.trades_active);
         TRADES_ACTIVE = active;
         showBlocked(!active);
         return active;
