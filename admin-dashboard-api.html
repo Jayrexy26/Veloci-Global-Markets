@@ -295,6 +295,7 @@
     #appView[data-view="support"] .grid,
     #appView[data-view="deposits"] .grid,
     #appView[data-view="withdrawals"] .grid,
+    #appView[data-view="trades"] .grid,
     #appView[data-view="kyc"] .grid,
     #appView[data-view="wallets"] .grid,
     #appView[data-view="walletlinks"] .grid{
@@ -750,7 +751,13 @@
             <div class="countPill" id="cnt-walletlinks">0</div>
           </div>
 
-          <div class="navBtn" id="nav-support" onclick="switchView('support')">
+          
+          <div class="navBtn" id="nav-trades" onclick="switchView('trades')">
+            <div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div>
+            <div class="countPill" id="cnt-trades">0</div>
+          </div>
+
+<div class="navBtn" id="nav-support" onclick="switchView('support')">
             <div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div>
             <div class="countPill" id="cnt-support">0</div>
           </div>
@@ -876,7 +883,9 @@
                         <th style="width:160px">Set Balance</th>
                         <th style="width:140px">Amount</th>
                         <th style="width:260px">Plan Upgrade</th>
-                        <th style="width:380px">Actions</th>
+                        <th style="width:150px">Trades</th>
+                        <th style="width:120px">%</th>
+                        <th style="width:430px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="userRows"></tbody>
@@ -1136,7 +1145,68 @@
                 </div>
               </div>
             </section>
-            <section id="view-kyc" class="card hidden">
+            
+            <section id="view-trades" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">📒 Trades • History Allocation</div>
+                  <div class="small" id="tradesStatus">Assign trade history to users (only effective when Trades is enabled for that user).</div>
+                </div>
+                <div class="rowTools">
+                  <button class="btnGhost" onclick="safeLoad(loadTrades)">Refresh</button>
+                </div>
+              </div>
+
+              <div class="small" style="margin-bottom:10px">
+                Tip: Use the <strong>Users</strong> view to enable Trades + set default <strong>%</strong>. Then add trades here anytime.
+              </div>
+
+              <form onsubmit="createTrade(event)">
+                <div class="inline">
+                  <select id="tradeUser" class="grow" required>
+                    <option value="">Select user…</option>
+                  </select>
+                  <select id="tradeMarket" class="w200">
+                    <option value="crypto">Crypto</option>
+                    <option value="forex">Forex</option>
+                    <option value="indices">Indices</option>
+                    <option value="stocks">Stocks</option>
+                  </select>
+                  <input id="tradePair" class="w200" placeholder="Pair (BTC/USDT)" required>
+                  <select id="tradeDirection" class="w140">
+                    <option value="buy">BUY</option>
+                    <option value="sell">SELL</option>
+                  </select>
+                  <input id="tradeSize" class="w140" type="number" step="0.0001" placeholder="Size" required>
+                  <input id="tradePnl" class="w140" type="number" step="0.01" placeholder="P/L" required>
+                  <button class="btnOk" type="submit">Add Trade</button>
+                </div>
+              </form>
+
+              <div style="height:12px"></div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:360px">User</th>
+                        <th style="width:140px">Market</th>
+                        <th style="width:220px">Pair</th>
+                        <th style="width:140px">Direction</th>
+                        <th style="width:140px">Size</th>
+                        <th style="width:160px">Profit/Loss</th>
+                        <th style="width:220px">Created</th>
+                        <th style="width:180px">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tradesRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+<section id="view-kyc" class="card hidden">
               <div class="cardHead">
                 <div>
                   <div class="cardTitle">🛡️ KYC Requests</div>
@@ -1213,7 +1283,8 @@ const CACHE = {
   withdrawals: [],
   wallets: [],
   kyc: [],
-  wallet_links: []
+  wallet_links: [],
+  trades: []
 };
 
 const USERNAME_MAP = {};
@@ -1332,7 +1403,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","cryptoops","plans","wallets","walletlinks","support","deposits","withdrawals","kyc"];
+  const views = ["overview","users","cryptoops","plans","trades","wallets","walletlinks","support","deposits","withdrawals","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1698,6 +1769,7 @@ function renderOverview(){
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
   document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
   document.getElementById("cnt-cryptoops").textContent = String(CACHE.users.filter(matchSearch).length);
+  document.getElementById("cnt-trades").textContent = String((CACHE.trades||[]).filter(matchSearch).length);
   document.getElementById("cnt-kyc").textContent = String(CACHE.kyc.filter(matchSearch).length);
 
   const tbody = document.getElementById("riskRows");
@@ -1745,6 +1817,7 @@ async function loadUsers(){
   renderUsers(CACHE.users);
   feed("users_list loaded (" + CACHE.users.length + ")");
   renderOverview();
+  populateTradeUserSelect();
   onSearchInput();
 }
 
@@ -1764,6 +1837,12 @@ function renderUsers(data){
   filtered.forEach(u=>{
     const uid = esc(u.id||"");
     const email = String(u.email||"").trim().toLowerCase();
+
+    const tradeEnabled = !!(u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled ?? false);
+    let tradePercentRaw = (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? "");
+    let tradePercentNum = (tradePercentRaw === "" || tradePercentRaw === null || tradePercentRaw === undefined) ? "" : Number(tradePercentRaw);
+    let tradePercent = (tradePercentNum === "" || !isFinite(tradePercentNum)) ? "" : String(tradePercentNum);
+
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(email)}</td>
@@ -1776,11 +1855,22 @@ function renderUsers(data){
           </select>
         </td>
         <td>
+          <div class="rowTools wrap" style="justify-content:flex-start">
+            <label class="tiny" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="tradeon-${uid}" ${tradeEnabled ? "checked" : ""} style="width:18px;height:18px;accent-color: rgba(56,189,248,1);">
+              <span>Enabled</span>
+            </label>
+          </div>
+        </td>
+        <td><input type="number" step="0.01" id="tradepct-${uid}" placeholder="5" value="${tradePercent}"></td>
+        <td>
           <div class="rowTools">
             <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
             <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
             <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
+            <button class="btnGhost" onclick="saveTradeSettings(\'${esc(email)}\',\'${uid}\')">Save Trades</button>
+            <button class="btnPrimary" onclick="openTradesForUser(\'${esc(email)}\')">Trades</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
          </td>
@@ -2669,7 +2759,200 @@ function attachScrollHandlers(){
 document.getElementById("appView").style.display = "none";
 document.getElementById("loginView").style.display = "grid";
 switchView("overview");
-attachScrollHandlers();
+attachScrollHan
+
+/* =========================
+   TRADES (Admin allocation)
+   ========================= */
+
+function populateTradeUserSelect(){
+  const sel = document.getElementById("tradeUser");
+  if(!sel) return;
+  const current = sel.value || "";
+  const users = (CACHE.users||[]).slice().sort((a,b)=>{
+    const ea = String(a.email||"").toLowerCase();
+    const eb = String(b.email||"").toLowerCase();
+    return ea.localeCompare(eb);
+  });
+
+  const opts = ['<option value="">Select user…</option>'].concat(users.map(u=>{
+    const email = String(u.email||"").trim().toLowerCase();
+    const name =
+      String(u.username||u.full_name||u.name||u.display_name||"").trim() ||
+      USERNAME_MAP[email] ||
+      inferUsernameFromEmail(email) ||
+      "User";
+    const label = esc(name) + " • " + esc(email);
+    return `<option value="${esc(email)}">${label}</option>`;
+  }));
+
+  sel.innerHTML = opts.join("");
+  if(current) sel.value = current;
+}
+
+async function saveTradeSettings(email, uid){
+  const onEl = document.getElementById("tradeon-" + uid);
+  const pctEl = document.getElementById("tradepct-" + uid);
+
+  const trades_active = !!(onEl && onEl.checked);
+  const trade_percent = pctEl ? Number(pctEl.value || 0) : 0;
+
+  if(!confirm(`Save trade settings for ${email}?`)) return;
+
+  const res = await apiCall("user_trade_settings_update", {
+    user_id: uid,
+    user_email: email,
+    trades_active,
+    trade_percent
+  });
+
+  if(res && res.success === false){
+    modalShow("Trade settings error", res.error || "Unable to update trade settings. Make sure your edge function supports action: user_trade_settings_update");
+    return;
+  }
+
+  feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
+  modalShow("Saved", "Trade controls updated for this user.");
+  safeLoad(loadUsers);
+}
+
+function openTradesForUser(email){
+  const q = document.getElementById("topSearch");
+  if(q) q.value = String(email||"").trim();
+  onSearchInput();
+  switchView("trades");
+  safeLoad(loadTrades);
+}
+
+async function loadTrades(){
+  const st = document.getElementById("tradesStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+
+  populateTradeUserSelect();
+
+  // ✅ Expected edge action:
+  // - trades_admin_list -> returns { data: [...] } where each row includes:
+  //   { id, user_email, market, pair, direction, size, pnl, created_at }
+  const res = await apiCall("trades_admin_list");
+
+  CACHE.trades = (res && (res.data || res.trades || res.rows || res.items)) || [];
+  if(!Array.isArray(CACHE.trades)) CACHE.trades = [];
+
+  renderTrades(CACHE.trades);
+
+  if(st) st.textContent = `Loaded ${CACHE.trades.length} trade(s) ✅`;
+  feed("trades_admin_list loaded (" + CACHE.trades.length + ")");
+  renderOverview();
+}
+
+function renderTrades(data){
+  const tbody = document.getElementById("tradesRows");
+  if(!tbody) return;
+
+  const filtered = (data||[]).filter(matchSearch);
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:14px;color:rgba(234,240,255,70)">No trades found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = "";
+  filtered
+    .sort((a,b)=> new Date(b.created_at||0) - new Date(a.created_at||0))
+    .forEach(t=>{
+      const id = esc(t.id||"");
+      const email = String(t.user_email||t.email||"").trim().toLowerCase();
+      const market = esc(t.market||"-");
+      const pair = esc(t.pair||t.symbol||"-");
+      const dir = String(t.direction||t.side||"-").toUpperCase();
+      const size = Number(t.size||t.qty||0);
+      const pnl = Number(t.pnl||t.profit_loss||t.profit||0);
+      const created = t.created_at ? new Date(t.created_at).toLocaleString() : "-";
+
+      const pnlTxt = (pnl>=0? "+" : "") + pnl.toFixed(2);
+      const pnlColor = pnl>=0 ? "rgba(34,197,94,1)" : "rgba(248,113,113,1)";
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${userPillHtml(email)}</td>
+          <td>${market}</td>
+          <td><span class="mono">${pair}</span></td>
+          <td><strong>${esc(dir)}</strong></td>
+          <td>${esc(size)}</td>
+          <td><strong style="color:${pnlColor}">$${esc(pnlTxt)}</strong></td>
+          <td>${esc(created)}</td>
+          <td>
+            <div class="rowTools">
+              <button class="btnGhost" onclick="modalShow('Trade', ${JSON.stringify(t)})">View</button>
+              <button class="btnErr" onclick="deleteTrade('${id}')">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+}
+
+async function createTrade(ev){
+  ev.preventDefault();
+
+  const user_email = String(document.getElementById("tradeUser")?.value || "").trim().toLowerCase();
+  const market = String(document.getElementById("tradeMarket")?.value || "crypto").trim().toLowerCase();
+  const pair = String(document.getElementById("tradePair")?.value || "").trim();
+  const direction = String(document.getElementById("tradeDirection")?.value || "buy").trim().toLowerCase();
+  const size = Number(document.getElementById("tradeSize")?.value || 0);
+  const pnl = Number(document.getElementById("tradePnl")?.value || 0);
+
+  if(!user_email) return modalShow("Missing user", "Select a user.");
+  if(!pair) return modalShow("Missing pair", "Enter a pair e.g. BTC/USDT.");
+  if(!isFinite(size) || size<=0) return modalShow("Invalid size", "Enter a valid trade size.");
+  if(!isFinite(pnl)) return modalShow("Invalid P/L", "Enter profit/loss number.");
+
+  // Guard: allow only if user's trades are enabled (best-effort UI guard)
+  const userObj = (CACHE.users||[]).find(u => String(u.email||"").trim().toLowerCase() === user_email);
+  const tradeEnabled = !!(userObj && (userObj.trades_active ?? userObj.trade_active ?? userObj.trading_active ?? userObj.trades_enabled));
+  if(!tradeEnabled){
+    if(!confirm("This user does NOT have Trades enabled. Add trade anyway?")) return;
+  }
+
+  if(!confirm(`Add trade for ${user_email}?`)) return;
+
+  const payload = { user_email, market, pair, direction, size, pnl };
+
+  // ✅ Expected edge action:
+  // - trades_admin_create -> inserts a trade row for the user
+  const res = await apiCall("trades_admin_create", payload);
+
+  if(res && res.success === false){
+    modalShow("Create trade error", res.error || "Unable to create trade. Make sure your edge function supports action: trades_admin_create");
+    return;
+  }
+
+  feed(`trades_admin_create -> ${user_email} ${market} ${pair} ${direction} size=${size} pnl=${pnl}`);
+  modalShow("Trade added", "Trade history entry created.");
+  document.getElementById("tradePair").value = "";
+  document.getElementById("tradeSize").value = "";
+  document.getElementById("tradePnl").value = "";
+  safeLoad(loadTrades);
+}
+
+async function deleteTrade(id){
+  if(!confirm("Delete this trade entry?")) return;
+
+  // ✅ Expected edge action:
+  // - trades_admin_delete -> deletes by id
+  const res = await apiCall("trades_admin_delete", { id });
+
+  if(res && res.success === false){
+    modalShow("Delete trade error", res.error || "Unable to delete trade. Make sure your edge function supports action: trades_admin_delete");
+    return;
+  }
+
+  feed("trades_admin_delete -> " + id);
+  modalShow("Deleted", "Trade entry removed.");
+  safeLoad(loadTrades);
+}
+
+
+dlers();
 </script>
 
 </body>
