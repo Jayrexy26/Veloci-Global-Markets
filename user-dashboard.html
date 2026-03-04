@@ -1,13 +1,12 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VGM | User Dashboard</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VGM | User Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
     :root{
       --bg:#050a18;
       --stroke:rgba(255,255,255,.12);
@@ -527,7 +526,7 @@
     .ddName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ddPanel{
       position:absolute; top:56px; left:0; right:0;
-      z-index:100;
+      z-index:99999;
       border-radius:18px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(2,6,23,.94);
@@ -1078,110 +1077,344 @@
       }
     }
 
+
+    /* ===== TRADE SECTION ===== */
+    .tradeWrap{
+      margin-top:12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      padding:12px;
+    }
+    .tradeRow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+    .tradeSeg{
+      width:100%;
+      display:flex;
+      gap:10px;
+      padding:8px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      box-shadow:0 16px 40px rgba(0,0,0,.25);
+    }
+    .tradeSegBtn{
+      flex:1;
+      height:46px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.22);
+      color:rgba(234,240,255,.85);
+      font-weight:1000;
+      cursor:pointer;
+      box-shadow:0 16px 40px rgba(0,0,0,.20);
+      transition:.16s ease;
+    }
+    .tradeSegBtn:hover{filter:brightness(1.05)}
+    .tradeSegBtn.active{
+      border:1px solid rgba(56,189,248,.55);
+      background:linear-gradient(180deg, rgba(56,189,248,.18), rgba(91,108,255,.12));
+      color:#cfefff;
+    }
+
+    .tradeActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:6px;
+    }
+    .tradeBtn{
+      flex:1;
+      min-width:160px;
+      height:54px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+      box-shadow:0 18px 55px rgba(0,0,0,.28);
+      transition:.16s ease;
+    }
+    .tradeBtn:hover{transform: translateY(-1px); filter:brightness(1.05)}
+    .tradeBuy{background:linear-gradient(180deg, rgba(34,197,94,1), rgba(16,185,129,1));}
+    .tradeSell{background:linear-gradient(180deg, rgba(248,113,113,1), rgba(239,68,68,1));}
+
+    /* ===== TRADE MODAL ===== */
+    .tModalOverlay{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,.70);
+      backdrop-filter: blur(6px);
+      z-index:99990;
+    }
+    .tModal{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:99999;
+      padding:18px;
+    }
+    .tModalCard{
+      width:min(620px, 94vw);
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(900px 340px at 20% 10%, rgba(56,189,248,.16), transparent 60%),
+        radial-gradient(900px 340px at 85% 30%, rgba(255,77,166,.12), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow:0 26px 90px rgba(0,0,0,.65);
+      overflow:hidden;
+    }
+    .tModalHead{
+      padding:14px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:
+        linear-gradient(90deg, rgba(91,108,255,.85), rgba(255,77,166,.60));
+      position:relative;
+      animation: tradeHeadPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes tradeHeadPulse{
+      0%{filter:brightness(.95)}
+      50%{filter:brightness(1.08)}
+      100%{filter:brightness(.95)}
+    }
+    .tModalTitle{font-weight:1000; font-size:16px; color:#fff;}
+    .tModalSub{font-weight:900; font-size:12px; opacity:.92; color:#fff;}
+    .tModalClose{
+      width:42px;height:42px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.22);
+      color:#fff;
+      font-weight:1000;
+      cursor:pointer;
+    }
+    .tModalClose:hover{background:rgba(255,255,255,.10)}
+    .tModalBody{padding:14px;}
+    .tDetailGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width:520px){
+      .tDetailGrid{grid-template-columns:1fr;}
+    }
+    .tDetail{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      border-radius:18px;
+      padding:12px;
+      box-shadow:0 16px 40px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .tDetail .k{font-size:11px; font-weight:1000; color:rgba(234,240,255,.65)}
+    .tDetail .v{margin-top:6px; font-size:14px; font-weight:1000; color:rgba(234,240,255,.92); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+    .tModalHint{margin-top:12px; font-size:12px; font-weight:900; color:rgba(234,240,255,.65)}
+    .tModalFoot{
+      padding:14px;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      border-top:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+    }
+    .tModalBtn{
+      height:48px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      padding:0 16px;
+      font-weight:1000;
+      cursor:pointer;
+      color:#fff;
+    }
+    .tModalBtn.ghost{background:rgba(255,255,255,.08)}
+    .tModalBtn.ok{background:linear-gradient(180deg, rgba(56,189,248,1), rgba(91,108,255,1))}
+    .tModalBtn:hover{filter:brightness(1.05)}
+
+
+
+    /* ===== Trading Percentage Orb (admin-controlled later) ===== */
+    .tradePctOrb{
+      position: fixed;
+      right: -10px;
+      top: 52%;
+      transform: translateY(-50%);
+      width: 70px;
+      height: 70px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: radial-gradient(circle at 30% 30%, rgba(56,189,248,.35), rgba(91,108,255,.18) 48%, rgba(2,6,23,.85) 78%);
+      box-shadow: 0 18px 55px rgba(0,0,0,.55), 0 0 0 6px rgba(91,108,255,.08);
+      backdrop-filter: blur(14px);
+      z-index: 99998;
+      cursor: pointer;
+      user-select: none;
+      display: grid;
+      place-items: center;
+      animation: tradeOrbSwing 2.35s ease-in-out infinite;
+    }
+    .tradePctOrb:before{
+      content:"";
+      position:absolute;
+      inset:-6px;
+      border-radius:999px;
+      background: conic-gradient(from 180deg, rgba(56,189,248,.0), rgba(56,189,248,.55), rgba(124,77,255,.55), rgba(56,189,248,.0));
+      filter: blur(10px);
+      opacity: .55;
+      animation: tradeOrbGlow 2.4s ease-in-out infinite;
+      pointer-events:none;
+    }
+    .tradePctInner{
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.55);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:2px;
+      text-align:center;
+    }
+    .tradePctLabel{
+      font-size: 10px;
+      letter-spacing: .35px;
+      font-weight: 1000;
+      color: rgba(234,240,255,.72);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .tradePctValue{
+      font-size: 16px;
+      font-weight: 1100;
+      letter-spacing: .2px;
+      color: rgba(234,240,255,.95);
+      line-height: 1;
+      text-shadow: 0 0 14px rgba(56,189,248,.25);
+    }
+    .tradePctSym{ font-size: 12px; opacity: .85; margin-left: 1px; }
+
+    @keyframes tradeOrbSwing{
+      0%{ transform: translateY(-50%) rotate(-9deg) translateX(0px); }
+      50%{ transform: translateY(-50%) rotate(9deg) translateX(-6px); }
+      100%{ transform: translateY(-50%) rotate(-9deg) translateX(0px); }
+    }
+    @keyframes tradeOrbGlow{
+      0%{ opacity: .35; }
+      50%{ opacity: .75; }
+      100%{ opacity: .35; }
+    }
+    @media (max-width: 720px){
+      .tradePctOrb{ width: 60px; height: 60px; right: -14px; top: 58%; }
+      .tradePctInner{ width: 48px; height: 48px; }
+      .tradePctValue{ font-size: 14px; }
+    }
+
 </style>
 </head>
-
 <body>
-  <div class="bgFlow"></div>
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="blob b4"></div>
-  <div class="shimmer"></div>
+<div class="bgFlow"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="blob b4"></div>
+<div class="shimmer"></div>
+<!-- Loading -->
+<div id="authGate">
+<div class="gateCard">
+<div class="gateLogo">
+<img alt="Veloci Global Markets Logo" class="logoImg" src="assets/vgm-logo.png"/>
+</div>
+<div class="gateTxt">Veloci Global Markets</div>
+<div class="gateSub">Precision trading. Real-time execution.</div>
+<div class="spinner"></div>
+</div>
+</div>
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+<div class="sideTop">
+<div class="sideBrand">
+<img alt="VGM Logo" class="sideLogoWide" src="assets/vgm-logo.png"/>
+</div>
+<button class="closeBtn" onclick="closeMenu()">✕</button>
+</div>
+<div class="userTag">
+<div class="userTagLeft">
+<div class="t1">Logged in as</div>
+<div class="t2" id="sideName">---</div>
+</div>
+<div class="sideAvatar" title="Profile photo">
+<span id="sideAvatarFallback">👤</span>
+<img alt="Avatar" id="sideAvatarImg">
+</img></div>
+</div>
+<div class="menuGroupTitle">Navigation</div>
+<a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
+<!-- ✅ ADDED: Wallets -->
+<a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
+<a class="sideItem" href="trade-history.html"><div class="i">🧾</div><div>Trade History<small>Your positions</small></div></a>
+<a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+<a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
+<a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets &amp; help</small></div></a>
+<a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+<a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
+<button class="sideLogout" onclick="logout()">Logout</button>
+</div>
+<div class="container">
+<div class="stickyMenu" id="stickyMenu">
+<div class="topRow">
+<div class="brand">
+<img alt="Veloci Global Markets" class="brandLogoWide" src="assets/vgm-logo.png"/>
+</div>
+<div class="headerActions">
+<button class="avatarBtn" onclick="goProfile()" title="Profile">
+<span class="avatarFallback" id="avatarFallback">👤</span>
+<img alt="Avatar" class="avatarImgBtn" id="avatarImgBtn">
+</img></button>
+<button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
+</div>
+</div>
+</div>
+<div class="helloCard">
+<div class="helloLeft">
+<div class="helloLogo" title="Verified &amp; Secure">🛡️</div>
+<div>
+<div class="chips">
+<div class="miniChip">🟢 active</div>
+<div class="miniChip" id="countryChip" style="display:none"></div>
+</div>
+<div class="helloTitle" id="greetingTitle">Greetings…</div>
+<div class="helloSub" id="helloName">Loading…</div>
+</div>
+</div>
+<div class="helloRight">
+<div class="helloRightTop">
+<div class="idChip" id="userIdChip">ID:</div>
+<button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
+</div>
+<div class="datetimeChip" id="dateTimeNow">--- | ---</div>
+</div>
+</div>
+<!-- ✅ TRADINGVIEW FLOW TICKER (PLAIN, NO BOX) -->
+<div class="tvTickerPlain">
+<div class="tradingview-widget-container">
+<div class="tradingview-widget-container__widget"></div>
 
-  <!-- Loading -->
-  <div id="authGate">
-    <div class="gateCard">
-      <div class="gateLogo">
-        <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
-      </div>
-      <div class="gateTxt">Veloci Global Markets</div>
-      <div class="gateSub">Precision trading. Real-time execution.</div>
-      <div class="spinner"></div>
-    </div>
-  </div>
-
-  <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-  <!-- Sidebar -->
-  <div id="sidebar" class="sidebar">
-    <div class="sideTop">
-      <div class="sideBrand">
-        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="VGM Logo">
-      </div>
-      <button class="closeBtn" onclick="closeMenu()">✕</button>
-    </div>
-
-    <div class="userTag">
-      <div class="userTagLeft">
-        <div class="t1">Logged in as</div>
-        <div id="sideName" class="t2">---</div>
-      </div>
-      <div class="sideAvatar" title="Profile photo">
-        <span id="sideAvatarFallback">👤</span>
-        <img id="sideAvatarImg" alt="Avatar"/>
-      </div>
-    </div>
-
-    <div class="menuGroupTitle">Navigation</div>
-    <a class="sideItem activeLink" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="portfolio.html"><div class="i">📊</div><div>Portfolio<small>Your assets</small></div></a>
-
-    <!-- ✅ ADDED: Wallets -->
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallets<small>Your addresses</small></div></a>
-
-    <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
-    <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
-    <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-    <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
-    <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
-    <button class="sideLogout" onclick="logout()">Logout</button>
-  </div>
-
-  <div class="container">
-    <div id="stickyMenu" class="stickyMenu">
-      <div class="topRow">
-        <div class="brand">
-          <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
-        </div>
-
-        <div class="headerActions">
-          <button class="avatarBtn" onclick="goProfile()" title="Profile">
-            <span id="avatarFallback" class="avatarFallback">👤</span>
-            <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
-          </button>
-          <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="helloCard">
-      <div class="helloLeft">
-        <div class="helloLogo" title="Verified & Secure">🛡️</div>
-
-        <div>
-          <div class="chips">
-            <div class="miniChip">🟢 active</div>
-            <div class="miniChip" id="countryChip" style="display:none"></div>
-          </div>
-          <div class="helloTitle" id="greetingTitle">Greetings…</div>
-          <div class="helloSub" id="helloName">Loading…</div>
-        </div>
-      </div>
-      <div class="helloRight">
-        <div class="helloRightTop">
-          <div class="idChip" id="userIdChip">ID:</div>
-          <button class="logoutBtn" onclick="logout()" title="Logout">⎋</button>
-        </div>
-        <div class="datetimeChip" id="dateTimeNow">--- | ---</div>
-      </div>
-    </div>
-
-    <!-- ✅ TRADINGVIEW FLOW TICKER (PLAIN, NO BOX) -->
-    <div class="tvTickerPlain">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+<div aria-label="Trading percentage indicator" class="tradePctOrb" id="tradePctOrb">
+<div class="tradePctInner">
+<div class="tradePctLabel">TRD</div>
+<div class="tradePctValue"><span id="tradePctNum">25</span><span class="tradePctSym">%</span></div>
+</div>
+</div>
+<script async="" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" type="text/javascript">
         {
           "symbols": [
             { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
@@ -1198,165 +1431,190 @@
           "locale": "en"
         }
         </script>
-      </div>
-    </div>
-
-    <div class="balanceCard">
-      <div class="bTitle">Total Portfolio Value</div>
-      <div class="bValue" id="balance">--</div>
-      <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
-
-      <div class="actionGrid">
-        <div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
-        <div class="action" onclick="goDepositAndClear()"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
-        <div class="action" onclick="goPlans()"><div class="aIcon aPlans">📈</div><div class="aText">Plans</div></div>
-        <div class="action" onclick="goSupportAndClear()"><div class="aIcon aSupport">💬</div><div class="aText">Support</div></div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h2>Active Investment Plan</h2>
-      <div id="planMsg" class="small">Loading…</div>
-      <div id="planBox"></div>
-    </div>
-
-    <div class="box">
-      <h2>Top 10 Major Cryptos</h2>
-      <div class="small">Live market prices (auto refresh every 20 seconds).</div>
-      <div id="top10Msg" class="small">Loading…</div>
-      <div id="top10List" class="crypto10Grid"></div>
-    </div>
-
-    <div class="box">
-      <h2>Crypto Converter</h2>
-      <div class="small">Search & convert from ALL coins to ALL fiat currencies.</div>
-      <div class="convGrid">
-        <div class="convRow">
-          <div class="ddWrap" id="ddCryptoA"></div>
-          <button class="swapBtn" onclick="swapCrypto()">⇄</button>
-          <div class="ddWrap" id="ddCryptoB"></div>
-        </div>
-        <div class="convRow">
-          <input id="cryptoAmount" class="inp" type="number" min="0" step="0.00000001" placeholder="Enter amount"/>
-        </div>
-        <button class="convBtn" onclick="convertCrypto()">⚡ Convert</button>
-        <div class="card">
-          <div class="rateLine"><span class="rateDot"></span> <span id="cryptoRate">Rate: --</span></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="cryptoResult">--</strong></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Reverse: <strong id="cryptoReverse">--</strong></div>
-          <div class="small" style="margin-top:10px;font-size:13px;color:rgba(234,240,255,.55)">
+</div>
+</div>
+<div class="balanceCard">
+<div class="bTitle">Total Portfolio Value</div>
+<div class="bValue" id="balance">--</div>
+<div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
+<div class="actionGrid">
+<div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
+<div class="action" onclick="goDepositAndClear()"><div class="aIcon aReceive">⬇️</div><div class="aText">Receive</div></div>
+<div class="action" onclick="goPlans()"><div class="aIcon aPlans">📈</div><div class="aText">Plans</div></div>
+<div class="action" onclick="goSupportAndClear()"><div class="aIcon aSupport">💬</div><div class="aText">Support</div></div>
+</div>
+</div>
+<div class="box">
+<h2>Active Investment Plan</h2>
+<div class="small" id="planMsg">Loading…</div>
+<div id="planBox"></div>
+</div>
+<div class="box">
+<h2>Top 10 Major Cryptos</h2>
+<div class="small">Live market prices (auto refresh every 20 seconds).</div>
+<div class="small" id="top10Msg">Loading…</div>
+<div class="crypto10Grid" id="top10List"></div>
+</div>
+<div class="box">
+<h2>Crypto Converter</h2>
+<div class="small">Search &amp; convert from ALL coins to ALL fiat currencies.</div>
+<div class="convGrid">
+<div class="convRow">
+<div class="ddWrap" id="ddCryptoA"></div>
+<button class="swapBtn" onclick="swapCrypto()">⇄</button>
+<div class="ddWrap" id="ddCryptoB"></div>
+</div>
+<div class="convRow">
+<input class="inp" id="cryptoAmount" min="0" placeholder="Enter amount" step="0.00000001" type="number"/>
+</div>
+<button class="convBtn" onclick="convertCrypto()">⚡ Convert</button>
+<div class="card">
+<div class="rateLine"><span class="rateDot"></span> <span id="cryptoRate">Rate: --</span></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="cryptoResult">--</strong></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Reverse: <strong id="cryptoReverse">--</strong></div>
+<div class="small" style="margin-top:10px;font-size:13px;color:rgba(234,240,255,.55)">
             Tip: Search by coin name or symbol (example: “btc”, “eth”, “sol”, “xrp”).
           </div>
-        </div>
-      </div>
-    </div>
-    <div class="box">
-      <h2>Fiat Currency Converter</h2>
-      <div class="small">Search & convert from ALL fiat currencies to ALL fiat currencies.</div>
-      <div class="convGrid">
-        <div class="convRow">
-          <div class="ddWrap" id="ddFiatA"></div>
-          <button class="swapBtn" onclick="swapFiat()">⇄</button>
-          <div class="ddWrap" id="ddFiatB"></div>
-        </div>
-        <div class="convRow">
-          <input id="fiatAmount" class="inp" type="number" min="0" step="0.01" placeholder="Enter amount"/>
-        </div>
-        <button class="convBtn" onclick="convertFiat()">💱 Convert Fiat</button>
-        <div class="card">
-          <div class="rateLine"><span class="rateDot"></span> <span id="fiatRate">Rate: --</span></div>
-          <div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="fiatResult">--</strong></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h2>Live Crypto Order Book</h2>
-      <div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
-
-      <div class="convRow" style="margin-top:12px">
-        <div class="ddWrap" id="obPairWrap"></div>
-        <select id="obPair" style="display:none">
-          <option value="BTCUSDT">BTC/USDT</option>
-          <option value="ETHUSDT">ETH/USDT</option>
-          <option value="BNBUSDT">BNB/USDT</option>
-          <option value="XRPUSDT">XRP/USDT</option>
-          <option value="SOLUSDT">SOL/USDT</option>
-        </select>
-      </div>
-
-      <div class="chartWrap">
-        <div class="chartHead">
-          <span>Mini Candlestick Chart</span>
-          <span id="chartPair">BTC/USDT</span>
-        </div>
-        <iframe id="tvChart" class="chartFrame"></iframe>
-      </div>
-
-      <div class="orderBookWrap">
-        <div class="obHead">
-          <span>Order Book</span>
-          <div class="obStatus">
-            <span class="pulseDot"></span>
-            <span id="obStatusTxt">Connecting…</span>
-          </div>
-        </div>
-
-        <div class="obGrid">
-          <div class="obCol">
-            <div class="obColHead"><span>Asks</span><span>Price / Amount / Total</span></div>
-            <div id="obAsks" class="obRows"></div>
-          </div>
-
-          <div class="obMid">
-            <div class="midPrice" id="obMidPrice">--</div>
-            <div class="spreadPill" id="obSpread">Spread: --</div>
-          </div>
-
-          <div class="obCol">
-            <div class="obColHead"><span>Bids</span><span>Price / Amount / Total</span></div>
-            <div id="obBids" class="obRows"></div>
-          </div>
-        </div>
-
-        <div class="obFoot">
-          <div id="obExchange">Source: --</div>
-          <div id="obUpdated">Updated: --</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="box">
-      <h2>Live Crypto News</h2>
-      <div class="small">Latest crypto headlines (auto refresh every 60 seconds).</div>
-      <div id="newsMsg" class="small">Loading…</div>
-      <div id="newsList" class="newsGrid"></div>
-    </div>
-  </div>
-
-  <!-- DOCK -->
-  <div class="dock">
-    <div class="dockInner">
-      <div class="dockBar">
-        <div class="dockItem" onclick="goDepositAndClear()">
-          <div id="badgeDepositDock" class="dockBadge">0</div>
-          <div class="ico">💳</div><div>Deposit</div>
-        </div>
-
-        <div class="dockItem" onclick="goWithdrawAndClear()">
-          <div id="badgeWithdrawDock" class="dockBadge">0</div>
-          <div class="ico">➡</div><div>Withdraw</div>
-        </div>
-
-        <div class="dockHome" onclick="goDashboard()" title="Home">🏠</div>
-
-        <div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
-        <div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
+</div>
+</div>
+</div>
+<div class="box">
+<h2>Fiat Currency Converter</h2>
+<div class="small">Search &amp; convert from ALL fiat currencies to ALL fiat currencies.</div>
+<div class="convGrid">
+<div class="convRow">
+<div class="ddWrap" id="ddFiatA"></div>
+<button class="swapBtn" onclick="swapFiat()">⇄</button>
+<div class="ddWrap" id="ddFiatB"></div>
+</div>
+<div class="convRow">
+<input class="inp" id="fiatAmount" min="0" placeholder="Enter amount" step="0.01" type="number"/>
+</div>
+<button class="convBtn" onclick="convertFiat()">💱 Convert Fiat</button>
+<div class="card">
+<div class="rateLine"><span class="rateDot"></span> <span id="fiatRate">Rate: --</span></div>
+<div class="small" style="margin-top:10px;font-size:14px;">Result: <strong id="fiatResult">--</strong></div>
+</div>
+</div>
+</div>
+<div class="box" id="tradeSection">
+<h2>Trade</h2>
+<div class="small">Open a position by selecting a market, pair and direction. Confirm before placing.</div>
+<div class="tradeWrap">
+<div class="tradeRow">
+<div aria-label="Market type" class="tradeSeg" role="tablist">
+<button class="tradeSegBtn active" id="tradeSegCrypto" type="button">Crypto</button>
+<button class="tradeSegBtn" id="tradeSegForex" type="button">Forex</button>
+</div>
+</div>
+<div class="tradeRow">
+<div class="ddWrap" id="tradePairWrap"></div>
+<input id="tradePair" type="hidden" value=""/>
+</div>
+<div class="tradeRow">
+<input class="inp" id="tradeAmount" min="0" placeholder="Trade size (e.g. 0.1)" required step="0.0001" type="number"/>
+</div>
+<div class="tradeActions">
+<button class="tradeBtn tradeBuy" onclick="tradeIntent('BUY')" type="button">Buy</button>
+<button class="tradeBtn tradeSell" onclick="tradeIntent('SELL')" type="button">Sell</button>
+</div>
+</div>
+</div>
+<!-- ✅ Trade confirm modal -->
+<div class="tModalOverlay" id="tradeModalOverlay" style="display:none;"></div>
+<div aria-labelledby="tradeModalTitle" aria-modal="true" class="tModal" id="tradeModal" role="dialog" style="display:none;">
+<div class="tModalCard">
+<div class="tModalHead">
+<div>
+<div class="tModalTitle" id="tradeModalTitle">Confirm Trade</div>
+<div class="tModalSub" id="tradeModalSub">Review details before placing</div>
+</div>
+<button class="tModalClose" onclick="closeTradeModal()" type="button">✕</button>
+</div>
+<div class="tModalBody">
+<div class="tDetailGrid" id="tradeModalDetails"></div>
+<div class="tModalHint">This is a confirmation step only. Trade history page will be added next.</div>
+</div>
+<div class="tModalFoot">
+<button class="tModalBtn ghost" onclick="closeTradeModal()" type="button">Cancel</button>
+<button class="tModalBtn ok" onclick="confirmTrade()" type="button">Confirm</button>
+</div>
+</div>
+</div>
+<div class="box">
+<h2>Live Crypto Order Book</h2>
+<div class="small">Auto refresh every 3 seconds. Binance → OKX → Bybit fallback.</div>
+<div class="convRow" style="margin-top:12px">
+<div class="ddWrap" id="obPairWrap"></div>
+<select id="obPair" style="display:none">
+<option value="BTCUSDT">BTC/USDT</option>
+<option value="ETHUSDT">ETH/USDT</option>
+<option value="BNBUSDT">BNB/USDT</option>
+<option value="XRPUSDT">XRP/USDT</option>
+<option value="SOLUSDT">SOL/USDT</option>
+</select>
+</div>
+<div class="chartWrap">
+<div class="chartHead">
+<span>Mini Candlestick Chart</span>
+<span id="chartPair">BTC/USDT</span>
+</div>
+<iframe class="chartFrame" id="tvChart"></iframe>
+</div>
+<div class="orderBookWrap">
+<div class="obHead">
+<span>Order Book</span>
+<div class="obStatus">
+<span class="pulseDot"></span>
+<span id="obStatusTxt">Connecting…</span>
+</div>
+</div>
+<div class="obGrid">
+<div class="obCol">
+<div class="obColHead"><span>Asks</span><span>Price / Amount / Total</span></div>
+<div class="obRows" id="obAsks"></div>
+</div>
+<div class="obMid">
+<div class="midPrice" id="obMidPrice">--</div>
+<div class="spreadPill" id="obSpread">Spread: --</div>
+</div>
+<div class="obCol">
+<div class="obColHead"><span>Bids</span><span>Price / Amount / Total</span></div>
+<div class="obRows" id="obBids"></div>
+</div>
+</div>
+<div class="obFoot">
+<div id="obExchange">Source: --</div>
+<div id="obUpdated">Updated: --</div>
+</div>
+</div>
+</div>
+<div class="box">
+<h2>Live Crypto News</h2>
+<div class="small">Latest crypto headlines (auto refresh every 60 seconds).</div>
+<div class="small" id="newsMsg">Loading…</div>
+<div class="newsGrid" id="newsList"></div>
+</div>
+</div>
+<!-- DOCK -->
+<div class="dock">
+<div class="dockInner">
+<div class="dockBar">
+<div class="dockItem" onclick="goDepositAndClear()">
+<div class="dockBadge" id="badgeDepositDock">0</div>
+<div class="ico">💳</div><div>Deposit</div>
+</div>
+<div class="dockItem" onclick="goWithdrawAndClear()">
+<div class="dockBadge" id="badgeWithdrawDock">0</div>
+<div class="ico">➡</div><div>Withdraw</div>
+</div>
+<div class="dockHome" onclick="goDashboard()" title="Home">🏠</div>
+<div class="dockItem" onclick="goPlans()"><div class="ico">💼</div><div>Plans</div></div>
+<div class="dockItem" onclick="goProfile()"><div class="ico">👤</div><div>Profile</div></div>
+</div>
+</div>
+</div>
+<script>
     /* ============================================================
       ✅ STICKY MENU POLISH SCRIPT
     ============================================================ */
@@ -1377,65 +1635,7 @@
     const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
     const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
     const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-    const EDGE_TRADE_SETTINGS_URL = `${SUPABASE_URL}/functions/v1/user-trade-settings`;
-    const EDGE_TRADE_REQUEST_URL = `${SUPABASE_URL}/functions/v1/trade-request`;
     const supabaseClient=supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    function applyTradeSettings(tradesActive, tradePercent){
-      const ta = Boolean(tradesActive);
-      const tp = Number(tradePercent);
-      __TRADE_SETTINGS.trades_active = ta;
-      __TRADE_SETTINGS.trade_percent = Number.isFinite(tp) ? tp : 0;
-
-      // Persist for UI fallback
-      try{
-        localStorage.setItem("vgm_trades_active", ta ? "1" : "0");
-        localStorage.setItem("vgm_trade_pct", String(__TRADE_SETTINGS.trade_percent));
-      }catch(_e){}
-
-      // Update orb number if present
-      const num = document.getElementById("tradePctNum");
-      if(num){
-        const v = Number.isFinite(__TRADE_SETTINGS.trade_percent) ? __TRADE_SETTINGS.trade_percent : 0;
-        num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
-      }
-    }
-
-    async function fetchTradeSettings(){
-      // First: try edge function (works even if users table has strict RLS)
-      try{
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        const token = session?.access_token || "";
-        if(token){
-          const r = await fetch(EDGE_TRADE_SETTINGS_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + token,
-              "apikey": SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({})
-          });
-          const j = await r.json().catch(()=>null);
-          if(r.ok && j && (j.success === true) && j.data){
-            applyTradeSettings(j.data.trades_active, j.data.trade_percent);
-            return;
-          }
-        }
-      }catch(_e){}
-
-      // Fallback: localStorage
-      try{
-        const storedPct = localStorage.getItem("vgm_trade_pct");
-        const storedOn = localStorage.getItem("vgm_trades_active");
-        const pct = storedPct ? Number(storedPct) : 25;
-        const on = storedOn === null ? true : storedOn === "1";
-        applyTradeSettings(on, Number.isFinite(pct) ? pct : 25);
-      }catch(_e){
-        applyTradeSettings(true, 25);
-      }
-    }
-
 
     // ✅ KYC gate config (redirect target)
     const KYC_VERIFY_PAGE = "verification.html";
@@ -1443,9 +1643,6 @@
     let currentUserEmail="";
     let currentUserId="";
     let badgeChannel=null;
-
-    // Trade settings (admin-controlled)
-    let __TRADE_SETTINGS = { trades_active: true, trade_percent: 25 };
 
     /* converter global */
     let ALL_COINS=[];
@@ -1995,6 +2192,253 @@
       };
     }
 
+    
+    /* ============================================================
+      ✅ TRADE (NEW)
+    ============================================================ */
+    const TRADE_PAIRS_CRYPTO = [
+      { value:"BTC/USDT", label:"BTC/USDT", search:"btc bitcoin usdt btcusdt" },
+      { value:"ETH/USDT", label:"ETH/USDT", search:"eth ethereum usdt ethusdt" },
+      { value:"BNB/USDT", label:"BNB/USDT", search:"bnb binance usdt bnbusdt" },
+      { value:"SOL/USDT", label:"SOL/USDT", search:"sol solana usdt solusdt" },
+      { value:"XRP/USDT", label:"XRP/USDT", search:"xrp ripple usdt xrpusdt" },
+      { value:"DOGE/USDT", label:"DOGE/USDT", search:"doge dogecoin usdt dogeusdt" },
+      { value:"ADA/USDT", label:"ADA/USDT", search:"ada cardano usdt adausdt" }
+    ];
+    const TRADE_PAIRS_FOREX = [
+      { value:"EUR/USD", label:"EUR/USD", search:"eur usd euro dollar" },
+      { value:"GBP/USD", label:"GBP/USD", search:"gbp usd pound dollar" },
+      { value:"USD/JPY", label:"USD/JPY", search:"usd jpy dollar yen" },
+      { value:"USD/CHF", label:"USD/CHF", search:"usd chf dollar franc" },
+      { value:"AUD/USD", label:"AUD/USD", search:"aud usd aussie dollar" },
+      { value:"USD/CAD", label:"USD/CAD", search:"usd cad dollar loonie" },
+      { value:"NZD/USD", label:"NZD/USD", search:"nzd usd kiwi dollar" }
+    ];
+
+    let TRADE_MARKET = "crypto"; // "crypto" | "forex"
+    let __pendingTrade = null;
+
+    function mountTradePairs(){
+      const wrap=document.getElementById("tradePairWrap");
+      const hidden=document.getElementById("tradePair");
+      if(!wrap || !hidden) return;
+
+      wrap.innerHTML = `
+        <button class="ddBtn" type="button" id="tradePairBtn">
+          <div class="ddLeft">
+            <div class="ddIcon">⚡</div>
+            <div class="ddName" id="tradePairName">BTC/USDT</div>
+          </div>
+          <div>▾</div>
+        </button>
+        <div class="ddPanel" id="tradePairPanel">
+          <input class="ddSearch" id="tradePairSearch" placeholder="Search pair..." />
+          <div class="ddList" id="tradePairList"></div>
+        </div>
+      `;
+
+      const btn=document.getElementById("tradePairBtn");
+      const panel=document.getElementById("tradePairPanel");
+      const search=document.getElementById("tradePairSearch");
+      const list=document.getElementById("tradePairList");
+      const nameEl=document.getElementById("tradePairName");
+
+      function getPairs(){
+        return (TRADE_MARKET === "forex") ? TRADE_PAIRS_FOREX : TRADE_PAIRS_CRYPTO;
+      }
+
+      function render(q=""){
+        const pairs = getPairs();
+        const s=(q||"").trim().toLowerCase();
+        const items = !s ? pairs : pairs.filter(x => x.search.includes(s) || x.label.toLowerCase().includes(s));
+        list.innerHTML = items.map(x=>`
+          <div class="ddItem" data-val="${x.value}" data-label="${x.label}">
+            <span>${x.label}</span>
+            <small>tap</small>
+          </div>
+        `).join("") || `<div class="ddItem"><span>No results</span></div>`;
+      }
+
+      function setPair(val, label){
+        hidden.value = val;
+        nameEl.textContent = label;
+      }
+
+      const init = getPairs()[0];
+      setPair(init.value, init.label);
+      render("");
+
+      function closePanel(){
+        panel.classList.remove("show");
+        // move panel back under wrap so layout stays consistent
+        if(panel.__homeParent && panel.__homeParent !== panel.parentNode){
+          panel.__homeParent.appendChild(panel);
+        }
+        panel.style.position = "";
+        panel.style.top = "";
+        panel.style.left = "";
+        panel.style.width = "";
+        panel.style.zIndex = "";
+        panel.style.maxHeight = "";
+      }
+
+      function positionPanel(){
+        const r = btn.getBoundingClientRect();
+        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+        const scrollX = window.scrollX || document.documentElement.scrollLeft || 0;
+
+        const belowSpace = window.innerHeight - r.bottom - 16;
+        const aboveSpace = r.top - 16;
+
+        panel.style.position = "absolute";
+        panel.style.left = (r.left + scrollX) + "px";
+        panel.style.width = (r.width) + "px";
+        panel.style.zIndex = "999999";
+
+        if(belowSpace >= 180){
+          panel.style.top = (r.bottom + scrollY + 8) + "px";
+          panel.style.maxHeight = Math.min(360, belowSpace) + "px";
+        }else{
+          // open above if space below is tight
+          panel.style.top = (r.top + scrollY - Math.min(360, Math.max(180, aboveSpace)) - 8) + "px";
+          panel.style.maxHeight = Math.min(360, Math.max(180, aboveSpace)) + "px";
+        }
+      }
+
+      function bindAutoClose(){
+        if(panel.__bound) return;
+        panel.__bound = true;
+
+        window.addEventListener("scroll", ()=>{
+          if(panel.classList.contains("show")) closePanel();
+        }, { passive: true });
+
+        window.addEventListener("resize", ()=>{
+          if(panel.classList.contains("show")) closePanel();
+        });
+      }
+      bindAutoClose();
+
+      btn.addEventListener("click",(e)=>{
+        e.stopPropagation();
+        const open = !panel.classList.contains("show");
+
+        if(open){
+          // portal to <body> so it never underlays other sections
+          panel.__homeParent = panel.__homeParent || panel.parentNode;
+          document.body.appendChild(panel);
+          positionPanel();
+
+          panel.classList.add("show");
+          search.value="";
+          render("");
+          setTimeout(()=>search.focus(),40);
+        }else{
+          closePanel();
+        }
+      });
+
+      search.addEventListener("input",()=>render(search.value));
+
+      list.addEventListener("click",(e)=>{
+        const item=e.target.closest(".ddItem");
+        if(!item) return;
+        const val=item.getAttribute("data-val");
+        const label=item.getAttribute("data-label");
+        if(!val) return;
+        setPair(val,label);
+        closePanel();
+      });
+
+      document.addEventListener("click",(e)=>{
+        if(wrap.contains(e.target) || panel.contains(e.target)) return;
+        closePanel();
+      });
+    }
+
+    function setTradeMarket(market){
+      TRADE_MARKET = (market === "forex") ? "forex" : "crypto";
+      const b1=document.getElementById("tradeSegCrypto");
+      const b2=document.getElementById("tradeSegForex");
+      if(b1 && b2){
+        b1.classList.toggle("active", TRADE_MARKET==="crypto");
+        b2.classList.toggle("active", TRADE_MARKET==="forex");
+      }
+      mountTradePairs();
+    }
+
+    function tradeIntent(side){
+      const pair = String(document.getElementById("tradePair")?.value || "").trim();
+      const amountRaw = String(document.getElementById("tradeAmount")?.value || "").trim();
+      const amount = Number(amountRaw);
+
+      if(!pair){ alert("Pick a pair first."); return; }
+      if(!amountRaw){ alert("Enter trade size first."); return; }
+      if(!Number.isFinite(amount) || amount <= 0){ alert("Invalid size."); return; }
+
+      __pendingTrade = {
+        market: TRADE_MARKET.toUpperCase(),
+        pair,
+        side,
+        size: amount,
+        ts: new Date().toISOString()
+      };
+
+      openTradeModal();
+    }
+
+    function openTradeModal(){
+      const ov=document.getElementById("tradeModalOverlay");
+      const md=document.getElementById("tradeModal");
+      const det=document.getElementById("tradeModalDetails");
+      if(!ov || !md || !det || !__pendingTrade) return;
+
+      const t=__pendingTrade;
+      const pill = (t.side === "BUY")
+        ? `<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(34,197,94,.18);font-weight:1000;">🟢 BUY</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(248,113,113,.18);font-weight:1000;">🔴 SELL</span>`;
+
+      det.innerHTML = `
+        <div class="tDetail"><div class="k">Market</div><div class="v">${esc(t.market)}</div></div>
+        <div class="tDetail"><div class="k">Pair</div><div class="v">${esc(t.pair)}</div></div>
+        <div class="tDetail"><div class="k">Direction</div><div class="v">${pill}</div></div>
+        <div class="tDetail"><div class="k">Size</div><div class="v">${t.size===null ? "—" : esc(String(t.size))}</div></div>
+      `;
+
+      ov.style.display="block";
+      md.style.display="flex";
+
+      ov.onclick = closeTradeModal;
+      document.addEventListener("keydown", tradeEscClose);
+    }
+
+    function tradeEscClose(e){
+      if(e.key === "Escape") closeTradeModal();
+    }
+
+    function closeTradeModal(){
+      const ov=document.getElementById("tradeModalOverlay");
+      const md=document.getElementById("tradeModal");
+      if(ov) ov.style.display="none";
+      if(md) md.style.display="none";
+      __pendingTrade = null;
+      document.removeEventListener("keydown", tradeEscClose);
+    }
+
+    function confirmTrade(){
+      closeTradeModal();
+      alert("Trade request submitted ✅ (history page coming next)");
+    }
+
+    (function initTrade(){
+      const c=document.getElementById("tradeSegCrypto");
+      const f=document.getElementById("tradeSegForex");
+      if(c) c.addEventListener("click", ()=>setTradeMarket("crypto"));
+      if(f) f.addEventListener("click", ()=>setTradeMarket("forex"));
+      mountTradePairs();
+    })();
+
+
     /* ===== nav ===== */
     function goPlans(){ window.location.href="plans.html"; }
     function goProfile(){ window.location.href="profile.html"; }
@@ -2155,8 +2599,8 @@
     async function loadDashboardIdentity(){
       try{
         let fullName="", avatarUrl="", countryName="";
-        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country, trades_active, trade_percent, trading_percent").eq("email", currentUserEmail).maybeSingle();
-        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; try{ const tp = (row.trade_percent ?? row.trading_percent); const ta = (row.trades_active ?? true); applyTradeSettings(ta, tp); }catch(_e){} }
+        const { data: row, error } = await supabaseClient.from("users").select("full_name, avatar_url, country").eq("email", currentUserEmail).maybeSingle();
+        if(!error && row){ fullName=row.full_name||""; avatarUrl=row.avatar_url||""; countryName=row.country||""; }
 
         const md=(window.COINLUXORA_USER?.user_metadata||{});
         if(!fullName) fullName=md.full_name||"User";
@@ -2796,7 +3240,6 @@
       /* ✅ Loading screen stays 3 seconds longer */
       setTimeout(()=>hideGate(), 3000);
 
-      fetchTradeSettings();
       loadDashboardIdentity();
       loadBalance();
       loadActivePlan();
@@ -2867,6 +3310,37 @@
         window.location.replace("login.html");
       }
     })();
-  </script>
-</body>
-</html>
+  
+
+    // ===== Trading percentage orb (admin-controlled later) =====
+    (function(){
+      const el = document.getElementById("tradePctOrb");
+      const num = document.getElementById("tradePctNum");
+      if(!el || !num) return;
+
+      // Placeholder value (later: fetch from admin-controlled setting)
+      const stored = localStorage.getItem("vgm_trade_pct");
+      const v = stored ? Number(stored) : 25;
+      if(Number.isFinite(v)) num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
+
+      el.addEventListener("click", ()=>{
+        // Cool confirm-style info modal (reuses existing modal if present)
+        try{
+          if(typeof openConfirmModal === "function"){
+            openConfirmModal({
+              title: "Trading Percentage",
+              lines: [
+                { label:"Current", value: num.textContent + "%" },
+                { label:"Note", value: "Admin control will be added later." }
+              ],
+              confirmText: "Close",
+              cancelText: ""
+            });
+          }else{
+            alert("Trading Percentage: " + num.textContent + "%\n(Admin control will be added later.)");
+          }
+        }catch(e){
+          alert("Trading Percentage: " + num.textContent + "%");
+        }
+      });
+    })(
