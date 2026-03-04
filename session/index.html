@@ -996,9 +996,29 @@
         body: { email: enteredEmail, pin }
       });
 
+      // ✅ Better error visibility:
+      // - fnError may contain Edge Function HTTP error details
+      // - fnData may contain { success:false, error, details }
       if(fnError){
-        console.error(fnError);
-        showPopup("err", "Email Failed", "Could not send email. Please try again.");
+        console.error("send-pin fnError:", fnError);
+        const msg = (fnError.message || "").toString();
+        showPopup(
+          "err",
+          "Email Failed",
+          msg ? (`Could not send email.\n\nDetails: ${msg}`) : "Could not send email. Please try again."
+        );
+        isBusy = false;
+        return;
+      }
+
+      if(!fnData || fnData.success !== true){
+        console.error("send-pin fnData:", fnData);
+        const detail = (fnData && (fnData.details || fnData.error)) ? String(fnData.details || fnData.error) : "Unknown error";
+        showPopup(
+          "err",
+          "Email Failed",
+          "Could not send email.\n\nDetails: " + detail
+        );
         isBusy = false;
         return;
       }
