@@ -2915,10 +2915,19 @@ async function createTrade(ev){
 
   if(!confirm(`Add trade for ${user_email}?`)) return;
 
-  const payload = { user_email, market, pair, direction, size, pnl };
+  const user_id = String(userObj?.id || userObj?.user_id || userObj?.uid || "").trim();
+  if(!user_id){
+    // Best-effort guard: history page filters by user_id, so we MUST have it.
+    return modalShow("Missing user_id", "I couldn't find this user's ID in the loaded Users list. Click Users → Refresh, then try again.");
+  }
+
+  // Default status: open (admin can close later when you add settlement tools)
+  const status = "open";
+
+  const payload = { user_id, user_email, market, pair, direction, size, pnl, status };
 
   // ✅ Expected edge action:
-  // - trades_admin_create -> inserts a trade row for the user
+  // - trades_admin_create -> inserts a trade row for the user (must store user_id so trade-history.html can read it)
   const res = await apiCall("trades_admin_create", payload);
 
   if(res && res.success === false){
