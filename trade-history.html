@@ -703,6 +703,8 @@
       try{
         const { data: sessionData } = await sb.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
+
+        // If no session token, don't block UI.
         if(!accessToken){
           TRADES_ACTIVE = true;
           showBlocked(false);
@@ -719,8 +721,17 @@
           body: JSON.stringify({})
         });
 
+        // If the function isn't deployed yet / errors, default ON (do not block history)
+        if(!r.ok){
+          TRADES_ACTIVE = true;
+          showBlocked(false);
+          return true;
+        }
+
         const out = await r.json().catch(()=> ({}));
         const active = !!(out?.data?.trades_active);
+
+        // Banner reflects the setting, but we still render trades.
         TRADES_ACTIVE = active;
         showBlocked(!active);
         return active;
@@ -799,13 +810,11 @@
         const st = (r.status || "").toLowerCase();
         const pnl = Number(r.pnl);
 
-        if(TAB === "open"){
-  if(!(st === "open" || st === "pending" || st === "approved" || st === "active")) return false;
-}
-else if(TAB === "closed"){
-  if(!(st === "closed" || st === "completed" || st === "rejected")) return false;
-}
-        
+        if(TAB === "open"){ if(!(st === "open" || st === "pending" || st === "approved" || st === "active")) return false; }
+        else if(TAB === "closed"){ if(!(st === "closed" || st === "completed" || st === "rejected")) return false; }
+        else if(TAB === "win"){ if(!(isFinite(pnl) && pnl > 0)) return false; }
+        else if(TAB === "loss"){ if(!(isFinite(pnl) && pnl < 0)) return false; }
+
         return true;
       });
 
@@ -815,11 +824,10 @@ else if(TAB === "closed"){
       const hint = document.getElementById("hintLine");
       hint.innerHTML = `<span>Showing trades (${VIEW.length})</span> <span class="check">✓</span>`;
 
+      // If trades are not active, we still show the user's submitted trades (e.g., pending)
+      // but we keep the banner visible as an informational notice.
       if(!TRADES_ACTIVE){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="6"><div class="emptyRow">Trades are not active for this account.</div></td>`;
-        tb.appendChild(tr);
-        return;
+        // banner is handled by showBlocked(true)
       }
 
       if(!VIEW.length){
@@ -874,6 +882,8 @@ else if(TAB === "closed"){
     }
 
     async function refresh(){
+      await loadAdminNotice();
+
       await loadAdminNotice();
 
       await checkTradesActive();
