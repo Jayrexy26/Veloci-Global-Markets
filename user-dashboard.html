@@ -2457,10 +2457,15 @@
           })
         });
 
-        const out = await r.json().catch(()=> ({}));
+        const raw = await r.text().catch(()=> "");
+        let out = {};
+        try{ out = raw ? JSON.parse(raw) : {}; }catch(_e){ out = {}; }
 
         if(!r.ok || out?.success === false){
-          const msg = out?.error || out?.details || "Could not submit trade request.";
+          const baseMsg = out?.error || out?.details || out?.message || "";
+          const hint = baseMsg ? baseMsg : (raw ? raw.slice(0,300) : "Could not submit trade request.");
+          const msg = `Trade request failed (HTTP ${r.status}). ${hint}`;
+          console.error("trade-request failed:", { status: r.status, out, raw });
           closeTradeModal();
           alert(msg);
           return;
@@ -2469,7 +2474,7 @@
         closeTradeModal();
         alert("Trade request submitted ✅");
         // go to history page so user sees it
-        window.location.href = "history.html";
+        window.location.href = "trade-history.html";
       }catch(e){
         closeTradeModal();
         alert("Could not submit trade request.");
