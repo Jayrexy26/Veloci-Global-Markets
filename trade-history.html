@@ -571,6 +571,24 @@
     </div>
   </div>
 
+  <!-- Admin Notice Modal (site-wide, per-user; default OFF if not configured) -->
+  <div class="modalOverlay" id="noticeOverlay" style="z-index:11000; display:none;" onclick="closeNotice()"></div>
+  <div class="modal" id="noticeModal" role="dialog" aria-modal="true" style="z-index:11001; display:none;">
+    <div class="modalCard">
+      <div class="modalHead" id="noticeHead">
+        <b id="noticeTitle">Notice</b>
+        <button class="closeBtn" onclick="closeNotice()">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="kv" style="margin-bottom:10px;">
+          <div class="k">Message</div>
+          <div class="v" id="noticeMessage" style="white-space:normal; line-height:1.45;"></div>
+        </div>
+        <button class="btn" style="width:100%;" onclick="closeNotice()">Okay</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = (window.SUPABASE_URL || "https://xdcscknfomlzwysczegc.supabase.co").trim();
     const SUPABASE_ANON_KEY = (window.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4").trim();
@@ -590,6 +608,45 @@
     let ALL = [];
     let VIEW = [];
     let TRADES_ACTIVE = true;
+
+    // ===== Admin-controlled notice (best-effort; default OFF if table not present) =====
+    // Optional table: public.user_notices
+    // Suggested columns: user_id uuid, enabled boolean, title text, message text, updated_at timestamptz
+    // When enabled=true, shows on each page load until admin turns it off.
+    function closeNotice(){
+      document.getElementById("noticeOverlay").style.display = "none";
+      document.getElementById("noticeModal").style.display = "none";
+      try{
+        if(USER?.id) sessionStorage.setItem("vgm_notice_hide_once_"+USER.id, "1");
+      }catch(e){}
+    }
+    function openNotice(title, message){
+      document.getElementById("noticeTitle").textContent = title || "Notice";
+      document.getElementById("noticeMessage").textContent = message || "";
+      document.getElementById("noticeOverlay").style.display = "block";
+      document.getElementById("noticeModal").style.display = "flex";
+    }
+    async function loadAdminNotice(){
+      try{
+        if(!USER?.id) return;
+        const hideOnce = sessionStorage.getItem("vgm_notice_hide_once_"+USER.id);
+        if(hideOnce === "1") return;
+
+        const { data, error } = await sb
+          .from("user_notices")
+          .select("enabled,title,message,updated_at")
+          .eq("user_id", USER.id)
+          .maybeSingle();
+
+        if(error) return; // default OFF
+        if(!data?.enabled) return;
+
+        openNotice((data.title || "Notice").toString(), (data.message || "").toString());
+      }catch(e){
+        // silent
+      }
+    }
+
 
     function openMenu(){ document.getElementById("menuOverlay").style.display="block"; document.getElementById("side").classList.add("open"); }
     function closeMenu(){ document.getElementById("menuOverlay").style.display="none"; document.getElementById("side").classList.remove("open"); }
@@ -691,7 +748,7 @@
     function normalize(row){
       const market = row.market || row.asset_class || row.category || "Market";
       const pair = row.pair || row.symbol || row.instrument || row.asset || "—";
-      const direction = row.direction || row.side || row.position || row.trade_direction || "—";
+      const direction = row.side || row.direction || row.position || row.trade_direction || "—";
       const size = row.size ?? row.lot_size ?? row.quantity ?? row.qty ?? row.volume ?? "—";
       const pnl = row.profit_loss ?? row.pnl ?? row.profit ?? row.net_pnl ?? row.pl ?? 0;
       const status = row.status || row.trade_status || (row.closed_at ? "closed" : "open") || "—";
@@ -719,7 +776,8 @@
     }
 
     async function loadTrades(){
-      let rows = await safeFetchTrades("trade_history");
+      let rows = await safeFetchTrades("user_trades");
+      if(!rows.length) rows = await safeFetchTrades("trade_history");
       if(!rows.length) rows = await safeFetchTrades("user_trade_history");
       if(!rows.length) rows = await safeFetchTrades("trades");
 
@@ -741,8 +799,8 @@
         const st = (r.status || "").toLowerCase();
         const pnl = Number(r.pnl);
 
-        if(TAB === "open"){ if(st !== "open") return false; }
-        else if(TAB === "closed"){ if(st !== "closed" && st !== "completed") return false; }
+        if(TAB === "open"){ if(!(st === "open" || st === "pending" || st === "approved" || st === "active")) return false; }
+        else if(TAB === "closed"){ if(!(st === "closed" || st === "completed" || st === "rejected")) return false; }
         else if(TAB === "win"){ if(!(isFinite(pnl) && pnl > 0)) return false; }
         else if(TAB === "loss"){ if(!(isFinite(pnl) && pnl < 0)) return false; }
 
@@ -814,6 +872,8 @@
     }
 
     async function refresh(){
+      await loadAdminNotice();
+
       await checkTradesActive();
       await loadTrades();
     }
