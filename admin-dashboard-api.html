@@ -1156,14 +1156,14 @@
               </div>
 
               <div class="small" style="margin-bottom:10px">
-                Tip: Set a user’s <strong>trade % allocation</strong> in the Allocation panel below, then add trade history entries anytime.
+                Set a user's trade controls here, then add trade history entries anytime.
               </div>
 
 
               <div class="card" style="margin:12px 0 14px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
-                <div class="cardTitle" style="margin-bottom:6px;">🎯 Trade Percentage Allocation</div>
+                <div class="cardTitle" style="margin-bottom:6px;">🎯 Trade Controls</div>
                 <div class="small" style="margin-bottom:10px;">
-                  This controls the <strong>trade %</strong> shown on the user dashboard. Enter a number like <span class="mono">5</span> for 5%.
+                  This controls the <strong>trades enabled toggle</strong> and <strong>trade %</strong> shown on the user dashboard. Enter a number like <span class="mono">5</span> for 5%.
                 </div>
 
                 <form onsubmit="saveTradeAllocation(event)">
@@ -1865,8 +1865,6 @@ function renderUsers(data){
     const uid = esc(u.id||"");
     const email = String(u.email||"").trim().toLowerCase();
 
-    const tradeEnabled = !!(u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled ?? false);
-
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(email)}</td>
@@ -1879,21 +1877,12 @@ function renderUsers(data){
           </select>
         </td>
         <td>
-          <div class="rowTools wrap" style="justify-content:flex-start">
-            <label class="tiny" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-              <input type="checkbox" id="tradeon-${uid}" ${tradeEnabled ? "checked" : ""} style="width:18px;height:18px;accent-color: rgba(56,189,248,1);">
-              <span>Enabled</span>
-            </label>
-          </div>
-        </td>
-        <td>
           <div class="rowTools">
             <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
             <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
             <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
-            <button class="btnGhost" onclick="saveTradeSettings(\'${esc(email)}\',\'${uid}\')">Save Trades</button>
-            <button class="btnPrimary" onclick="openTradesForUser(\'${esc(email)}\')">Trades</button>
+            <button class="btnPrimary" onclick="openTradesForUser('${esc(email)}')">Trades</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
          </td>
@@ -1902,7 +1891,6 @@ function renderUsers(data){
   });
 
 }
-
 
 function getCryptoBalanceForUser(userObj, assetKey){
   const ak = String(assetKey||"").trim().toUpperCase();
