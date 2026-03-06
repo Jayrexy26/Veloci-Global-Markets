@@ -1147,8 +1147,8 @@
             <section id="view-trades" class="card hidden">
               <div class="cardHead">
                 <div>
-                  <div class="cardTitle">📒 Trades • History Allocation</div>
-                  <div class="small" id="tradesStatus">Assign trade history to users (only effective when Trades is enabled for that user).</div>
+                  <div class="cardTitle">📒 Trades • Trade Percentage Allocation</div>
+                  <div class="small" id="tradesStatus">Set trade percentage allocation and manage trade history for users.</div>
                 </div>
                 <div class="rowTools">
                   <button class="btnGhost" onclick="safeLoad(loadTrades)">Refresh</button>
@@ -1182,7 +1182,7 @@
                       <div class="tiny">Enable/disable trades for the selected user.</div>
                     </div>
 
-                    <button class="btnOk" type="submit">Save Trades</button>
+                    <button class="btnOk" type="submit">Save Allocation</button>
                   </div>
                 </form>
               </div>
@@ -1882,7 +1882,7 @@ function renderUsers(data){
             <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
             <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
-            <button class="btnPrimary" onclick="openTradesForUser('${esc(email)}')">Trades</button>
+            <button class="btnPrimary" onclick="openTradesForUser(\'${esc(email)}\')">Trades</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
          </td>
@@ -2868,6 +2868,35 @@ async function saveTradeAllocation(ev){
 
   feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
   modalShow("Saved", "Trade allocation updated for this user.");
+  safeLoad(loadUsers);
+}
+
+async function saveTradeSettings(email, uid){
+  const onEl = document.getElementById("tradeon-" + uid);
+  const trades_active = !!(onEl && onEl.checked);
+
+  // % allocation is now controlled in Trades → Allocation panel.
+  // When saving from Users view, keep the existing stored %.
+  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === String(email||"").trim().toLowerCase());
+  const existingRaw = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? 0) : 0;
+  const trade_percent = Number(existingRaw || 0);
+
+  if(!confirm(`Save trade settings for ${email}?`)) return;
+
+  const res = await apiCall("user_trade_settings_update", {
+    user_id: uid,
+    user_email: email,
+    trades_active,
+    trade_percent
+  });
+
+  if(res && res.success === false){
+    modalShow("Trade settings error", res.error || "Unable to update trade settings. Make sure your edge function supports action: user_trade_settings_update");
+    return;
+  }
+
+  feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
+  modalShow("Saved", "Trade controls updated for this user.");
   safeLoad(loadUsers);
 }
 
