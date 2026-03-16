@@ -296,6 +296,7 @@
     #appView[data-view="deposits"] .grid,
     #appView[data-view="withdrawals"] .grid,
     #appView[data-view="trades"] .grid,
+    #appView[data-view="notification"] .grid,
     #appView[data-view="kyc"] .grid,
     #appView[data-view="wallets"] .grid,
     #appView[data-view="walletlinks"] .grid{
@@ -757,6 +758,11 @@
             <div class="countPill" id="cnt-trades">0</div>
           </div>
 
+          <div class="navBtn" id="nav-notification" onclick="switchView('notification')">
+            <div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div>
+            <div class="countPill" id="cnt-notification">0</div>
+          </div>
+
 <div class="navBtn" id="nav-support" onclick="switchView('support')">
             <div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div>
             <div class="countPill" id="cnt-support">0</div>
@@ -840,6 +846,7 @@
                   <span class="chip">Plans: <span class="mono" id="ov-plans">0</span></span>
                   <span class="chip">Wallets: <span class="mono" id="ov-wallets">0</span></span>
                   <span class="chip">Wallet Links: <span class="mono" id="ov-walletlinks">0</span></span>
+                  <span class="chip">Notifications: <span class="mono" id="ov-notification">0</span></span>
                   <span class="chip">Tickets: <span class="mono" id="ov-support">0</span></span>
                   <span class="chip">KYC: <span class="mono" id="ov-kyc">0</span></span>
                 </div>
@@ -1051,7 +1058,41 @@
               </div>
             </section>
 
-            <section id="view-support" class="card hidden">
+            
+            <section id="view-notification" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">🔔 Notification</div>
+                  <div class="small" id="notificationStatus">Not loaded.</div>
+                </div>
+                <div class="rowTools">
+                  <button class="btnGhost" onclick="safeLoad(loadNotifications)">Refresh</button>
+                </div>
+              </div>
+
+              <div class="small" style="margin-bottom:10px">
+                This controls the site-wide popup modal for each user. When enabled, the notification will appear on the user dashboard and any page that uses the same notification reader.
+              </div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:320px">User</th>
+                        <th style="width:220px">Title</th>
+                        <th style="width:520px">Message</th>
+                        <th style="width:160px">Enable Toggle</th>
+                        <th style="width:220px">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="notificationRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+<section id="view-support" class="card hidden">
               <div class="cardHead">
                 <div>
                   <div class="cardTitle">🎫 Support</div>
@@ -1305,7 +1346,8 @@ const CACHE = {
   wallets: [],
   kyc: [],
   wallet_links: [],
-  trades: []
+  trades: [],
+  notifications: []
 };
 
 const USERNAME_MAP = {};
@@ -1424,7 +1466,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","cryptoops","plans","trades","wallets","walletlinks","support","deposits","withdrawals","kyc"];
+  const views = ["overview","users","cryptoops","plans","trades","notification","wallets","walletlinks","support","deposits","withdrawals","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1724,6 +1766,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "users") renderUsers(CACHE.users);
   if(ACTIVE_VIEW === "cryptoops") renderCryptoOps(CACHE.users);
   if(ACTIVE_VIEW === "trades") renderTradeSettingsTable();
+  if(ACTIVE_VIEW === "notification") renderNotifications();
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
@@ -1759,6 +1802,7 @@ async function ping(){
 
 function refreshAll(){
   safeLoad(loadUsers);
+  safeLoad(loadNotifications);
   safeLoad(loadPlans);
   safeLoad(loadWallets);
   safeLoad(loadWalletLinks);
@@ -1780,6 +1824,7 @@ function renderOverview(){
   document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
   document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
   document.getElementById("ov-walletlinks").textContent = String(CACHE.wallet_links.length);
+  document.getElementById("ov-notification").textContent = String((CACHE.notifications||[]).filter(n => !!(n.enabled ?? n.is_active ?? n.active)).length);
   document.getElementById("ov-support").textContent = String(CACHE.support.length);
   document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
 
@@ -1788,6 +1833,7 @@ function renderOverview(){
   document.getElementById("cnt-wallets").textContent = String(CACHE.wallets.filter(matchSearch).length);
   document.getElementById("cnt-walletlinks").textContent = String(CACHE.wallet_links.filter(matchSearch).length);
   document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
+  document.getElementById("cnt-notification").textContent = String(CACHE.users.filter(matchSearch).length);
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
   document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
   document.getElementById("cnt-cryptoops").textContent = String(CACHE.users.filter(matchSearch).length);
@@ -1841,6 +1887,7 @@ async function loadUsers(){
   renderOverview();
   populateTradeUserSelect();
   renderTradeSettingsTable();
+  renderNotifications();
   onSearchInput();
 }
 
@@ -2762,6 +2809,130 @@ function attachScrollHandlers(){
   window.addEventListener("scroll", ()=>handleScroll(window.scrollY || 0), { passive:true });
 }
 
+
+function renderNotifications(){
+  const status = document.getElementById("notificationStatus");
+  const tbody = document.getElementById("notificationRows");
+  if(!tbody || !status) return;
+
+  const rows = (CACHE.users||[]).filter(matchSearch).slice().sort((a,b)=>{
+    const ea = String(a.email||"").toLowerCase();
+    const eb = String(b.email||"").toLowerCase();
+    return ea.localeCompare(eb);
+  });
+
+  if(rows.length === 0){
+    status.textContent = "No users loaded.";
+    tbody.innerHTML = `<tr><td colspan="5" class="small">No users found.</td></tr>`;
+    return;
+  }
+
+  const noticeMap = new Map();
+  (CACHE.notifications||[]).forEach(n=>{
+    const keyId = String(n.user_id || "").trim();
+    const keyEmail = String(n.user_email || "").trim().toLowerCase();
+    if(keyId && !noticeMap.has(keyId)) noticeMap.set(keyId, n);
+    if(keyEmail && !noticeMap.has(keyEmail)) noticeMap.set(keyEmail, n);
+  });
+
+  status.textContent = `Loaded ${rows.length} user(s) ✅ Manage popup notice per user.`;
+  tbody.innerHTML = rows.map(u=>{
+    const uid = esc(u.id||u.user_id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    const notice = noticeMap.get(String(u.id||u.user_id||"").trim()) || noticeMap.get(email) || {};
+    const enabled = !!(notice.enabled ?? notice.is_active ?? notice.active);
+    const title = String(notice.title ?? "Notification");
+    const message = String(notice.message ?? notice.body ?? "");
+    return `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><input id="notif-title-${uid}" maxlength="120" value="${esc(title)}" placeholder="Notification"></td>
+        <td><textarea id="notif-msg-${uid}" placeholder="Enter popup message..." style="min-height:90px;">${esc(message)}</textarea></td>
+        <td>
+          <label class="tiny" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="notif-on-${uid}" ${enabled ? 'checked' : ''} style="width:18px;height:18px;accent-color: rgba(56,189,248,1);">
+            <span>Enabled</span>
+          </label>
+        </td>
+        <td>
+          <div class="rowTools wrap">
+            <button class="btnOk" onclick="saveNotificationRow('${esc(email)}','${uid}')">Save</button>
+            <button class="btnErr" onclick="clearNotificationRow('${esc(email)}','${uid}')">Clear</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function loadNotifications(){
+  const st = document.getElementById("notificationStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const res = await apiCall("notifications_admin_list", {});
+  CACHE.notifications = Array.isArray(res.data) ? res.data : [];
+  renderNotifications();
+  renderOverview();
+  if(st) st.textContent = `Loaded ${CACHE.notifications.length} notification row(s) ✅`;
+  feed("notifications_admin_list loaded (" + CACHE.notifications.length + ")");
+}
+
+async function saveNotificationRow(email, uid){
+  const titleEl = document.getElementById("notif-title-" + uid);
+  const msgEl = document.getElementById("notif-msg-" + uid);
+  const onEl = document.getElementById("notif-on-" + uid);
+
+  if(!uid) return modalShow("User not loaded", "Refresh users first, then try again.");
+  if(!titleEl || !msgEl) return modalShow("Missing input", "Notification fields are missing.");
+
+  const title = String(titleEl.value || "").trim() || "Notification";
+  const message = String(msgEl.value || "").trim();
+  const enabled = !!(onEl && onEl.checked);
+
+  if(enabled && !message){
+    return modalShow("Missing message", "Enter a notification message before enabling it.");
+  }
+
+  if(!confirm(`Save notification for ${email}?`)) return;
+
+  const res = await apiCall("notification_save", {
+    user_id: uid,
+    user_email: email,
+    enabled,
+    title,
+    message
+  });
+
+  if(res && res.success === false){
+    modalShow("Notification error", res.error || "Unable to save notification.");
+    return;
+  }
+
+  feed(`notification_save -> ${email} (enabled=${enabled})`);
+  modalShow("Saved", "Notification updated for this user.");
+  await safeLoad(loadNotifications);
+}
+
+async function clearNotificationRow(email, uid){
+  if(!uid) return modalShow("User not loaded", "Refresh users first, then try again.");
+  if(!confirm(`Clear notification for ${email}?`)) return;
+
+  const res = await apiCall("notification_clear", {
+    user_id: uid,
+    user_email: email
+  });
+
+  if(res && res.success === false){
+    modalShow("Notification error", res.error || "Unable to clear notification.");
+    return;
+  }
+
+  feed(`notification_clear -> ${email}`);
+  modalShow("Cleared", "Notification disabled and cleared for this user.");
+  await safeLoad(loadNotifications);
+}
+
+
 /* Boot */
 document.getElementById("appView").style.display = "none";
 document.getElementById("loginView").style.display = "grid";
@@ -3017,7 +3188,7 @@ async function deleteTrade(id){
 }
 
 
-dlers();
+attachScrollHandlers();
 </script>
 
 </body>
