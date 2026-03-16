@@ -883,7 +883,9 @@
                         <th style="width:160px">Set Balance</th>
                         <th style="width:140px">Amount</th>
                         <th style="width:260px">Plan Upgrade</th>
-                        <th style="width:430px">Actions</th>
+                        <th style="width:150px">Trade %</th>
+                        <th style="width:140px">Trades Enabled</th>
+                        <th style="width:520px">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="userRows"></tbody>
@@ -1162,29 +1164,9 @@
 
               <div class="card" style="margin:12px 0 14px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
                 <div class="cardTitle" style="margin-bottom:6px;">🎯 Trade Controls</div>
-                <div class="small" style="margin-bottom:10px;">
-                  This controls the <strong>trades enabled toggle</strong> and <strong>trade %</strong> shown on the user dashboard. Enter a number like <span class="mono">5</span> for 5%.
+                <div class="small" style="margin-bottom:0;">
+                  Trade % and the enable toggle now live directly inside the <strong>Users</strong> table. Update them there and click <strong>Save Trades</strong> on that row. The dashboard orb reads the same saved values.
                 </div>
-
-                <form onsubmit="saveTradeAllocation(event)">
-                  <div class="inline">
-                    <select id="tradeAllocUser" class="grow" required onchange="onTradeAllocUserChange()">
-                      <option value="">Select user…</option>
-                    </select>
-
-                    <input id="tradeAllocPercent" class="w200" type="number" step="0.01" min="0" max="100" placeholder="Trade % (e.g. 5)" required>
-
-                    <div class="grow" style="min-width:220px;">
-                      <label class="tiny" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                        <input type="checkbox" id="tradeAllocEnabled" style="width:18px;height:18px;accent-color: rgba(56,189,248,1);">
-                        <span>Trades Enabled</span>
-                      </label>
-                      <div class="tiny">Enable/disable trades for the selected user.</div>
-                    </div>
-
-                    <button class="btnOk" type="submit">Save Trades</button>
-                  </div>
-                </form>
               </div>
 
               <form onsubmit="createTrade(event)">
@@ -1864,6 +1846,12 @@ function renderUsers(data){
   filtered.forEach(u=>{
     const uid = esc(u.id||"");
     const email = String(u.email||"").trim().toLowerCase();
+    const tradeEnabled = !!(u && (u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled));
+    const rawTradePercent = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? "") : "";
+    const parsedTradePercent = (rawTradePercent === "" || rawTradePercent === null || rawTradePercent === undefined)
+      ? ""
+      : Number(rawTradePercent);
+    const tradePercentValue = (parsedTradePercent === "" || !isFinite(parsedTradePercent)) ? "" : parsedTradePercent;
 
     tbody.innerHTML += `
       <tr>
@@ -1877,11 +1865,21 @@ function renderUsers(data){
           </select>
         </td>
         <td>
-          <div class="rowTools">
+          <input type="number" step="0.01" min="0" max="100" id="tradepct-${uid}" placeholder="5" value="${tradePercentValue === "" ? "" : esc(String(tradePercentValue))}">
+        </td>
+        <td>
+          <label class="tiny" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;min-width:120px;">
+            <input type="checkbox" id="tradeon-${uid}" style="width:18px;height:18px;accent-color: rgba(56,189,248,1);" ${tradeEnabled ? "checked" : ""}>
+            <span>Enabled</span>
+          </label>
+        </td>
+        <td>
+          <div class="rowTools wrap">
             <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
             <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
             <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
             <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
+            <button class="btnPrimary" onclick="saveTradeSettings('${esc(email)}','${uid}')">Save Trades</button>
             <button class="btnPrimary" onclick="openTradesForUser('${esc(email)}')">Trades</button>
             <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
           </div>
@@ -2805,80 +2803,21 @@ function populateTradeUserSelect(){
   };
 
   fill("tradeUser");        // used for Add Trade (history entry)
-  fill("tradeAllocUser");   // used for % allocation control
 }
 
 
 
-function onTradeAllocUserChange(){
-  const email = String(document.getElementById("tradeAllocUser")?.value || "").trim().toLowerCase();
-  const pctEl = document.getElementById("tradeAllocPercent");
-  const enEl = document.getElementById("tradeAllocEnabled");
+async function saveTradeSettings(email, uid){
+  const pctEl = document.getElementById("tradepct-" + uid);
+  const onEl = document.getElementById("tradeon-" + uid);
+  const trades_active = !!(onEl && onEl.checked);
 
-  if(!pctEl || !enEl) return;
-
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === email);
-  const tradeEnabled = !!(u && (u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled));
-  const raw = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? "") : "";
-  const n = (raw === "" || raw === null || raw === undefined) ? "" : Number(raw);
-  const pct = (n === "" || !isFinite(n)) ? "" : n;
-
-  enEl.checked = tradeEnabled;
-  pctEl.value = (pct === "" ? "" : String(pct));
-}
-
-async function saveTradeAllocation(ev){
-  ev.preventDefault();
-
-  const email = String(document.getElementById("tradeAllocUser")?.value || "").trim().toLowerCase();
-  const pctEl = document.getElementById("tradeAllocPercent");
-  const enEl = document.getElementById("tradeAllocEnabled");
-
-  if(!email) return modalShow("Missing user", "Select a user.");
-  if(!pctEl) return modalShow("Missing input", "Trade % input is missing.");
+  if(!pctEl) return modalShow("Missing input", "Trade % input is missing for this user row.");
 
   const trade_percent = Number(pctEl.value || 0);
   if(!isFinite(trade_percent) || trade_percent < 0 || trade_percent > 100){
     return modalShow("Invalid %", "Trade % must be a number between 0 and 100.");
   }
-
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === email);
-  const uid = String(u?.id || u?.user_id || "");
-
-  const trades_active = !!(enEl && enEl.checked);
-
-  if(!uid){
-    return modalShow("User not loaded", "Refresh Users first, then try again.");
-  }
-
-  if(!confirm(`Save trade allocation for ${email}?`)) return;
-
-  const res = await apiCall("user_trade_settings_update", {
-    user_id: uid,
-    user_email: email,
-    trades_active,
-    trade_percent
-  });
-
-  if(res && res.success === false){
-    modalShow("Trade allocation error", res.error || "Unable to update trade allocation. Make sure your edge function supports action: user_trade_settings_update");
-    return;
-  }
-
-  feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
-  modalShow("Saved", "Trade allocation updated for this user.");
-  safeLoad(loadUsers);
-}
-
-async function saveTradeSettings(email, uid){
-  const onEl = document.getElementById("tradeon-" + uid);
-  const trades_active = !!(onEl && onEl.checked);
-
-  // % allocation is now controlled in Trades → Allocation panel.
-  // When saving from Users view, keep the existing stored %.
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === String(email||"").trim().toLowerCase());
-  const existingRaw = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? 0) : 0;
-  const trade_percent = Number(existingRaw || 0);
 
   if(!confirm(`Save trade settings for ${email}?`)) return;
 
@@ -2894,8 +2833,14 @@ async function saveTradeSettings(email, uid){
     return;
   }
 
+  const userIndex = (CACHE.users||[]).findIndex(x => String(x.email||"").trim().toLowerCase() === String(email||"").trim().toLowerCase());
+  if(userIndex >= 0){
+    CACHE.users[userIndex].trades_active = trades_active;
+    CACHE.users[userIndex].trade_percent = trade_percent;
+  }
+
   feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
-  modalShow("Saved", "Trade controls updated for this user.");
+  modalShow("Saved", "Trade controls updated for this user. The dashboard orb now uses this saved %.");
   safeLoad(loadUsers);
 }
 
