@@ -3365,37 +3365,59 @@
       if(ov) ov.style.display = "none";
     }
 
-    window.closeSiteNotice = closeSiteNotice;
-
     async function loadSiteNotification(forceOpen=false){
       try{
-        const ov = document.getElementById("siteNoticeOverlay");
-        const ttl = document.getElementById("siteNoticeTitle");
-        const body = document.getElementById("siteNoticeBody");
-        if(!ov || !ttl || !body) return false;
+        let data = null;
 
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-        if(!accessToken) return false;
+        if(currentUserId){
+          const byId = await supabaseClient
+            .from("user_notices")
+            .select("user_id,user_email,enabled,title,message,updated_at,created_at")
+            .eq("user_id", currentUserId)
+            .order("updated_at", { ascending:false })
+            .limit(1)
+            .maybeSingle();
 
-        const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`,
-            "apikey": SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({})
-        });
+          if(!byId.error && byId.data) data = byId.data;
+        }
 
-        const out = await r.json().catch(()=> ({}));
-        if(!r.ok || out?.success === false) return false;
+        if(!data && currentUserEmail){
+          const byEmail = await supabaseClient
+            .from("user_notices")
+            .select("user_id,user_email,enabled,title,message,updated_at,created_at")
+            .ilike("user_email", String(currentUserEmail||"").trim().toLowerCase())
+            .order("updated_at", { ascending:false })
+            .limit(1)
+            .maybeSingle();
 
-        const data = out?.data || {};
-        const enabled = !!(data.enabled ?? data.is_active ?? data.active);
-        const title = String(data.title || "Notification").trim();
-        const message = String(data.message || data.body || "").trim();
-        const updatedAt = String(data.updated_at || data.created_at || "");
+          if(!byEmail.error && byEmail.data) data = byEmail.data;
+        }
+
+        if(!data){
+          const { data: sessionData } = await supabaseClient.auth.getSession();
+          const accessToken = sessionData?.session?.access_token;
+          if(accessToken){
+            const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`,
+                "apikey": SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({})
+            });
+
+            const out = await r.json().catch(()=> ({}));
+            if(r.ok && out?.success !== false){
+              data = out?.data || null;
+            }
+          }
+        }
+
+        const enabled = !!(data?.enabled ?? data?.is_active ?? data?.active);
+        const title = String(data?.title || "Notification").trim();
+        const message = String(data?.message || data?.body || "").trim();
+        const updatedAt = String(data?.updated_at || data?.created_at || "");
         const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
 
         if(!enabled || !message){
@@ -3404,7 +3426,7 @@
           return false;
         }
 
-        if(forceOpen || __siteNoticeShownKey !== noticeKey || ov.style.display !== "flex"){
+        if(forceOpen || __siteNoticeShownKey !== noticeKey){
           __siteNoticeShownKey = noticeKey;
           showSiteNotice(title, message);
         }
@@ -3413,8 +3435,6 @@
         return false;
       }
     }
-
-    window.loadSiteNotification = loadSiteNotification;
 
     function startSiteNotificationAutoRefresh(){
       if(__siteNoticeRefreshTimer) clearInterval(__siteNoticeRefreshTimer);
@@ -3514,28 +3534,21 @@
       }
     }
 
-    async function initWithUser(user){
+    function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
 
       setGreeting();
       startClock();
-      await loadTradeSettings();
+      loadTradeSettings();
       startTradeSettingsAutoRefresh();
-
-      await loadSiteNotification(true);
+      loadSiteNotification(true);
       startSiteNotificationAutoRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
       /* ✅ Loading screen stays 3 seconds longer */
-      setTimeout(()=>{
-        hideGate();
-        loadSiteNotification(true);
-      }, 3000);
-
-      setTimeout(()=>{ loadSiteNotification(true); }, 1200);
-      setTimeout(()=>{ loadSiteNotification(true); }, 4500);
+      setTimeout(()=>hideGate(), 3000);
 
       loadDashboardIdentity();
       loadBalance();
@@ -3601,7 +3614,7 @@
         }
 
         window.COINLUXORA_USER=user;
-        await initWithUser(user);
+        initWithUser(user);
       }catch(e){
         hideGate();
         window.location.replace("login.html");
