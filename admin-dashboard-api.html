@@ -1156,26 +1156,24 @@
               </div>
 
               <div class="small" style="margin-bottom:10px">
-                Update each user's trade % and enable toggle here, then add trade history entries anytime.
+                Set a user's trade controls here, then add trade history entries anytime.
               </div>
 
-              <div class="card" style="margin:12px 0 14px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
-                <div class="cardHead" style="padding:0 0 10px 0;border:none;background:none;min-height:auto;">
-                  <div>
-                    <div class="cardTitle">🎯 User Trade Settings</div>
-                    <div class="small" id="tradeSettingsStatus">Not loaded.</div>
-                  </div>
-                </div>
 
+              <div class="card" style="margin:12px 0 14px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
+                <div class="cardTitle" style="margin-bottom:6px;">🎯 User Trade Settings</div>
+                <div class="small" style="margin-bottom:10px;">
+                  This controls the <strong>trades enabled toggle</strong> and <strong>trade %</strong> shown on the user dashboard. Enter a number like <span class="mono">5</span> for 5%.
+                </div>
                 <div class="tableWrap">
                   <div class="tableScroll">
                     <table>
                       <thead>
                         <tr>
                           <th style="width:360px">User</th>
-                          <th style="width:180px">Trade %</th>
-                          <th style="width:180px">Trades Enabled</th>
-                          <th style="width:180px">Save</th>
+                          <th style="width:160px">Trade %</th>
+                          <th style="width:180px">Enable Toggle</th>
+                          <th style="width:160px">Save</th>
                         </tr>
                       </thead>
                       <tbody id="tradeSettingsRows"></tbody>
@@ -1725,6 +1723,7 @@ function refreshVisibleOnly(){
   renderOverview();
   if(ACTIVE_VIEW === "users") renderUsers(CACHE.users);
   if(ACTIVE_VIEW === "cryptoops") renderCryptoOps(CACHE.users);
+  if(ACTIVE_VIEW === "trades") renderTradeSettingsTable();
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
@@ -1841,7 +1840,7 @@ async function loadUsers(){
   feed("users_list loaded (" + CACHE.users.length + ")");
   renderOverview();
   populateTradeUserSelect();
-  renderTradeSettingsTable(CACHE.users);
+  renderTradeSettingsTable();
   onSearchInput();
 }
 
@@ -2780,102 +2779,86 @@ function populateTradeUserSelect(){
     return ea.localeCompare(eb);
   });
 
-  const makeOptions = ()=>{
-    return ['<option value="">Select user…</option>'].concat(users.map(u=>{
-      const email = String(u.email||"").trim().toLowerCase();
-      const name =
-        String(u.username||u.full_name||u.name||u.display_name||"").trim() ||
-        USERNAME_MAP[email] ||
-        inferUsernameFromEmail(email) ||
-        "User";
-      const label = esc(name) + " • " + esc(email);
-      return `<option value="${esc(email)}">${label}</option>`;
-    }));
-  };
+  const sel = document.getElementById("tradeUser");
+  if(!sel) return;
 
-  const fill = (id)=>{
-    const sel = document.getElementById(id);
-    if(!sel) return;
-    const current = sel.value || "";
-    sel.innerHTML = makeOptions().join("");
-    if(current) sel.value = current;
-  };
-
-  fill("tradeUser");        // used for Add Trade (history entry)
-  fill("tradeAllocUser");   // used for % allocation control
+  const current = sel.value || "";
+  sel.innerHTML = ['<option value="">Select user…</option>'].concat(users.map(u=>{
+    const email = String(u.email||"").trim().toLowerCase();
+    const name =
+      String(u.username||u.full_name||u.name||u.display_name||"").trim() ||
+      USERNAME_MAP[email] ||
+      inferUsernameFromEmail(email) ||
+      "User";
+    const label = esc(name) + " • " + esc(email);
+    return `<option value="${esc(email)}">${label}</option>`;
+  })).join("");
+  if(current) sel.value = current;
 }
 
+function renderTradeSettingsTable(){
+  const tbody = document.getElementById("tradeSettingsRows");
+  if(!tbody) return;
 
+  const filtered = (CACHE.users||[]).filter(matchSearch).slice().sort((a,b)=>{
+    const ea = String(a.email||"").toLowerCase();
+    const eb = String(b.email||"").toLowerCase();
+    return ea.localeCompare(eb);
+  });
+
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" class="small">No users found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(u=>{
+    const uid = esc(u.id||u.user_id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    const enabled = !!(u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled);
+    const rawPct = u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? 0;
+    const pct = Number(rawPct);
+    const safePct = Number.isFinite(pct) ? pct : 0;
+    return `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><input type="number" step="0.01" min="0" max="100" id="tradepct-${uid}" value="${esc(String(safePct))}" placeholder="5"></td>
+        <td>
+          <label class="tiny" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="tradeon-${uid}" ${enabled ? 'checked' : ''} style="width:18px;height:18px;accent-color: rgba(56,189,248,1);">
+            <span>Enabled</span>
+          </label>
+        </td>
+        <td><button class="btnOk" onclick="saveTradeSettingsRow('${esc(email)}','${uid}')">Save</button></td>
+      </tr>
+    `;
+  }).join("");
+}
 
 function onTradeAllocUserChange(){
-  const email = String(document.getElementById("tradeAllocUser")?.value || "").trim().toLowerCase();
-  const pctEl = document.getElementById("tradeAllocPercent");
-  const enEl = document.getElementById("tradeAllocEnabled");
-
-  if(!pctEl || !enEl) return;
-
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === email);
-  const tradeEnabled = !!(u && (u.trades_active ?? u.trade_active ?? u.trading_active ?? u.trades_enabled));
-  const raw = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? "") : "";
-  const n = (raw === "" || raw === null || raw === undefined) ? "" : Number(raw);
-  const pct = (n === "" || !isFinite(n)) ? "" : n;
-
-  enEl.checked = tradeEnabled;
-  pctEl.value = (pct === "" ? "" : String(pct));
+  renderTradeSettingsTable();
 }
 
 async function saveTradeAllocation(ev){
-  ev.preventDefault();
+  if(ev && ev.preventDefault) ev.preventDefault();
+  modalShow("Moved", "Trade settings are now saved from the User Trade Settings table above.");
+}
 
-  const email = String(document.getElementById("tradeAllocUser")?.value || "").trim().toLowerCase();
-  const pctEl = document.getElementById("tradeAllocPercent");
-  const enEl = document.getElementById("tradeAllocEnabled");
+async function saveTradeSettingsRow(email, uid){
+  const pctEl = document.getElementById("tradepct-" + uid);
+  const onEl = document.getElementById("tradeon-" + uid);
 
-  if(!email) return modalShow("Missing user", "Select a user.");
-  if(!pctEl) return modalShow("Missing input", "Trade % input is missing.");
+  if(!pctEl) return modalShow("Missing input", "Trade % input is missing for this row.");
 
   const trade_percent = Number(pctEl.value || 0);
   if(!isFinite(trade_percent) || trade_percent < 0 || trade_percent > 100){
     return modalShow("Invalid %", "Trade % must be a number between 0 and 100.");
   }
 
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === email);
-  const uid = String(u?.id || u?.user_id || "");
-
-  const trades_active = !!(enEl && enEl.checked);
+  const trades_active = !!(onEl && onEl.checked);
 
   if(!uid){
     return modalShow("User not loaded", "Refresh Users first, then try again.");
   }
-
-  if(!confirm(`Save trade allocation for ${email}?`)) return;
-
-  const res = await apiCall("user_trade_settings_update", {
-    user_id: uid,
-    user_email: email,
-    trades_active,
-    trade_percent
-  });
-
-  if(res && res.success === false){
-    modalShow("Trade allocation error", res.error || "Unable to update trade allocation. Make sure your edge function supports action: user_trade_settings_update");
-    return;
-  }
-
-  feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
-  modalShow("Saved", "Trade allocation updated for this user.");
-  safeLoad(loadUsers);
-}
-
-async function saveTradeSettings(email, uid){
-  const onEl = document.getElementById("tradeon-" + uid);
-  const trades_active = !!(onEl && onEl.checked);
-
-  // % allocation is now controlled in Trades → Allocation panel.
-  // When saving from Users view, keep the existing stored %.
-  const u = (CACHE.users||[]).find(x => String(x.email||"").trim().toLowerCase() === String(email||"").trim().toLowerCase());
-  const existingRaw = u ? (u.trade_percent ?? u.trades_percent ?? u.trade_roi_percent ?? u.tradePct ?? 0) : 0;
-  const trade_percent = Number(existingRaw || 0);
 
   if(!confirm(`Save trade settings for ${email}?`)) return;
 
@@ -2893,7 +2876,8 @@ async function saveTradeSettings(email, uid){
 
   feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
   modalShow("Saved", "Trade controls updated for this user.");
-  safeLoad(loadUsers);
+  await safeLoad(loadUsers);
+  renderTradeSettingsTable();
 }
 
 function openTradesForUser(email){
@@ -2908,13 +2892,8 @@ async function loadTrades(){
   const st = document.getElementById("tradesStatus");
   if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
 
-  if(!Array.isArray(CACHE.users) || CACHE.users.length === 0){
-    const userRes = await apiCall("users_list");
-    CACHE.users = userRes.data || [];
-  }
-
   populateTradeUserSelect();
-  renderTradeSettingsTable(CACHE.users);
+  renderTradeSettingsTable();
 
   // ✅ Expected edge action:
   // - trades_admin_list -> returns { data: [...] } where each row includes:
