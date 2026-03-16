@@ -3365,8 +3365,15 @@
       if(ov) ov.style.display = "none";
     }
 
+    window.closeSiteNotice = closeSiteNotice;
+
     async function loadSiteNotification(forceOpen=false){
       try{
+        const ov = document.getElementById("siteNoticeOverlay");
+        const ttl = document.getElementById("siteNoticeTitle");
+        const body = document.getElementById("siteNoticeBody");
+        if(!ov || !ttl || !body) return false;
+
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
         if(!accessToken) return false;
@@ -3382,6 +3389,8 @@
         });
 
         const out = await r.json().catch(()=> ({}));
+        if(!r.ok || out?.success === false) return false;
+
         const data = out?.data || {};
         const enabled = !!(data.enabled ?? data.is_active ?? data.active);
         const title = String(data.title || "Notification").trim();
@@ -3395,7 +3404,7 @@
           return false;
         }
 
-        if(forceOpen || __siteNoticeShownKey !== noticeKey){
+        if(forceOpen || __siteNoticeShownKey !== noticeKey || ov.style.display !== "flex"){
           __siteNoticeShownKey = noticeKey;
           showSiteNotice(title, message);
         }
@@ -3404,6 +3413,8 @@
         return false;
       }
     }
+
+    window.loadSiteNotification = loadSiteNotification;
 
     function startSiteNotificationAutoRefresh(){
       if(__siteNoticeRefreshTimer) clearInterval(__siteNoticeRefreshTimer);
@@ -3503,21 +3514,28 @@
       }
     }
 
-    function initWithUser(user){
+    async function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
 
       setGreeting();
       startClock();
-      loadTradeSettings();
+      await loadTradeSettings();
       startTradeSettingsAutoRefresh();
-      loadSiteNotification(true);
+
+      await loadSiteNotification(true);
       startSiteNotificationAutoRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
       /* ✅ Loading screen stays 3 seconds longer */
-      setTimeout(()=>hideGate(), 3000);
+      setTimeout(()=>{
+        hideGate();
+        loadSiteNotification(true);
+      }, 3000);
+
+      setTimeout(()=>{ loadSiteNotification(true); }, 1200);
+      setTimeout(()=>{ loadSiteNotification(true); }, 4500);
 
       loadDashboardIdentity();
       loadBalance();
@@ -3583,7 +3601,7 @@
         }
 
         window.COINLUXORA_USER=user;
-        initWithUser(user);
+        await initWithUser(user);
       }catch(e){
         hideGate();
         window.location.replace("login.html");
