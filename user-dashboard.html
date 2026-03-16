@@ -3534,21 +3534,24 @@
       }
     }
 
-    function initWithUser(user){
+    async function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
 
       setGreeting();
       startClock();
-      loadTradeSettings();
+      await loadTradeSettings();
       startTradeSettingsAutoRefresh();
-      loadSiteNotification(true);
+      await loadSiteNotification(true);
       startSiteNotificationAutoRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
       /* ✅ Loading screen stays 3 seconds longer */
-      setTimeout(()=>hideGate(), 3000);
+      setTimeout(()=>{
+        hideGate();
+        loadSiteNotification(true);
+      }, 3000);
 
       loadDashboardIdentity();
       loadBalance();
@@ -3614,7 +3617,7 @@
         }
 
         window.COINLUXORA_USER=user;
-        initWithUser(user);
+        await initWithUser(user);
       }catch(e){
         hideGate();
         window.location.replace("login.html");
