@@ -3320,6 +3320,23 @@
       }
     }
 
+    let __tradeSettingsRefreshTimer = null;
+
+    function initTradeSettingsLiveRefresh(){
+      if(__tradeSettingsRefreshTimer) clearInterval(__tradeSettingsRefreshTimer);
+      __tradeSettingsRefreshTimer = setInterval(()=>{
+        loadTradeSettings();
+      }, 15000);
+
+      document.addEventListener("visibilitychange", ()=>{
+        if(!document.hidden) loadTradeSettings();
+      });
+
+      window.addEventListener("focus", ()=>{
+        loadTradeSettings();
+      });
+    }
+
     function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
@@ -3327,6 +3344,7 @@
       setGreeting();
       startClock();
       loadTradeSettings();
+      initTradeSettingsLiveRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
@@ -3405,37 +3423,36 @@
     })();
   
 
-    // ===== Trading percentage orb (admin-controlled later) =====
+    // ===== Trading percentage orb (admin-controlled) =====
     (function(){
       const el = document.getElementById("tradePctOrb");
       const num = document.getElementById("tradePctNum");
       if(!el || !num) return;
 
-      // Placeholder value (later: fetch from admin-controlled setting)
-      const stored = localStorage.getItem("vgm_trade_pct");
-      const v = stored ? Number(stored) : 25;
-      if(Number.isFinite(v)) num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
+      num.textContent = "0";
 
       el.addEventListener("click", ()=>{
-        // Cool confirm-style info modal (reuses existing modal if present)
         try{
           if(typeof openConfirmModal === "function"){
             openConfirmModal({
               title: "Trading Percentage",
               lines: [
                 { label:"Current", value: num.textContent + "%" },
-                { label:"Note", value: "Admin control will be added later." }
+                { label:"Status", value: __tradeActive ? "Enabled by admin" : "Disabled by admin" },
+                { label:"Source", value: "Live admin trade control" }
               ],
               confirmText: "Close",
               cancelText: ""
             });
           }else{
-            alert("Trading Percentage: " + num.textContent + "%\n(Admin control will be added later.)");
+            alert("Trading Percentage: " + num.textContent + "%
+Status: " + (__tradeActive ? "Enabled by admin" : "Disabled by admin"));
           }
         }catch(e){
           alert("Trading Percentage: " + num.textContent + "%");
         }
       });
+    })();
     })();
     </script>
 </body>
