@@ -1317,6 +1317,62 @@
       .tradePctValue{ font-size: 14px; }
     }
 
+
+    /* ===== ADMIN NOTIFICATION MODAL ===== */
+    .siteNoticeOverlay{
+      position:fixed; inset:0; z-index:120000;
+      background:rgba(0,0,0,.72);
+      display:none; align-items:center; justify-content:center;
+      padding:18px;
+      backdrop-filter: blur(6px);
+    }
+    .siteNoticeCard{
+      width:min(680px, 100%);
+      border-radius:28px;
+      border:1px solid rgba(255,255,255,.14);
+      background:
+        radial-gradient(900px 280px at 14% 0%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 280px at 86% 0%, rgba(255,77,166,.14), transparent 58%),
+        linear-gradient(180deg, rgba(5,10,24,.98), rgba(2,6,23,.95));
+      box-shadow:0 26px 90px rgba(0,0,0,.58);
+      overflow:hidden;
+    }
+    .siteNoticeHead{
+      padding:16px 18px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(90deg, rgba(91,108,255,.95), rgba(124,77,255,.95), rgba(255,77,166,.92));
+      animation: noticePulse 2.2s ease-in-out infinite;
+    }
+    @keyframes noticePulse{
+      0%{filter:brightness(.96)}
+      50%{filter:brightness(1.10)}
+      100%{filter:brightness(.96)}
+    }
+    .siteNoticeTitle{
+      font-size:20px;font-weight:1000;color:#fff;letter-spacing:.2px;
+    }
+    .siteNoticeSub{
+      margin-top:6px;font-size:12px;font-weight:900;color:rgba(255,255,255,.88);
+    }
+    .siteNoticeBody{
+      padding:18px;
+      color:rgba(234,240,255,.92);
+      font-size:14px;
+      line-height:1.65;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .siteNoticeFoot{
+      padding:0 18px 18px;
+      display:flex;justify-content:flex-end;gap:10px;
+    }
+    .siteNoticeBtn{
+      min-width:130px;height:50px;border-radius:16px;border:none;cursor:pointer;
+      font-weight:1000;color:#fff;
+      background:linear-gradient(180deg, rgba(91,108,255,1), rgba(124,77,255,1));
+      box-shadow:0 18px 55px rgba(91,108,255,.22);
+    }
+
 </style>
 </head>
 <body>
@@ -1520,6 +1576,22 @@
 </div>
 </div>
 </div>
+
+<!-- ===== Admin Notification Modal ===== -->
+<div class="siteNoticeOverlay" id="siteNoticeOverlay" onclick="closeSiteNotice()">
+  <div class="siteNoticeCard" onclick="event.stopPropagation()">
+    <div class="siteNoticeHead">
+      <div class="siteNoticeTitle" id="siteNoticeTitle">Notification</div>
+      <div class="siteNoticeSub">Admin message</div>
+    </div>
+    <div class="siteNoticeBody" id="siteNoticeBody">—</div>
+    <div class="siteNoticeFoot">
+      <button class="siteNoticeBtn" onclick="closeSiteNotice()">Close</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ✅ Trade confirm modal -->
 <div class="tModalOverlay" id="tradeModalOverlay" style="display:none;"></div>
 <div aria-labelledby="tradeModalTitle" aria-modal="true" class="tModal" id="tradeModal" role="dialog" style="display:none;">
@@ -3274,6 +3346,79 @@
       }catch(e){}
     }
 
+
+    let __siteNoticeShownKey = "";
+    let __siteNoticeRefreshTimer = null;
+
+    function showSiteNotice(title, message){
+      const ov = document.getElementById("siteNoticeOverlay");
+      const ttl = document.getElementById("siteNoticeTitle");
+      const body = document.getElementById("siteNoticeBody");
+      if(!ov || !ttl || !body) return;
+      ttl.textContent = String(title || "Notification");
+      body.textContent = String(message || "");
+      ov.style.display = "flex";
+    }
+
+    function closeSiteNotice(){
+      const ov = document.getElementById("siteNoticeOverlay");
+      if(ov) ov.style.display = "none";
+    }
+
+    async function loadSiteNotification(forceOpen=false){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if(!accessToken) return false;
+
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({})
+        });
+
+        const out = await r.json().catch(()=> ({}));
+        const data = out?.data || {};
+        const enabled = !!(data.enabled ?? data.is_active ?? data.active);
+        const title = String(data.title || "Notification").trim();
+        const message = String(data.message || data.body || "").trim();
+        const updatedAt = String(data.updated_at || data.created_at || "");
+        const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
+
+        if(!enabled || !message){
+          __siteNoticeShownKey = "";
+          closeSiteNotice();
+          return false;
+        }
+
+        if(forceOpen || __siteNoticeShownKey !== noticeKey){
+          __siteNoticeShownKey = noticeKey;
+          showSiteNotice(title, message);
+        }
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    function startSiteNotificationAutoRefresh(){
+      if(__siteNoticeRefreshTimer) clearInterval(__siteNoticeRefreshTimer);
+      __siteNoticeRefreshTimer = setInterval(()=>{ loadSiteNotification(false); }, 30000);
+
+      document.addEventListener("visibilitychange", ()=>{
+        if(document.visibilityState === "visible") loadSiteNotification(false);
+      });
+
+      window.addEventListener("focus", ()=>{
+        loadSiteNotification(false);
+      });
+    }
+
+
     async function logout(){
       await supabaseClient.auth.signOut();
       window.location.replace("login.html");
@@ -3366,6 +3511,8 @@
       startClock();
       loadTradeSettings();
       startTradeSettingsAutoRefresh();
+      loadSiteNotification(true);
+      startSiteNotificationAutoRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
@@ -3444,32 +3591,27 @@
     })();
   
 
-    // ===== Trading percentage orb (admin-controlled later) =====
+    // ===== Trading percentage orb =====
     (function(){
       const el = document.getElementById("tradePctOrb");
       const num = document.getElementById("tradePctNum");
       if(!el || !num) return;
 
-      // Placeholder value (later: fetch from admin-controlled setting)
-      const stored = localStorage.getItem("vgm_trade_pct");
-      const v = stored ? Number(stored) : 25;
-      if(Number.isFinite(v)) num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
-
       el.addEventListener("click", ()=>{
-        // Cool confirm-style info modal (reuses existing modal if present)
         try{
+          const statusText = __tradeActive ? "Enabled" : "Disabled";
           if(typeof openConfirmModal === "function"){
             openConfirmModal({
               title: "Trading Percentage",
               lines: [
                 { label:"Current", value: num.textContent + "%" },
-                { label:"Note", value: "Admin control will be added later." }
+                { label:"Status", value: statusText }
               ],
               confirmText: "Close",
               cancelText: ""
             });
           }else{
-            alert("Trading Progress Percentage: " + num.textContent + "%\n");
+            alert("Trading Percentage: " + num.textContent + "%\nStatus: " + statusText);
           }
         }catch(e){
           alert("Trading Percentage: " + num.textContent + "%");
