@@ -2219,6 +2219,30 @@
     let __pendingTrade = null;
     let __tradeActive = true;
     let __tradePercent = 25;
+    let __tradeRefreshTimer = null;
+
+    function clampTradePercent(v){
+      const n = Number(v);
+      if(!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(100, n));
+    }
+
+    function applyTradeSettingsUI(active, percent){
+      __tradeActive = !!active;
+      __tradePercent = clampTradePercent(percent);
+
+      const num = document.getElementById("tradePctNum");
+      if(num) num.textContent = String(Math.round(__tradePercent));
+
+      const orb = document.getElementById("tradePctOrb");
+      if(orb){
+        orb.style.opacity = __tradeActive ? "1" : ".45";
+        orb.style.filter = __tradeActive ? "none" : "grayscale(1)";
+        orb.setAttribute("title", __tradeActive
+          ? `Trading enabled • ${Math.round(__tradePercent)}%`
+          : `Trading disabled • ${Math.round(__tradePercent)}%`);
+      }
+    }
 
     function mountTradePairs(){
       const wrap=document.getElementById("tradePairWrap");
@@ -2431,6 +2455,13 @@
     async function confirmTrade(){
       try{
         if(!__pendingTrade){ closeTradeModal(); return; }
+
+        await loadTradeSettings();
+        if(!__tradeActive){
+          closeTradeModal();
+          alert("Trading is currently disabled for your account.");
+          return;
+        }
 
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
@@ -3257,7 +3288,7 @@
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const accessToken = sessionData?.session?.access_token;
-        if(!accessToken) return;
+        if(!accessToken) return false;
 
         const r = await fetch(`${SUPABASE_URL}/functions/v1/user-trade-settings`, {
           method: "POST",
@@ -3270,23 +3301,30 @@
         });
 
         const out = await r.json().catch(()=> ({}));
-        if(!r.ok || out?.success === false) return;
+        if(!r.ok || out?.success === false) return false;
 
-        __tradeActive = !!out?.data?.trades_active;
-        const p = Number(out?.data?.trade_percent ?? out?.data?.trading_percent ?? 0);
-        __tradePercent = Number.isFinite(p) ? p : 0;
+        const data = out?.data || {};
+        const activeRaw = data?.trades_active ?? data?.trade_active ?? data?.trading_active ?? data?.trades_enabled;
+        const pctRaw = data?.trade_percent ?? data?.trading_percent ?? data?.trades_percent ?? data?.trade_roi_percent ?? 0;
 
-        const num = document.getElementById("tradePctNum");
-        if(num) num.textContent = String(Math.round(__tradePercent));
-
-        const orb = document.getElementById("tradePctOrb");
-        if(orb){
-          orb.style.opacity = __tradeActive ? "1" : ".45";
-          orb.style.filter = __tradeActive ? "none" : "grayscale(1)";
-        }
+        applyTradeSettingsUI(!!activeRaw, pctRaw);
+        return true;
       }catch(e){
-        // best-effort only
+        return false;
       }
+    }
+
+    function startTradeSettingsAutoRefresh(){
+      if(__tradeRefreshTimer) clearInterval(__tradeRefreshTimer);
+      __tradeRefreshTimer = setInterval(()=>{ loadTradeSettings(); }, 15000);
+
+      document.addEventListener("visibilitychange", ()=>{
+        if(document.visibilityState === "visible") loadTradeSettings();
+      });
+
+      window.addEventListener("focus", ()=>{
+        loadTradeSettings();
+      });
     }
 
 // ============================================================
@@ -3320,23 +3358,6 @@
       }
     }
 
-    let __tradeSettingsRefreshTimer = null;
-
-    function initTradeSettingsLiveRefresh(){
-      if(__tradeSettingsRefreshTimer) clearInterval(__tradeSettingsRefreshTimer);
-      __tradeSettingsRefreshTimer = setInterval(()=>{
-        loadTradeSettings();
-      }, 15000);
-
-      document.addEventListener("visibilitychange", ()=>{
-        if(!document.hidden) loadTradeSettings();
-      });
-
-      window.addEventListener("focus", ()=>{
-        loadTradeSettings();
-      });
-    }
-
     function initWithUser(user){
       currentUserEmail=user.email;
       currentUserId=user.id;
@@ -3344,7 +3365,7 @@
       setGreeting();
       startClock();
       loadTradeSettings();
-      initTradeSettingsLiveRefresh();
+      startTradeSettingsAutoRefresh();
 
       document.getElementById("userIdChip").innerText = "ID: " + currentUserId.slice(0,6).toUpperCase();
 
@@ -3423,36 +3444,37 @@
     })();
   
 
-    // ===== Trading percentage orb (admin-controlled) =====
+    // ===== Trading percentage orb (admin-controlled later) =====
     (function(){
       const el = document.getElementById("tradePctOrb");
       const num = document.getElementById("tradePctNum");
       if(!el || !num) return;
 
-      num.textContent = "0";
+      // Placeholder value (later: fetch from admin-controlled setting)
+      const stored = localStorage.getItem("vgm_trade_pct");
+      const v = stored ? Number(stored) : 25;
+      if(Number.isFinite(v)) num.textContent = String(Math.max(0, Math.min(100, Math.round(v))));
 
       el.addEventListener("click", ()=>{
+        // Cool confirm-style info modal (reuses existing modal if present)
         try{
           if(typeof openConfirmModal === "function"){
             openConfirmModal({
               title: "Trading Percentage",
               lines: [
                 { label:"Current", value: num.textContent + "%" },
-                { label:"Status", value: __tradeActive ? "Enabled by admin" : "Disabled by admin" },
-                { label:"Source", value: "Live admin trade control" }
+                { label:"Note", value: "Admin control will be added later." }
               ],
               confirmText: "Close",
               cancelText: ""
             });
           }else{
-            alert("Trading Percentage: " + num.textContent + "%
-Status: " + (__tradeActive ? "Enabled by admin" : "Disabled by admin"));
+            alert("Trading Percentage: " + num.textContent + "%\n(Admin control will be added later.)");
           }
         }catch(e){
           alert("Trading Percentage: " + num.textContent + "%");
         }
       });
-    })();
     })();
     </script>
 </body>
