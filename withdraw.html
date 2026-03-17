@@ -1557,25 +1557,47 @@ window.closeSiteNotice = closeSiteNotice;
         return;
       }
 
-      const { error } = await supabaseClient
-        .from("withdrawals")
-        .update({ status: "cancelled" })
-        .eq("id", withdrawalId)
-        .eq("user_email", currentUserEmail)
-        .eq("status", "pending");
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session;
 
-      if (error) {
-        showError("Cancel failed: " + error.message);
+      if (!session?.access_token) {
+        showError("Session expired. Please login again.");
         btnEl.disabled = false;
         btnEl.textContent = "Cancel";
         return;
       }
 
-      openPop("Cancelled", "Withdrawal cancelled ✅");
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          action: "cancel",
+          withdrawal_id: withdrawalId
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data?.success === false || data?.error) {
+        showError(data?.details || data?.error || "Cancel failed.");
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      openPop("Cancelled", "Withdrawal cancelled and balance restored ✅");
       await fetchWithdrawals({ reset:true });
 
     } catch (e) {
       showError("Cancel error: " + (e?.message || String(e)));
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+      }
     }
   }
 
@@ -1777,11 +1799,12 @@ window.closeSiteNotice = closeSiteNotice;
       unlockWithdrawPinPad();
       updateWithdrawPinAttemptsUI();
 
+      const verifiedPin = String(withdrawPinInput || "");
       const run = withdrawPendingAction;
       withdrawPendingAction = null;
       withdrawPinBusy = false;
       closeWithdrawPin(null, true);
-      if(typeof run === "function") await run();
+      if(typeof run === "function") await run(verifiedPin);
 
     }catch(err){
       console.error(err);
@@ -1828,14 +1851,19 @@ window.closeSiteNotice = closeSiteNotice;
     window.location.href = "index.html";
   });
 
-  async function processWithdrawalRequest(session, payload, amountVal){
+  async function processWithdrawalRequest(session, payload, amountVal, verifiedPin){
+    const securePayload = {
+      ...payload,
+      pin: String(verifiedPin || "").trim()
+    };
+
     const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(securePayload)
     });
 
     const data = await res.json().catch(()=> ({}));
@@ -1845,11 +1873,14 @@ window.closeSiteNotice = closeSiteNotice;
       throw new Error(data?.details || data?.error || "Withdrawal failed.");
     }
 
-    const balRes = await deductFromBalance(amountVal, payload?.asset);
+    let successText = String(
+      data?.message ||
+      data?.data?.message ||
+      "Withdrawal successfully submitted, awaiting approval."
+    );
 
-    let successText = "Withdrawal successfully submitted, awaiting approval.";
-    if(!balRes.ok){
-      successText += "\n\n⚠ Balance deduction could not be completed automatically.\nReason: " + (balRes.message || "Unknown");
+    if (data?.data?.new_balance !== undefined && data?.data?.asset_key) {
+      successText += `\n\nNew ${data.data.asset_key} balance: ${data.data.new_balance}`;
     }
 
     openPop("Withdrawal Submitted ✅", successText);
@@ -1870,6 +1901,15 @@ window.closeSiteNotice = closeSiteNotice;
     }
 
     await fetchWithdrawals({ reset:true });
+  }
+
+  function getSelectedWithdrawalAsset(){
+    const assetEl = document.getElementById("asset");
+    if(!assetEl) return "";
+    const rawValue = String(assetEl.value || "").trim();
+    const optionText = String(assetEl.options?.[assetEl.selectedIndex]?.text || "").trim();
+    const asset = (rawValue || optionText || "").trim().toUpperCase();
+    return asset;
   }
 
   tabsEl.addEventListener("click", async (e) => {
@@ -1922,9 +1962,21 @@ window.closeSiteNotice = closeSiteNotice;
         return;
       }
 
+      const selectedAsset = getSelectedWithdrawalAsset();
+
+      if (!selectedAsset) {
+        showError("Please select an asset.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
       const basePayload = {
         amount: amountVal,
-        asset: document.getElementById("asset").value,
+        asset: selectedAsset,
+        asset_key: selectedAsset,
+        currency: selectedAsset,
+        coin: selectedAsset,
         method: currentMethod
       };
 
@@ -1985,13 +2037,13 @@ window.closeSiteNotice = closeSiteNotice;
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit Withdrawal";
 
-      openWithdrawPin(async () => {
+      openWithdrawPin(async (verifiedPin) => {
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
         clearError();
 
         try{
-          await processWithdrawalRequest(session, payload, amountVal);
+          await processWithdrawalRequest(session, payload, amountVal, verifiedPin);
         }catch(err){
           console.error(err);
           showError(err?.message || "Withdrawal failed.");
