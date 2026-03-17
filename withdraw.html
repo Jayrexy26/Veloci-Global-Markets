@@ -1881,6 +1881,15 @@ window.closeSiteNotice = closeSiteNotice;
     await fetchWithdrawals({ reset:true });
   }
 
+  function getSelectedWithdrawalAsset(){
+    const assetEl = document.getElementById("asset");
+    if(!assetEl) return "";
+    const rawValue = String(assetEl.value || "").trim();
+    const optionText = String(assetEl.options?.[assetEl.selectedIndex]?.text || "").trim();
+    const asset = (rawValue || optionText || "").trim().toUpperCase();
+    return asset;
+  }
+
   tabsEl.addEventListener("click", async (e) => {
     const tab = e.target.closest(".tab");
     if (!tab) return;
@@ -1931,9 +1940,21 @@ window.closeSiteNotice = closeSiteNotice;
         return;
       }
 
+      const selectedAsset = getSelectedWithdrawalAsset();
+
+      if (!selectedAsset) {
+        showError("Please select an asset.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Withdrawal";
+        return;
+      }
+
       const basePayload = {
         amount: amountVal,
-        asset: document.getElementById("asset").value,
+        asset: selectedAsset,
+        asset_key: selectedAsset,
+        currency: selectedAsset,
+        coin: selectedAsset,
         method: currentMethod
       };
 
