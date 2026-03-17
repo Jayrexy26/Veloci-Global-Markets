@@ -1358,37 +1358,46 @@ window.closeSiteNotice = closeSiteNotice;
     - Tries users.balance column by email.
     - If your DB uses another table/column, it will safely fail without breaking.
   ============================================================ */
-  async function deductFromBalance(amount){
-    if(!currentUserEmail) return { ok:false, message:"No user email found." };
+  async function deductFromBalance(amount, assetKey){
+    if(!currentUserId) return { ok:false, message:"No user id found." };
+
+    const normalizedAsset = String(assetKey || "").trim().toUpperCase();
+    if(!normalizedAsset) return { ok:false, message:"No asset selected." };
 
     try{
       const { data: row, error: selErr } = await supabaseClient
-        .from("users")
+        .from("user_crypto_balances")
         .select("balance")
-        .eq("email", currentUserEmail)
+        .eq("user_id", currentUserId)
+        .eq("asset_key", normalizedAsset)
         .maybeSingle();
 
       if(selErr) return { ok:false, message: selErr.message };
+      if(!row) return { ok:false, message:`No ${normalizedAsset} balance record found for this user.` };
 
       const currentBalance = Number(row?.balance ?? 0);
-
-      // If your users table doesn't have balance, this will be 0 and you'll see a warning
       if(!Number.isFinite(currentBalance)) return { ok:false, message:"Balance is not a number." };
 
       if(currentBalance < amount){
-        return { ok:false, message:"Insufficient balance to complete this withdrawal." };
+        return { ok:false, message:`Insufficient ${normalizedAsset} balance to complete this withdrawal.` };
       }
 
       const newBalance = currentBalance - amount;
 
       const { error: updErr } = await supabaseClient
-        .from("users")
-        .update({ balance: newBalance })
-        .eq("email", currentUserEmail);
+        .from("user_crypto_balances")
+        .update({
+          balance: newBalance,
+          updated_at: new Date().toISOString(),
+          email: currentUserEmail || null,
+          updated_by: "withdrawal_request"
+        })
+        .eq("user_id", currentUserId)
+        .eq("asset_key", normalizedAsset);
 
       if(updErr) return { ok:false, message: updErr.message };
 
-      return { ok:true, message:"Balance updated." };
+      return { ok:true, message:`${normalizedAsset} balance updated.` };
 
     }catch(e){
       return { ok:false, message: e?.message || String(e) };
@@ -1697,9 +1706,9 @@ window.closeSiteNotice = closeSiteNotice;
     unlockWithdrawPinPad();
     updateWithdrawPinAttemptsUI();
   }
-  function closeWithdrawPin(e, forceClose = false){
+  function closeWithdrawPin(e){
     if(e && e.target && !e.target.classList.contains("withdrawPinOverlay")) return;
-    if(withdrawPinBusy && !forceClose) return;
+    if(withdrawPinBusy) return;
     withdrawPinOverlay.classList.remove("show");
     document.body.style.overflow = "";
     resetWithdrawPinInput();
@@ -1743,7 +1752,7 @@ window.closeSiteNotice = closeSiteNotice;
       unlockWithdrawPinPad();
       updateWithdrawPinAttemptsUI();
 
-      closeWithdrawPin(null, true);
+      closeWithdrawPin();
       const run = withdrawPendingAction;
       withdrawPendingAction = null;
       if(typeof run === "function") await run();
@@ -1811,12 +1820,11 @@ window.closeSiteNotice = closeSiteNotice;
       throw new Error(data?.details || data?.error || "Withdrawal failed.");
     }
 
-    const balRes = await deductFromBalance(amountVal);
+    const balRes = await deductFromBalance(amountVal, payload?.asset);
 
     let successText = "Withdrawal successfully submitted, awaiting approval.";
     if(!balRes.ok){
-      successText += "\n\n⚠ Balance deduction could not be completed automatically.\nReason: " + (balRes.message || "Unknown") +
-        "\n\n(If your balance is stored in another table/column, tell me the name and I’ll connect it.)";
+      successText += "\n\n⚠ Balance deduction could not be completed automatically.\nReason: " + (balRes.message || "Unknown");
     }
 
     openPop("Withdrawal Submitted ✅", successText);
