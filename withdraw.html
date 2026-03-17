@@ -1829,14 +1829,19 @@ window.closeSiteNotice = closeSiteNotice;
     window.location.href = "index.html";
   });
 
-  async function processWithdrawalRequest(session, payload, amountVal){
+  async function processWithdrawalRequest(session, payload, amountVal, verifiedPin){
+    const securePayload = {
+      ...payload,
+      pin: String(verifiedPin || "").trim()
+    };
+
     const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${session.access_token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(securePayload)
     });
 
     const data = await res.json().catch(()=> ({}));
@@ -1846,11 +1851,14 @@ window.closeSiteNotice = closeSiteNotice;
       throw new Error(data?.details || data?.error || "Withdrawal failed.");
     }
 
-    const balRes = await deductFromBalance(amountVal, payload?.asset);
+    let successText = String(
+      data?.message ||
+      data?.data?.message ||
+      "Withdrawal successfully submitted, awaiting approval."
+    );
 
-    let successText = "Withdrawal successfully submitted, awaiting approval.";
-    if(!balRes.ok){
-      successText += "\n\n⚠ Balance deduction could not be completed automatically.\nReason: " + (balRes.message || "Unknown");
+    if (data?.data?.new_balance !== undefined && data?.data?.asset_key) {
+      successText += `\n\nNew ${data.data.asset_key} balance: ${data.data.new_balance}`;
     }
 
     openPop("Withdrawal Submitted ✅", successText);
