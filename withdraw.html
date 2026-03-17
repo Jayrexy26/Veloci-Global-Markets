@@ -1777,11 +1777,12 @@ window.closeSiteNotice = closeSiteNotice;
       unlockWithdrawPinPad();
       updateWithdrawPinAttemptsUI();
 
+      const verifiedPin = String(withdrawPinInput || "");
       const run = withdrawPendingAction;
       withdrawPendingAction = null;
       withdrawPinBusy = false;
       closeWithdrawPin(null, true);
-      if(typeof run === "function") await run();
+      if(typeof run === "function") await run(verifiedPin);
 
     }catch(err){
       console.error(err);
@@ -1985,13 +1986,13 @@ window.closeSiteNotice = closeSiteNotice;
       submitBtn.disabled = false;
       submitBtn.textContent = "Submit Withdrawal";
 
-      openWithdrawPin(async () => {
+      openWithdrawPin(async (verifiedPin) => {
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
         clearError();
 
         try{
-          await processWithdrawalRequest(session, payload, amountVal);
+          await processWithdrawalRequest(session, payload, amountVal, verifiedPin);
         }catch(err){
           console.error(err);
           showError(err?.message || "Withdrawal failed.");
