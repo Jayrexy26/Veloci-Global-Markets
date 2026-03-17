@@ -3041,184 +3041,196 @@
 
     
     async function loadBalance(){
-      // ✅ Wallet balance for dashboard:
-      // 1) Prefer user_crypto_balances (sum balances * live USD prices)
-      // 2) Fallback to wallet tables if present (wallet_balances / wallets)
-      // 3) Fallback to users.balance (id -> user_id -> email)
-      // This is defensive so the dashboard never gets stuck if a table/column is missing.
+      // ✅ Fast-first balance load:
+      // - show cached / fallback value immediately
+      // - then refresh with richer live valuation if available
       try{
-        let total = null;
-
-        // helper: normalize symbols like wallet.html (minimal)
-        function normSym(assetKey){
-          const raw = String(assetKey||"").toUpperCase().trim();
-          if(raw.startsWith("USDT")) return "USDT";
-          if(raw.startsWith("USDC")) return "USDC";
-          if(raw.startsWith("BTC")) return "BTC";
-          if(raw.startsWith("ETH")) return "ETH";
-          if(raw.startsWith("BNB")) return "BNB";
-          if(raw.startsWith("SOL")) return "SOL";
-          if(raw.startsWith("TRX")) return "TRX";
-          if(raw.startsWith("ADA")) return "ADA";
-          if(raw.startsWith("XRP")) return "XRP";
-          if(raw.startsWith("DOGE")) return "DOGE";
-          if(raw.startsWith("AVAX")) return "AVAX";
-          if(raw.startsWith("MATIC") || raw.startsWith("POL")) return "MATIC";
-          if(raw.startsWith("LTC")) return "LTC";
-          if(raw.startsWith("TON")) return "TON";
-          return raw;
+        let quickTotal = await getQuickBalanceTotal();
+        if(quickTotal !== null){
+          setBalanceAmount(quickTotal);
+        }else if(!__rawBalanceText || __rawBalanceText === "--"){
+          setBalanceAmount(0);
         }
 
-        // helper: map symbol -> CoinGecko id (add more if you use them)
-        function cgIdFor(sym){
-          const s = String(sym||"").toUpperCase();
-          const MAP = {
-            BTC:"bitcoin",
-            ETH:"ethereum",
-            USDT:"tether",
-            USDC:"usd-coin",
-            BNB:"binancecoin",
-            SOL:"solana",
-            TRX:"tron",
-            ADA:"cardano",
-            XRP:"ripple",
-            DOGE:"dogecoin",
-            AVAX:"avalanche-2",
-            MATIC:"matic-network",
-            LTC:"litecoin",
-            TON:"the-open-network",
-          };
-          return MAP[s] || null;
+        const richTotal = await getRichBalanceTotal();
+        if(richTotal !== null){
+          setBalanceAmount(richTotal);
+          return;
         }
 
-        async function fetchCgPricesUSD(ids){
-          // CoinGecko simple price (best-effort)
-          if(!ids || !ids.length) return {};
-          const uniq = Array.from(new Set(ids)).filter(Boolean);
-          const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(uniq.join(","))}&vs_currencies=usd`;
-          const res = await fetch(url);
-          if(!res.ok) throw new Error("price fetch failed");
-          const data = await res.json();
-          return (data && typeof data==="object") ? data : {};
+        if(quickTotal === null){
+          setBalanceAmount(0);
         }
-
-        // 1) Prefer user_crypto_balances (your schema)
-        if(currentUserId){
-          try{
-            const r = await supabaseClient
-              .from("user_crypto_balances")
-              .select("asset_key,balance")
-              .eq("user_id", currentUserId);
-
-            if(!r.error && Array.isArray(r.data) && r.data.length){
-              const rows = r.data
-                .map(x => ({ sym: normSym(x?.asset_key), bal: Number(x?.balance || 0) }))
-                .filter(x => x.sym && Number.isFinite(x.bal) && x.bal !== 0);
-
-              if(rows.length){
-                // try USD valuation via live prices
-                try{
-                  const ids = rows.map(x => cgIdFor(x.sym)).filter(Boolean);
-                  const prices = await fetchCgPricesUSD(ids);
-                  let sum = 0;
-                  for(const row of rows){
-                    const id = cgIdFor(row.sym);
-                    const px = Number(prices?.[id]?.usd || 0);
-                    sum += row.bal * px;
-                  }
-                  // If pricing failed (all px=0), still show 0 and fall through to other methods
-                  if(Number.isFinite(sum) && sum > 0){
-                    total = sum;
-                  }
-                }catch(e){
-                  // network blocked or rate-limited: keep total null to allow fallbacks
-                }
-              }else{
-                // user has rows but all zero
-                total = 0;
-              }
-            }
-          }catch(e){}
-        }
-
-        // 1b) If we couldn't compute via CoinGecko, try wallet tables (if you have them)
-        if(total===null && currentUserId){
-          // a) wallet_balances: many rows (one per asset) with usd columns
-          try{
-            let r = await supabaseClient.from("wallet_balances").select("usd_value").eq("user_id", currentUserId);
-            if(!r.error && Array.isArray(r.data) && r.data.length){
-              total = r.data.reduce((s,x)=>s + Number(x?.usd_value || 0), 0);
-            }
-          }catch(e){}
-
-          // b) wallet_balances.balance_usd (alternate column name)
-          if(total===null){
-            try{
-              let r = await supabaseClient.from("wallet_balances").select("balance_usd").eq("user_id", currentUserId);
-              if(!r.error && Array.isArray(r.data) && r.data.length){
-                total = r.data.reduce((s,x)=>s + Number(x?.balance_usd || 0), 0);
-              }
-            }catch(e){}
-          }
-
-          // c) wallets table: one row per user
-          if(total===null){
-            try{
-              const r = await supabaseClient.from("wallets").select("total_usd").eq("user_id", currentUserId).maybeSingle();
-              if(!r.error && r.data) total = Number(r.data?.total_usd || 0);
-            }catch(e){}
-          }
-          if(total===null){
-            try{
-              const r = await supabaseClient.from("wallets").select("balance_usd").eq("user_id", currentUserId).maybeSingle();
-              if(!r.error && r.data) total = Number(r.data?.balance_usd || 0);
-            }catch(e){}
-          }
-        }
-
-        // 2) Fallbacks to users.balance so nothing breaks (robust: id -> user_id -> email)
-        if(total===null){
-          try{
-            const r1 = await supabaseClient.from("users").select("balance").eq("id", currentUserId).maybeSingle();
-            if(!r1.error && r1.data && r1.data.balance!=null){
-              total = Number(r1.data.balance || 0);
-            }
-          }catch(e){}
-        }
-        if(total===null){
-          try{
-            const r2 = await supabaseClient.from("users").select("balance").eq("user_id", currentUserId).maybeSingle();
-            if(!r2.error && r2.data && r2.data.balance!=null){
-              total = Number(r2.data.balance || 0);
-            }
-          }catch(e){}
-        }
-        if(total===null){
-          try{
-            const r3 = await supabaseClient.from("users").select("balance").eq("email", currentUserEmail).maybeSingle();
-            if(!r3.error && r3.data && r3.data.balance!=null){
-              total = Number(r3.data.balance || 0);
-            }else{
-              total = 0;
-            }
-          }catch(e){
-            total = 0;
-          }
-        }
-
-        const bal = Number(total || 0).toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-        __rawBalanceText = "$" + bal;
-        setBalanceVisibilityUI();
       }catch(e){
         // Never leave it blank (prevents "Loading…" feeling)
-        __rawBalanceText = "$0.00";
-        setBalanceVisibilityUI();
+        setBalanceAmount(0);
       }
     }
 
+    async function getQuickBalanceTotal(){
+      let total = null;
+
+      // ✅ Fast direct sources first
+      if(currentUserId){
+        try{
+          const r = await supabaseClient.from("wallets").select("total_usd").eq("user_id", currentUserId).maybeSingle();
+          if(!r.error && r.data?.total_usd != null) total = Number(r.data.total_usd || 0);
+        }catch(e){}
+      }
+      if(total===null && currentUserId){
+        try{
+          const r = await supabaseClient.from("wallets").select("balance_usd").eq("user_id", currentUserId).maybeSingle();
+          if(!r.error && r.data?.balance_usd != null) total = Number(r.data.balance_usd || 0);
+        }catch(e){}
+      }
+      if(total===null && currentUserId){
+        try{
+          const r1 = await supabaseClient.from("users").select("balance").eq("id", currentUserId).maybeSingle();
+          if(!r1.error && r1.data && r1.data.balance!=null) total = Number(r1.data.balance || 0);
+        }catch(e){}
+      }
+      if(total===null && currentUserId){
+        try{
+          const r2 = await supabaseClient.from("users").select("balance").eq("user_id", currentUserId).maybeSingle();
+          if(!r2.error && r2.data && r2.data.balance!=null) total = Number(r2.data.balance || 0);
+        }catch(e){}
+      }
+      if(total===null && currentUserEmail){
+        try{
+          const r3 = await supabaseClient.from("users").select("balance").eq("email", currentUserEmail).maybeSingle();
+          if(!r3.error && r3.data && r3.data.balance!=null) total = Number(r3.data.balance || 0);
+        }catch(e){}
+      }
+      if(total===null && currentUserId){
+        try{
+          let r = await supabaseClient.from("wallet_balances").select("usd_value").eq("user_id", currentUserId);
+          if(!r.error && Array.isArray(r.data) && r.data.length){
+            total = r.data.reduce((s,x)=>s + Number(x?.usd_value || 0), 0);
+          }
+        }catch(e){}
+      }
+      if(total===null && currentUserId){
+        try{
+          let r = await supabaseClient.from("wallet_balances").select("balance_usd").eq("user_id", currentUserId);
+          if(!r.error && Array.isArray(r.data) && r.data.length){
+            total = r.data.reduce((s,x)=>s + Number(x?.balance_usd || 0), 0);
+          }
+        }catch(e){}
+      }
+
+      return (total===null || !Number.isFinite(Number(total))) ? null : Number(total);
+    }
+
+    async function getRichBalanceTotal(){
+      let total = null;
+
+      function normSym(assetKey){
+        const raw = String(assetKey||"").toUpperCase().trim();
+        if(raw.startsWith("USDT")) return "USDT";
+        if(raw.startsWith("USDC")) return "USDC";
+        if(raw.startsWith("BTC")) return "BTC";
+        if(raw.startsWith("ETH")) return "ETH";
+        if(raw.startsWith("BNB")) return "BNB";
+        if(raw.startsWith("SOL")) return "SOL";
+        if(raw.startsWith("TRX")) return "TRX";
+        if(raw.startsWith("ADA")) return "ADA";
+        if(raw.startsWith("XRP")) return "XRP";
+        if(raw.startsWith("DOGE")) return "DOGE";
+        if(raw.startsWith("AVAX")) return "AVAX";
+        if(raw.startsWith("MATIC") || raw.startsWith("POL")) return "MATIC";
+        if(raw.startsWith("LTC")) return "LTC";
+        if(raw.startsWith("TON")) return "TON";
+        return raw;
+      }
+
+      function cgIdFor(sym){
+        const s = String(sym||"").toUpperCase();
+        const MAP = {
+          BTC:"bitcoin",
+          ETH:"ethereum",
+          USDT:"tether",
+          USDC:"usd-coin",
+          BNB:"binancecoin",
+          SOL:"solana",
+          TRX:"tron",
+          ADA:"cardano",
+          XRP:"ripple",
+          DOGE:"dogecoin",
+          AVAX:"avalanche-2",
+          MATIC:"matic-network",
+          LTC:"litecoin",
+          TON:"the-open-network",
+        };
+        return MAP[s] || null;
+      }
+
+      async function fetchCgPricesUSD(ids){
+        if(!ids || !ids.length) return {};
+        const uniq = Array.from(new Set(ids)).filter(Boolean);
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(uniq.join(","))}&vs_currencies=usd`;
+        const res = await fetch(url);
+        if(!res.ok) throw new Error("price fetch failed");
+        const data = await res.json();
+        return (data && typeof data==="object") ? data : {};
+      }
+
+      if(currentUserId){
+        try{
+          const r = await supabaseClient
+            .from("user_crypto_balances")
+            .select("asset_key,balance")
+            .eq("user_id", currentUserId);
+
+          if(!r.error && Array.isArray(r.data) && r.data.length){
+            const allRows = r.data
+              .map(x => ({ sym: normSym(x?.asset_key), bal: Number(x?.balance || 0) }))
+              .filter(x => x.sym && Number.isFinite(x.bal));
+
+            const rows = allRows.filter(x => x.bal !== 0);
+            if(!rows.length){
+              total = 0;
+            }else{
+              try{
+                const ids = rows.map(x => cgIdFor(x.sym)).filter(Boolean);
+                const prices = await fetchCgPricesUSD(ids);
+                let sum = 0;
+                let pricedCount = 0;
+                for(const row of rows){
+                  const id = cgIdFor(row.sym);
+                  const px = Number(prices?.[id]?.usd || 0);
+                  if(px > 0) pricedCount += 1;
+                  sum += row.bal * px;
+                }
+                if(Number.isFinite(sum) && (sum > 0 || pricedCount > 0)){
+                  total = sum;
+                }
+              }catch(e){}
+            }
+          }
+        }catch(e){}
+      }
+
+      return (total===null || !Number.isFinite(Number(total))) ? null : Number(total);
+    }
 
     let __rawBalanceText = "$0.00";
     let __balanceVisible = true;
+
+    function formatBalanceText(value){
+      const bal = Number(value || 0).toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
+      return "$" + bal;
+    }
+
+    function getBalanceCacheStorageKey(){
+      const idPart = String(currentUserId || currentUserEmail || "guest").trim().toLowerCase() || "guest";
+      return "vgm_balance_cache::" + idPart;
+    }
+
+    function setBalanceAmount(value){
+      __rawBalanceText = formatBalanceText(value);
+      try{ localStorage.setItem(getBalanceCacheStorageKey(), __rawBalanceText); }catch(e){}
+      setBalanceVisibilityUI();
+    }
 
     function getBalanceVisibilityStorageKey(){
       const idPart = String(currentUserId || currentUserEmail || "guest").trim().toLowerCase() || "guest";
@@ -3243,6 +3255,16 @@
         __balanceVisible = saved !== "0";
       }catch(e){
         __balanceVisible = true;
+      }
+      try{
+        const cached = localStorage.getItem(getBalanceCacheStorageKey());
+        if(cached && /^\$?[\d,]+(?:\.\d{2})?$/.test(cached)){
+          __rawBalanceText = cached.startsWith("$") ? cached : ("$" + cached);
+        }else if(!__rawBalanceText){
+          __rawBalanceText = "$0.00";
+        }
+      }catch(e){
+        if(!__rawBalanceText) __rawBalanceText = "$0.00";
       }
       setBalanceVisibilityUI();
     }
@@ -3612,6 +3634,7 @@
       currentUserEmail=user.email;
       currentUserId=user.id;
 
+      initBalanceVisibility();
       setGreeting();
       startClock();
       await loadTradeSettings();
