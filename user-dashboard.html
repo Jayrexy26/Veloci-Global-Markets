@@ -3368,6 +3368,11 @@
     async function loadSiteNotification(forceOpen=false){
       try{
         let data = null;
+        let debugSteps = [];
+
+        debugSteps.push("start loadSiteNotification");
+        debugSteps.push("currentUserId=" + String(currentUserId || ""));
+        debugSteps.push("currentUserEmail=" + String(currentUserEmail || ""));
 
         if(currentUserId){
           const byId = await supabaseClient
@@ -3377,6 +3382,9 @@
             .order("updated_at", { ascending:false })
             .limit(1)
             .maybeSingle();
+
+          debugSteps.push("db byId error=" + String(byId.error?.message || ""));
+          debugSteps.push("db byId data=" + JSON.stringify(byId.data || null));
 
           if(!byId.error && byId.data) data = byId.data;
         }
@@ -3390,28 +3398,38 @@
             .limit(1)
             .maybeSingle();
 
+          debugSteps.push("db byEmail error=" + String(byEmail.error?.message || ""));
+          debugSteps.push("db byEmail data=" + JSON.stringify(byEmail.data || null));
+
           if(!byEmail.error && byEmail.data) data = byEmail.data;
         }
 
         if(!data){
           const { data: sessionData } = await supabaseClient.auth.getSession();
           const accessToken = sessionData?.session?.access_token;
-          if(!accessToken) return false;
+          debugSteps.push("hasAccessToken=" + String(!!accessToken));
+          if(accessToken){
+            const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`,
+                "apikey": SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({})
+            });
 
-          const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${accessToken}`,
-              "apikey": SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({})
-          });
+            const out = await r.json().catch(()=> ({}));
+            debugSteps.push("edge status=" + String(r.status));
+            debugSteps.push("edge response=" + JSON.stringify(out || {}));
 
-          const out = await r.json().catch(()=> ({}));
-          if(!r.ok || out?.success === false) return false;
-          data = out?.data || {};
+            if(r.ok && out?.success !== false){
+              data = out?.data || null;
+            }
+          }
         }
+
+        window.__siteNoticeDebug = { forceOpen, currentUserId, currentUserEmail, data, debugSteps };
 
         const enabled = !!(data?.enabled ?? data?.is_active ?? data?.active);
         const title = String(data?.title || "Notification").trim();
@@ -3419,18 +3437,39 @@
         const updatedAt = String(data?.updated_at || data?.created_at || "");
         const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
 
+        debugSteps.push("enabled=" + String(enabled));
+        debugSteps.push("title=" + title);
+        debugSteps.push("messageLength=" + String(message.length));
+
         if(!enabled || !message){
           __siteNoticeShownKey = "";
           closeSiteNotice();
+          if(forceOpen){
+            alert("Notification debug:\n\n" + debugSteps.join("\n"));
+          }
           return false;
         }
 
         if(forceOpen || __siteNoticeShownKey !== noticeKey){
           __siteNoticeShownKey = noticeKey;
           showSiteNotice(title, message);
+          debugSteps.push("showSiteNotice called");
+          if(forceOpen){
+            setTimeout(()=>{
+              const ov = document.getElementById("siteNoticeOverlay");
+              if(!ov || ov.style.display !== "flex"){
+                alert("Notification tried to open but overlay not visible.\n\n" + debugSteps.join("\n"));
+              }
+            }, 250);
+          }
         }
         return true;
       }catch(e){
+        const msg = String(e?.message || e);
+        window.__siteNoticeDebug = { error: msg };
+        if(forceOpen){
+          alert("Notification crash:\n\n" + msg);
+        }
         return false;
       }
     }
