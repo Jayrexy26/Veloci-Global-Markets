@@ -613,12 +613,12 @@
     </div>
     <div class="drawerNav">
       <a class="navItem" href="user-dashboard.html"><span>Dashboard</span><small>Main overview</small></a>
-      <a class="navItem active" href="wallet.html"><span>Wallets</span><small>Your assets</small></a>
-      <a class="navItem" href="deposits.html"><span>Deposit</span><small>Fund account</small></a>
-      <a class="navItem" href="withdraw.html"><span>Withdraw Funds</span><small>Request payout</small></a>
-      <a class="navItem" href="support.html"><span>Support / Contact</span><small>Tickets</small></a>
-      <a class="navItem" href="plans.html"><span>Investment Plans</span><small>Invest</small></a>
-      <a class="navItem" href="profile.html"><span>Profile / Settings</span><small>Security</small></a>
+      <a class="navItem active" href="wallet.html"><span>Wallet</span><small>Manage funds</small></a>
+      <a class="navItem" href="deposits.html"><span>Deposits</span><small>Fund account</small></a>
+      <a class="navItem" href="withdrawal.html"><span>Withdrawals</span><small>Request payout</small></a>
+      <a class="navItem" href="support.html"><span>Support</span><small>Tickets</small></a>
+      <a class="navItem" href="plans.html"><span>Plans</span><small>Invest</small></a>
+      <a class="navItem" href="profile.html"><span>Profile</span><small>Security</small></a>
       <button class="navItem" id="btnLogout" type="button"><span>Logout</span><small>Sign out</small></button>
     </div>
   </aside>
@@ -735,7 +735,7 @@
     <div id="empty" class="empty">No assets match your search.</div>
   </div>
 
-  <footer>© 2026 Veloci Global Markets. All rights reserved</footer>
+  <footer>© 2026 Veloci Global Markets. All rights reserved.</footer>
 
   <div id="toast" class="toast"></div>
 
@@ -2128,26 +2128,70 @@
 
     /* ADMIN NOTICE */
     const noticeOverlay=document.getElementById("noticeOverlay");
-    function closeNotice(){ noticeOverlay.classList.remove("show"); sessionStorage.setItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`, "1"); }
+    let __noticeKey = "";
+
+    function closeNotice(){
+      noticeOverlay.classList.remove("show");
+      try{
+        sessionStorage.setItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`, __noticeKey || "1");
+      }catch(e){}
+    }
     document.getElementById("btnNoticeClose").addEventListener("click", closeNotice);
     document.getElementById("btnNoticeDismiss").addEventListener("click", closeNotice);
     noticeOverlay.addEventListener("click",(e)=>{ if(e.target===noticeOverlay) closeNotice(); });
 
-    async function checkNotice(){
+    async function checkNotice(forceOpen=false){
       try{
-        if(!CURRENT_USER_ID) return;
-        if(sessionStorage.getItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`)==="1") return;
-        const { data, error } = await supabaseClient
-          .from("user_notices")
-          .select("enabled,title,message,updated_at")
-          .eq("user_id", CURRENT_USER_ID)
-          .maybeSingle();
-        if(error) return;
-        if(!data?.enabled) return;
-        document.getElementById("noticeTitle").textContent=String(data?.title||"Notice");
-        document.getElementById("noticeSub").textContent="Admin message";
-        document.getElementById("noticeMsg").textContent=String(data?.message||"");
-        noticeOverlay.classList.add("show");
+        if(!CURRENT_USER_ID && !CURRENT_EMAIL) return;
+
+        let row = null;
+
+        if(CURRENT_USER_ID){
+          const byId = await supabaseClient
+            .from("user_notices")
+            .select("*")
+            .eq("user_id", CURRENT_USER_ID)
+            .order("updated_at", { ascending:false })
+            .limit(1);
+
+          if(!byId.error && Array.isArray(byId.data) && byId.data.length){
+            row = byId.data[0];
+          }
+        }
+
+        if(!row && CURRENT_EMAIL){
+          const byEmail = await supabaseClient
+            .from("user_notices")
+            .select("*")
+            .ilike("user_email", String(CURRENT_EMAIL||"").trim().toLowerCase())
+            .order("updated_at", { ascending:false })
+            .limit(1);
+
+          if(!byEmail.error && Array.isArray(byEmail.data) && byEmail.data.length){
+            row = byEmail.data[0];
+          }
+        }
+
+        if(!row || !row.enabled || !String(row.message || "").trim()){
+          __noticeKey = "";
+          noticeOverlay.classList.remove("show");
+          return;
+        }
+
+        const title = String(row.title || "Notice");
+        const message = String(row.message || "");
+        const updatedAt = String(row.updated_at || row.created_at || "");
+        const nextKey = [String(row.user_id || ""), String(row.user_email || ""), title, message, updatedAt].join("|");
+        const dismissedKey = (()=>{ try{ return sessionStorage.getItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`) || ""; }catch(e){ return ""; }})();
+
+        __noticeKey = nextKey;
+
+        if(forceOpen || dismissedKey !== nextKey){
+          document.getElementById("noticeTitle").textContent = title;
+          document.getElementById("noticeSub").textContent = "Admin message";
+          document.getElementById("noticeMsg").textContent = message;
+          noticeOverlay.classList.add("show");
+        }
       }catch(e){}
     }
 
@@ -2353,7 +2397,7 @@
         setupLinkRealtime();
 
         // notice
-        await checkNotice();
+        await checkNotice(true);
 
         // periodic refresh
         setInterval(checkLinkStatus, 15000);
