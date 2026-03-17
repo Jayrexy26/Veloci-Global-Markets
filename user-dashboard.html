@@ -409,7 +409,10 @@
       padding:16px;
     }
     .bTitle{font-size:13px;font-weight:1000;opacity:.85}
-    .bValue{font-size:34px;font-weight:1000;margin-top:8px}
+    .bValueRow{display:flex;align-items:center;gap:10px;margin-top:8px}
+    .bValue{font-size:34px;font-weight:1000;margin-top:0}
+    .balanceEyeBtn{width:42px;height:42px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 16px 40px rgba(0,0,0,.25);font-size:18px;font-weight:1000;user-select:none}
+    .balanceEyeBtn:hover{background:rgba(255,255,255,.12)}
     .bHint{margin-top:6px;font-size:13px;font-weight:900;opacity:.88;display:flex;gap:10px;align-items:center}
     .dot{width:10px;height:10px;border-radius:999px;background:var(--green)}
     .actionGrid{
@@ -1491,7 +1494,10 @@
 </div>
 <div class="balanceCard">
 <div class="bTitle">Total Portfolio Value</div>
+<div class="bValueRow">
 <div class="bValue" id="balance">--</div>
+<button aria-label="Hide or show balance" class="balanceEyeBtn" id="balanceEyeBtn" onclick="toggleBalanceVisibility()" title="Hide / Show balance" type="button">👁️</button>
+</div>
 <div class="bHint"><div class="dot"></div> <div>Your trading account balance</div></div>
 <div class="actionGrid">
 <div class="action" onclick="goWithdrawAndClear()"><div class="aIcon aSend">✈️</div><div class="aText">Send</div></div>
@@ -3201,13 +3207,55 @@
         }
 
         const bal = Number(total || 0).toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 });
-        document.getElementById("balance").innerHTML = "$" + bal;
+        __rawBalanceText = "$" + bal;
+        setBalanceVisibilityUI();
       }catch(e){
         // Never leave it blank (prevents "Loading…" feeling)
-        document.getElementById("balance").innerHTML = "$0.00";
+        __rawBalanceText = "$0.00";
+        setBalanceVisibilityUI();
       }
     }
 
+
+    let __rawBalanceText = "$0.00";
+    let __balanceVisible = true;
+
+    function getBalanceVisibilityStorageKey(){
+      const idPart = String(currentUserId || currentUserEmail || "guest").trim().toLowerCase() || "guest";
+      return "vgm_balance_visible::" + idPart;
+    }
+
+    function setBalanceVisibilityUI(){
+      const balEl = document.getElementById("balance");
+      const eyeBtn = document.getElementById("balanceEyeBtn");
+      if(!balEl) return;
+      balEl.textContent = __balanceVisible ? __rawBalanceText : "••••••";
+      if(eyeBtn){
+        eyeBtn.textContent = __balanceVisible ? "🙈" : "👁️";
+        eyeBtn.setAttribute("aria-label", __balanceVisible ? "Hide balance" : "Show balance");
+        eyeBtn.title = __balanceVisible ? "Hide balance" : "Show balance";
+      }
+    }
+
+    function initBalanceVisibility(){
+      try{
+        const saved = localStorage.getItem(getBalanceVisibilityStorageKey());
+        __balanceVisible = saved !== "0";
+      }catch(e){
+        __balanceVisible = true;
+      }
+      setBalanceVisibilityUI();
+    }
+
+    function toggleBalanceVisibility(){
+      __balanceVisible = !__balanceVisible;
+      try{
+        localStorage.setItem(getBalanceVisibilityStorageKey(), __balanceVisible ? "1" : "0");
+      }catch(e){}
+      setBalanceVisibilityUI();
+    }
+
+    window.toggleBalanceVisibility = toggleBalanceVisibility;
 
     function money(n){ return "$" + Number(n||0).toFixed(2); }
     function pill(status){
@@ -3346,9 +3394,29 @@
       }catch(e){}
     }
 
-
     let __siteNoticeShownKey = "";
     let __siteNoticeRefreshTimer = null;
+    let __siteNoticeCurrentKey = "";
+    const SITE_NOTICE_SEEN_PREFIX = "vgm_site_notice_seen::";
+
+    function getSiteNoticeSeenStorageKey(){
+      const idPart = String(currentUserId || currentUserEmail || "guest").trim().toLowerCase() || "guest";
+      return SITE_NOTICE_SEEN_PREFIX + idPart;
+    }
+
+    function getSeenNoticeKey(){
+      try{
+        return localStorage.getItem(getSiteNoticeSeenStorageKey()) || "";
+      }catch(e){
+        return "";
+      }
+    }
+
+    function setSeenNoticeKey(key){
+      try{
+        localStorage.setItem(getSiteNoticeSeenStorageKey(), String(key || ""));
+      }catch(e){}
+    }
 
     function showSiteNotice(title, message){
       const ov = document.getElementById("siteNoticeOverlay");
@@ -3363,16 +3431,12 @@
     function closeSiteNotice(){
       const ov = document.getElementById("siteNoticeOverlay");
       if(ov) ov.style.display = "none";
+      if(__siteNoticeCurrentKey) setSeenNoticeKey(__siteNoticeCurrentKey);
     }
 
     async function loadSiteNotification(forceOpen=false){
       try{
         let data = null;
-        let debugSteps = [];
-
-        debugSteps.push("start loadSiteNotification");
-        debugSteps.push("currentUserId=" + String(currentUserId || ""));
-        debugSteps.push("currentUserEmail=" + String(currentUserEmail || ""));
 
         if(currentUserId){
           const byId = await supabaseClient
@@ -3382,9 +3446,6 @@
             .order("updated_at", { ascending:false })
             .limit(1)
             .maybeSingle();
-
-          debugSteps.push("db byId error=" + String(byId.error?.message || ""));
-          debugSteps.push("db byId data=" + JSON.stringify(byId.data || null));
 
           if(!byId.error && byId.data) data = byId.data;
         }
@@ -3398,16 +3459,12 @@
             .limit(1)
             .maybeSingle();
 
-          debugSteps.push("db byEmail error=" + String(byEmail.error?.message || ""));
-          debugSteps.push("db byEmail data=" + JSON.stringify(byEmail.data || null));
-
           if(!byEmail.error && byEmail.data) data = byEmail.data;
         }
 
         if(!data){
           const { data: sessionData } = await supabaseClient.auth.getSession();
           const accessToken = sessionData?.session?.access_token;
-          debugSteps.push("hasAccessToken=" + String(!!accessToken));
           if(accessToken){
             const r = await fetch(`${SUPABASE_URL}/functions/v1/user-notification`, {
               method: "POST",
@@ -3420,56 +3477,34 @@
             });
 
             const out = await r.json().catch(()=> ({}));
-            debugSteps.push("edge status=" + String(r.status));
-            debugSteps.push("edge response=" + JSON.stringify(out || {}));
-
             if(r.ok && out?.success !== false){
               data = out?.data || null;
             }
           }
         }
 
-        window.__siteNoticeDebug = { forceOpen, currentUserId, currentUserEmail, data, debugSteps };
-
         const enabled = !!(data?.enabled ?? data?.is_active ?? data?.active);
         const title = String(data?.title || "Notification").trim();
         const message = String(data?.message || data?.body || "").trim();
         const updatedAt = String(data?.updated_at || data?.created_at || "");
         const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
-
-        debugSteps.push("enabled=" + String(enabled));
-        debugSteps.push("title=" + title);
-        debugSteps.push("messageLength=" + String(message.length));
+        const seenNoticeKey = getSeenNoticeKey();
 
         if(!enabled || !message){
           __siteNoticeShownKey = "";
+          __siteNoticeCurrentKey = "";
           closeSiteNotice();
-          if(forceOpen){
-            alert("Notification debug:\n\n" + debugSteps.join("\n"));
-          }
           return false;
         }
 
-        if(forceOpen || __siteNoticeShownKey !== noticeKey){
+        __siteNoticeCurrentKey = noticeKey;
+
+        if(forceOpen || (__siteNoticeShownKey !== noticeKey && seenNoticeKey !== noticeKey)){
           __siteNoticeShownKey = noticeKey;
           showSiteNotice(title, message);
-          debugSteps.push("showSiteNotice called");
-          if(forceOpen){
-            setTimeout(()=>{
-              const ov = document.getElementById("siteNoticeOverlay");
-              if(!ov || ov.style.display !== "flex"){
-                alert("Notification tried to open but overlay not visible.\n\n" + debugSteps.join("\n"));
-              }
-            }, 250);
-          }
         }
         return true;
       }catch(e){
-        const msg = String(e?.message || e);
-        window.__siteNoticeDebug = { error: msg };
-        if(forceOpen){
-          alert("Notification crash:\n\n" + msg);
-        }
         return false;
       }
     }
@@ -3486,6 +3521,7 @@
         loadSiteNotification(false);
       });
     }
+
 
 
     async function logout(){
