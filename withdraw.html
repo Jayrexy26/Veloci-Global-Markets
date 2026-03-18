@@ -1906,10 +1906,43 @@ window.closeSiteNotice = closeSiteNotice;
   function getSelectedWithdrawalAsset(){
     const assetEl = document.getElementById("asset");
     if(!assetEl) return "";
-    const rawValue = String(assetEl.value || "").trim();
-    const optionText = String(assetEl.options?.[assetEl.selectedIndex]?.text || "").trim();
-    const asset = (rawValue || optionText || "").trim().toUpperCase();
-    return asset;
+
+    const candidates = [];
+    try{ candidates.push(assetEl.value); }catch(_e){}
+    try{ candidates.push(assetEl.getAttribute("value")); }catch(_e){}
+
+    const idx = Number(assetEl.selectedIndex);
+    if(Number.isFinite(idx) && idx >= 0 && assetEl.options && assetEl.options[idx]){
+      const opt = assetEl.options[idx];
+      candidates.push(opt.value);
+      candidates.push(opt.text);
+      candidates.push(opt.getAttribute("data-asset"));
+    }
+
+    try{
+      const selectedOpt = assetEl.querySelector("option:checked");
+      if(selectedOpt){
+        candidates.push(selectedOpt.value);
+        candidates.push(selectedOpt.textContent);
+        candidates.push(selectedOpt.getAttribute("data-asset"));
+      }
+    }catch(_e){}
+
+    if(assetEl.options && assetEl.options.length){
+      for(const opt of Array.from(assetEl.options)){
+        const val = String(opt?.value || "").trim();
+        if(val){
+          candidates.push(val);
+          break;
+        }
+      }
+    }
+
+    for(const raw of candidates){
+      const clean = String(raw || "").trim().toUpperCase();
+      if(clean) return clean;
+    }
+    return "";
   }
 
   tabsEl.addEventListener("click", async (e) => {
@@ -1936,6 +1969,12 @@ window.closeSiteNotice = closeSiteNotice;
     ✅ SUCCESS NOW POPUP MODAL
     ✅ AFTER SUCCESS: AUTO DEDUCT FROM BALANCE
   ============================================================ */
+  const __withdrawAssetEl = document.getElementById("asset");
+  if (__withdrawAssetEl && !String(__withdrawAssetEl.value || "").trim()) {
+    const firstNonEmpty = Array.from(__withdrawAssetEl.options || []).find((opt) => String(opt?.value || "").trim());
+    if (firstNonEmpty) __withdrawAssetEl.value = String(firstNonEmpty.value || "").trim();
+  }
+
   submitBtn.addEventListener("click", async () => {
     try {
       clearError();
@@ -1975,6 +2014,8 @@ window.closeSiteNotice = closeSiteNotice;
         amount: amountVal,
         asset: selectedAsset,
         asset_key: selectedAsset,
+        selected_asset: selectedAsset,
+        asset_name: selectedAsset,
         currency: selectedAsset,
         coin: selectedAsset,
         method: currentMethod
