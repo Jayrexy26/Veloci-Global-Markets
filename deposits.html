@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>VGM | Deposits</title>
+<title>Investment Plans - Coinluxora</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
 /* ===== SITE-WIDE NOTIFICATION ===== */
@@ -180,188 +180,76 @@ window.closeSiteNotice = closeSiteNotice;
 
 </script>
 
-<!-- ✅ QR generator library (primary) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js">
-/* ===== SITE-WIDE NOTIFICATION ===== */
-let __siteNoticeShownKey = "";
-let __siteNoticeTimer = null;
-
-function showSiteNotice(title, message){
-  const ov = document.getElementById("siteNoticeOverlay");
-  const ttl = document.getElementById("siteNoticeTitle");
-  const body = document.getElementById("siteNoticeBody");
-  if(!ov || !ttl || !body) return;
-  ttl.textContent = String(title || "Notification");
-  body.textContent = String(message || "");
-  ov.style.display = "flex";
-  ov.setAttribute("aria-hidden", "false");
-}
-function closeSiteNotice(){
-  const ov = document.getElementById("siteNoticeOverlay");
-  if(ov){
-    ov.style.display = "none";
-    ov.setAttribute("aria-hidden", "true");
-  }
-}
-async function loadSiteNotification(forceOpen=false){
-  try{
-    const userObj = window.COINLUXORA_USER || null;
-    const uid =
-      (typeof currentUserId !== "undefined" && currentUserId) ? currentUserId :
-      (typeof currentUser !== "undefined" && currentUser?.id) ? currentUser.id :
-      (userObj?.id || "");
-    const emailRaw =
-      (typeof currentUserEmail !== "undefined" && currentUserEmail) ? currentUserEmail :
-      (typeof currentUser !== "undefined" && currentUser?.email) ? currentUser.email :
-      (userObj?.email || "");
-    const email = String(emailRaw || "").trim().toLowerCase();
-
-    let row = null;
-
-    if(uid){
-      const byId = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .eq("user_id", uid)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byId.error && byId.data) row = byId.data;
-    }
-
-    if(!row && email){
-      const byEmail = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .ilike("user_email", email)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byEmail.error && byEmail.data) row = byEmail.data;
-    }
-
-    const enabled = !!(row?.enabled ?? false);
-    const title = String(row?.title ?? "Notification").trim();
-    const message = String(row?.message ?? "").trim();
-    const updatedAt = String(row?.updated_at ?? "");
-    const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
-
-    if(!enabled || !message){
-      __siteNoticeShownKey = "";
-      closeSiteNotice();
-      return false;
-    }
-
-    if(forceOpen || __siteNoticeShownKey !== noticeKey){
-      __siteNoticeShownKey = noticeKey;
-      showSiteNotice(title, message);
-    }
-    return true;
-  }catch(e){
-    return false;
-  }
-}
-function startSiteNotificationAutoRefresh(){
-  if(__siteNoticeTimer) clearInterval(__siteNoticeTimer);
-  __siteNoticeTimer = setInterval(()=> loadSiteNotification(false), 15000);
-}
-window.closeSiteNotice = closeSiteNotice;
-
-</script>
-
 <style>
 :root{
   --bg:#050a18;
-  --stroke:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.12);
   --text:#eaf0ff;
   --muted:rgba(234,240,255,.65);
-  --ok:#22c55e;
+
+  --ok:#34d399;
   --err:#f87171;
-  --blue:#5b6cff;
-  --purple:#7c4dff;
-  --green:#34d399;
-  --cyan:#38bdf8;
-  --pink:#ff4da6;
+  --warn:#facc15;
+
+  --pending:#9e6816;
+  --forexGreen:#0bd07c;
+
   --shadow: 0 26px 90px rgba(0,0,0,.55);
 }
 *{box-sizing:border-box}
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  color:var(--text);
-  padding:16px;
-  padding-bottom:120px;
-  overflow-x:hidden;
-  background: var(--bg);
-}
-
-/* ===== background (same vibe as dashboard, simpler) ===== */
-.bgFlow{
-  position:fixed; inset:0; z-index:-4;
-  background:
-    radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.25), transparent 55%),
-    radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.18), transparent 55%),
-    radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.14), transparent 60%),
-    linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
-}
-.shimmer{
-  position:fixed; inset:-30px; z-index:-2;
-  opacity:.22;
-  background:
-    radial-gradient(600px 280px at 30% 10%, rgba(255,255,255,.10), transparent 60%),
-    radial-gradient(700px 320px at 80% 60%, rgba(255,255,255,.07), transparent 60%),
-    linear-gradient(120deg, transparent, rgba(255,255,255,.05), transparent);
-  animation: shimmerMove 6s ease-in-out infinite alternate;
-  pointer-events:none;
-}
-@keyframes shimmerMove{
-  from{transform:translateY(0px) translateX(0px)}
-  to{transform:translateY(42px) translateX(22px)}
-}
-
-.container{max-width:920px;margin:0 auto}
-@media (min-width: 1100px){ .container{max-width:1250px;} }
-@media (min-width: 1500px){ .container{max-width:1380px;} }
-
-/* ===== Loading Gate (same guard look style) ===== */
-#authGate{
-  position:fixed; inset:0; z-index:99999;
-  display:flex; align-items:center; justify-content:center;
   background:
     radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.22), transparent 55%),
     radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
     var(--bg);
+  color:var(--text);
+  padding:16px;
+  padding-bottom:34px;
+  overflow-x:hidden;
 }
-.gateCard{
-  width:min(520px,92vw);
-  border:none;
-  background:transparent;
-  border-radius:0;
-  padding:0;
-  box-shadow:none;
-  text-align:center;
+.container{max-width:980px;margin:0 auto}
+
+/* ✅ TOP FLOAT NAV (LEFT BACK + RIGHT MENU) */
+.topFloatNav{
+  position:sticky;
+  top:10px;
+  z-index:500; /* below sidebar */
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
 }
-.logoImg{width:100%;height:100%;object-fit:contain;display:block;}
-.gateLogo{
-  width:240px;height:240px;border-radius:0;
-  margin:0 auto 14px;
-  display:grid;place-items:center;
-  border:none;background:transparent;
-  animation: premiumPulse 2.4s ease-in-out infinite;
-  filter:
-    drop-shadow(0 18px 45px rgba(0,0,0,.55))
-    drop-shadow(0 0 36px rgba(91,108,255,.45));
+.backBtn{
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+  color:white;
+  font-weight:1000;
+  cursor:pointer;
+  backdrop-filter: blur(12px);
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
 }
-@keyframes premiumPulse{
-  0%{transform:scale(1);opacity:.90}
-  50%{transform:scale(1.10);opacity:1}
-  100%{transform:scale(1);opacity:.90}
+.backBtn:hover{background:rgba(255,255,255,.08)}
+.menuBtn{
+  width:48px;
+  height:48px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
 }
-.gateTxt{font-weight:1000;font-size:18px;letter-spacing:.2px}
-.gateSub{margin-top:8px;color:rgba(234,240,255,.70);font-weight:900;font-size:13px}
+.menuBtn:hover{background:rgba(255,255,255,.10)}
 
 /* ============================================================
-  ✅ SIDEBAR (MATCHES YOUR USER-DASHBOARD)
+  ✅ SIDEBAR — MATCH USER DASHBOARD STYLE (LEFT SLIDE)
 ============================================================ */
 .overlay{
   position:fixed; inset:0;
@@ -370,6 +258,7 @@ body{
   backdrop-filter: blur(4px);
 }
 .overlay.show{display:block;}
+
 .sidebar{
   position:fixed; top:0; left:-315px;
   width:292px; height:100vh;
@@ -388,13 +277,33 @@ body{
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
 }
+.sidebar::-webkit-scrollbar{width:8px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.16);
+  border-radius:999px;
+  border:2px solid rgba(0,0,0,0);
+  background-clip:padding-box;
+}
+.sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
 .sidebar.open{ left:0; }
 
 .sideTop{
   display:flex;align-items:center;justify-content:space-between;
   gap:10px;margin-bottom:12px;
 }
-.sideBrand{display:flex;align-items:center;gap:0;padding:0;border:none;background:transparent}
+
+/* wide logo (no box) */
+.sideBrand{
+  display:flex;
+  align-items:center;
+  gap:0;
+  padding:0;
+  border:none;
+  background:transparent;
+  box-shadow:none;
+  min-width:unset;
+}
 .sideLogoWide{
   height:128px;
   width:auto;
@@ -405,6 +314,7 @@ body{
     drop-shadow(0 18px 35px rgba(0,0,0,.55))
     drop-shadow(0 0 22px rgba(91,108,255,.18));
 }
+
 .closeBtn{
   background:rgba(0,0,0,.22);
   border:1px solid rgba(255,255,255,.14);
@@ -433,6 +343,7 @@ body{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   max-width:180px;
 }
+
 .sideAvatar{
   width:46px;height:46px;border-radius:999px;
   border:1px solid rgba(255,255,255,.14);
@@ -443,7 +354,12 @@ body{
   flex:0 0 auto;
 }
 .sideAvatar span{font-size:18px}
-.sideAvatar img{position:absolute; inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+.sideAvatar img{
+  position:absolute; inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  display:none;
+}
 
 .menuGroupTitle{
   margin:10px 0 8px;
@@ -472,10 +388,7 @@ body{
   background:rgba(255,255,255,.06);
   font-size:18px;
 }
-.sideItem small{
-  display:block;color:rgba(234,240,255,.55);
-  font-size:12px;font-weight:900;margin-top:2px
-}
+.sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
 .activeLink{
   border:1px solid rgba(56,189,248,.55);
   background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
@@ -496,382 +409,158 @@ body{
 }
 .sideLogout:hover{filter:brightness(1.03)}
 
-/* ============================================================
-  ✅ STICKY TOP (MATCH STYLE)
-============================================================ */
-.stickyMenu{
-  position:sticky;
-  top:12px;
-  z-index:3000;
-  margin-bottom:10px;
-}
-.stickyMenu::before{
-  content:"";
-  position:absolute;
-  inset:-10px -10px -8px -10px;
-  border-radius:26px;
-  background:rgba(5,10,24,.58);
-  border:1px solid rgba(255,255,255,.12);
-  box-shadow:0 18px 70px rgba(0,0,0,.55);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  z-index:-1;
-  pointer-events:none;
-  opacity:0;
-  transform: translateY(-6px);
-  transition: .18s ease;
-}
-.stickyMenu.isStuck::before{opacity:1;transform:translateY(0)}
-.topRow{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:12px; margin-bottom:14px;
-}
-.brand{
-  display:flex;align-items:center;gap:0;padding:0;border:none;background:transparent;
-}
-.brandLogoWide{
-  height:54px;
-  width:auto;
-  max-width:520px;
-  display:block;
-  object-fit:contain;
-  transform: translateX(-18px) scale(3);
-  transform-origin: left center;
-  filter:
-    drop-shadow(0 18px 35px rgba(0,0,0,.55))
-    drop-shadow(0 0 22px rgba(91,108,255,.22));
-}
-@media(max-width:520px){
-  .brandLogoWide{
-    transform: translateX(-12px) scale(2.6);
-    transform-origin:left center;
-  }
-}
-.headerActions{display:flex;gap:10px;align-items:center}
-.avatarBtn{
-  width:46px;height:46px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:linear-gradient(180deg, rgba(124,77,255,1), rgba(109,87,255,1));
-  cursor:pointer;
-  box-shadow:0 16px 40px rgba(124,77,255,.32);
-  display:grid;place-items:center;
-  position:relative;overflow:hidden;
-}
-.avatarBtn:hover{filter:brightness(1.05)}
-.avatarFallback{font-size:18px;line-height:1;z-index:2;}
-.avatarImgBtn{position:absolute; inset:0;width:100%; height:100%;object-fit:cover;display:none;z-index:3;}
-.iconBtn{
-  width:46px;height:46px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.18);
-  color:white;font-weight:1000;
-  cursor:pointer;
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
+/* HEADER BOX */
+.topBar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 16px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border-radius:18px;
+  box-shadow:0 20px 80px rgba(0,0,0,.55);
   backdrop-filter: blur(10px);
+  margin-bottom:14px;
 }
-.iconBtn:hover{background:rgba(255,255,255,.08)}
-
-/* Hide sticky when menu open */
-body.menuOpen #stickyMenu{visibility:hidden;pointer-events:none}
-
-/* ============================================================
-  ✅ PAGE UI
-============================================================ */
-.box{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:24px;
-  padding:16px;
-  background:
-    radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.14), transparent 62%),
-    radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  box-shadow:0 26px 90px rgba(0,0,0,.55);
-  backdrop-filter: blur(12px);
-  margin-top:14px;
+.topBar .title{font-weight:1000;letter-spacing:.2px}
+.topBar .email{
+  font-weight:900;color:rgba(255,255,255,.8);
+  font-size:13px;max-width:58%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
 }
-.box h2{margin:0;font-size:20px;font-weight:1000}
-.small{color:var(--muted);font-size:13px;margin-top:8px}
-.ok{color:var(--ok);font-weight:1000}
-.err{color:var(--err);font-weight:1000}
 
-.grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
-@media(min-width:900px){ .grid.twoCol{grid-template-columns:1fr 1fr;} }
-
-label{display:block;font-weight:900;margin-top:6px;margin-bottom:8px;color:rgba(255,255,255,.85)}
-input,select{
-  width:100%;
-  padding:16px 14px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(0,0,0,.32);
-  color:var(--text);
-  outline:none;
-  font-size:15px;
-}
-input::placeholder{color:rgba(255,255,255,.35)}
-input:focus,select:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 4px rgba(99,102,241,.18)}
-
+.btnRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .gradBtn{
-  width:100%;
-  padding:16px 14px;
   border:none;
-  border-radius:16px;
+  padding:12px 16px;
+  border-radius:14px;
   cursor:pointer;
   font-weight:1000;
-  font-size:16px;
   color:white;
   background:linear-gradient(90deg, #5b6cff, #34d399);
-  box-shadow:0 18px 60px rgba(0,0,0,.50);
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
 }
 .gradBtn:active{transform:translateY(1px)}
 
-.btn{
-  padding:12px 14px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.25);
-  color:white;
-  font-weight:1000;
-  cursor:pointer;
-}
-.btn:hover{background:rgba(255,255,255,.08)}
-
-.copyGreen{
-  background: linear-gradient(90deg, rgba(34,197,94,1), rgba(16,185,129,1)) !important;
-  border-color: rgba(34,197,94,.60) !important;
-  box-shadow: 0 14px 40px rgba(34,197,94,.18) !important;
-}
-
-/* ===== deposit card ===== */
-.depositCard{
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:22px;
-  background:
-    radial-gradient(700px 240px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
-    radial-gradient(700px 240px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
-    rgba(0,0,0,.22);
-  box-shadow:0 22px 80px rgba(0,0,0,.55);
-  padding:16px;
-  margin-top:14px;
-}
-.depositTop{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-}
-.assetPill{
-  display:inline-flex; align-items:center; gap:10px;
-  padding:10px 12px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.06);
-  font-weight:1000;
-}
-.assetLogo{
-  width:26px; height:26px; border-radius:999px;
-  display:grid; place-items:center;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.10);
-  overflow:hidden;
-}
-.assetLogo svg{display:block}
-.netPill{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:8px 12px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.20);
-  font-weight:1000;
-  color:rgba(234,240,255,.86);
-  font-size:12px;
-}
-.netDot{
-  width:9px; height:9px; border-radius:999px;
-  background:rgba(56,189,248,1);
-  box-shadow:0 0 18px rgba(56,189,248,.35);
-}
-.depositMid{
+/* STATS */
+.statsGrid{
   display:grid;
-  grid-template-columns: 148px 1fr;
-  gap:14px;
-  margin-top:14px;
-}
-@media(max-width:520px){
-  .depositMid{ grid-template-columns: 1fr; }
-}
-.qrBox{
-  border:none;
-  background:transparent;
-  padding:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-}
-.qrCanvas{
-  width:140px; height:140px;
-  border:none;
-  background:transparent;
-  display:grid; place-items:center;
-  overflow:visible;
-}
-.qrHint{
-  margin-top:10px;
-  font-size:12px;
-  font-weight:900;
-  color:rgba(234,240,255,.65);
-  text-align:center;
-}
-.addrBox{
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.22);
-  padding:14px;
-  overflow:hidden;
-}
-.addrLabelRow{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-}
-.addrMono{
-  margin-top:10px;
-  font-weight:1000;
-  font-size:14px;
-  word-break:break-all;
-  line-height:1.35;
-}
-.addrActions{
-  margin-top:12px;
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.actionMini{
-  flex:1;
-  min-width:130px;
-  padding:12px 14px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.06);
-  color:white;
-  font-weight:1000;
-  cursor:pointer;
-}
-.actionMini:hover{background:rgba(255,255,255,.10)}
-.actionMini.primary{
-  background:linear-gradient(90deg, rgba(91,108,255,1), rgba(52,211,153,1));
-  border:none;
-}
-.actionMini.primary:hover{filter:brightness(1.05)}
-
-/* ===== dropdown with icons ===== */
-.logoSelect{position:relative}
-.logoBtn{
-  width:100%;
-  height:56px;
-  border-radius:16px;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(0,0,0,.32);
-  color:var(--text);
-  padding:10px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  cursor:pointer;
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
-}
-.logoLeft{display:flex;align-items:center;gap:10px;min-width:0}
-.logoIcon{
-  width:34px;height:34px;border-radius:0;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
-  display:grid;place-items:center;
-  overflow:hidden;
-  flex:0 0 auto;
-}
-.logoName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:1000}
-.logoCaret{opacity:.8;font-weight:1000}
-.logoPanel{
-  position:absolute;
-  top:62px; left:0; right:0;
-  border-radius:18px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(2,6,23,.96);
-  box-shadow:0 26px 90px rgba(0,0,0,.65);
-  backdrop-filter: blur(16px);
-  overflow:hidden;
-  display:none;
-  z-index:50;
-}
-.logoPanel.show{display:block;}
-.logoSearch{
-  width:100%;
-  height:46px;
-  border:none; outline:none;
-  padding:0 12px;
-  font-weight:1000;
-  color:#fff;
-  background:rgba(0,0,0,.20);
-  border-bottom:1px solid rgba(255,255,255,.10);
-}
-.logoList{max-height:300px;overflow:auto;}
-.logoItem{
-  padding:12px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+  grid-template-columns:repeat(2,1fr);
   gap:12px;
-  cursor:pointer;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  color:rgba(234,240,255,.90);
-  font-weight:1000;
+  margin-bottom:14px;
 }
-.logoItem:hover{background:rgba(255,255,255,.06)}
-.logoItem small{color:rgba(234,240,255,.55);font-weight:900}
-.logoItem .left{display:flex;align-items:center;gap:10px;min-width:0}
-.logoItem .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.logoTag{
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
-  font-size:12px;
-  font-weight:1000;
-  color:rgba(234,240,255,.80);
+@media(min-width:720px){
+  .statsGrid{grid-template-columns:repeat(4,1fr)}
 }
+.statCard{
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:18px;
+  padding:14px;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 80px rgba(0,0,0,.50);
+  backdrop-filter: blur(10px);
+}
+.statLabel{color:rgba(255,255,255,.70);font-size:12px;font-weight:900}
+.statValue{margin-top:8px;font-size:22px;font-weight:1000;letter-spacing:.2px}
+.statHint{margin-top:6px;color:rgba(255,255,255,.45);font-size:12px}
+.statBar{
+  height:8px;border-radius:999px;margin-top:10px;
+  background:rgba(255,255,255,.08);
+  overflow:hidden;border:1px solid rgba(255,255,255,.12);
+}
+.statFill{height:100%}
+.fillTotal{width:100%;background:linear-gradient(90deg, rgba(91,108,255,1), rgba(52,211,153,1))}
+.fillPending{background:linear-gradient(90deg, var(--pending), rgba(250,204,21,.65))}
+.fillActive{background:linear-gradient(90deg, var(--forexGreen), rgba(34,197,94,.60))}
+.fillCompleted{background:linear-gradient(90deg, rgba(56,189,248,1), rgba(91,108,255,1))}
 
-/* ===== history table ===== */
-.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.section{
+  border:1px solid var(--border);
+  border-radius:22px;
+  background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  box-shadow:0 26px 90px rgba(0,0,0,.55);
+  backdrop-filter: blur(12px);
+  padding:18px;
+  margin-bottom:14px;
+}
+.section h2{margin:0;font-size:26px;font-weight:1000}
+.small{color:var(--muted);font-size:13px;margin-top:10px}
+
+.grid{
+  display:grid;grid-template-columns:1fr;
+  gap:12px;margin-top:14px;
+}
+@media(min-width:860px){ .grid{grid-template-columns:repeat(3,1fr)} }
+
+.planCard{
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:22px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 20px 80px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  position:relative;
+  overflow:hidden;
+}
+.planGlow{
+  position:absolute;inset:-40px;
+  background:radial-gradient(circle at 30% 0%, rgba(91,108,255,.18), transparent 55%),
+             radial-gradient(circle at 90% 0%, rgba(52,211,153,.15), transparent 55%);
+  pointer-events:none;
+}
+.planInner{position:relative;z-index:2}
+.planTitle{font-size:20px;font-weight:1000;letter-spacing:.2px}
+.planSub{margin-top:6px;color:rgba(255,255,255,.65);font-size:13px;font-weight:900}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .chip{
-  padding:9px 14px;border-radius:999px;
+  padding:8px 12px;border-radius:999px;
+  font-weight:1000;font-size:12px;
   border:1px solid rgba(255,255,255,.14);
-  background:rgba(0,0,0,.25);
-  font-weight:1000;cursor:pointer;font-size:13px
+  background:rgba(0,0,0,.22);color:white;
 }
-.chip.active{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.55)}
-.tableWrap{
-  margin-top:16px;overflow:auto;
-  border-radius:18px;border:1px solid rgba(255,255,255,.12);
-  background:rgba(0,0,0,.22);
+.chip.blue{background:rgba(91,108,255,.18);border-color:rgba(91,108,255,.40)}
+.chip.green{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.38)}
+.chip.orange{background:rgba(250,204,21,.14);border-color:rgba(250,204,21,.35)}
+
+.startBtn{
+  width:100%;margin-top:12px;padding:16px 14px;border:none;border-radius:16px;
+  cursor:pointer;font-weight:1000;font-size:15px;color:white;
+  background:linear-gradient(90deg, #5b6cff, #34d399);
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
 }
-table{width:100%;border-collapse:collapse;min-width:620px}
-th,td{
-  padding:14px 12px;text-align:left;
-  border-bottom:1px solid rgba(255,255,255,.10);
-  font-size:14px;
+.startBtn:active{transform:translateY(1px)}
+
+.ok{color:var(--ok);font-weight:1000}
+.err{color:var(--err);font-weight:1000}
+.warn{color:var(--warn);font-weight:1000}
+
+.summaryCard{
+  margin-top:14px;border-radius:22px;padding:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background:
+    radial-gradient(900px 400px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+    radial-gradient(900px 400px at 80% 20%, rgba(52,211,153,0.18), transparent 55%),
+    linear-gradient(135deg, rgba(3,7,18,0.85), rgba(15,23,42,0.85));
+  box-shadow:0 28px 90px rgba(0,0,0,.55);
 }
-th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
-.pill{
-  display:inline-block;padding:7px 12px;border-radius:999px;
-  font-weight:1000;font-size:12px;border:1px solid rgba(255,255,255,.12)
-}
-.pPending{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.38);color:#facc15}
-.pApproved{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.38);color:#22c55e}
-.pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
+.summaryTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.summaryTitle{font-size:16px;font-weight:1000}
+.summaryAmt{font-size:34px;font-weight:1000;margin-top:10px;letter-spacing:.4px}
+.summaryMeta{margin-top:8px;color:rgba(255,255,255,.75);font-weight:900;font-size:13px}
+.hr{height:1px;background:rgba(255,255,255,.10);margin:14px 0}
+.line{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:14px}
+.line span{opacity:.65}
+.actionsRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .actionBtn{
-  padding:10px 12px;border-radius:14px;font-weight:1000;cursor:pointer;
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.14);
-  color:white;
+  padding:12px 14px;border-radius:14px;font-weight:1000;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:white;
 }
 .actionBtn:hover{background:rgba(255,255,255,.10)}
 
-/* ===== modal ===== */
+a{color:#9bdcff;text-decoration:none;font-weight:1000}
+a:hover{text-decoration:underline}
+
+/* Modal (Plan Details) */
 .modal{
   position:fixed;inset:0;background:rgba(0,0,0,.75);
   display:none;align-items:center;justify-content:center;z-index:9999;
@@ -887,7 +576,7 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 .modalTitle{margin:0 0 12px 0;font-size:20px;font-weight:1000}
 .modalRow{margin-bottom:10px;font-size:14px}
 .modalRow span{opacity:.65}
-.closeBtn2{
+.closeModalBtn{
   width:100%;margin-top:10px;padding:14px;border-radius:16px;
   border:1px solid rgba(255,255,255,.14);
   background:rgba(0,0,0,.28);
@@ -897,6 +586,102 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
   width:100%;margin-top:10px;padding:14px;border-radius:16px;border:none;
   background:linear-gradient(90deg, #5b6cff, #34d399);
   color:white;font-weight:1000;cursor:pointer;
+}
+
+.pill{
+  display:inline-block;padding:8px 12px;border-radius:999px;
+  font-weight:1000;font-size:12px;border:1px solid rgba(255,255,255,.14)
+}
+.pPending{background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.38);color:#facc15}
+.pActive{background:rgba(11,208,124,.16);border-color:rgba(11,208,124,.38);color:var(--forexGreen)}
+.pCompleted{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.35);color:#38bdf8}
+.pRejected{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.35);color:#f87171}
+
+/* ============================================================
+  ✅ POP MESSAGE MODAL (replaces bottom message)
+============================================================ */
+.popModal{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center; justify-content:center;
+  z-index:100000;
+  background:rgba(0,0,0,.72);
+  backdrop-filter: blur(10px);
+}
+.popBox{
+  width:min(520px, 92vw);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.16);
+  background:
+    radial-gradient(900px 260px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+    radial-gradient(900px 260px at 90% 0%, rgba(52,211,153,.12), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  box-shadow:0 30px 110px rgba(0,0,0,.70);
+  padding:16px;
+}
+.popTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.popIcon{
+  width:44px;height:44px;border-radius:16px;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  font-size:20px;
+}
+.popTitle{
+  font-weight:1000;
+  font-size:16px;
+  letter-spacing:.2px;
+}
+.popClose{
+  width:42px;height:42px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(0,0,0,.22);
+  color:#fff;
+  cursor:pointer;
+  font-weight:1000;
+}
+.popClose:hover{background:rgba(255,255,255,.08)}
+.popMsg{
+  margin-top:12px;
+  color:rgba(234,240,255,.82);
+  font-weight:900;
+  line-height:1.35;
+  font-size:14px;
+}
+.popActions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+.popBtn{
+  border:none;
+  padding:12px 14px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:1000;
+  color:white;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+}
+.popBtn:hover{background:rgba(255,255,255,.10)}
+.popBtnPrimary{
+  background:linear-gradient(90deg, #5b6cff, #34d399);
+  border:none;
+  box-shadow:0 18px 60px rgba(0,0,0,.45);
+}
+.popHint{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:900;
+  color:rgba(234,240,255,.55);
 }
 
 /* ===== SITE-WIDE NOTIFICATION MODAL + GLOBAL FOOTER ===== */
@@ -984,8 +769,6 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
   padding:20px 12px 8px;
 }
 
-
-.qrCanvas canvas, .qrCanvas img{ border-radius:0 !important; }
 </style>
 
 <!-- Smartsupp Live Chat script -->
@@ -1118,29 +901,16 @@ window.smartsupp||(function(d) {
   </div>
 </div>
 
-<div class="bgFlow"></div>
-<div class="shimmer"></div>
 
-<!-- ✅ Auth gate -->
-<div id="authGate">
-  <div class="gateCard">
-    <div class="gateLogo">
-      <img class="logoImg" src="assets/vgm-logo.png" alt="Veloci Global Markets Logo">
-    </div>
-    <div class="gateTxt">Veloci Global Markets</div>
-    <div class="gateSub">Securing your session…</div>
-  </div>
-</div>
-
+<!-- ✅ OVERLAY + SIDEBAR (User Dashboard style) -->
 <div id="overlay" class="overlay" onclick="closeMenu()"></div>
 
-<!-- ✅ Sidebar (matches dashboard) -->
-<div id="sidebar" class="sidebar">
+<div id="sidebar" class="sidebar" aria-hidden="true">
   <div class="sideTop">
     <div class="sideBrand">
-      <img class="sideLogoWide" src="assets/vgm-logo.png" alt="VGM Logo">
+      <img class="sideLogoWide" src="assets/vgm-logo.png" alt="Coinluxora Logo">
     </div>
-    <button class="closeBtn" onclick="closeMenu()">✕</button>
+    <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
   </div>
 
   <div class="userTag">
@@ -1157,392 +927,495 @@ window.smartsupp||(function(d) {
   <div class="menuGroupTitle">Navigation</div>
   <a class="sideItem" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
   <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallet<small>Manage funds</small></div></a>
-  <a class="sideItem activeLink" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
+  <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
   <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
   <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-  <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+  <a class="sideItem activeLink" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
   <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
 
 <div class="container">
 
-  <!-- ✅ sticky top (matches dashboard style) -->
-  <div id="stickyMenu" class="stickyMenu">
-    <div class="topRow">
-      <div class="brand">
-        <img class="brandLogoWide" src="assets/vgm-logo.png" alt="Veloci Global Markets">
-      </div>
+  <!-- ✅ STICKY TOP NAV -->
+  <div class="topFloatNav">
+    <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
+    <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
+  </div>
 
-      <div class="headerActions">
-        <button class="avatarBtn" onclick="goProfile()" title="Profile">
-          <span id="avatarFallback" class="avatarFallback">👤</span>
-          <img id="avatarImgBtn" class="avatarImgBtn" alt="Avatar"/>
-        </button>
-        <button class="iconBtn" onclick="openMenu()" title="Menu">☰</button>
+  <div class="topBar">
+    <div>
+      <div class="title">Investment Plans</div>
+      <div class="small" style="margin-top:4px;color:rgba(255,255,255,.55)">
+        Start a plan and earn fixed ROI with premium confirmation.
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:220px">
+      <div class="email" id="topName">Loading…</div>
+      <div class="btnRow">
+        <button class="gradBtn" onclick="scrollToPlans()">Choose Plan</button>
       </div>
     </div>
   </div>
 
-  <div class="box">
-    <h2>Deposit</h2>
-    <div class="small">Select asset + network to view your deposit wallet address and scan the QR.</div>
-
-    <!-- native selects kept for compatibility -->
-    <select id="depAsset" style="display:none" onchange="renderDepositAddress()">
-      <option value="btc">BTC</option>
-      <option value="eth">ETH</option>
-      <option value="usdt">USDT</option>
-    </select>
-    <select id="depNetwork" style="display:none" onchange="renderDepositAddress()">
-      <option value="BTC">BTC</option>
-      <option value="ERC20">ERC20</option>
-      <option value="TRC20">TRC20</option>
-    </select>
-
-    <div class="grid twoCol">
-      <div>
-        <label>Asset</label>
-        <div id="depAssetPick" class="logoSelect"></div>
-      </div>
-
-      <div>
-        <label>Network</label>
-        <div id="depNetworkPick" class="logoSelect"></div>
-      </div>
+  <div class="statsGrid">
+    <div class="statCard">
+      <div class="statLabel">Total Plans</div>
+      <div class="statValue" id="statTotal">0</div>
+      <div class="statHint">All plans</div>
+      <div class="statBar"><div class="statFill fillTotal" id="barTotal"></div></div>
     </div>
-
-    <div class="depositCard">
-      <div class="depositTop">
-        <div class="assetPill" title="Selected asset">
-          <div class="assetLogo" id="assetLogoMini"></div>
-          <div id="assetNameMini">BTC</div>
-        </div>
-        <div class="netPill" title="Selected network">
-          <span class="netDot"></span>
-          <span id="networkNameMini">BTC</span>
-        </div>
-      </div>
-
-      <div class="depositMid">
-        <div class="qrBox">
-          <div class="qrCanvas" id="qrCanvasWrap" aria-label="Deposit QR code"></div>
-          <div class="qrHint" id="qrHintTxt">Scan to copy address</div>
-        </div>
-
-        <div class="addrBox">
-          <div class="addrLabelRow">
-            <div class="small" style="font-weight:1000;margin:0">Deposit Address</div>
-            <div class="small" id="addrStatus" style="margin:0;opacity:.9"></div>
-          </div>
-
-          <div class="addrMono" id="depAddress">Loading…</div>
-
-          <div class="addrActions">
-            <button class="actionMini primary" id="copyBtn" onclick="copyAddress()">Copy Address</button>
-            <button class="actionMini" onclick="shareAddress()">Share</button>
-            <button class="actionMini" onclick="goDashboard()">← Dashboard</button>
-          </div>
-
-          <div class="small" style="margin-top:12px;line-height:1.45">
-            Send only <strong id="warnAsset">BTC</strong> via <strong id="warnNetwork">BTC</strong> to this address.
-            Sending the wrong asset/network may result in permanent loss.
-          </div>
-        </div>
-      </div>
+    <div class="statCard">
+      <div class="statLabel">Pending</div>
+      <div class="statValue" id="statPending">0</div>
+      <div class="statHint">Awaiting approval</div>
+      <div class="statBar"><div class="statFill fillPending" id="barPending"></div></div>
+    </div>
+    <div class="statCard">
+      <div class="statLabel">Active</div>
+      <div class="statValue" id="statActive">0</div>
+      <div class="statHint">Running plans</div>
+      <div class="statBar"><div class="statFill fillActive" id="barActive"></div></div>
+    </div>
+    <div class="statCard">
+      <div class="statLabel">Completed</div>
+      <div class="statValue" id="statCompleted">0</div>
+      <div class="statHint">Finished ROI</div>
+      <div class="statBar"><div class="statFill fillCompleted" id="barCompleted"></div></div>
     </div>
   </div>
 
-  <div class="box">
-    <h2>Submit Deposit Proof</h2>
-    <div class="small">After sending your deposit, upload proof for verification.</div>
-
-    <select id="confAsset" style="display:none">
-      <option value="btc">BTC</option>
-      <option value="eth">ETH</option>
-      <option value="usdt">USDT</option>
-    </select>
-    <select id="confNetwork" style="display:none">
-      <option value="BTC">BTC</option>
-      <option value="ERC20">ERC20</option>
-      <option value="TRC20">TRC20</option>
-    </select>
-
-    <div class="grid twoCol">
-      <div>
-        <label>Asset</label>
-        <div id="confAssetPick" class="logoSelect"></div>
-      </div>
-      <div>
-        <label>Network</label>
-        <div id="confNetworkPick" class="logoSelect"></div>
-      </div>
-    </div>
-
-    <div class="grid">
-      <div>
-        <label>Amount</label>
-        <input id="confAmount" type="number" step="0.01" placeholder="Enter amount"/>
-      </div>
-
-      <div>
-        <label>Transaction Hash</label>
-        <input id="confTx" placeholder="Enter transaction hash"/>
-      </div>
-
-      <div>
-        <label>Proof File</label>
-        <input id="confProof" type="file" accept="image/*,.pdf"/>
-      </div>
-
-      <button class="gradBtn" onclick="submitDeposit()">Submit Deposit</button>
-      <div id="depMsg" class="small"></div>
-    </div>
+  <div class="section">
+    <h2>My Active Plan</h2>
+    <div id="activePlan"></div>
   </div>
 
-  <div class="box">
-    <h2>Deposit History</h2>
+  <div class="section" id="plansSection">
+    <h2>Choose a Plan</h2>
+    <div class="small">Start an investment plan with defined ROI, duration and minimum investment.</div>
 
-    <div class="tabs" id="tabs">
-      <div class="chip active" data-status="all">All</div>
-      <div class="chip" data-status="pending">Pending</div>
-      <div class="chip" data-status="approved">Approved</div>
-      <div class="chip" data-status="rejected">Rejected</div>
-      <button class="btn" id="refreshBtn" style="margin-left:auto">Refresh</button>
-    </div>
+    <div class="grid" id="plansList"></div>
 
-    <div class="tabs" style="margin-top:12px">
-      <input id="searchInput" placeholder="Search tx hash / amount / asset..." style="flex:1;min-width:220px">
-      <button class="btn" id="clearSearch">Clear</button>
-    </div>
-
-    <div class="small" id="msg" style="margin-top:12px">Loading…</div>
-
-    <div class="tableWrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Asset</th>
-            <th>Amount</th>
-            <th>Network</th>
-            <th>Status</th>
-            <th>TX Hash</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-
-    <button class="btn" id="loadMore" style="display:none;margin-top:14px;width:100%">Load more</button>
+    <!-- (kept but not used anymore) -->
+    <div id="msg" class="small" style="display:none;margin-top:14px"></div>
   </div>
 
 </div>
 
-<!-- Modal -->
-<div class="modal" id="detailsModal">
+<!-- Modal: Plan Details -->
+<div class="modal" id="planModal">
   <div class="modalBox">
-    <h3 class="modalTitle">Deposit Details</h3>
-    <div id="detailsBody"></div>
+    <h3 class="modalTitle">Plan Details</h3>
+    <div id="planModalBody"></div>
 
-    <button class="pdfBtn" id="downloadPdfBtn">Download Receipt (PDF)</button>
-    <button class="closeBtn2" onclick="closeModal()">Close</button>
+    <button class="pdfBtn" id="downloadPlanPdfBtn">Download Plan Receipt (PDF)</button>
+    <button class="closeModalBtn" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<!-- ✅ POP MESSAGE MODAL (for Start button messages) -->
+<div class="popModal" id="popModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="popBox">
+    <div class="popTop">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="popIcon" id="popIcon">ℹ️</div>
+        <div class="popTitle" id="popTitle">Message</div>
+      </div>
+      <button class="popClose" onclick="closePop()" aria-label="Close">✕</button>
+    </div>
+    <div class="popMsg" id="popMsg">...</div>
+    <div class="popHint" id="popHint" style="display:none"></div>
+    <div class="popActions">
+      <button class="popBtn" onclick="closePop()">Close</button>
+      <button class="popBtn popBtnPrimary" id="popPrimaryBtn" style="display:none">OK</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ============================================================
-  ✅ STICKY MENU POLISH (same behavior as dashboard)
-============================================================ */
-(function(){
-  const sticky = document.getElementById("stickyMenu");
-  if(!sticky) return;
-  const onScroll = ()=>{
-    if(window.scrollY > 14) sticky.classList.add("isStuck");
-    else sticky.classList.remove("isStuck");
-  };
-  onScroll();
-  window.addEventListener("scroll", onScroll, {passive:true});
-})();
-
-/* ============================================================
-  ✅ SUPABASE CONFIG
-============================================================ */
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
-const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
-const BUCKET_NAME="proofs";
-
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
 let currentUserEmail="";
 let currentUserId="";
-let filter="all";
-let limit=8;
-let offset=0;
-let cache=[];
-let searchTerm="";
-let currentDetails=null;
+let currentUserName="User";
+let currentAvatarUrl="";
+let plansCache=[];
+let currentPlanDetails=null;
+let plansChannel=null;
 
-let depositAddresses=[];
+/* ✅ Updated plans (as you requested) */
+const PLANS = [
+  {name:"Silver",   roiX:10, duration:5, min:100,  desc:"Entry plan for steady ROI."},
+  {name:"Gold",     roiX:13, duration:5, min:700,  desc:"Mid-tier growth strategy."},
+  {name:"Diamond",  roiX:15, duration:5, min:1500, desc:"High performance premium growth."},
+  {name:"Platinum", roiX:18, duration:5, min:5000, desc:"Top-tier elite investment plan."}
+];
 
-/* ============================================================
-  ✅ MENU
-============================================================ */
+init();
+
+/* ✅ Sidebar open/close (left slide) */
 function openMenu(){
   document.getElementById("sidebar").classList.add("open");
   document.getElementById("overlay").classList.add("show");
-  document.body.classList.add("menuOpen");
+  document.getElementById("sidebar").setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
 }
 function closeMenu(){
   document.getElementById("sidebar").classList.remove("open");
   document.getElementById("overlay").classList.remove("show");
-  document.body.classList.remove("menuOpen");
+  document.getElementById("sidebar").setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
 }
-document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeMenu(); });
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Escape"){
+    closePop();
+    closeMenu();
+    closeModal();
+  }
+});
 
+/* NAV */
 function goDashboard(){ window.location.href="user-dashboard.html"; }
-function goProfile(){ window.location.href="profile.html"; }
+function scrollToPlans(){ document.getElementById("plansSection").scrollIntoView({behavior:"smooth", block:"start"}); }
+function money(n){ return "$" + Number(n||0).toFixed(2); }
 
-/* ============================================================
-  ✅ LOGOS (inline SVG)
-============================================================ */
-function svgBTC(){
-  return `
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-    <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#f59e0b"/><stop offset="1" stop-color="#f97316"/>
-    </linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#g1)"></circle>
-    <path fill="#0b1024" d="M13.4 6.1c1.7.2 2.7 1.2 2.5 2.6-.1.8-.6 1.4-1.3 1.7.9.4 1.4 1.2 1.3 2.2-.2 1.7-1.6 2.8-3.8 2.7V19h-1.2v-1.7H9.8V19H8.6v-1.8H7.2v-1.1h1.4V7.9H7.2V6.8h1.4V5h1.2v1.8h1.1V5h1.2v1.7h1.3Zm-3.6 1.8v2.1h1.9c1 0 1.6-.4 1.7-1.1.1-.7-.4-1-1.4-1h-2.2Zm0 3.2v2.4h2.2c1.2 0 2-.4 2.1-1.2.1-.8-.5-1.2-1.8-1.2H9.8Z"/>
-  </svg>`;
-}
-function svgETH(){
-  return `
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-    <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/>
-    </linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#g2)"></circle>
-    <path fill="#0b1024" d="M12 5.4 7.8 12 12 10.2 16.2 12 12 5.4Zm0 6.1-4.2 1.9L12 18.6l4.2-5.2L12 11.5Z"/>
-  </svg>`;
-}
-function svgUSDT(){
-  return `
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-    <defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/>
-    </linearGradient></defs>
-    <circle cx="12" cy="12" r="10" fill="url(#g3)"></circle>
-    <path fill="#0b1024" d="M7 7.8h10v1.4h-4v1.1c2.6.2 4.5.8 4.5 1.7S15.6 15 13 15.2V18h-2v-2.8c-2.6-.2-4.5-.8-4.5-1.7S8.4 11.3 11 11.1V10.1H7V7.8Zm4 4.6c-1.8.1-3 .4-3 .7s1.2.6 3 .7c.3 0 .6 0 1 0s.7 0 1 0c1.8-.1 3-.4 3-.7s-1.2-.6-3-.7c-.3 0-.6 0-1 0s-.7 0-1 0Z"/>
-  </svg>`;
-}
-function assetLogo(asset){
-  const a=String(asset||"").toLowerCase();
-  if(a==="btc") return svgBTC();
-  if(a==="eth") return svgETH();
-  if(a==="usdt") return svgUSDT();
-  return `<span style="font-weight:1000">◈</span>`;
+function statusPill(status){
+  const s=(status||"pending").toLowerCase();
+  if(s==="active") return `<span class="pill pActive">ACTIVE</span>`;
+  if(s==="completed") return `<span class="pill pCompleted">COMPLETED</span>`;
+  if(s==="rejected") return `<span class="pill pRejected">REJECTED</span>`;
+  return `<span class="pill pPending">PENDING</span>`;
 }
 
 /* ============================================================
-  ✅ LOGO SELECT COMPONENT
+  ✅ POP MODAL (replaces bottom message)
 ============================================================ */
-function mountLogoSelect(rootId, options, initialValue, onPick){
-  const root=document.getElementById(rootId);
-  if(!root) return;
+function showPop({type="info", title="Message", message="", hint="", primaryText="", onPrimary=null}){
+  const modal=document.getElementById("popModal");
+  const icon=document.getElementById("popIcon");
+  const t=document.getElementById("popTitle");
+  const msg=document.getElementById("popMsg");
+  const hintEl=document.getElementById("popHint");
+  const pBtn=document.getElementById("popPrimaryBtn");
 
-  root.innerHTML = `
-    <button class="logoBtn" type="button" aria-haspopup="listbox">
-      <div class="logoLeft">
-        <div class="logoIcon" aria-hidden="true"></div>
-        <div class="logoName">Select</div>
+  // icon by type
+  if(type==="ok"){ icon.textContent="✅"; }
+  else if(type==="err"){ icon.textContent="⛔"; }
+  else if(type==="warn"){ icon.textContent="⚠️"; }
+  else { icon.textContent="ℹ️"; }
+
+  t.textContent = title;
+  msg.textContent = message;
+
+  if(hint){
+    hintEl.style.display="block";
+    hintEl.textContent = hint;
+  }else{
+    hintEl.style.display="none";
+    hintEl.textContent="";
+  }
+
+  // primary
+  if(primaryText){
+    pBtn.style.display="inline-block";
+    pBtn.textContent = primaryText;
+    pBtn.onclick = ()=>{
+      try{ if(typeof onPrimary==="function") onPrimary(); }catch(e){}
+      closePop();
+    };
+  }else{
+    pBtn.style.display="none";
+    pBtn.textContent="";
+    pBtn.onclick = null;
+  }
+
+  modal.style.display="flex";
+  modal.setAttribute("aria-hidden","false");
+}
+function closePop(){
+  const modal=document.getElementById("popModal");
+  modal.style.display="none";
+  modal.setAttribute("aria-hidden","true");
+}
+document.getElementById("popModal").addEventListener("click",(e)=>{
+  if(e.target && e.target.id==="popModal") closePop();
+});
+
+/* Stats */
+function updateStats(){
+  const total = plansCache.length;
+  const pending = plansCache.filter(x => (x.status||"").toLowerCase()==="pending").length;
+  const active = plansCache.filter(x => (x.status||"").toLowerCase()==="active").length;
+  const completed = plansCache.filter(x => (x.status||"").toLowerCase()==="completed").length;
+
+  document.getElementById("statTotal").innerText = total;
+  document.getElementById("statPending").innerText = pending;
+  document.getElementById("statActive").innerText = active;
+  document.getElementById("statCompleted").innerText = completed;
+
+  const pct = (n)=> total ? Math.max(8, Math.round((n/total)*100)) : 15;
+
+  document.getElementById("barTotal").style.width = total ? "100%" : "25%";
+  document.getElementById("barPending").style.width = pct(pending) + "%";
+  document.getElementById("barActive").style.width = pct(active) + "%";
+  document.getElementById("barCompleted").style.width = pct(completed) + "%";
+}
+
+/* Render Plans */
+function renderPlans(){
+  const wrapper=document.getElementById("plansList");
+  wrapper.innerHTML="";
+
+  PLANS.forEach((p,i)=>{
+    wrapper.innerHTML += `
+      <div class="planCard">
+        <div class="planGlow"></div>
+        <div class="planInner">
+          <div class="planTitle">${p.name} Plan</div>
+          <div class="planSub">${p.desc}</div>
+
+          <div class="chips">
+            <span class="chip blue">ROI: X${p.roiX}</span>
+            <span class="chip green">Duration: ${p.duration} days</span>
+          </div>
+
+          <div class="chips" style="margin-top:10px">
+            <span class="chip orange">Minimum: ${money(p.min)}</span>
+          </div>
+
+          <button class="startBtn" onclick="startPlan(${i})">Start ${p.name}</button>
+        </div>
       </div>
-      <div class="logoCaret">▾</div>
-    </button>
-    <div class="logoPanel" role="listbox">
-      <input class="logoSearch" placeholder="Search..." />
-      <div class="logoList"></div>
+    `;
+  });
+}
+
+async function loadPlansForStats(){
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("id,plan_name,status,amount,roi_percent,duration_days,created_at,admin_note")
+    .eq("user_email", currentUserEmail)
+    .order("created_at", {ascending:false});
+
+  plansCache = (!error && data) ? data : [];
+  updateStats();
+}
+
+async function loadActivePlan(){
+  const activePlan=document.getElementById("activePlan");
+
+  const { data, error } = await supabaseClient
+    .from("investment_plans")
+    .select("*")
+    .eq("user_email", currentUserEmail)
+    .in("status", ["active","pending"])
+    .order("created_at", {ascending:false})
+    .limit(1);
+
+  if(error){
+    activePlan.innerHTML = `<div class="small err">${error.message}</div>`;
+    return;
+  }
+
+  if(!data || data.length===0){
+    activePlan.innerHTML = `<div class="small warn">No active plan yet. Choose a plan below to start.</div>`;
+    return;
+  }
+
+  const plan=data[0];
+  const amount = Number(plan.amount||0);
+  const roiX = Number(plan.roi_percent||0);
+  const expectedReturn = amount * (roiX || 1);
+
+  activePlan.innerHTML=`
+    <div class="summaryCard">
+      <div class="summaryTop">
+        <div>
+          <div class="summaryTitle">${plan.plan_name} Plan</div>
+          <div class="summaryMeta">${statusPill(plan.status)}</div>
+        </div>
+        <div class="small" style="margin:0;color:rgba(255,255,255,.65);font-weight:900">
+          Started: ${new Date(plan.created_at).toLocaleString()}
+        </div>
+      </div>
+
+      <div class="summaryAmt">${money(amount)}</div>
+      <div class="summaryMeta">Expected Return: <span class="ok" style="font-weight:1000">${money(expectedReturn)}</span></div>
+
+      <div class="hr"></div>
+
+      <div class="line"><span>ROI</span><strong>X${roiX}</strong></div>
+      <div class="line"><span>Duration</span><strong>${plan.duration_days} days</strong></div>
+      <div class="line"><span>Status</span><strong>${(plan.status||"").toUpperCase()}</strong></div>
+      ${plan.admin_note ? `<div class="line"><span>Admin Note</span><strong>${plan.admin_note}</strong></div>` : ""}
+
+      <div class="actionsRow">
+        <button class="actionBtn" onclick='openModal(${JSON.stringify(plan)})'>View Details</button>
+        <button class="actionBtn" onclick="scrollToPlans()">Start New Plan</button>
+      </div>
+
+      <div class="small" style="margin-top:12px;color:rgba(255,255,255,.55)">
+        For upgrades or plan changes, contact <a href="support.html">Support</a>.
+      </div>
     </div>
   `;
+}
 
-  const btn=root.querySelector(".logoBtn");
-  const panel=root.querySelector(".logoPanel");
-  const list=root.querySelector(".logoList");
-  const search=root.querySelector(".logoSearch");
-  const icon=root.querySelector(".logoIcon");
-  const name=root.querySelector(".logoName");
+async function startPlan(index){
+  const plan=PLANS[index];
 
-  let filtered=[...options];
-  let selected = options.find(x=>x.value===initialValue) || options[0];
-
-  function render(q=""){
-    const t=(q||"").trim().toLowerCase();
-    filtered = !t ? [...options] : options.filter(x => (x.search||"").toLowerCase().includes(t) || (x.label||"").toLowerCase().includes(t));
-    list.innerHTML = filtered.map(x=>`
-      <div class="logoItem" data-val="${x.value}">
-        <div class="left">
-          <div class="logoIcon" style="width:30px;height:30px;border-radius:12px">${x.icon||""}</div>
-          <div class="name">${x.label}</div>
-        </div>
-        ${x.tag ? `<span class="logoTag">${x.tag}</span>` : `<small>tap</small>`}
-      </div>
-    `).join("") || `<div class="logoItem"><div class="left"><div class="name">No results</div></div></div>`;
+  // ✅ amount input removed: always start at minimum
+  const amount = Number(plan.min || 0);
+  if(!amount || amount <= 0){
+    showPop({type:"err", title:"Error", message:"Invalid plan minimum."});
+    return;
   }
 
-  function setSelected(v){
-    const found = options.find(x=>x.value===v) || options[0];
-    selected = found;
-    icon.innerHTML = found.icon || "";
-    name.textContent = found.label;
-    if(typeof onPick === "function") onPick(found);
+  // show starting modal immediately
+  showPop({
+    type:"info",
+    title:"Starting Plan…",
+    message:`Creating your ${plan.name} plan with minimum ${money(amount)}.`,
+    hint:"Please keep this page open while we submit your plan.",
+    primaryText:"OK"
+  });
+
+  const { data:existing, error:existingErr } = await supabaseClient
+    .from("investment_plans")
+    .select("id,status")
+    .eq("user_email", currentUserEmail)
+    .in("status", ["active","pending"]);
+
+  if(existingErr){
+    showPop({type:"err", title:"Failed", message:existingErr.message});
+    return;
   }
 
-  render("");
-  setSelected(selected.value);
+  if(existing && existing.length>0){
+    showPop({
+      type:"warn",
+      title:"Plan Already Active",
+      message:"You already have an active/pending plan. Contact support to upgrade.",
+      primaryText:"Go to Support",
+      onPrimary: ()=>{ window.location.href="support.html"; }
+    });
+    return;
+  }
 
-  btn.addEventListener("click",(e)=>{
-    e.stopPropagation();
-    panel.classList.toggle("show");
-    if(panel.classList.contains("show")){
-      search.value="";
-      render("");
-      setTimeout(()=>search.focus(),40);
+  // ✅ Store roiX in roi_percent column (no DB change needed)
+  const { error } = await supabaseClient.from("investment_plans").insert([{
+    user_email: currentUserEmail,
+    plan_name: plan.name,
+    amount: amount,
+    roi_percent: plan.roiX,       // means X10/X13/X15/X18
+    duration_days: plan.duration, // 5 days
+    status: "pending"
+  }]);
+
+  if(error){
+    showPop({type:"err", title:"Couldn’t Start Plan", message:error.message});
+    return;
+  }
+
+  showPop({
+    type:"ok",
+    title:"Plan Started ✅",
+    message:`Your ${plan.name} plan has been created and is now waiting for admin approval.`,
+    hint:"You can view it in “My Active Plan” on this page.",
+    primaryText:"View My Active Plan",
+    onPrimary: ()=>{
+      window.scrollTo({top:0, behavior:"smooth"});
     }
   });
 
-  search.addEventListener("input",()=>render(search.value));
-
-  list.addEventListener("click",(e)=>{
-    const item=e.target.closest(".logoItem");
-    if(!item) return;
-    const v=item.getAttribute("data-val");
-    if(!v) return;
-    setSelected(v);
-    panel.classList.remove("show");
-  });
-
-  document.addEventListener("click",(e)=>{
-    if(!root.contains(e.target)) panel.classList.remove("show");
-  });
+  await loadPlansForStats();
+  loadActivePlan();
 }
 
-/* ============================================================
-  ✅ AVATAR + NAME (same pattern as dashboard)
-============================================================ */
-function setTopAvatar(avatarUrl){
-  const fallback=document.getElementById("avatarFallback");
-  const img=document.getElementById("avatarImgBtn");
-  if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
-    img.style.display="block";
-    fallback.style.display="none";
-  }else{
-    img.style.display="none";
-    fallback.style.display="block";
+function initRealtimePlans(){
+  if(plansChannel){
+    supabaseClient.removeChannel(plansChannel);
+    plansChannel=null;
   }
+
+  plansChannel = supabaseClient
+    .channel("realtime-investment-plans-user")
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "investment_plans",
+      filter: `user_email=eq.${currentUserEmail}`
+    }, () => {
+      loadPlansForStats();
+      loadActivePlan();
+    })
+    .subscribe();
 }
+
+/* Modal: Plan Details */
+function openModal(plan){
+  currentPlanDetails=plan;
+
+  const amount = Number(plan.amount||0);
+  const roiX = Number(plan.roi_percent||0);
+  const expectedReturn = amount * (roiX || 1);
+
+  document.getElementById("planModalBody").innerHTML = `
+    <div class="modalRow"><span>Plan ID:</span> ${plan.id}</div>
+    <div class="modalRow"><span>Plan:</span> ${plan.plan_name}</div>
+    <div class="modalRow"><span>Amount:</span> ${money(amount)}</div>
+    <div class="modalRow"><span>ROI:</span> X${roiX}</div>
+    <div class="modalRow"><span>Duration:</span> ${plan.duration_days} days</div>
+    <div class="modalRow"><span>Status:</span> ${statusPill(plan.status)}</div>
+    <div class="modalRow"><span>Date:</span> ${new Date(plan.created_at).toLocaleString()}</div>
+    <div class="modalRow"><span>Expected Return:</span> ${money(expectedReturn)}</div>
+    ${plan.admin_note ? `<div class="modalRow"><span>Admin Note:</span> ${plan.admin_note}</div>` : ""}
+  `;
+  document.getElementById("planModal").style.display="flex";
+}
+function closeModal(){ document.getElementById("planModal").style.display="none"; }
+window.openModal=openModal;
+window.closeModal=closeModal;
+
+/* PDF */
+document.getElementById("downloadPlanPdfBtn").addEventListener("click", ()=>{
+  if(!currentPlanDetails) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Coinluxora Investment Plan Receipt", 14, 18);
+  doc.setFontSize(11);
+
+  const amount = Number(currentPlanDetails.amount||0);
+  const roiX = Number(currentPlanDetails.roi_percent||0);
+  const expectedReturn = amount * (roiX || 1);
+
+  const lines = [
+    `Receipt ID: ${currentPlanDetails.id}`,
+    `User: ${currentUserName}`,
+    `Email: ${currentUserEmail}`,
+    `Plan: ${currentPlanDetails.plan_name}`,
+    `Amount: ${money(amount)}`,
+    `ROI: X${roiX}`,
+    `Duration: ${currentPlanDetails.duration_days} days`,
+    `Expected Return: ${money(expectedReturn)}`,
+    `Status: ${currentPlanDetails.status}`,
+    `Date: ${new Date(currentPlanDetails.created_at).toLocaleString()}`,
+    currentPlanDetails.admin_note ? `Admin Note: ${currentPlanDetails.admin_note}` : ""
+  ].filter(Boolean);
+
+  let y=30;
+  for(const line of lines){ doc.text(String(line), 14, y); y+=8; }
+  doc.text("Thank you for choosing Coinluxora.", 14, y+12);
+
+  doc.save(`coinluxora-plan-${currentPlanDetails.id}.pdf`);
+});
+
+/* ✅ Avatar + Name (same approach as your user-dashboard) */
 function setSideAvatar(avatarUrl){
   const fb=document.getElementById("sideAvatarFallback");
   const img=document.getElementById("sideAvatarImg");
@@ -1555,480 +1428,13 @@ function setSideAvatar(avatarUrl){
     fb.style.display="block";
   }
 }
-function setNameEverywhere(fullName){
-  const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
-  document.getElementById("sideName").textContent=nice;
-}
 
-/* ============================================================
-  ✅ DEPOSIT ADDRESSES
-============================================================ */
-async function loadDepositAddresses(){
-  const { data, error } = await supabaseClient.from("deposit_addresses").select("asset,network,address");
-  if(error){
-    document.getElementById("depAddress").innerText="Failed to load addresses";
-    document.getElementById("addrStatus").innerText="Offline";
-    return;
-  }
-  depositAddresses=data||[];
-}
-function getCurrentDepAsset(){ return document.getElementById("depAsset").value.toLowerCase(); }
-function getCurrentDepNetwork(){ return document.getElementById("depNetwork").value.toUpperCase(); }
-
-async function renderDepositAddress(){
-  const asset=getCurrentDepAsset();
-  const network=getCurrentDepNetwork();
-
-  document.getElementById("assetLogoMini").innerHTML = assetLogo(asset);
-  document.getElementById("assetNameMini").textContent = String(asset).toUpperCase();
-  document.getElementById("networkNameMini").textContent = network;
-  document.getElementById("warnAsset").textContent = String(asset).toUpperCase();
-  document.getElementById("warnNetwork").textContent = network;
-
-  const found=depositAddresses.find(d =>
-    (d.asset||"").toLowerCase()===asset &&
-    (d.network||"").toUpperCase()===network
-  );
-
-  const addrEl=document.getElementById("depAddress");
-  const statusEl=document.getElementById("addrStatus");
-
-  const address = found ? String(found.address||"").trim() : "";
-  addrEl.innerText = address ? address : "No address configured";
-  statusEl.innerText = address ? "Ready" : "Not configured";
-
-  await updateQR(address, asset, network);
-}
-
-/* ============================================================
-  ✅ QR (FIXED: library + fallback + final fallback)
-============================================================ */
-function buildQRPayload(address, asset){
-  const a = String(address||"").trim();
-  if(!a) return "";
-  const sym = String(asset||"").toLowerCase();
-  if(sym==="btc") return `bitcoin:${a}`;
-  if(sym==="eth") return `ethereum:${a}`;
-  return a; // USDT & others: safest is raw address
-}
-
-async function updateQR(address, asset, network){
-  const wrap=document.getElementById("qrCanvasWrap");
-  const hint=document.getElementById("qrHintTxt");
-  if(!wrap) return;
-
-  wrap.innerHTML = "";
-  if(hint) hint.textContent = "Scan to copy address";
-
-  const a = String(address||"").trim();
-  if(!a || a==="No address configured" || a==="Loading…"){
-    wrap.innerHTML = `<div class="small" style="text-align:center;padding:10px">QR unavailable</div>`;
-    if(hint) hint.textContent = "No QR available";
-    return;
-  }
-
-  const payload = buildQRPayload(a, asset);
-
-  // ✅ 1) Try QR library (canvas) — best UX
+async function loadUserIdentity(){
   try{
-    if(window.QRCode && typeof QRCode.toCanvas === "function"){
-      const canvas=document.createElement("canvas");
-      canvas.style.width="130px";
-      canvas.style.height="130px";
-      canvas.width=260;
-      canvas.height=260;
-      wrap.appendChild(canvas);
+    let fullName="";
+    let avatarUrl="";
 
-      await QRCode.toCanvas(canvas, payload, {
-        errorCorrectionLevel:"M",
-        margin:1,
-        width:260,
-        color:{ dark:"#ffffff", light:"#00000000" }
-      });
-      return;
-    }
-  }catch(e){
-    // fall through to image fallback
-  }
-
-  // ✅ 2) Fallback: remote QR image (works if CDN blocked but internet OK)
-  try{
-    if(hint) hint.textContent = "QR via fallback";
-    const img=document.createElement("img");
-    img.alt="Deposit QR";
-    img.style.width="130px";
-    img.style.height="130px";
-    img.style.display="block";
-    img.style.borderRadius="12px";
-
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(payload)}`;
-    img.src = url;
-
-    img.onerror = ()=>{
-      wrap.innerHTML = `<div class="small" style="text-align:center;padding:10px">QR unavailable</div>`;
-      if(hint) hint.textContent = "QR blocked";
-    };
-
-    wrap.appendChild(img);
-    return;
-  }catch(e){
-    wrap.innerHTML = `<div class="small" style="text-align:center;padding:10px">QR unavailable</div>`;
-    if(hint) hint.textContent = "QR blocked";
-  }
-}
-
-/* ✅ Copy Address */
-let copyResetTimer = null;
-async function copyAddress(){
-  const addr=document.getElementById("depAddress").innerText.trim();
-  const copyBtn = document.getElementById("copyBtn");
-
-  if(!addr || addr==="Loading…" || addr==="No address configured"){
-    if(copyBtn){
-      const oldText = copyBtn.innerText;
-      copyBtn.innerText = "No Address";
-      copyBtn.classList.add("copyGreen");
-      clearTimeout(copyResetTimer);
-      copyResetTimer=setTimeout(()=>{
-        copyBtn.innerText = oldText;
-        copyBtn.classList.remove("copyGreen");
-      }, 1400);
-    }
-    return;
-  }
-
-  try{
-    await navigator.clipboard.writeText(addr);
-  }catch(e){
-    const temp=document.createElement("textarea");
-    temp.value=addr;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand("copy");
-    temp.remove();
-  }
-
-  if(copyBtn){
-    const oldText = copyBtn.innerText;
-    copyBtn.innerText = "Copied ✔️";
-    copyBtn.classList.add("copyGreen");
-
-    clearTimeout(copyResetTimer);
-    copyResetTimer=setTimeout(()=>{
-      copyBtn.innerText = oldText;
-      copyBtn.classList.remove("copyGreen");
-    }, 2000);
-  }
-}
-
-/* ✅ Share */
-async function shareAddress(){
-  const addr=document.getElementById("depAddress").innerText.trim();
-  const asset=getCurrentDepAsset().toUpperCase();
-  const network=getCurrentDepNetwork();
-  const text=`VGM Deposit Address\nAsset: ${asset}\nNetwork: ${network}\nAddress: ${addr}`;
-  if(!addr || addr==="Loading…" || addr==="No address configured") return;
-
-  try{
-    if(navigator.share){
-      await navigator.share({ title:"Deposit Address", text });
-      return;
-    }
-  }catch(e){}
-  await navigator.clipboard.writeText(text).catch(()=>{});
-}
-
-/* ============================================================
-  ✅ BADGE CLEAR (optional, keeps your ecosystem consistent)
-============================================================ */
-async function clearDepositBadge(){
-  try{
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-    if(!accessToken) return;
-
-    await fetch(EDGE_CLEAR_BADGE_URL, {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":`Bearer ${accessToken}`,
-        "apikey":SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ badge_key:"deposits" })
-    });
-  }catch(e){}
-}
-
-/* ============================================================
-  ✅ HISTORY
-============================================================ */
-function setMsg(html){ document.getElementById("msg").innerHTML = html; }
-function showDepMsg(html){ document.getElementById("depMsg").innerHTML = html; }
-
-function statusPill(status){
-  const s=(status||"pending").toLowerCase();
-  if(s==="approved") return `<span class="pill pApproved">APPROVED</span>`;
-  if(s==="rejected") return `<span class="pill pRejected">REJECTED</span>`;
-  return `<span class="pill pPending">PENDING</span>`;
-}
-
-function renderRows(){
-  const tbody=document.getElementById("rows");
-
-  let rows=[...cache];
-  if(searchTerm.trim()){
-    const t=searchTerm.toLowerCase();
-    rows=rows.filter(d =>
-      String(d.tx_hash||"").toLowerCase().includes(t) ||
-      String(d.amount||"").toLowerCase().includes(t) ||
-      String(d.asset||"").toLowerCase().includes(t) ||
-      String(d.network||"").toLowerCase().includes(t)
-    );
-  }
-
-  if(!rows.length){
-    setMsg(`<span class="err">No deposits found.</span>`);
-    tbody.innerHTML="";
-    return;
-  }
-
-  setMsg(`<span class="ok">Showing deposits ✅</span>`);
-  tbody.innerHTML = rows.map(d=>`
-    <tr>
-      <td>${String(d.asset||"").toUpperCase()}</td>
-      <td>${d.amount}</td>
-      <td>${d.network}</td>
-      <td>${statusPill(d.status)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-        ${d.tx_hash || "-"}
-      </td>
-      <td><button class="actionBtn" onclick='openModal(${JSON.stringify(d)})'>View</button></td>
-    </tr>
-  `).join("");
-}
-
-async function loadHistory(reset=false){
-  if(reset){ offset=0; cache=[]; }
-
-  let q=supabaseClient
-    .from("deposit_confirmations")
-    .select("id,user_email,asset,network,amount,tx_hash,proof_url,status,created_at,admin_note")
-    .eq("user_email", currentUserEmail)
-    .order("created_at",{ascending:false})
-    .range(offset, offset + limit - 1);
-
-  if(filter !== "all") q=q.eq("status", filter);
-
-  const { data, error } = await q;
-  if(error){ setMsg(`<span class="err">${error.message}</span>`); return; }
-
-  cache = cache.concat(data||[]);
-  renderRows();
-
-  document.getElementById("loadMore").style.display =
-    (data && data.length===limit) ? "block" : "none";
-
-  offset += limit;
-}
-
-function initRealtime(){
-  supabaseClient
-    .channel("realtime-deposits-user")
-    .on("postgres_changes", {
-      event:"UPDATE",
-      schema:"public",
-      table:"deposit_confirmations",
-      filter:`user_email=eq.${currentUserEmail}`
-    }, () => loadHistory(true))
-    .subscribe();
-}
-
-/* ============================================================
-  ✅ SUBMIT DEPOSIT
-============================================================ */
-async function submitDeposit(){
-  try{
-    showDepMsg(`<span class="small">Submitting…</span>`);
-
-    const asset=document.getElementById("confAsset").value;
-    const network=document.getElementById("confNetwork").value;
-    const amount=Number(document.getElementById("confAmount").value||0);
-    const tx_hash=document.getElementById("confTx").value.trim();
-    const file=document.getElementById("confProof").files[0];
-
-    if(amount<=0 || tx_hash.length<5 || !file){
-      showDepMsg(`<span class="err">Fill all fields + upload proof</span>`);
-      return;
-    }
-
-    const filePath = `${currentUserEmail}/${Date.now()}-${file.name}`;
-    const upload = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath, file);
-    if(upload.error){
-      showDepMsg(`<span class="err">Upload failed: ${upload.error.message}</span>`);
-      return;
-    }
-    const proof_url = `${BUCKET_NAME}/${filePath}`;
-
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-    if(!accessToken){
-      showDepMsg(`<span class="err">Session expired. Login again.</span>`);
-      return;
-    }
-
-    const res = await fetch(EDGE_SUBMIT_DEPOSIT_URL, {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":`Bearer ${accessToken}`,
-        "apikey":SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ asset, network, amount, tx_hash, proof_url })
-    });
-
-    const json = await res.json().catch(()=>null);
-    if(!res.ok){
-      showDepMsg(`<span class="err">Error: ${json?.error || JSON.stringify(json) || "Unknown"}</span>`);
-      return;
-    }
-
-    showDepMsg(`<span class="ok">Deposit submitted ✅</span>`);
-    document.getElementById("confAmount").value="";
-    document.getElementById("confTx").value="";
-    document.getElementById("confProof").value="";
-    await loadHistory(true);
-  }catch(e){
-    showDepMsg(`<span class="err">Error: ${e?.message || String(e)}</span>`);
-  }
-}
-
-/* ============================================================
-  ✅ MODAL + PDF
-============================================================ */
-function openModal(dep){
-  currentDetails=dep;
-  const proofLink = dep.proof_url ? `${SUPABASE_URL}/storage/v1/object/public/${dep.proof_url}` : "";
-  document.getElementById("detailsBody").innerHTML = `
-    <div class="modalRow"><span>ID:</span> ${dep.id}</div>
-    <div class="modalRow"><span>Asset:</span> ${String(dep.asset||"").toUpperCase()}</div>
-    <div class="modalRow"><span>Network:</span> ${dep.network}</div>
-    <div class="modalRow"><span>Amount:</span> ${dep.amount}</div>
-    <div class="modalRow"><span>TX Hash:</span> ${dep.tx_hash}</div>
-    <div class="modalRow"><span>Status:</span> ${statusPill(dep.status)}</div>
-    <div class="modalRow"><span>Date:</span> ${new Date(dep.created_at).toLocaleString()}</div>
-    ${dep.admin_note ? `<div class="modalRow"><span>Admin Note:</span> ${dep.admin_note}</div>` : ""}
-    ${proofLink ? `<div class="modalRow"><span>Proof:</span> <a href="${proofLink}" target="_blank" rel="noopener" style="color:#9bdcff;font-weight:1000">Open proof</a></div>` : ""}
-  `;
-  document.getElementById("detailsModal").style.display="flex";
-}
-function closeModal(){ document.getElementById("detailsModal").style.display="none"; }
-window.openModal=openModal;
-window.closeModal=closeModal;
-
-document.getElementById("downloadPdfBtn").addEventListener("click", ()=>{
-  if(!currentDetails) return;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("VGM Deposit Receipt", 14, 18);
-  doc.setFontSize(11);
-
-  const lines = [
-    `Receipt ID: ${currentDetails.id}`,
-    `User Email: ${currentUserEmail}`,
-    `Asset: ${String(currentDetails.asset||"").toUpperCase()}`,
-    `Network: ${currentDetails.network}`,
-    `Amount: ${currentDetails.amount}`,
-    `TX Hash: ${currentDetails.tx_hash}`,
-    `Status: ${currentDetails.status}`,
-    `Date: ${new Date(currentDetails.created_at).toLocaleString()}`,
-    currentDetails.admin_note ? `Admin Note: ${currentDetails.admin_note}` : ""
-  ].filter(Boolean);
-
-  let y=30;
-  for(const line of lines){ doc.text(String(line), 14, y); y+=8; }
-  doc.text("Thank you for using VGM.", 14, y+12);
-
-  doc.save(`vgm-deposit-${currentDetails.id}.pdf`);
-});
-
-/* ============================================================
-  ✅ EVENTS
-============================================================ */
-document.getElementById("tabs").onclick=(e)=>{
-  const chip=e.target.closest(".chip");
-  if(!chip) return;
-  document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));
-  chip.classList.add("active");
-  filter=chip.dataset.status;
-  loadHistory(true);
-};
-document.getElementById("searchInput").addEventListener("input",(e)=>{
-  searchTerm=e.target.value||"";
-  renderRows();
-});
-document.getElementById("clearSearch").onclick=()=>{
-  document.getElementById("searchInput").value="";
-  searchTerm="";
-  renderRows();
-};
-document.getElementById("refreshBtn").onclick=()=>loadHistory(true);
-document.getElementById("loadMore").onclick=()=>loadHistory(false);
-
-/* ============================================================
-  ✅ PICKERS INIT
-============================================================ */
-function setNativeSelect(id, value){
-  const el=document.getElementById(id);
-  if(!el) return;
-  el.value = value;
-  el.dispatchEvent(new Event("change"));
-}
-
-function mountPickers(){
-  const ASSETS = [
-    { value:"btc", label:"BTC (Bitcoin)", icon: assetLogo("btc"), search:"btc bitcoin", tag:"BTC" },
-    { value:"eth", label:"ETH (Ethereum)", icon: assetLogo("eth"), search:"eth ethereum", tag:"ETH" },
-    { value:"usdt", label:"USDT (Tether)", icon: assetLogo("usdt"), search:"usdt tether", tag:"USDT" }
-  ];
-  const NETWORKS = [
-    { value:"BTC",  label:"BTC Network",  icon:`<span style="font-weight:1000">₿</span>`, search:"btc bitcoin network", tag:"BTC" },
-    { value:"ERC20",label:"ERC20 (Ethereum)", icon:`<span style="font-weight:1000">Ξ</span>`, search:"erc20 ethereum network eth", tag:"ERC20" },
-    { value:"TRC20",label:"TRC20 (Tron)", icon:`<span style="font-weight:1000">T</span>`, search:"trc20 tron network", tag:"TRC20" }
-  ];
-
-  mountLogoSelect("depAssetPick", ASSETS, document.getElementById("depAsset").value, (opt)=>{
-    setNativeSelect("depAsset", opt.value);
-  });
-  mountLogoSelect("depNetworkPick", NETWORKS, document.getElementById("depNetwork").value, (opt)=>{
-    setNativeSelect("depNetwork", opt.value);
-  });
-
-  mountLogoSelect("confAssetPick", ASSETS, document.getElementById("confAsset").value, (opt)=>{
-    document.getElementById("confAsset").value = opt.value;
-  });
-  mountLogoSelect("confNetworkPick", NETWORKS, document.getElementById("confNetwork").value, (opt)=>{
-    document.getElementById("confNetwork").value = opt.value;
-  });
-}
-
-/* ============================================================
-  ✅ AUTH + EMAIL VERIFICATION GUARD (REQUIRED)
-============================================================ */
-function hideGate(){
-  const g=document.getElementById("authGate");
-  if(g) g.style.display="none";
-}
-
-/* safety auto-hide so you never get trapped */
-(function safetyAutoHideGate(){
-  setTimeout(()=>hideGate(), 3500);
-})();
-
-async function loadIdentity(){
-  try{
-    let fullName="", avatarUrl="";
+    // users table first
     const { data: row, error } = await supabaseClient
       .from("users")
       .select("full_name, avatar_url")
@@ -2036,83 +1442,54 @@ async function loadIdentity(){
       .maybeSingle();
 
     if(!error && row){
-      fullName=row.full_name||"";
-      avatarUrl=row.avatar_url||"";
+      fullName = row.full_name || "";
+      avatarUrl = row.avatar_url || "";
     }
 
-    const md=(window.COINLUXORA_USER?.user_metadata||{});
-    if(!fullName) fullName=md.full_name||"User";
-    if(!avatarUrl) avatarUrl=md.avatar_url||"";
+    // auth metadata fallback
+    const md = (window.COINLUXORA_USER?.user_metadata || {});
+    if(!fullName) fullName = md.full_name || md.name || "";
+    if(!avatarUrl) avatarUrl = md.avatar_url || "";
 
-    setNameEverywhere(fullName);
-    setTopAvatar(avatarUrl);
-    setSideAvatar(avatarUrl);
+    currentUserName = (fullName && String(fullName).trim()) ? String(fullName).trim() : "User";
+    currentAvatarUrl = avatarUrl || "";
+
+    document.getElementById("topName").innerText = currentUserName;
+    document.getElementById("sideName").innerText = currentUserName;
+
+    setSideAvatar(currentAvatarUrl);
   }catch(e){
-    setNameEverywhere("User");
-    setTopAvatar("");
+    currentUserName = "User";
+    document.getElementById("topName").innerText = currentUserName;
+    document.getElementById("sideName").innerText = currentUserName;
     setSideAvatar("");
   }
 }
 
-(async function authGuard(){
-  try{
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    const session = sessionData?.session;
-    if(!session){
-      hideGate();
-      window.location.replace("login.html");
-      return;
-    }
-
-    const { data, error } = await supabaseClient.auth.getUser();
-    const user = data?.user;
-    if(error || !user){
-      hideGate();
-      window.location.replace("login.html");
-      return;
-    }
-
-    const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
-
-    if(!confirmed){
-      await supabaseClient.auth.signOut();
-      hideGate();
-      window.location.replace("verify.html?status=unverified");
-      return;
-    }
-
-    window.COINLUXORA_USER=user;
-    currentUserEmail=user.email;
-    currentUserId=user.id;
-
-    // init app
-    mountPickers();
-
-    await loadIdentity();
-    await clearDepositBadge();
-
-    await loadDepositAddresses();
-    await renderDepositAddress();
-
-    await loadSiteNotification(true);
-    startSiteNotificationAutoRefresh();
-
-    await loadHistory(true);
-    initRealtime();
-
-    hideGate();
-  }catch(e){
-    hideGate();
-    window.location.replace("login.html");
+async function init(){
+  const { data:userData, error } = await supabaseClient.auth.getUser();
+  if(error || !userData.user){
+    document.body.innerHTML="<h2 style='color:white'>You must login first.</h2>";
+    return;
   }
-})();
 
-/* ============================================================
-  ✅ LOGOUT
-============================================================ */
+  window.COINLUXORA_USER = userData.user;
+  currentUserEmail = userData.user.email;
+  currentUserId = userData.user.id || "";
+
+  await loadUserIdentity();
+  await loadSiteNotification(true);
+  startSiteNotificationAutoRefresh();
+
+  renderPlans();
+  await loadPlansForStats();
+  await loadActivePlan();
+  initRealtimePlans();
+}
+
 async function logout(){
   await supabaseClient.auth.signOut();
-  window.location.replace("login.html");
+  window.location.href="login.html";
 }
 
 /* ===== SITE-WIDE NOTIFICATION ===== */
@@ -2201,6 +1578,7 @@ function startSiteNotificationAutoRefresh(){
 window.closeSiteNotice = closeSiteNotice;
 
 </script>
+
 
 <footer style="text-align:center;padding:20px 16px 8px;color:#aaa;">© 2026 Veloci Global Markets. All rights reserved.</footer>
 </body>
