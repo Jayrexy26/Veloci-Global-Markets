@@ -627,8 +627,70 @@ window.smartsupp||(function(d) {
 })();
 </script>
 
+
+<style id="chat-safe-zone-style">
+  @media (max-width: 860px){
+    body{ --chat-safe-bottom: 112px; --chat-safe-right: 14px; --chat-safe-left: auto; }
+    iframe[id*="smartsupp"],
+    iframe[src*="smartsupp"],
+    div[id*="smartsupp"],
+    div[class*="smartsupp"]{
+      max-width: calc(100vw - 20px) !important;
+    }
+  }
+</style>
+
+<script>
+(function(){
+  function applySmartsuppSafeZone(){
+    const mobile = window.innerWidth <= 860;
+    const isWallet = document.body.classList.contains('wallet-page');
+    const bottom = mobile ? (isWallet ? 118 : 112) : 20;
+    const right = mobile ? (isWallet ? null : 14) : 18;
+    const left = mobile && isWallet ? 14 : null;
+
+    const selectors = [
+      'iframe[id*="smartsupp"]',
+      'iframe[src*="smartsupp"]',
+      'div[id*="smartsupp"]',
+      'div[class*="smartsupp"]',
+      'button[id*="smartsupp"]',
+      'button[class*="smartsupp"]'
+    ];
+
+    document.querySelectorAll(selectors.join(',')).forEach((el) => {
+      const style = el.style;
+      style.setProperty('bottom', bottom + 'px', 'important');
+      if (left !== null) {
+        style.setProperty('left', left + 'px', 'important');
+        style.setProperty('right', 'auto', 'important');
+      } else if (right !== null) {
+        style.setProperty('right', right + 'px', 'important');
+        style.removeProperty('left');
+      }
+      style.setProperty('max-width', 'calc(100vw - 20px)', 'important');
+      style.setProperty('max-height', 'calc(100dvh - ' + (bottom + 24) + 'px)', 'important');
+      style.setProperty('z-index', '2147483000', 'important');
+    });
+  }
+
+  const observer = new MutationObserver(applySmartsuppSafeZone);
+  document.addEventListener('DOMContentLoaded', () => {
+    applySmartsuppSafeZone();
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    let tries = 0;
+    const t = setInterval(() => {
+      applySmartsuppSafeZone();
+      tries += 1;
+      if (tries > 40) clearInterval(t);
+    }, 750);
+  });
+  window.addEventListener('resize', applySmartsuppSafeZone, { passive: true });
+})();
+</script>
+
 </head>
-<body>
+<body class="wallet-page">
 
   <!-- LOADING -->
   <div id="authGate">
@@ -655,7 +717,7 @@ window.smartsupp||(function(d) {
       <a class="navItem" href="user-dashboard.html"><span>Dashboard</span><small>Main overview</small></a>
       <a class="navItem active" href="wallet.html"><span>Wallet</span><small>Manage funds</small></a>
       <a class="navItem" href="deposits.html"><span>Deposits</span><small>Fund account</small></a>
-      <a class="navItem" href="withdrawal.html"><span>Withdrawals</span><small>Request payout</small></a>
+      <a class="navItem" href="withdrawal.html"><span>Withdrawal</span><small>Request payout</small></a>
       <a class="navItem" href="support.html"><span>Support</span><small>Tickets</small></a>
       <a class="navItem" href="plans.html"><span>Plans</span><small>Invest</small></a>
       <a class="navItem" href="profile.html"><span>Profile</span><small>Security</small></a>
