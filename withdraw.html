@@ -652,7 +652,7 @@ window.closeSiteNotice = closeSiteNotice;
       box-shadow:0 18px 60px rgba(0,0,0,.35);
     }
     .popBtn.primary:hover{ filter:brightness(1.03); }
-  
+
     /* ============================================================
       ✅ WITHDRAWAL PIN MODAL
     ============================================================ */
@@ -1188,7 +1188,6 @@ window.closeSiteNotice = closeSiteNotice;
     document.body.style.overflow = "hidden";
   }
   function closePop(e){
-    // If clicked backdrop, close; if called directly, close
     if(e && e.target && !e.target.classList.contains("popOverlay")) return;
     document.getElementById("popOverlay").classList.remove("show");
     document.body.style.overflow = "";
@@ -1218,7 +1217,7 @@ window.closeSiteNotice = closeSiteNotice;
   let currentOffset = 0;
   let historyCache = [];
 
-  let currentMethod = "crypto"; // "crypto" | "bank"
+  let currentMethod = "crypto";
 
   function showError(text) {
     msg.textContent = text;
@@ -1266,9 +1265,6 @@ window.closeSiteNotice = closeSiteNotice;
     sideName.textContent = nice;
   }
 
-  /* ============================================================
-    ✅ Method Switch + Bank Requirements (NO NIGERIA)
-  ============================================================ */
   const methodSwitch = document.getElementById("methodSwitch");
   const cryptoBlock = document.getElementById("cryptoBlock");
   const bankBlock = document.getElementById("bankBlock");
@@ -1285,12 +1281,10 @@ window.closeSiteNotice = closeSiteNotice;
     usRoutingWrap.style.display  = (r === "US") ? "block" : "none";
     ukSortWrap.style.display     = (r === "UK") ? "block" : "none";
 
-    // EU -> IBAN + SWIFT required
     if(r === "EU"){
       ibanWrap.style.display = "block";
       swiftWrap.style.display = "block";
     }else if(r === "INTL"){
-      // INTL -> SWIFT required, IBAN optional but shown
       ibanWrap.style.display = "block";
       swiftWrap.style.display = "block";
     }else{
@@ -1353,12 +1347,6 @@ window.closeSiteNotice = closeSiteNotice;
     return "";
   }
 
-  /* ============================================================
-    ✅ Balance Deduction (after successful request)
-    - Uses public.user_crypto_balances
-    - Matches asset_key safely even if DB casing differs
-    - Verifies that the update actually changed a row
-  ============================================================ */
   function normalizeAssetKey(value){
     return String(value || "")
       .trim()
@@ -1429,9 +1417,6 @@ window.closeSiteNotice = closeSiteNotice;
     }
   }
 
-  /* ============================================================
-    ✅ History Rendering
-  ============================================================ */
   function renderHistoryTable(records){
     if (!records || records.length === 0) {
       historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
@@ -1567,6 +1552,33 @@ window.closeSiteNotice = closeSiteNotice;
         return;
       }
 
+      const { data: w, error: wErr } = await supabaseClient
+        .from("withdrawals")
+        .select("asset, amount, method, status")
+        .eq("id", withdrawalId)
+        .eq("user_email", currentUserEmail)
+        .maybeSingle();
+
+      if (wErr || !w) {
+        showError("Failed to fetch withdrawal details.");
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      const selectedAsset = String(
+        w?.asset ||
+        getSelectedWithdrawalAsset() ||
+        ""
+      ).trim().toUpperCase();
+
+      if (!selectedAsset) {
+        showError("No asset selected.");
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
       const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
         method: "POST",
         headers: {
@@ -1575,7 +1587,15 @@ window.closeSiteNotice = closeSiteNotice;
         },
         body: JSON.stringify({
           action: "cancel",
-          withdrawal_id: withdrawalId
+          withdrawal_id: withdrawalId,
+          asset: selectedAsset,
+          asset_key: selectedAsset,
+          selected_asset: selectedAsset,
+          asset_name: selectedAsset,
+          currency: selectedAsset,
+          coin: selectedAsset,
+          amount: Number(w?.amount || 0),
+          method: String(w?.method || "").trim().toLowerCase() || "crypto"
         })
       });
 
@@ -1964,11 +1984,6 @@ window.closeSiteNotice = closeSiteNotice;
     await fetchWithdrawals({ reset:false });
   });
 
-  /* ============================================================
-    ✅ Submit Withdrawal (CRYPTO + BANK) — uses EDGE FUNCTION
-    ✅ SUCCESS NOW POPUP MODAL
-    ✅ AFTER SUCCESS: AUTO DEDUCT FROM BALANCE
-  ============================================================ */
   const __withdrawAssetEl = document.getElementById("asset");
   if (__withdrawAssetEl && !String(__withdrawAssetEl.value || "").trim()) {
     const firstNonEmpty = Array.from(__withdrawAssetEl.options || []).find((opt) => String(opt?.value || "").trim());
@@ -2107,9 +2122,6 @@ window.closeSiteNotice = closeSiteNotice;
     window.location.href="login.html";
   }
 
-  /* ============================================================
-    ✅ LOAD USER (Name instead of email)
-  ============================================================ */
   async function loadIdentity(user){
     try{
       currentUserEmail = user.email || "";
@@ -2143,9 +2155,6 @@ window.closeSiteNotice = closeSiteNotice;
     }
   }
 
-  /* ============================================================
-    ✅ COINLUXORA AUTH + EMAIL VERIFICATION GUARD (ONE BLOCK)
-  ============================================================ */
   (async function authGuard(){
     try{
       const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -2182,10 +2191,7 @@ window.closeSiteNotice = closeSiteNotice;
 
       hideGate();
 
-      // init history
       await fetchWithdrawals({ reset:true });
-
-      // apply initial bank rules just in case
       applyBankFieldRules();
 
     }catch(e){
