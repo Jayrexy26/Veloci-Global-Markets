@@ -3075,177 +3075,196 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     
-    async function loadBalance(){
-      // ✅ Fast-first balance load:
-      // - show cached / fallback value immediately
-      // - then refresh with richer live valuation if available
-      try{
-        let quickTotal = await getQuickBalanceTotal();
-        if(quickTotal !== null){
-          setBalanceAmount(quickTotal);
-        }else if(!__rawBalanceText || __rawBalanceText === "--"){
-          setBalanceAmount(0);
-        }
+    const BALANCE_PRICE_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+    let __balanceLoadToken = 0;
+    let __balanceRealtimeChannel = null;
 
-        const richTotal = await getRichBalanceTotal();
-        if(richTotal !== null){
-          setBalanceAmount(richTotal);
+    function balanceNormSym(assetKey){
+      const raw = String(assetKey||"").toUpperCase().trim();
+      if(raw.startsWith("USDT")) return "USDT";
+      if(raw.startsWith("USDC")) return "USDC";
+      if(raw.startsWith("BTC")) return "BTC";
+      if(raw.startsWith("ETH")) return "ETH";
+      if(raw.startsWith("BNB")) return "BNB";
+      if(raw.startsWith("SOL")) return "SOL";
+      if(raw.startsWith("TRX")) return "TRX";
+      if(raw.startsWith("ADA")) return "ADA";
+      if(raw.startsWith("XRP")) return "XRP";
+      if(raw.startsWith("DOGE")) return "DOGE";
+      if(raw.startsWith("AVAX")) return "AVAX";
+      if(raw.startsWith("MATIC") || raw.startsWith("POL")) return "MATIC";
+      if(raw.startsWith("LTC")) return "LTC";
+      if(raw.startsWith("TON")) return "TON";
+      return raw;
+    }
+
+    function balanceCgIdFor(sym){
+      const s = String(sym||"").toUpperCase();
+      const MAP = {
+        BTC:"bitcoin",
+        ETH:"ethereum",
+        USDT:"tether",
+        USDC:"usd-coin",
+        BNB:"binancecoin",
+        SOL:"solana",
+        TRX:"tron",
+        ADA:"cardano",
+        XRP:"ripple",
+        DOGE:"dogecoin",
+        AVAX:"avalanche-2",
+        MATIC:"matic-network",
+        LTC:"litecoin",
+        TON:"the-open-network",
+      };
+      return MAP[s] || null;
+    }
+
+    function getBalancePriceCacheKey(){
+      const idPart = String(currentUserId || currentUserEmail || "guest").trim().toLowerCase() || "guest";
+      return "vgm_balance_price_cache::" + idPart;
+    }
+
+    function readBalancePriceCache(){
+      try{
+        const raw = localStorage.getItem(getBalancePriceCacheKey());
+        if(!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === "object") ? parsed : {};
+      }catch(e){
+        return {};
+      }
+    }
+
+    function writeBalancePriceCache(priceMap){
+      try{
+        const merged = { ...readBalancePriceCache(), ...(priceMap || {}) };
+        localStorage.setItem(getBalancePriceCacheKey(), JSON.stringify(merged));
+      }catch(e){}
+    }
+
+    function getStableUsdPrice(sym){
+      const s = String(sym||"").toUpperCase();
+      if(s === "USDT" || s === "USDC") return 1;
+      return null;
+    }
+
+    async function fetchBalanceRows(){
+      if(!currentUserId) return [];
+      try{
+        const r = await supabaseClient
+          .from("user_crypto_balances")
+          .select("asset_key,balance")
+          .eq("user_id", currentUserId);
+        if(r.error) throw r.error;
+        return Array.isArray(r.data) ? r.data : [];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function buildPortfolioRows(rawRows){
+      return (Array.isArray(rawRows) ? rawRows : [])
+        .map(x => ({ sym: balanceNormSym(x?.asset_key), bal: Number(x?.balance || 0) }))
+        .filter(x => x.sym && Number.isFinite(x.bal) && x.bal !== 0);
+    }
+
+    function computePortfolioTotal(rows, priceCache){
+      let sum = 0;
+      let pricedCount = 0;
+      for(const row of (rows || [])){
+        const stable = getStableUsdPrice(row.sym);
+        let px = stable;
+        if(px === null){
+          const cgId = balanceCgIdFor(row.sym);
+          px = Number(priceCache?.[cgId]?.usd || 0);
+          if(!(px > 0)) px = null;
+        }
+        if(px !== null){
+          sum += Number(row.bal || 0) * px;
+          pricedCount += 1;
+        }
+      }
+      return { total: sum, pricedCount };
+    }
+
+    async function fetchCgPricesUSD(ids){
+      if(!ids || !ids.length) return {};
+      const uniq = Array.from(new Set(ids)).filter(Boolean);
+      if(!uniq.length) return {};
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(uniq.join(","))}&vs_currencies=usd`;
+      const res = await fetch(url);
+      if(!res.ok) throw new Error("price fetch failed");
+      const data = await res.json();
+      return (data && typeof data==="object") ? data : {};
+    }
+
+    async function loadBalance(){
+      const token = ++__balanceLoadToken;
+      try{
+        const rawRows = await fetchBalanceRows();
+        if(token !== __balanceLoadToken) return;
+
+        const rows = buildPortfolioRows(rawRows);
+        if(!rows.length){
+          setBalanceAmount(0);
           return;
         }
 
-        if(quickTotal === null){
-          setBalanceAmount(0);
+        const cachedPrices = readBalancePriceCache();
+        const quick = computePortfolioTotal(rows, cachedPrices);
+        if(quick.pricedCount > 0 || rows.every(row => getStableUsdPrice(row.sym) !== null)){
+          setBalanceAmount(quick.total);
+        }
+
+        const ids = rows.map(row => balanceCgIdFor(row.sym)).filter(Boolean);
+        if(!ids.length){
+          if(quick.pricedCount === 0) setBalanceAmount(0);
+          return;
+        }
+
+        try{
+          const freshPrices = await fetchCgPricesUSD(ids);
+          if(token !== __balanceLoadToken) return;
+          writeBalancePriceCache(freshPrices);
+          const rich = computePortfolioTotal(rows, { ...cachedPrices, ...freshPrices });
+          if(rich.pricedCount > 0 || rows.every(row => getStableUsdPrice(row.sym) !== null)){
+            setBalanceAmount(rich.total);
+            return;
+          }
+        }catch(e){}
+
+        if(quick.pricedCount === 0){
+          const stableOnly = rows.every(row => getStableUsdPrice(row.sym) !== null);
+          setBalanceAmount(stableOnly ? quick.total : 0);
         }
       }catch(e){
-        // Never leave it blank (prevents "Loading…" feeling)
-        setBalanceAmount(0);
+        if(!__rawBalanceText || __rawBalanceText === "--"){
+          setBalanceAmount(0);
+        }else{
+          setBalanceVisibilityUI();
+        }
       }
     }
 
-    async function getQuickBalanceTotal(){
-      let total = null;
-
-      // ✅ Fast direct sources first
-      if(currentUserId){
-        try{
-          const r = await supabaseClient.from("wallets").select("total_usd").eq("user_id", currentUserId).maybeSingle();
-          if(!r.error && r.data?.total_usd != null) total = Number(r.data.total_usd || 0);
-        }catch(e){}
-      }
-      if(total===null && currentUserId){
-        try{
-          const r = await supabaseClient.from("wallets").select("balance_usd").eq("user_id", currentUserId).maybeSingle();
-          if(!r.error && r.data?.balance_usd != null) total = Number(r.data.balance_usd || 0);
-        }catch(e){}
-      }
-      if(total===null && currentUserId){
-        try{
-          const r1 = await supabaseClient.from("users").select("balance").eq("id", currentUserId).maybeSingle();
-          if(!r1.error && r1.data && r1.data.balance!=null) total = Number(r1.data.balance || 0);
-        }catch(e){}
-      }
-      if(total===null && currentUserId){
-        try{
-          const r2 = await supabaseClient.from("users").select("balance").eq("user_id", currentUserId).maybeSingle();
-          if(!r2.error && r2.data && r2.data.balance!=null) total = Number(r2.data.balance || 0);
-        }catch(e){}
-      }
-      if(total===null && currentUserEmail){
-        try{
-          const r3 = await supabaseClient.from("users").select("balance").eq("email", currentUserEmail).maybeSingle();
-          if(!r3.error && r3.data && r3.data.balance!=null) total = Number(r3.data.balance || 0);
-        }catch(e){}
-      }
-      if(total===null && currentUserId){
-        try{
-          let r = await supabaseClient.from("wallet_balances").select("usd_value").eq("user_id", currentUserId);
-          if(!r.error && Array.isArray(r.data) && r.data.length){
-            total = r.data.reduce((s,x)=>s + Number(x?.usd_value || 0), 0);
-          }
-        }catch(e){}
-      }
-      if(total===null && currentUserId){
-        try{
-          let r = await supabaseClient.from("wallet_balances").select("balance_usd").eq("user_id", currentUserId);
-          if(!r.error && Array.isArray(r.data) && r.data.length){
-            total = r.data.reduce((s,x)=>s + Number(x?.balance_usd || 0), 0);
-          }
-        }catch(e){}
-      }
-
-      return (total===null || !Number.isFinite(Number(total))) ? null : Number(total);
-    }
-
-    async function getRichBalanceTotal(){
-      let total = null;
-
-      function normSym(assetKey){
-        const raw = String(assetKey||"").toUpperCase().trim();
-        if(raw.startsWith("USDT")) return "USDT";
-        if(raw.startsWith("USDC")) return "USDC";
-        if(raw.startsWith("BTC")) return "BTC";
-        if(raw.startsWith("ETH")) return "ETH";
-        if(raw.startsWith("BNB")) return "BNB";
-        if(raw.startsWith("SOL")) return "SOL";
-        if(raw.startsWith("TRX")) return "TRX";
-        if(raw.startsWith("ADA")) return "ADA";
-        if(raw.startsWith("XRP")) return "XRP";
-        if(raw.startsWith("DOGE")) return "DOGE";
-        if(raw.startsWith("AVAX")) return "AVAX";
-        if(raw.startsWith("MATIC") || raw.startsWith("POL")) return "MATIC";
-        if(raw.startsWith("LTC")) return "LTC";
-        if(raw.startsWith("TON")) return "TON";
-        return raw;
-      }
-
-      function cgIdFor(sym){
-        const s = String(sym||"").toUpperCase();
-        const MAP = {
-          BTC:"bitcoin",
-          ETH:"ethereum",
-          USDT:"tether",
-          USDC:"usd-coin",
-          BNB:"binancecoin",
-          SOL:"solana",
-          TRX:"tron",
-          ADA:"cardano",
-          XRP:"ripple",
-          DOGE:"dogecoin",
-          AVAX:"avalanche-2",
-          MATIC:"matic-network",
-          LTC:"litecoin",
-          TON:"the-open-network",
-        };
-        return MAP[s] || null;
-      }
-
-      async function fetchCgPricesUSD(ids){
-        if(!ids || !ids.length) return {};
-        const uniq = Array.from(new Set(ids)).filter(Boolean);
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(uniq.join(","))}&vs_currencies=usd`;
-        const res = await fetch(url);
-        if(!res.ok) throw new Error("price fetch failed");
-        const data = await res.json();
-        return (data && typeof data==="object") ? data : {};
-      }
-
-      if(currentUserId){
-        try{
-          const r = await supabaseClient
-            .from("user_crypto_balances")
-            .select("asset_key,balance")
-            .eq("user_id", currentUserId);
-
-          if(!r.error && Array.isArray(r.data) && r.data.length){
-            const allRows = r.data
-              .map(x => ({ sym: normSym(x?.asset_key), bal: Number(x?.balance || 0) }))
-              .filter(x => x.sym && Number.isFinite(x.bal));
-
-            const rows = allRows.filter(x => x.bal !== 0);
-            if(!rows.length){
-              total = 0;
-            }else{
-              try{
-                const ids = rows.map(x => cgIdFor(x.sym)).filter(Boolean);
-                const prices = await fetchCgPricesUSD(ids);
-                let sum = 0;
-                let pricedCount = 0;
-                for(const row of rows){
-                  const id = cgIdFor(row.sym);
-                  const px = Number(prices?.[id]?.usd || 0);
-                  if(px > 0) pricedCount += 1;
-                  sum += row.bal * px;
-                }
-                if(Number.isFinite(sum) && (sum > 0 || pricedCount > 0)){
-                  total = sum;
-                }
-              }catch(e){}
-            }
-          }
-        }catch(e){}
-      }
-
-      return (total===null || !Number.isFinite(Number(total))) ? null : Number(total);
+    function subscribeToBalanceRealtime(){
+      try{
+        if(__balanceRealtimeChannel){
+          supabaseClient.removeChannel(__balanceRealtimeChannel);
+          __balanceRealtimeChannel = null;
+        }
+      }catch(e){}
+      if(!currentUserId) return;
+      __balanceRealtimeChannel = supabaseClient
+        .channel(`dash-balance-${currentUserId}`)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "user_crypto_balances",
+          filter: `user_id=eq.${currentUserId}`
+        }, ()=>{
+          loadBalance();
+        })
+        .subscribe();
     }
 
     let __rawBalanceText = "$0.00";
@@ -3690,6 +3709,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       loadDashboardIdentity();
       loadBalance();
+      subscribeToBalanceRealtime();
       loadActivePlan();
       loadRealtimeBadgesOnce();
       subscribeToRealtimeBadges();
