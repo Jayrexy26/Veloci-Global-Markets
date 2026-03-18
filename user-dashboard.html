@@ -1500,6 +1500,144 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 </script>
 
+
+<style id="smartsuppMobileClamp">
+/* stronger Smartsupp mobile clamp */
+:root{
+  --smartsupp-mobile-width: min(340px, calc(100vw - 20px));
+  --smartsupp-mobile-height: min(420px, calc(100vh - 170px));
+}
+@media (max-width: 860px){
+  iframe[src*="smartsupp"],
+  div[id*="smartsupp"],
+  div[class*="smartsupp"],
+  .smartsupp-window,
+  .smartsupp-launcher{
+    width: var(--smartsupp-mobile-width) !important;
+    max-width: var(--smartsupp-mobile-width) !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: var(--smartsupp-mobile-height) !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+}
+</style>
+
+<script id="smartsuppMobileClampScript">
+(function () {
+  function px(v){ return typeof v === 'number' ? v + 'px' : v; }
+
+  function getConfig(){
+    const isMobile = window.innerWidth <= 860;
+    const vw = window.innerWidth || document.documentElement.clientWidth || 360;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 640;
+
+    if (!isMobile) {
+      return {
+        width: Math.min(360, Math.max(300, vw - 36)),
+        height: Math.min(520, Math.max(360, vh - 140)),
+        bottom: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--smartsupp-safe-bottom')) || 96,
+        right: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--smartsupp-safe-right')) || 18,
+        left: 'auto'
+      };
+    }
+
+    let bottom = 118;
+    let right = 10;
+    let left = 'auto';
+
+    const dockBar = document.querySelector('.dockBar');
+    if (dockBar) {
+      bottom = Math.max(bottom, Math.ceil(dockBar.getBoundingClientRect().height) + 40);
+    }
+
+    const tradeOrb = document.getElementById('tradePctOrb');
+    if (tradeOrb) {
+      right = Math.max(right, 86);
+    }
+
+    const walletFab = document.getElementById('btnLinkWallet') || document.querySelector('.linkFab');
+    if (walletFab) {
+      const r = walletFab.getBoundingClientRect();
+      if (r && r.width) {
+        left = '14px';
+        right = 'auto';
+      }
+    }
+
+    return {
+      width: Math.min(340, Math.max(280, vw - 20)),
+      height: Math.min(420, Math.max(280, vh - bottom - 20)),
+      bottom, right, left
+    };
+  }
+
+  function looksLikeSmartsupp(node){
+    if (!node || node.nodeType !== 1) return false;
+    const attrs = [node.id || '', node.className || '', node.getAttribute('src') || '', node.getAttribute('title') || '', node.getAttribute('aria-label') || '']
+      .join(' ')
+      .toLowerCase();
+    return attrs.includes('smartsupp');
+  }
+
+  function forceNode(node, cfg){
+    if (!looksLikeSmartsupp(node)) return;
+    node.style.setProperty('position', 'fixed', 'important');
+    node.style.setProperty('width', px(cfg.width), 'important');
+    node.style.setProperty('max-width', px(cfg.width), 'important');
+    node.style.setProperty('min-width', '0', 'important');
+    node.style.setProperty('height', 'auto', 'important');
+    node.style.setProperty('max-height', px(cfg.height), 'important');
+    node.style.setProperty('bottom', px(cfg.bottom), 'important');
+    node.style.setProperty('top', 'auto', 'important');
+    node.style.setProperty('margin', '0', 'important');
+    node.style.setProperty('transform', 'none', 'important');
+    node.style.setProperty('border-radius', '16px', 'important');
+    node.style.setProperty('overflow', 'hidden', 'important');
+    node.style.setProperty('z-index', '9999', 'important');
+    if (cfg.left === 'auto') {
+      node.style.setProperty('left', 'auto', 'important');
+      node.style.setProperty('right', px(cfg.right), 'important');
+    } else {
+      node.style.setProperty('left', px(cfg.left), 'important');
+      node.style.setProperty('right', 'auto', 'important');
+    }
+  }
+
+  function applySmartsuppClamp(){
+    const cfg = getConfig();
+    document.documentElement.style.setProperty('--smartsupp-mobile-width', px(cfg.width));
+    document.documentElement.style.setProperty('--smartsupp-mobile-height', px(cfg.height));
+    Array.from(document.querySelectorAll('iframe, div')).forEach((node) => forceNode(node, cfg));
+  }
+
+  function init(){
+    applySmartsuppClamp();
+    let count = 0;
+    const timer = setInterval(function(){
+      applySmartsuppClamp();
+      count += 1;
+      if (count > 90) clearInterval(timer);
+    }, 800);
+
+    const mo = new MutationObserver(function(){ applySmartsuppClamp(); });
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    window.addEventListener('resize', applySmartsuppClamp, { passive: true });
+    window.addEventListener('orientationchange', applySmartsuppClamp, { passive: true });
+    document.addEventListener('visibilitychange', applySmartsuppClamp);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+})();
+</script>
+
 </head>
 <body>
 <div class="bgFlow"></div>
