@@ -1195,6 +1195,83 @@ window.smartsupp||(function(d) {
 
     let __wallets=[], __selectedCard=null;
     let __balances={}, __prices={}, __totalUsd=0;
+    const WALLET_BAL_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+    let __walletBalanceRealtimeSub = null;
+
+    function getWalletBalanceCacheKey(){ return `vgm_wallet_total_cache_${CURRENT_USER_ID || CURRENT_EMAIL || "guest"}`; }
+    function getWalletPriceCacheKey(){ return `vgm_wallet_price_cache_${CURRENT_USER_ID || CURRENT_EMAIL || "guest"}`; }
+
+    function readWalletTotalCache(){
+      try{
+        const raw = localStorage.getItem(getWalletBalanceCacheKey());
+        if(!raw) return null;
+        const parsed = JSON.parse(raw);
+        const value = Number(parsed?.value);
+        return Number.isFinite(value) ? value : null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    function writeWalletTotalCache(value){
+      try{
+        localStorage.setItem(getWalletBalanceCacheKey(), JSON.stringify({ value: Number(value||0), ts: Date.now() }));
+      }catch(e){}
+    }
+
+    function readWalletPriceCache(){
+      try{
+        const raw = localStorage.getItem(getWalletPriceCacheKey());
+        if(!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === "object") ? parsed : {};
+      }catch(e){
+        return {};
+      }
+    }
+
+    function writeWalletPriceCache(map){
+      try{
+        const merged = { ...readWalletPriceCache(), ...(map || {}) };
+        localStorage.setItem(getWalletPriceCacheKey(), JSON.stringify(merged));
+      }catch(e){}
+    }
+
+    function stableUsdPrice(sym){
+      const s = normalizeSymbol(sym);
+      if(s === "USDT" || s === "USDC") return 1;
+      return null;
+    }
+
+    function computeWalletTotalFromBalances(priceSource){
+      let total = 0;
+      let pricedCount = 0;
+      const syms = uniqueSymbols();
+      syms.forEach(sym=>{
+        const bal = Number(__balances?.[sym] || 0);
+        if(!Number.isFinite(bal) || bal === 0) return;
+        let px = stableUsdPrice(sym);
+        if(px === null){
+          px = Number(priceSource?.[sym]?.usd || 0);
+          if(!(px > 0)) px = null;
+        }
+        if(px !== null){
+          total += bal * px;
+          pricedCount += 1;
+        }
+      });
+      return { total, pricedCount };
+    }
+
+    function applyCachedWalletTotal(){
+      const cachedTotal = readWalletTotalCache();
+      if(Number.isFinite(cachedTotal)){
+        __totalUsd = Number(cachedTotal);
+        setTotalBalanceDisplay(money(__totalUsd));
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = "Refreshing from wallet balances…";
+      }
+    }
 
     /* HIDE / SHOW BALANCES */
     let __hideBalances=false;
@@ -1520,21 +1597,41 @@ window.smartsupp||(function(d) {
       }
     }
 
-    async function loadUserUsdBalanceFromUsersTable(){
-      // IMPORTANT: your DB confirmed public.users has only: balance
-      try{
-        if(!CURRENT_USER_ID) return null;
-        const { data, error } = await supabaseClient
-          .from("users")
-          .select("balance")
-          .eq("id", CURRENT_USER_ID)
-          .maybeSingle();
-        if(error || !data) return null;
-        const v=Number(data.balance);
-        return Number.isFinite(v) ? v : null;
-      }catch(e){
-        return null;
+    async function refreshWalletTotalFromBalances(forceLivePrices=false){
+      const cachedPriceRows = readWalletPriceCache();
+      const cachedPrices = {};
+      Object.keys(cachedPriceRows || {}).forEach(sym=>{
+        cachedPrices[normalizeSymbol(sym)] = cachedPriceRows[sym];
+      });
+
+      const quick = computeWalletTotalFromBalances({ ...cachedPrices, ...__prices });
+      if(quick.pricedCount > 0 || uniqueSymbols().every(sym => stableUsdPrice(sym) !== null || Number(__balances?.[sym]||0) === 0)){
+        __totalUsd = Number(quick.total || 0);
+        setTotalBalanceDisplay(money(__totalUsd));
+        writeWalletTotalCache(__totalUsd);
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = forceLivePrices ? "Refreshing live prices…" : "Linked with dashboard balance";
       }
+
+      const symbolsNeedingPrices = uniqueSymbols().filter(sym => Number(__balances?.[sym]||0) !== 0 && stableUsdPrice(sym) === null);
+      if(!symbolsNeedingPrices.length){
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = "Linked with dashboard balance";
+        return;
+      }
+
+      try{
+        await fetchPricesUSD(symbolsNeedingPrices);
+        writeWalletPriceCache(__prices);
+        const rich = computeWalletTotalFromBalances(__prices);
+        if(rich.pricedCount > 0){
+          __totalUsd = Number(rich.total || 0);
+          setTotalBalanceDisplay(money(__totalUsd));
+          writeWalletTotalCache(__totalUsd);
+          const hint = document.getElementById("totalHint");
+          if(hint) hint.textContent = "Linked with dashboard balance";
+        }
+      }catch(e){}
     }
 
     /* BACKEND WALLETS LIST */
@@ -1550,12 +1647,20 @@ window.smartsupp||(function(d) {
 
     async function loadFromBackend(){
       try{
-        const headers=await getAuthHeaders();
-        const res=await fetch(WALLET_API_URL, {
+        applyCachedWalletTotal();
+        const headersPromise = getAuthHeaders();
+        const balancesPromise = loadBalancesSafe();
+        const headers = await headersPromise;
+        const walletFetchPromise = fetch(WALLET_API_URL, {
           method:"POST",
           headers,
           body: JSON.stringify({ action:"wallets_public_list" })
         });
+
+        await balancesPromise;
+        await refreshWalletTotalFromBalances(false);
+
+        const res = await walletFetchPromise;
         const data=await res.json().catch(()=> ({}));
         if(!res.ok || data?.success===false){
           toast(`Load failed (${res.status})`);
@@ -1569,34 +1674,10 @@ window.smartsupp||(function(d) {
         }));
         __wallets = wallets.filter(w => String(w.asset_key||"").toUpperCase() !== "XRP");
 
-        // load coin balances (if table exists & has rows)
-        await loadBalancesSafe();
+        render(__wallets);
         await fetchPricesUSD(__wallets.map(w=>w.asset_key));
-
-        // Total wallet balance MUST MATCH dashboard: users.balance
-        const userUsd = await loadUserUsdBalanceFromUsersTable();
-        if(Number.isFinite(userUsd)){
-          __totalUsd = Number(userUsd);
-          setTotalBalanceDisplay(money(__totalUsd));
-          document.getElementById("totalHint").textContent="Linked with dashboard balance";
-        }else{
-          // fallback: compute from balances/prices if users.balance not readable
-          // IMPORTANT: don't double-count the same coin across multiple networks (e.g. USDT_ERC20 + USDT_BEP20)
-          let total=0;
-          const seen=new Set();
-          for(const w of __wallets){
-            const sym=normalizeSymbol(w.asset_key);
-            if(!sym || seen.has(sym)) continue;
-            seen.add(sym);
-            const bal=Number(__balances[sym]||0);
-            const px=Number(__prices?.[sym]?.usd||0);
-            total += bal*px;
-          }
-          __totalUsd=total;
-          setTotalBalanceDisplay(money(total));
-          document.getElementById("totalHint").textContent="Live prices • 24h change";
-        }
-
+        writeWalletPriceCache(__prices);
+        await refreshWalletTotalFromBalances(true);
         render(__wallets);
         toast("Loaded ✅");
       }catch(e){
@@ -2406,6 +2487,30 @@ window.smartsupp||(function(d) {
       applyHideBalances();
     });
 
+    function subscribeWalletBalanceRealtime(){
+      try{
+        if(__walletBalanceRealtimeSub){
+          supabaseClient.removeChannel(__walletBalanceRealtimeSub);
+          __walletBalanceRealtimeSub = null;
+        }
+      }catch(e){}
+      if(!CURRENT_USER_ID) return;
+      __walletBalanceRealtimeSub = supabaseClient
+        .channel(`wallet-balance-${CURRENT_USER_ID}`)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "user_crypto_balances",
+          filter: `user_id=eq.${CURRENT_USER_ID}`
+        }, async ()=>{
+          await loadBalancesSafe();
+          await refreshWalletTotalFromBalances(false);
+          render(__wallets);
+          applyHideBalances();
+        })
+        .subscribe();
+    }
+
     (async function authGuard(){
       try{
         const { data: sessionData } = await supabaseClient.auth.getSession();
@@ -2429,8 +2534,10 @@ window.smartsupp||(function(d) {
         CURRENT_EMAIL=user.email || "";
 
         loadHideBalances();
+        applyCachedWalletTotal();
 
         await loadFromBackend();
+        subscribeWalletBalanceRealtime();
 
         // wallet link status + realtime/poll fallback
         await checkLinkStatus();
