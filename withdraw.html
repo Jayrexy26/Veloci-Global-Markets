@@ -1557,25 +1557,47 @@ window.closeSiteNotice = closeSiteNotice;
         return;
       }
 
-      const { error } = await supabaseClient
-        .from("withdrawals")
-        .update({ status: "cancelled" })
-        .eq("id", withdrawalId)
-        .eq("user_email", currentUserEmail)
-        .eq("status", "pending");
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const session = sessionData?.session;
 
-      if (error) {
-        showError("Cancel failed: " + error.message);
+      if (!session?.access_token) {
+        showError("Session expired. Please login again.");
         btnEl.disabled = false;
         btnEl.textContent = "Cancel";
         return;
       }
 
-      openPop("Cancelled", "Withdrawal cancelled ✅");
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          action: "cancel",
+          withdrawal_id: withdrawalId
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data?.success === false || data?.error) {
+        showError(data?.details || data?.error || "Cancel failed.");
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+        return;
+      }
+
+      openPop("Cancelled", "Withdrawal cancelled and balance restored ✅");
       await fetchWithdrawals({ reset:true });
 
     } catch (e) {
       showError("Cancel error: " + (e?.message || String(e)));
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.textContent = "Cancel";
+      }
     }
   }
 
