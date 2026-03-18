@@ -987,6 +987,117 @@ th{color:rgba(255,255,255,.65);font-weight:1000;font-size:13px}
 
 .qrCanvas canvas, .qrCanvas img{ border-radius:0 !important; }
 </style>
+
+<!-- Smartsupp Live Chat script -->
+<script type="text/javascript">
+var _smartsupp = _smartsupp || {};
+_smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+window.smartsupp||(function(d) {
+ var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+ c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+})(document);
+</script>
+<script>
+(function () {
+  const SMARTSUPP_AUTO_OPEN_MS = 7000;
+  let __smartsuppOpened = false;
+  let __smartsuppIdentified = false;
+
+  function getSmartSuppUserName() {
+    const candidates = [
+      (typeof window.userName !== "undefined" ? window.userName : ""),
+      (typeof window.currentUserName !== "undefined" ? window.currentUserName : ""),
+      (typeof window.fullName !== "undefined" ? window.fullName : ""),
+      document.getElementById("helloName")?.textContent || "",
+      document.getElementById("sideName")?.textContent || "",
+      document.getElementById("userWho")?.textContent || "",
+      document.getElementById("profileName")?.textContent || "",
+      document.getElementById("fullName")?.value || ""
+    ];
+    for (const raw of candidates) {
+      const clean = String(raw || "").trim();
+      if (clean && clean.toLowerCase() !== "loading…" && clean.toLowerCase() !== "loading..." && clean.toLowerCase() !== "---") {
+        return clean;
+      }
+    }
+    return "User";
+  }
+
+  function getSmartSuppUserEmail() {
+    const candidates = [
+      (typeof window.currentUserEmail !== "undefined" ? window.currentUserEmail : ""),
+      (typeof window.userEmail !== "undefined" ? window.userEmail : ""),
+      (typeof window.currentEmail !== "undefined" ? window.currentEmail : ""),
+      (typeof window.COINLUXORA_USER !== "undefined" && window.COINLUXORA_USER ? window.COINLUXORA_USER.email : ""),
+      document.getElementById("email")?.value || "",
+      document.getElementById("userEmail")?.textContent || ""
+    ];
+    for (const raw of candidates) {
+      const clean = String(raw || "").trim();
+      if (clean && clean.includes("@")) return clean;
+    }
+    return "";
+  }
+
+  function identifySmartsuppUser() {
+    try {
+      if (!window.smartsupp) return false;
+      const name = getSmartSuppUserName();
+      const email = getSmartSuppUserEmail();
+      if (name) window.smartsupp("name", name);
+      if (email) {
+        window.smartsupp("email", email);
+        __smartsuppIdentified = true;
+      }
+      return !!email;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function openSmartsuppChat() {
+    if (__smartsuppOpened) return;
+    try {
+      if (!window.smartsupp) return;
+      identifySmartsuppUser();
+      window.smartsupp("chat:show");
+      setTimeout(function () {
+        try { window.smartsupp("chat:open"); } catch (e) {}
+      }, 300);
+      __smartsuppOpened = true;
+    } catch (e) {}
+  }
+
+  function bootstrapSmartsupp() {
+    let tries = 0;
+    const maxTries = 40;
+    const timer = setInterval(function () {
+      tries += 1;
+      identifySmartsuppUser();
+      if (window.smartsupp || tries >= maxTries) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    setTimeout(function () {
+      openSmartsuppChat();
+    }, SMARTSUPP_AUTO_OPEN_MS);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapSmartsupp);
+  } else {
+    bootstrapSmartsupp();
+  }
+
+  window.addEventListener("load", function () {
+    identifySmartsuppUser();
+  });
+})();
+</script>
+
 </head>
 
 <body>
