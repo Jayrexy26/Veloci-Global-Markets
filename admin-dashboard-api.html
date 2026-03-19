@@ -2543,16 +2543,6 @@ async function loadSupport(){
   const res = await apiCall("tickets_list");
   CACHE.support = res.data || [];
   renderSupport(CACHE.support);
-
-  try{
-    await loadHomepageContent();
-  }catch(e){
-    feed("site-content warning -> " + (e?.message || e || "Unknown error"));
-    const hpStatus = document.getElementById("homepageContentStatus");
-    if(hpStatus) hpStatus.textContent = "Homepage settings could not load right now.";
-    setDebugBox("Homepage settings warning while opening Support:\n" + String(e?.message || e || "Unknown error"));
-  }
-
   feed("tickets_list loaded (" + CACHE.support.length + ")");
   renderOverview();
 }
@@ -2622,52 +2612,28 @@ async function siteContentCall(action, payload = {}, useAdmin = true){
   const headers = {
     "Content-Type": "application/json",
     "apikey": ANON_KEY,
-    "Authorization": "Bearer " + ANON_KEY,
+    "authorization": "Bearer " + ANON_KEY,
     "cache-control": "no-store"
   };
-
   if(useAdmin){
     headers["x-admin-secret"] = ADMIN_SECRET;
     headers["x-admin-id"] = ADMIN_ID;
   }
 
-  let res;
-  try{
-    res = await fetch(SITE_CONTENT_API_URL, {
-      method: "POST",
-      mode: "cors",
-      credentials: "omit",
-      headers,
-      body: JSON.stringify({ action, ...payload }),
-      cache: "no-store"
-    });
-  }catch(fetchErr){
-    const msg = String(fetchErr?.message || fetchErr || "Failed to fetch");
-    setDebugBox("site-content-api network failure:\n" + msg);
-    throw new Error("Failed to fetch");
-  }
+  const res = await fetch(SITE_CONTENT_API_URL, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ action, ...payload }),
+    cache: "no-store"
+  });
 
   const raw = await res.text();
   let json = {};
-  try{
-    json = raw ? JSON.parse(raw) : {};
-  }catch(_){
-    json = { success:false, error: raw || "Invalid JSON response" };
-  }
+  try{ json = raw ? JSON.parse(raw) : {}; }catch(_){ json = { success:false, error:raw || "Invalid JSON response" }; }
 
   if(!res.ok || json.success === false){
-    setDebugBox(
-      "site-content-api error:\n" +
-      JSON.stringify({
-        status: res.status,
-        statusText: res.statusText,
-        action,
-        response: json
-      }, null, 2)
-    );
-    throw new Error(json.error || json.message || ("HTTP " + res.status));
+    throw new Error(json.error || ("HTTP " + res.status));
   }
-
   return json;
 }
 
