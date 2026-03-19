@@ -587,62 +587,6 @@
     }
     #tvContainer{ width:100%; height: 420px; }
   
-/* Smartsupp overlap fix */
-:root{
-  --smartsupp-launcher-bottom: 24px;
-  --smartsupp-launcher-right: 18px;
-  --smartsupp-launcher-left: auto;
-  --smartsupp-window-bottom: 24px;
-}
-@media (max-width: 860px){
-  :root{
-    --smartsupp-launcher-bottom: 60px;
-    --smartsupp-launcher-right: auto;
-    --smartsupp-launcher-left: 14px;
-    --smartsupp-window-bottom: 20px;
-  }
-}
-/* launcher bubble only */
-iframe[src*="smartsuppchat.com"][title*="launcher"],
-iframe[src*="smartsupp"][title*="launcher"],
-.smartsupp-launcher{
-  bottom: var(--smartsupp-launcher-bottom) !important;
-  left: var(--smartsupp-launcher-left) !important;
-  right: var(--smartsupp-launcher-right) !important;
-  top: auto !important;
-  z-index: 100000 !important;
-}
-/* opened window only */
-iframe[src*="smartsuppchat.com"][title*="widget"],
-iframe[src*="smartsupp"][title*="widget"],
-iframe[src*="smartsuppchat.com"][title*="chat"],
-iframe[src*="smartsupp"][title*="chat"],
-.smartsupp-window{
-  top: auto !important;
-  left: auto !important;
-  right: 18px !important;
-  bottom: var(--smartsupp-window-bottom) !important;
-  width: min(430px, calc(100vw - 24px)) !important;
-  max-width: calc(100vw - 24px) !important;
-  height: min(690px, calc(100vh - 36px)) !important;
-  max-height: calc(100vh - 36px) !important;
-  z-index: 100000 !important;
-}
-@media (max-width: 860px){
-  iframe[src*="smartsuppchat.com"][title*="widget"],
-  iframe[src*="smartsupp"][title*="widget"],
-  iframe[src*="smartsuppchat.com"][title*="chat"],
-  iframe[src*="smartsupp"][title*="chat"],
-  .smartsupp-window{
-    left: 12px !important;
-    right: 12px !important;
-    width: calc(100vw - 24px) !important;
-    max-width: calc(100vw - 24px) !important;
-    height: min(620px, calc(100vh - 24px)) !important;
-    max-height: calc(100vh - 24px) !important;
-    bottom: 12px !important;
-  }
-}
 </style>
 
 <!-- Smartsupp Live Chat script -->
@@ -685,81 +629,19 @@ window.smartsupp||(function(d) {
 </script>
 
 
-<script>
-(function () {
-  function applySmartsuppSafePosition() {
-    const isMobile = window.innerWidth <= 860;
 
-    document.documentElement.style.setProperty('--smartsupp-launcher-bottom', isMobile ? '60px' : '24px');
-    document.documentElement.style.setProperty('--smartsupp-launcher-left', isMobile ? '14px' : 'auto');
-    document.documentElement.style.setProperty('--smartsupp-launcher-right', isMobile ? 'auto' : '18px');
-    document.documentElement.style.setProperty('--smartsupp-window-bottom', isMobile ? '12px' : '24px');
 
-    const nodes = Array.from(document.querySelectorAll('iframe, div'));
-    nodes.forEach((node) => {
-      const src = (node.getAttribute('src') || '').toLowerCase();
-      const id = (node.id || '').toLowerCase();
-      const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
-      const title = (node.getAttribute('title') || '').toLowerCase();
-      const aria = (node.getAttribute('aria-label') || '').toLowerCase();
-      const looksLikeSmartsupp =
-        src.includes('smartsupp') ||
-        id.includes('smartsupp') ||
-        cls.includes('smartsupp') ||
-        title.includes('smartsupp') ||
-        aria.includes('smartsupp');
 
-      if (!looksLikeSmartsupp) return;
-
-      const isLauncher =
-        title.includes('launcher') ||
-        cls.includes('launcher') ||
-        id.includes('launcher');
-
-      if (isLauncher) {
-        node.style.setProperty('top', 'auto', 'important');
-        node.style.setProperty('bottom', isMobile ? '60px' : '24px', 'important');
-        node.style.setProperty('left', isMobile ? '14px' : 'auto', 'important');
-        node.style.setProperty('right', isMobile ? 'auto' : '18px', 'important');
-        node.style.setProperty('z-index', '100000', 'important');
-      } else {
-        node.style.setProperty('top', 'auto', 'important');
-        node.style.setProperty('bottom', isMobile ? '12px' : '24px', 'important');
-        node.style.setProperty('left', isMobile ? '12px' : 'auto', 'important');
-        node.style.setProperty('right', isMobile ? '12px' : '18px', 'important');
-        node.style.setProperty('width', isMobile ? 'calc(100vw - 24px)' : 'min(430px, calc(100vw - 24px))', 'important');
-        node.style.setProperty('max-width', isMobile ? 'calc(100vw - 24px)' : 'calc(100vw - 24px)', 'important');
-        node.style.setProperty('height', isMobile ? 'min(620px, calc(100vh - 24px))' : 'min(690px, calc(100vh - 36px))', 'important');
-        node.style.setProperty('max-height', isMobile ? 'calc(100vh - 24px)' : 'calc(100vh - 36px)', 'important');
-        node.style.setProperty('z-index', '100000', 'important');
-      }
-    });
+<style>
+@media (max-width: 860px){
+  iframe[src*="smartsupp"],
+  .smartsupp-launcher{
+    bottom: 70px !important;
+    left: 14px !important;
+    right: auto !important;
   }
-
-  const start = () => {
-    applySmartsuppSafePosition();
-    let ticks = 0;
-    const t = setInterval(() => {
-      applySmartsuppSafePosition();
-      ticks += 1;
-      if (ticks > 60) clearInterval(t);
-    }, 500);
-
-    const mo = new MutationObserver(() => applySmartsuppSafePosition());
-    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-
-    window.addEventListener('resize', applySmartsuppSafePosition, { passive: true });
-    window.addEventListener('orientationchange', applySmartsuppSafePosition, { passive: true });
-    document.addEventListener('visibilitychange', applySmartsuppSafePosition);
-  };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
-  } else {
-    start();
-  }
-})();
-</script>
+}
+</style>
 
 </head>
 <body>
