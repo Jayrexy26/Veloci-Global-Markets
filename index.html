@@ -2738,8 +2738,7 @@ async function loadHomepageContent(){
     const res = await fetch(SITE_CONTENT_API_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "cache-control": "no-store"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({ action: "get_public_content" }),
       cache: "no-store"
@@ -2767,7 +2766,8 @@ async function loadHomepageContent(){
 
 function starIcons(n){
   let s="";
-  for(let i=0;i<n;i++){
+  const count = Math.max(1, Math.min(5, Number(n || 5) || 5));
+  for(let i=0;i<count;i++){
     s += `
       <svg viewBox="0 0 24 24" fill="none">
         <path d="M12 2l3 7 7 .6-5.3 4.4 1.7 7-6.4-3.9-6.4 3.9 1.7-7L2 9.6 9 9l3-7Z" stroke="#60a5fa" stroke-width="1.8" fill="rgba(96,165,250,0.18)"/>
@@ -2789,19 +2789,28 @@ function starIcons(n){
     ? content.testimonials
     : DEFAULT_HOMEPAGE_CONTENT.testimonials;
 
-  box.innerHTML = list.map(t => `
-    <div class="testCard tapHighlight">
-      <div class="stars">${starIcons(t.stars || 5)}</div>
-      <div class="testText">“${t.text}”</div>
-      <div class="testUser">
-        <div class="avatar">${(t.name || "U").trim().slice(0,1).toUpperCase()}</div>
-        <div class="userMeta">
-          <strong>${t.name || "Client"}</strong>
-          <span>${t.role || "User"}</span>
+  box.innerHTML = list.map(t => {
+    const name = t.name || "Client";
+    const message = t.message || t.text || "";
+    const avatarUrl = t.avatar_url || "";
+    const initial = String(name).trim().slice(0,1).toUpperCase() || "U";
+
+    return `
+      <div class="testCard tapHighlight">
+        <div class="stars">${starIcons(t.stars || 5)}</div>
+        <div class="testText">“${message}”</div>
+        <div class="testUser">
+          <div class="avatar">${avatarUrl
+            ? `<img src="${avatarUrl}" alt="${name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            : initial}</div>
+          <div class="userMeta">
+            <strong>${name}</strong>
+            <span>Client</span>
+          </div>
         </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 
   function startAutoSlide(){
     const isMobile = window.matchMedia("(max-width: 560px)").matches;
@@ -2826,13 +2835,11 @@ function starIcons(n){
 
     timer = setInterval(step, 6500);
 
-    let pause = null;
-    box.addEventListener("touchstart", ()=>{
-      if(timer) clearInterval(timer);
-      timer = null;
-      if(pause) clearTimeout(pause);
-      pause = setTimeout(()=> startAutoSlide(), 5000);
-    }, {passive:true});
+    box.addEventListener("touchstart", ()=>{ if(timer){ clearInterval(timer); } }, { passive:true });
+    box.addEventListener("touchend", ()=>{
+      if(timer){ clearInterval(timer); }
+      timer = setInterval(step, 6500);
+    }, { passive:true });
   }
 
   startAutoSlide();
