@@ -523,7 +523,7 @@
       backdrop-filter: blur(10px);
       box-shadow: 0 26px 90px rgba(0,0,0,.55);
     }
-    @media (max-width: 860px){ .linkFab{ top:auto; bottom:16px; right:14px; } }
+    @media (max-width: 860px){ .linkFab{ top:auto; bottom:260px; right:14px; } }
     .bolt{
       width:34px;height:34px;border-radius:14px;display:grid;place-items:center;
       border: 1px solid rgba(255,255,255,.14);
@@ -586,7 +586,31 @@
       min-height: 420px;
     }
     #tvContainer{ width:100%; height: 420px; }
-  </style>
+  
+/* Smartsupp overlap fix */
+:root{
+  --smartsupp-safe-bottom: 24px;
+  --smartsupp-safe-right: 18px;
+  --smartsupp-safe-left: auto;
+}
+@media (max-width: 860px){
+  :root{
+    --smartsupp-safe-bottom: 112px;
+    --smartsupp-safe-right: auto;
+    --smartsupp-safe-left: 14px;
+  }
+}
+iframe[src*="smartsuppchat.com"],
+iframe[src*="smartsupp"],
+div[id*="smartsupp"],
+div[class*="smartsupp"],
+.smartsupp-window,
+.smartsupp-launcher{
+  max-width: calc(100vw - 20px) !important;
+  max-height: calc(100vh - var(--smartsupp-safe-bottom) - 20px) !important;
+}
+
+</style>
 
 <!-- Smartsupp Live Chat script -->
 <script type="text/javascript">
@@ -595,7 +619,7 @@ _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
 window.smartsupp||(function(d) {
  var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
  s=d.getElementsByTagName('script')[0];c=d.createElement('script');
- c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.type='text/javascript';c.charset='utf-8';c.async=false; /* instant load */
  c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
 })(document);
 </script>
@@ -628,69 +652,81 @@ window.smartsupp||(function(d) {
 </script>
 
 
-<style id="chat-safe-zone-style">
-  @media (max-width: 860px){
-    body{ --chat-safe-bottom: 112px; --chat-safe-right: 14px; --chat-safe-left: auto; }
-    iframe[id*="smartsupp"],
-    iframe[src*="smartsupp"],
-    div[id*="smartsupp"],
-    div[class*="smartsupp"]{
-      max-width: calc(100vw - 20px) !important;
-    }
-  }
-</style>
-
 <script>
-(function(){
-  function applySmartsuppSafeZone(){
-    const mobile = window.innerWidth <= 860;
-    const isWallet = document.body.classList.contains('wallet-page');
-    const bottom = mobile ? (isWallet ? 118 : 112) : 20;
-    const right = mobile ? (isWallet ? null : 14) : 18;
-    const left = mobile && isWallet ? 14 : null;
+(function () {
+  function applySmartsuppSafePosition() {
+    const isMobile = window.innerWidth <= 860;
+    const linkFab = document.getElementById('btnLinkWallet') || document.querySelector('.linkFab');
+    const linkRect = linkFab ? linkFab.getBoundingClientRect() : null;
 
-    const selectors = [
-      'iframe[id*="smartsupp"]',
-      'iframe[src*="smartsupp"]',
-      'div[id*="smartsupp"]',
-      'div[class*="smartsupp"]',
-      'button[id*="smartsupp"]',
-      'button[class*="smartsupp"]'
-    ];
+    let bottomGap = 24;
+    let rightGap = 18;
+    let leftGap = 'auto';
 
-    document.querySelectorAll(selectors.join(',')).forEach((el) => {
-      const style = el.style;
-      style.setProperty('bottom', bottom + 'px', 'important');
-      if (left !== null) {
-        style.setProperty('left', left + 'px', 'important');
-        style.setProperty('right', 'auto', 'important');
-      } else if (right !== null) {
-        style.setProperty('right', right + 'px', 'important');
-        style.removeProperty('left');
-      }
-      style.setProperty('max-width', 'calc(100vw - 20px)', 'important');
-      style.setProperty('max-height', 'calc(100dvh - ' + (bottom + 24) + 'px)', 'important');
-      style.setProperty('z-index', '2147483000', 'important');
+    if (isMobile) {
+      const fabHeight = linkRect ? Math.ceil(linkRect.height) : 58;
+      bottomGap = Math.max(60, fabHeight + 10);
+      rightGap = 'auto';
+      leftGap = '14px';
+    }
+
+    document.documentElement.style.setProperty('--smartsupp-safe-bottom', bottomGap + 'px');
+    document.documentElement.style.setProperty('--smartsupp-safe-right', typeof rightGap === 'number' ? rightGap + 'px' : rightGap);
+    document.documentElement.style.setProperty('--smartsupp-safe-left', leftGap);
+
+    const nodes = Array.from(document.querySelectorAll('iframe, div'));
+    nodes.forEach((node) => {
+      const src = (node.getAttribute('src') || '').toLowerCase();
+      const id = (node.id || '').toLowerCase();
+      const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
+      const title = (node.getAttribute('title') || '').toLowerCase();
+      const aria = (node.getAttribute('aria-label') || '').toLowerCase();
+      const looksLikeSmartsupp =
+        src.includes('smartsupp') ||
+        id.includes('smartsupp') ||
+        cls.includes('smartsupp') ||
+        title.includes('smartsupp') ||
+        aria.includes('smartsupp');
+
+      if (!looksLikeSmartsupp) return;
+
+      node.style.setProperty('bottom', bottomGap + 'px', 'important');
+      node.style.setProperty('top', 'auto', 'important');
+      node.style.setProperty('left', leftGap, 'important');
+      node.style.setProperty('right', typeof rightGap === 'number' ? rightGap + 'px' : rightGap, 'important');
+      node.style.setProperty('max-width', 'calc(100vw - 20px)', 'important');
+      node.style.setProperty('max-height', 'calc(100vh - ' + bottomGap + 'px - 20px)', 'important');
+      node.style.setProperty('z-index', '9999', 'important');
     });
   }
 
-  const observer = new MutationObserver(applySmartsuppSafeZone);
-  document.addEventListener('DOMContentLoaded', () => {
-    applySmartsuppSafeZone();
-    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-    let tries = 0;
+  const start = () => {
+    applySmartsuppSafePosition();
+    let ticks = 0;
     const t = setInterval(() => {
-      applySmartsuppSafeZone();
-      tries += 1;
-      if (tries > 40) clearInterval(t);
-    }, 750);
-  });
-  window.addEventListener('resize', applySmartsuppSafeZone, { passive: true });
+      applySmartsuppSafePosition();
+      ticks += 1;
+      if (ticks > 60) clearInterval(t);
+    }, 1000);
+
+    const mo = new MutationObserver(() => applySmartsuppSafePosition());
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+
+    window.addEventListener('resize', applySmartsuppSafePosition, { passive: true });
+    window.addEventListener('orientationchange', applySmartsuppSafePosition, { passive: true });
+    document.addEventListener('visibilitychange', applySmartsuppSafePosition);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
 })();
 </script>
 
 </head>
-<body class="wallet-page">
+<body>
 
   <!-- LOADING -->
   <div id="authGate">
