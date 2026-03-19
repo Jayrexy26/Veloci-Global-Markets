@@ -739,6 +739,12 @@
             <div class="countPill" id="cnt-overview">✓</div>
           </div>
 
+
+          <div class="navBtn" id="nav-settings" onclick="switchView('settings')">
+            <div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div>
+            <div class="countPill" id="cnt-settings">•</div>
+          </div>
+
           <div class="navBtn" id="nav-users" onclick="switchView('users')">
             <div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div>
             <div class="countPill" id="cnt-users">0</div>
@@ -1535,6 +1541,10 @@ function switchView(view){
 
   closeSidebar();
   scrollTopMain();
+
+  if(view === "settings"){
+    safeLoad(loadHomepageContent);
+  }
 }
 
 function scrollTopMain(){
@@ -2533,7 +2543,17 @@ async function loadSupport(){
   const res = await apiCall("tickets_list");
   CACHE.support = res.data || [];
   renderSupport(CACHE.support);
-  await loadHomepageContent();
+
+  try{
+    await loadHomepageContent();
+  }catch(e){
+    feed("site-content warning -> " + (e?.message || e || "Unknown error"));
+    const hpStatus = document.getElementById("homepageContentStatus");
+    if(hpStatus) hpStatus.textContent = "Homepage settings could not load right now.";
+    setDebugBox("Homepage settings warning while opening Support:
+" + String(e?.message || e || "Unknown error"));
+  }
+
   feed("tickets_list loaded (" + CACHE.support.length + ")");
   renderOverview();
 }
@@ -2779,17 +2799,23 @@ async function loadHomepageContent(){
   const statusEl = document.getElementById("homepageContentStatus");
   if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Loading…`;
 
-  const res = await siteContentCall("get_content", {});
-  const content = res.data || {};
-  CACHE.homepage_content = content;
+  try{
+    const res = await siteContentCall("get_content", {});
+    const content = res.data || {};
+    CACHE.homepage_content = content;
 
-  const emailEl = document.getElementById("homepageSupportEmail");
-  if(emailEl) emailEl.value = String(content.support_email || "");
+    const emailEl = document.getElementById("homepageSupportEmail");
+    if(emailEl) emailEl.value = String(content.support_email || "");
 
-  HOMEPAGE_TESTIMONIAL_DRAFT = normalizeHomepageTestimonials(content.testimonials || []);
-  renderHomepageTestimonialsEditor();
+    HOMEPAGE_TESTIMONIAL_DRAFT = normalizeHomepageTestimonials(content.testimonials || []);
+    renderHomepageTestimonialsEditor();
 
-  if(statusEl) statusEl.textContent = "Homepage content loaded ✅";
+    if(statusEl) statusEl.textContent = "Homepage content loaded ✅";
+  }catch(e){
+    renderHomepageTestimonialsEditor();
+    if(statusEl) statusEl.textContent = "Homepage content failed to load.";
+    throw e;
+  }
 }
 
 async function saveHomepageContent(){
