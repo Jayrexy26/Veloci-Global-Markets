@@ -866,33 +866,6 @@
               </div>
 
               
-              <div class="card" style="margin-bottom:14px; border-radius:18px;">
-                <div class="cardHead">
-                  <div>
-                    <div class="cardTitle">🌐 Homepage Content</div>
-                    <div class="small" id="homepageContentStatus">Not loaded.</div>
-                  </div>
-                  <div class="rowTools">
-                    <button class="btnGhost" onclick="safeLoad(loadHomepageContent)">Reload Content</button>
-                    <button class="btnPrimary" onclick="saveHomepageContent()">Save Homepage Content</button>
-                  </div>
-                </div>
-
-                <div class="small" style="margin-bottom:10px">
-                  Update the homepage support email and client testimonials here. Changes save to backend and reflect on the homepage after refresh.
-                </div>
-
-                <div class="inline" style="margin-bottom:12px">
-                  <input id="homepageSupportEmail" class="grow" placeholder="support@velociglobal.pro">
-                </div>
-
-                <div id="homepageTestimonialsEditor" style="display:grid; gap:12px;"></div>
-
-                <div class="inline" style="margin-top:12px">
-                  <button class="btnGhost" onclick="addHomepageTestimonialRow()">Add Testimonial</button>
-                </div>
-              </div>
-
               <div class="tableWrap">
                 <div class="tableScroll">
                   <table>
@@ -906,6 +879,47 @@
                     </thead>
                     <tbody id="riskRows"></tbody>
                   </table>
+                </div>
+              </div>
+            </section>
+
+
+            <section id="view-settings" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">⚙️ Settings</div>
+                  <div class="small">Control the homepage support email and client testimonials here.</div>
+                </div>
+                <div class="rowTools">
+                  <button class="btnGhost" onclick="safeLoad(loadHomepageContent)">Reload Content</button>
+                  <button class="btnPrimary" onclick="saveHomepageContent()">Save Settings</button>
+                </div>
+              </div>
+
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">🌐 Homepage Content</div>
+                    <div class="small" id="homepageContentStatus">Not loaded.</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="safeLoad(loadHomepageContent)">Reload Content</button>
+                    <button class="btnPrimary" onclick="saveHomepageContent()">Save Homepage Content</button>
+                  </div>
+                </div>
+
+                <div class="small" style="margin-bottom:10px">
+                  Update the homepage support email and client testimonials here. Each testimonial uses name, message, uploaded avatar and fixed 5-star rating.
+                </div>
+
+                <div class="inline" style="margin-bottom:12px">
+                  <input id="homepageSupportEmail" class="grow" placeholder="support@velociglobal.pro">
+                </div>
+
+                <div id="homepageTestimonialsEditor" style="display:grid; gap:12px;"></div>
+
+                <div class="inline" style="margin-top:12px">
+                  <button class="btnGhost" onclick="addHomepageTestimonialRow()">Add Testimonial</button>
                 </div>
               </div>
             </section>
@@ -1511,7 +1525,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","users","cryptoops","plans","trades","notification","wallets","walletlinks","support","deposits","withdrawals","kyc"];
+  const views = ["overview","settings","users","cryptoops","plans","trades","notification","wallets","walletlinks","support","deposits","withdrawals","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -2614,14 +2628,15 @@ async function siteContentCall(action, payload = {}, useAdmin = true){
   return json;
 }
 
+
 function normalizeHomepageTestimonials(list){
   if(!Array.isArray(list)) return [];
   return list.map((item, idx)=>({
     id: String(item?.id || ("row-" + (idx+1))),
     name: String(item?.name || "").trim(),
-    role: String(item?.role || "").trim(),
-    text: String(item?.text || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
+    message: String(item?.message || item?.text || "").trim(),
+    avatar_url: String(item?.avatar_url || "").trim(),
+    stars: 5
   }));
 }
 
@@ -2631,19 +2646,30 @@ function renderHomepageTestimonialsEditor(){
 
   if(!HOMEPAGE_TESTIMONIAL_DRAFT.length){
     HOMEPAGE_TESTIMONIAL_DRAFT = [
-      { id: "row-1", name: "", role: "", text: "", stars: 5 }
+      { id: "row-1", name: "", message: "", avatar_url: "", stars: 5 }
     ];
   }
 
   wrap.innerHTML = HOMEPAGE_TESTIMONIAL_DRAFT.map((t, idx)=>`
     <div class="tableWrap" style="padding:12px;">
-      <div class="inline">
+      <div class="inline" style="align-items:flex-start">
         <input id="hp-name-${idx}" class="w200" placeholder="Client name" value="${esc(t.name || "")}">
-        <input id="hp-role-${idx}" class="w200" placeholder="Role" value="${esc(t.role || "")}">
-        <input id="hp-stars-${idx}" class="w140" type="number" min="1" max="5" step="1" placeholder="Stars" value="${esc(String(t.stars || 5))}">
+        <div class="grow" style="min-width:220px">
+          <input id="hp-avatar-${idx}" type="file" accept="image/*" onchange="uploadHomepageTestimonialAvatar(${idx}, this)">
+          <div class="tiny" style="margin-top:6px">Upload avatar/photo from backend storage.</div>
+        </div>
       </div>
+
+      <div class="inline" style="margin-top:10px; align-items:center">
+        <div id="hp-avatar-preview-${idx}" style="width:54px;height:54px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;">
+          ${t.avatar_url ? `<img src="${esc(t.avatar_url)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:18px">${esc((t.name || "U").trim().slice(0,1).toUpperCase())}</span>`}
+        </div>
+        <input id="hp-avatar-url-${idx}" class="grow" placeholder="Avatar URL" value="${esc(t.avatar_url || "")}" readonly>
+        <div class="countPill">★★★★★</div>
+      </div>
+
       <div style="height:10px"></div>
-      <textarea id="hp-text-${idx}" placeholder="Testimonial text">${esc(t.text || "")}</textarea>
+      <textarea id="hp-message-${idx}" placeholder="Client message">${esc(t.message || "")}</textarea>
       <div class="inline" style="margin-top:10px">
         <button class="btnErr" onclick="removeHomepageTestimonialRow(${idx})">Remove</button>
       </div>
@@ -2655,25 +2681,24 @@ function collectHomepageTestimonialsFromEditor(){
   const next = [];
   for(let i = 0; i < HOMEPAGE_TESTIMONIAL_DRAFT.length; i++){
     const nameEl = document.getElementById(`hp-name-${i}`);
-    const roleEl = document.getElementById(`hp-role-${i}`);
-    const textEl = document.getElementById(`hp-text-${i}`);
-    const starsEl = document.getElementById(`hp-stars-${i}`);
+    const messageEl = document.getElementById(`hp-message-${i}`);
+    const avatarUrlEl = document.getElementById(`hp-avatar-url-${i}`);
 
-    if(!nameEl || !roleEl || !textEl || !starsEl) continue;
+    if(!nameEl || !messageEl || !avatarUrlEl) continue;
 
     const row = {
       id: HOMEPAGE_TESTIMONIAL_DRAFT[i]?.id || ("row-" + (i+1)),
       name: String(nameEl.value || "").trim(),
-      role: String(roleEl.value || "").trim(),
-      text: String(textEl.value || "").trim(),
-      stars: Math.max(1, Math.min(5, Number(starsEl.value || 5) || 5))
+      message: String(messageEl.value || "").trim(),
+      avatar_url: String(avatarUrlEl.value || "").trim(),
+      stars: 5
     };
 
-    if(row.name || row.role || row.text){
+    if(row.name || row.message || row.avatar_url){
       next.push(row);
     }
   }
-  HOMEPAGE_TESTIMONIAL_DRAFT = next.length ? next : [{ id: "row-1", name: "", role: "", text: "", stars: 5 }];
+  HOMEPAGE_TESTIMONIAL_DRAFT = next.length ? next : [{ id: "row-1", name: "", message: "", avatar_url: "", stars: 5 }];
 }
 
 function addHomepageTestimonialRow(){
@@ -2681,8 +2706,8 @@ function addHomepageTestimonialRow(){
   HOMEPAGE_TESTIMONIAL_DRAFT.push({
     id: "row-" + Date.now(),
     name: "",
-    role: "",
-    text: "",
+    message: "",
+    avatar_url: "",
     stars: 5
   });
   renderHomepageTestimonialsEditor();
@@ -2692,10 +2717,63 @@ function removeHomepageTestimonialRow(idx){
   collectHomepageTestimonialsFromEditor();
   HOMEPAGE_TESTIMONIAL_DRAFT.splice(idx, 1);
   if(!HOMEPAGE_TESTIMONIAL_DRAFT.length){
-    HOMEPAGE_TESTIMONIAL_DRAFT = [{ id: "row-1", name: "", role: "", text: "", stars: 5 }];
+    HOMEPAGE_TESTIMONIAL_DRAFT = [{ id: "row-1", name: "", message: "", avatar_url: "", stars: 5 }];
   }
   renderHomepageTestimonialsEditor();
 }
+
+async function uploadHomepageTestimonialAvatar(idx, input){
+  try{
+    const file = input?.files?.[0];
+    if(!file) return;
+
+    const maxBytes = 5 * 1024 * 1024;
+    if(file.size > maxBytes){
+      modalShow("Image too large", "Please upload an image smaller than 5MB.");
+      input.value = "";
+      return;
+    }
+
+    const base64 = await new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=> {
+        const result = String(reader.result || "");
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = ()=> reject(new Error("Unable to read image file."));
+      reader.readAsDataURL(file);
+    });
+
+    modalShow("Uploading", "Uploading testimonial avatar...");
+    const res = await siteContentCall("upload_avatar", {
+      file_name: file.name || ("avatar-" + Date.now() + ".png"),
+      content_type: file.type || "image/png",
+      data_base64: base64
+    });
+
+    const avatarUrl = String(res?.data?.avatar_url || "").trim();
+    if(!avatarUrl){
+      throw new Error("Avatar upload did not return a URL.");
+    }
+
+    const urlEl = document.getElementById(`hp-avatar-url-${idx}`);
+    const previewEl = document.getElementById(`hp-avatar-preview-${idx}`);
+    if(urlEl) urlEl.value = avatarUrl;
+    if(previewEl){
+      previewEl.innerHTML = `<img src="${esc(avatarUrl)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+    }
+    if(HOMEPAGE_TESTIMONIAL_DRAFT[idx]){
+      HOMEPAGE_TESTIMONIAL_DRAFT[idx].avatar_url = avatarUrl;
+    }
+    modalShow("Uploaded", "Testimonial avatar uploaded successfully.");
+  }catch(e){
+    modalShow("Upload failed", String(e?.message || e || "Unable to upload avatar."));
+  }finally{
+    if(input) input.value = "";
+  }
+}
+
 
 async function loadHomepageContent(){
   const statusEl = document.getElementById("homepageContentStatus");
@@ -2737,9 +2815,9 @@ async function saveHomepageContent(){
     testimonials: HOMEPAGE_TESTIMONIAL_DRAFT.map((t, idx)=>({
       id: t.id || ("row-" + (idx+1)),
       name: t.name || "",
-      role: t.role || "",
-      text: t.text || "",
-      stars: Math.max(1, Math.min(5, Number(t.stars || 5) || 5))
+      message: t.message || "",
+      avatar_url: t.avatar_url || "",
+      stars: 5
     }))
   };
 
