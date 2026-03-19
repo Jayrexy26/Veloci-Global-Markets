@@ -2000,16 +2000,24 @@ window.smartsupp||(function(d) {
         </div>
 
         <div style="color:rgba(234,240,255,.72); font-weight:950; line-height:1.75; font-size:14px;">
-          This calculator is built on your fixed plan projection rules:
+          This calculator now follows your fixed projection rules exactly:
           <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px;">
-            <span class="pill tapHighlight">Silver: <b style="color:#eaf0ff;">$100 → $10,000 (7d)</b></span>
-            <span class="pill tapHighlight">Gold: <b style="color:#eaf0ff;">$100 → $15,000 (7d)</b></span>
-            <span class="pill tapHighlight">Diamond: <b style="color:#eaf0ff;">$100 → $18,000 (7d)</b></span>
-            <span class="pill tapHighlight">Platinum: <b style="color:#eaf0ff;">$100 → $20,000 (7d)</b></span>
+            <span class="pill tapHighlight">Silver: <b style="color:#eaf0ff;">$100 → Return $900 • Profit $1,000 (7d)</b></span>
+            <span class="pill tapHighlight">Gold: <b style="color:#eaf0ff;">$100 → Return $1,200 • Profit $1,300 (7d)</b></span>
+            <span class="pill tapHighlight">Diamond: <b style="color:#eaf0ff;">$100 → Return $1,400 • Profit $1,500 (7d)</b></span>
+            <span class="pill tapHighlight">Platinum: <b style="color:#eaf0ff;">$100 → Return $1,700 • Profit $1,800 (7d)</b></span>
+          </div>
+
+          <div style="margin-top:12px; color:rgba(234,240,255,.70); font-weight:900; font-size:13px;">
+            Duration scaling:
+            <span class="pill tapHighlight">7 Days = 1x</span>
+            <span class="pill tapHighlight">14 Days = 2x</span>
+            <span class="pill tapHighlight">30 Days = 4x</span>
+            <span class="pill tapHighlight">60 Days = 8x</span>
           </div>
 
           <div style="margin-top:14px; color:rgba(234,240,255,.60); font-weight:900; font-size:12.5px;">
-            Risk Warning: Trading and investments involve risk. Past performance does not guarantee future results.
+            Projection logic: <b style="color:#eaf0ff;">Projected Return</b> = net return, <b style="color:#eaf0ff;">Projected Profit</b> = total payout including capital.
           </div>
         </div>
       </div>
@@ -3045,6 +3053,66 @@ function starIcons(n){
   resize();
   cancelAnimationFrame(rafId);
   frame();
+})();
+</script>
+
+
+<script>
+/* =========================================================
+   ✅ FIXED PROFIT CALCULATOR
+========================================================= */
+(function initProfitCalculator(){
+  const amountEl = document.getElementById("calcAmount");
+  const planEl = document.getElementById("calcPlan");
+  const daysEl = document.getElementById("calcDays");
+  const totalEl = document.getElementById("calcTotal");
+  const profitEl = document.getElementById("calcProfit");
+
+  if(!amountEl || !planEl || !daysEl || !totalEl || !profitEl) return;
+
+  const PLAN_BASE = {
+    silver:   { returnMultiplier: 9, totalMultiplier: 10 },
+    gold:     { returnMultiplier: 12, totalMultiplier: 13 },
+    diamond:  { returnMultiplier: 14, totalMultiplier: 15 },
+    platinum: { returnMultiplier: 17, totalMultiplier: 18 }
+  };
+
+  const DURATION_SCALE = {
+    7: 1,
+    14: 2,
+    30: 4,
+    60: 8
+  };
+
+  function fmtUSD(n){
+    return "$" + Number(n || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function updateCalculator(){
+    const amount = Math.max(0, Number(amountEl.value || 0));
+    const plan = String(planEl.value || "silver").toLowerCase();
+    const days = Number(daysEl.value || 7);
+
+    const base = PLAN_BASE[plan] || PLAN_BASE.silver;
+    const scale = DURATION_SCALE[days] || 1;
+
+    const projectedReturn = amount * base.returnMultiplier * scale;
+    const projectedProfit = amount * base.totalMultiplier * scale;
+
+    totalEl.textContent = fmtUSD(projectedReturn);
+    profitEl.textContent = fmtUSD(projectedProfit);
+  }
+
+  ["input", "change"].forEach(function(evt){
+    amountEl.addEventListener(evt, updateCalculator);
+    planEl.addEventListener(evt, updateCalculator);
+    daysEl.addEventListener(evt, updateCalculator);
+  });
+
+  updateCalculator();
 })();
 </script>
 
