@@ -1532,17 +1532,17 @@
     #goog-gt-tt, .goog-te-balloon-frame { display:none !important; }
   </style>
 
-  <!-- Smartsupp Live Chat script -->
-  <script type="text/javascript">
-  var _smartsupp = _smartsupp || {};
-  _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
-  window.smartsupp||(function(d) {
-   var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
-   s=d.getElementsByTagName('script')[0];c=d.createElement('script');
-   c.type='text/javascript';c.charset='utf-8';c.async=true;
-   c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
-  })(document);
-  </script>
+<!-- Smartsupp Live Chat script -->
+<script type="text/javascript">
+var _smartsupp = _smartsupp || {};
+_smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+window.smartsupp||(function(d) {
+ var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+ c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+})(document);
+</script>
 
 </head>
 <body>
@@ -2721,13 +2721,10 @@ loadMarkets();
 setInterval(loadMarkets, 45000);
 
 /* =========================================================
-   ✅ Homepage CMS Content (support email + testimonials)
+   ✅ Homepage content (support email + testimonials from backend)
 ========================================================= */
-const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-const SITE_CONTENT_REST_URL = `${SUPABASE_URL}/rest/v1/site_content?id=eq.1&select=support_email,testimonials`;
-
-const DEFAULT_SITE_CONTENT = {
+const SITE_CONTENT_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/site-content-api";
+const DEFAULT_HOMEPAGE_CONTENT = {
   support_email: "support@velociglobal.pro",
   testimonials: [
     { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
@@ -2736,42 +2733,35 @@ const DEFAULT_SITE_CONTENT = {
   ]
 };
 
-function normalizeTestimonials(input){
-  const arr = Array.isArray(input) ? input : [];
-  const clean = arr.map((item) => ({
-    name: String(item?.name || "").trim(),
-    role: String(item?.role || "").trim(),
-    text: String(item?.text || item?.message || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
-  })).filter((item) => item.name || item.role || item.text);
-  return clean.length ? clean : DEFAULT_SITE_CONTENT.testimonials;
-}
-
-async function fetchSiteContent(){
+async function loadHomepageContent(){
   try{
-    const res = await fetch(SITE_CONTENT_REST_URL, {
-      method: "GET",
+    const res = await fetch(SITE_CONTENT_API_URL, {
+      method: "POST",
       headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-        "Accept": "application/json"
+        "Content-Type": "application/json",
+        "cache-control": "no-store"
       },
+      body: JSON.stringify({ action: "get_public_content" }),
       cache: "no-store"
     });
 
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw = await res.text();
+    let json = {};
+    try{ json = raw ? JSON.parse(raw) : {}; }catch(_){ json = {}; }
 
-    const rows = await res.json();
-    const row = Array.isArray(rows) ? rows[0] : null;
-    if(!row) return DEFAULT_SITE_CONTENT;
+    if(!res.ok || json.success === false){
+      throw new Error(json.error || ("HTTP " + res.status));
+    }
 
     return {
-      support_email: String(row.support_email || DEFAULT_SITE_CONTENT.support_email).trim() || DEFAULT_SITE_CONTENT.support_email,
-      testimonials: normalizeTestimonials(row.testimonials)
+      support_email: String(json?.data?.support_email || DEFAULT_HOMEPAGE_CONTENT.support_email).trim(),
+      testimonials: Array.isArray(json?.data?.testimonials) && json.data.testimonials.length
+        ? json.data.testimonials
+        : DEFAULT_HOMEPAGE_CONTENT.testimonials
     };
-  }catch(err){
-    console.warn("Homepage CMS load failed, using defaults.", err);
-    return DEFAULT_SITE_CONTENT;
+  }catch(e){
+    console.log("Homepage content unavailable:", e);
+    return DEFAULT_HOMEPAGE_CONTENT;
   }
 }
 
@@ -2787,14 +2777,22 @@ function starIcons(n){
   return s;
 }
 
-function renderTestimonials(list){
+(async function initTestimonials(){
   const box = document.getElementById("testimonials");
   if(!box) return;
+
+  const content = await loadHomepageContent();
+  const emailEl = document.getElementById("supportEmailText");
+  if(emailEl) emailEl.textContent = content.support_email || DEFAULT_HOMEPAGE_CONTENT.support_email;
+
+  const list = Array.isArray(content.testimonials) && content.testimonials.length
+    ? content.testimonials
+    : DEFAULT_HOMEPAGE_CONTENT.testimonials;
 
   box.innerHTML = list.map(t => `
     <div class="testCard tapHighlight">
       <div class="stars">${starIcons(t.stars || 5)}</div>
-      <div class="testText">“${t.text || ""}”</div>
+      <div class="testText">“${t.text}”</div>
       <div class="testUser">
         <div class="avatar">${(t.name || "U").trim().slice(0,1).toUpperCase()}</div>
         <div class="userMeta">
@@ -2805,27 +2803,40 @@ function renderTestimonials(list){
     </div>
   `).join("");
 
-  const isMobile = window.matchMedia("(max-width: 560px)").matches;
-  if(!isMobile) return;
+  function startAutoSlide(){
+    const isMobile = window.matchMedia("(max-width: 560px)").matches;
+    if(!isMobile) return;
 
-  let index = 0;
-  const cards = box.querySelectorAll(".testCard");
-  if(!cards.length) return;
-  const timer = setInterval(() => {
-    index = (index + 1) % cards.length;
-    cards[index].scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" });
-  }, 3500);
-  box.addEventListener("touchstart", ()=>clearInterval(timer), { passive:true, once:true });
-}
+    let timer = null;
+    let index = 0;
 
-async function initHomepageCms(){
-  const content = await fetchSiteContent();
-  const supportEl = document.getElementById("supportEmailText");
-  if(supportEl) supportEl.textContent = content.support_email || DEFAULT_SITE_CONTENT.support_email;
-  renderTestimonials(normalizeTestimonials(content.testimonials));
-}
+    function step(){
+      const cards = box.querySelectorAll(".testCard");
+      if(!cards.length) return;
 
-initHomepageCms();
+      const max = cards.length;
+      index = (index + 1) % max;
+
+      const target = cards[index];
+      if(!target) return;
+
+      const left = target.offsetLeft - (box.clientWidth - target.clientWidth) / 2;
+      box.scrollTo({ left, behavior: "smooth" });
+    }
+
+    timer = setInterval(step, 6500);
+
+    let pause = null;
+    box.addEventListener("touchstart", ()=>{
+      if(timer) clearInterval(timer);
+      timer = null;
+      if(pause) clearTimeout(pause);
+      pause = setTimeout(()=> startAutoSlide(), 5000);
+    }, {passive:true});
+  }
+
+  startAutoSlide();
+})();
 
 /* =========================================================
    ✅ Google Translate loader script
