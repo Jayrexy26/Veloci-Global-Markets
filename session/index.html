@@ -396,6 +396,19 @@
     }
     .emailBox input::placeholder{ color:rgba(234,240,255,.45); }
   </style>
+
+<!-- Smartsupp Live Chat script -->
+<script type="text/javascript">
+var _smartsupp = _smartsupp || {};
+_smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+window.smartsupp||(function(d) {
+ var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+ c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+})(document);
+</script>
+
 </head>
 
 <body>
@@ -767,17 +780,103 @@
     }
   }
 
-  function applyAvatarPhoto(u){
-    const meta = u?.user_metadata || {};
-    const photo = meta.avatar_url || meta.picture || meta.photoURL || meta.profile_photo || "";
-    if(photo){
-      avatarImg.src = photo;
+  const AVATAR_BUCKET = "avatars";
+
+  function isHttpUrl(u){
+    return /^https?:\/\//i.test(String(u || "").trim());
+  }
+
+  function looksLikeGoogleAvatar(u){
+    return /googleusercontent\.com/i.test(String(u || ""));
+  }
+
+  function extractPathFromPublicUrl(u){
+    try{
+      const s = String(u || "").trim();
+      const m = s.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+      if(m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
+      return "";
+    }catch(e){
+      return "";
+    }
+  }
+
+  function normalizeAvatarPath(userId, v){
+    let s = String(v || "").trim();
+    if(!s) return "";
+    if(isHttpUrl(s)){
+      const p = extractPathFromPublicUrl(s);
+      return p || "";
+    }
+    s = s.replace(/^\/+/, "");
+    if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
+    if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
+    if(!s.includes("/") && userId) s = `${userId}/${s}`;
+    return s;
+  }
+
+  function publicAvatarUrl(path){
+    try{
+      if(!path) return "";
+      const { data } = supabaseClient.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+      const url = data?.publicUrl || "";
+      return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+    }catch(e){
+      return "";
+    }
+  }
+
+  function setAvatarPhoto(url){
+    if(url){
+      avatarImg.src = url;
       avatarImg.style.display = "block";
       avatarIcon.style.display = "none";
       avatarImg.onerror = () => {
         avatarImg.style.display = "none";
         avatarIcon.style.display = "block";
       };
+    }else{
+      avatarImg.style.display = "none";
+      avatarIcon.style.display = "block";
+    }
+  }
+
+  async function applyAvatarPhoto(u){
+    try{
+      const meta = u?.user_metadata || {};
+      const userId = u?.id || "";
+      let avatarVal = "";
+      let fullName = meta.full_name || meta.name || "User";
+
+      const { data: row, error } = await supabaseClient
+        .from("users")
+        .select("full_name, avatar_url")
+        .eq("email", u?.email || "")
+        .maybeSingle();
+
+      if(!error && row){
+        if(row.full_name) fullName = row.full_name;
+        avatarVal = row.avatar_url || "";
+      }
+
+      if(!avatarVal){
+        avatarVal = meta.avatar_path || meta.avatar_url || meta.picture || meta.photoURL || meta.profile_photo || "";
+      }
+
+      userName.textContent = fullName || "User";
+
+      let avatarUrl = "";
+      const avatarPath = normalizeAvatarPath(userId, avatarVal);
+
+      if(avatarPath){
+        avatarUrl = publicAvatarUrl(avatarPath);
+      }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+        avatarUrl = avatarVal + (String(avatarVal).includes("?") ? "&" : "?") + "t=" + Date.now();
+      }
+
+      setAvatarPhoto(avatarUrl);
+    }catch(e){
+      setAvatarPhoto("");
     }
   }
 
@@ -800,7 +899,7 @@
 
       userEmail.textContent = user.email || "";
       userName.textContent = (user.user_metadata?.full_name || user.user_metadata?.name || "User");
-      applyAvatarPhoto(user);
+      await applyAvatarPhoto(user);
 
       enforceLockIfNeeded();
 
