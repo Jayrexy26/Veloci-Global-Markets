@@ -1475,8 +1475,6 @@
 
       .hero{padding:56px 0 18px;}
       .hero h2{font-size:36px;}
-      .supportContactCard{padding:16px;}
-      .supportContactTitle{font-size:18px;}
 
       .brand{
         min-width:auto;
@@ -1543,7 +1541,7 @@
 <div class="topbar">
   <div class="container">
     <div class="topbarInner">
-      <span class="pill">Support: <b style="color:#eaf0ff;"><span id="supportEmailTop">support@velociglobal.pro</span></b></span>
+      <span class="pill">Support: <b id="supportEmailText" style="color:#eaf0ff;">support@velociglobal.pro</b></span>
 
       <!-- ✅ TRANSLATOR TOP RIGHT -->
       <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">
@@ -2219,22 +2217,10 @@
   <div class="container">
     <div class="sectionTitle">
       <h3>What clients say</h3>
-      <p>Testimonials and support contact are loaded from a configurable content source so updates stay simple.</p>
+      <p>Testimonials are displayed from a configurable data source (backend-ready).</p>
     </div>
 
     <div id="testimonials" class="testGrid"></div>
-
-    <div class="supportContactCard tapHighlight" aria-label="Support contact">
-      <div>
-        <div class="supportContactEyebrow">Client Support</div>
-        <div class="supportContactTitle">Need help before or after signup?</div>
-        <div class="supportContactText">Reach our support desk directly for onboarding help, account assistance, and portal guidance.</div>
-      </div>
-      <div class="supportContactActions">
-        <a class="btn btnPrimary" id="supportMailBtn" href="mailto:support@velociglobal.pro">Email Support</a>
-        <span class="badge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="currentColor" stroke-width="1.8"/><path d="M4 8l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="supportEmailInline">support@velociglobal.pro</span></span>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -2278,7 +2264,6 @@
         <a href="terms.html">Terms</a>
         <a href="risk.html">Risk Disclosure</a>
         <a href="contact.html">Contact</a>
-        <a id="supportEmailFooterLink" href="mailto:support@velociglobal.pro">support@velociglobal.pro</a>
       </div>
 
       <div class="footerBottom">
@@ -2722,10 +2707,14 @@ async function loadMarkets(){
 loadMarkets();
 setInterval(loadMarkets, 45000);
 
+loadHomepageContent();
+
+
 /* =========================================================
-   ✅ Site Content / Support / Testimonials
+   ✅ Homepage content (support email + testimonials from backend)
 ========================================================= */
-const DEFAULT_SITE_CONTENT = {
+const SITE_CONTENT_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/site-content-api";
+const SITE_CONTENT_DEFAULTS = {
   support_email: "support@velociglobal.pro",
   testimonials: [
     { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
@@ -2734,51 +2723,66 @@ const DEFAULT_SITE_CONTENT = {
   ]
 };
 
-let SITE_CONTENT = JSON.parse(JSON.stringify(DEFAULT_SITE_CONTENT));
+let HOMEPAGE_CONTENT = JSON.parse(JSON.stringify(SITE_CONTENT_DEFAULTS));
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function normalizeTestimonials(list){
-  if(!Array.isArray(list)) return DEFAULT_SITE_CONTENT.testimonials;
-  const clean = list
-    .map(item => ({
-      name: String(item?.name || "Client").trim() || "Client",
-      role: String(item?.role || "Client").trim() || "Client",
-      text: String(item?.text || "").trim(),
-      stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
-    }))
-    .filter(item => item.text);
-  return clean.length ? clean.slice(0, 6) : DEFAULT_SITE_CONTENT.testimonials;
+  const raw = Array.isArray(list) ? list : [];
+  const cleaned = raw.map((item, index) => ({
+    name: String(item?.name || `Client ${index + 1}`).trim() || `Client ${index + 1}`,
+    role: String(item?.role || "Client").trim() || "Client",
+    text: String(item?.text || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
+  })).filter(item => item.text);
+
+  return cleaned.length ? cleaned : SITE_CONTENT_DEFAULTS.testimonials;
 }
 
-async function loadSiteContent(){
+function applySupportEmail(email){
+  const supportText = document.getElementById("supportEmailText");
+  const finalEmail = String(email || SITE_CONTENT_DEFAULTS.support_email).trim() || SITE_CONTENT_DEFAULTS.support_email;
+  if(supportText) supportText.textContent = finalEmail;
+}
+
+async function loadHomepageContent(){
   try{
-    const res = await fetch("assets/site-content.json?v=" + Date.now(), { cache:"no-store" });
-    if(!res.ok) throw new Error("Site content file unavailable");
-    const data = await res.json();
-    SITE_CONTENT = {
-      support_email: String(data?.support_email || DEFAULT_SITE_CONTENT.support_email).trim() || DEFAULT_SITE_CONTENT.support_email,
-      testimonials: normalizeTestimonials(data?.testimonials)
-    };
+    const res = await fetch(SITE_CONTENT_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "public_get", payload: { key: "homepage" } })
+    });
+
+    const raw = await res.text();
+    let parsed = {};
+    try{ parsed = JSON.parse(raw); }catch(_){ parsed = {}; }
+
+    if(res.ok && parsed?.success && parsed?.data){
+      HOMEPAGE_CONTENT = {
+        support_email: String(parsed.data.support_email || SITE_CONTENT_DEFAULTS.support_email).trim() || SITE_CONTENT_DEFAULTS.support_email,
+        testimonials: normalizeTestimonials(parsed.data.testimonials)
+      };
+    }
   }catch(err){
-    console.log("Using default site content:", err?.message || err);
-    SITE_CONTENT = JSON.parse(JSON.stringify(DEFAULT_SITE_CONTENT));
+    console.log("Homepage content fallback in use:", err);
   }
 
-  applySiteContent();
+  applySupportEmail(HOMEPAGE_CONTENT.support_email);
+  return HOMEPAGE_CONTENT;
 }
 
-function applySiteContent(){
-  const email = SITE_CONTENT.support_email || DEFAULT_SITE_CONTENT.support_email;
-  const mailto = "mailto:" + email;
-
-  const top = document.getElementById("supportEmailTop");
-  const inline = document.getElementById("supportEmailInline");
-  const footer = document.getElementById("supportEmailFooterLink");
-  const btn = document.getElementById("supportMailBtn");
-
-  if(top) top.textContent = email;
-  if(inline) inline.textContent = email;
-  if(footer){ footer.textContent = email; footer.href = mailto; }
-  if(btn) btn.href = mailto;
+async function getTestimonials(){
+  if(!HOMEPAGE_CONTENT?.testimonials?.length){
+    await loadHomepageContent();
+  }
+  return normalizeTestimonials(HOMEPAGE_CONTENT.testimonials);
 }
 
 function starIcons(n){
@@ -2793,25 +2797,32 @@ function starIcons(n){
   return s;
 }
 
-function renderTestimonials(){
+(async function initTestimonials(){
   const box = document.getElementById("testimonials");
   if(!box) return;
 
-  const list = normalizeTestimonials(SITE_CONTENT.testimonials);
+  const list = await getTestimonials();
 
-  box.innerHTML = list.map(t => `
+  box.innerHTML = list.map(t => {
+    const safeName = escapeHtml(t.name || "Client");
+    const safeRole = escapeHtml(t.role || "User");
+    const safeText = escapeHtml(t.text || "");
+    const avatar = escapeHtml((t.name || "U").trim().slice(0,1).toUpperCase());
+
+    return `
     <div class="testCard tapHighlight">
       <div class="stars">${starIcons(t.stars || 5)}</div>
-      <div class="testText">“${t.text}”</div>
+      <div class="testText">“${safeText}”</div>
       <div class="testUser">
-        <div class="avatar">${(t.name || "U").trim().slice(0,1).toUpperCase()}</div>
+        <div class="avatar">${avatar}</div>
         <div class="userMeta">
-          <strong>${t.name || "Client"}</strong>
-          <span>${t.role || "User"}</span>
+          <strong>${safeName}</strong>
+          <span>${safeRole}</span>
         </div>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   function startAutoSlide(){
     const isMobile = window.matchMedia("(max-width: 560px)").matches;
@@ -2846,11 +2857,6 @@ function renderTestimonials(){
   }
 
   startAutoSlide();
-}
-
-(async function initSiteContent(){
-  await loadSiteContent();
-  renderTestimonials();
 })();
 
 /* =========================================================
