@@ -865,6 +865,34 @@
                 </div>
               </div>
 
+              
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">🌐 Homepage Content</div>
+                    <div class="small" id="homepageContentStatus">Not loaded.</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="safeLoad(loadHomepageContent)">Reload Content</button>
+                    <button class="btnPrimary" onclick="saveHomepageContent()">Save Homepage Content</button>
+                  </div>
+                </div>
+
+                <div class="small" style="margin-bottom:10px">
+                  Update the homepage support email and client testimonials here. Changes save to backend and reflect on the homepage after refresh.
+                </div>
+
+                <div class="inline" style="margin-bottom:12px">
+                  <input id="homepageSupportEmail" class="grow" placeholder="support@velociglobal.pro">
+                </div>
+
+                <div id="homepageTestimonialsEditor" style="display:grid; gap:12px;"></div>
+
+                <div class="inline" style="margin-top:12px">
+                  <button class="btnGhost" onclick="addHomepageTestimonialRow()">Add Testimonial</button>
+                </div>
+              </div>
+
               <div class="tableWrap">
                 <div class="tableScroll">
                   <table>
@@ -1361,8 +1389,11 @@ const CACHE = {
   kyc: [],
   wallet_links: [],
   trades: [],
-  notifications: []
+  notifications: [],
+  homepage_content: null
 };
+
+let HOMEPAGE_TESTIMONIAL_DRAFT = [];
 
 const USERNAME_MAP = {};
 let SEARCH_RESULTS = [];
@@ -1680,118 +1711,6 @@ async function apiCall(action, payload={}){
     throw new Error(data.error || ("HTTP " + res.status));
   }
   return data;
-}
-
-async function siteContentApiCall(action, payload={}){
-  if(!ADMIN_SECRET) throw new Error("Admin not connected.");
-
-  const res = await fetch(SITE_CONTENT_API_URL, {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "apikey": ANON_KEY,
-      "Authorization": "Bearer " + ANON_KEY,
-      "x-admin-secret": ADMIN_SECRET,
-      "x-admin-id": ADMIN_ID
-    },
-    body: JSON.stringify({ action, payload })
-  });
-
-  const raw = await res.text();
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
-
-  if(!res.ok || !data.success){
-    setDebugBox(`HTTP ${res.status}
-Action: site-content-api:${action}
-Payload: ${JSON.stringify(payload)}
-Response: ${raw}`);
-    feed("ERROR site-content-api " + action + " -> HTTP " + res.status);
-    throw new Error(data.error || ("HTTP " + res.status));
-  }
-  return data;
-}
-
-function getHomepageTestimonialsFromEditor(){
-  return Array.from(document.querySelectorAll(".home-testimonial-row")).map((row) => ({
-    name: String(row.querySelector('[data-field="name"]')?.value || "").trim(),
-    role: String(row.querySelector('[data-field="role"]')?.value || "").trim(),
-    text: String(row.querySelector('[data-field="text"]')?.value || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(row.querySelector('[data-field="stars"]')?.value || 5) || 5))
-  })).filter((item) => item.name || item.role || item.text);
-}
-
-function renderHomepageTestimonialsEditor(list){
-  const box = document.getElementById("homeTestimonialsRows");
-  if(!box) return;
-
-  const items = Array.isArray(list) && list.length ? list : [{ name:"", role:"", text:"", stars:5 }];
-  box.innerHTML = items.map((item, index) => `
-    <div class="home-testimonial-row" style="border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); border-radius:18px; padding:12px;">
-      <div class="inline" style="align-items:flex-start;">
-        <div class="grow">
-          <div class="small" style="margin-bottom:6px;">Client name</div>
-          <input data-field="name" value="${esc(item.name || "")}" placeholder="Daniel K." />
-        </div>
-        <div class="grow">
-          <div class="small" style="margin-bottom:6px;">Role</div>
-          <input data-field="role" value="${esc(item.role || "")}" placeholder="Client" />
-        </div>
-        <div style="width:120px; min-width:120px;">
-          <div class="small" style="margin-bottom:6px;">Stars</div>
-          <input data-field="stars" type="number" min="1" max="5" step="1" value="${Number(item.stars || 5)}" />
-        </div>
-      </div>
-      <div style="margin-top:10px;">
-        <div class="small" style="margin-bottom:6px;">Testimonial</div>
-        <textarea data-field="text" placeholder="Write testimonial text here...">${esc(item.text || "")}</textarea>
-      </div>
-      <div class="rowTools" style="margin-top:10px;">
-        <button class="btnErr" onclick="removeHomepageTestimonial(${index})">Remove</button>
-      </div>
-    </div>
-  `).join("");
-}
-
-function addHomepageTestimonial(){
-  const items = getHomepageTestimonialsFromEditor();
-  items.push({ name:"", role:"", text:"", stars:5 });
-  renderHomepageTestimonialsEditor(items);
-}
-
-function removeHomepageTestimonial(index){
-  const items = getHomepageTestimonialsFromEditor();
-  items.splice(index, 1);
-  renderHomepageTestimonialsEditor(items);
-}
-
-async function loadHomepageContent(){
-  const status = document.getElementById("homeCmsStatus");
-  if(status) status.innerHTML = `<span class="spin"></span>Loading homepage content…`;
-  const res = await siteContentApiCall("get_content");
-  const data = res.data || {};
-  document.getElementById("homeSupportEmail").value = String(data.support_email || "").trim();
-  renderHomepageTestimonialsEditor(Array.isArray(data.testimonials) ? data.testimonials : []);
-  if(status) status.textContent = `Homepage content loaded ✅ (${Array.isArray(data.testimonials) ? data.testimonials.length : 0} testimonial(s))`;
-  feed("homepage content loaded");
-}
-
-async function saveHomepageContent(){
-  const supportEmail = String(document.getElementById("homeSupportEmail")?.value || "").trim();
-  const testimonials = getHomepageTestimonialsFromEditor();
-  const status = document.getElementById("homeCmsStatus");
-
-  if(!supportEmail){
-    modalShow("Missing support email", "Enter the support email you want on the homepage.");
-    return;
-  }
-
-  if(status) status.innerHTML = `<span class="spin"></span>Saving homepage content…`;
-  await siteContentApiCall("save_content", { support_email: supportEmail, testimonials });
-  if(status) status.textContent = `Homepage content saved ✅ (${testimonials.length} testimonial(s))`;
-  feed("homepage content saved");
-  modalShow("Homepage Content Saved", "Support email and testimonials were saved successfully.");
-  await loadHomepageContent();
 }
 
 /* ✅ Wallet API (wallet-api Edge Function) */
@@ -2665,7 +2584,174 @@ async function closeTicket(id){
   safeLoad(loadSupport);
 }
 
+
+async function siteContentCall(action, payload = {}, useAdmin = true){
+  const headers = {
+    "Content-Type": "application/json",
+    "apikey": ANON_KEY,
+    "authorization": "Bearer " + ANON_KEY,
+    "cache-control": "no-store"
+  };
+  if(useAdmin){
+    headers["x-admin-secret"] = ADMIN_SECRET;
+    headers["x-admin-id"] = ADMIN_ID;
+  }
+
+  const res = await fetch(SITE_CONTENT_API_URL, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ action, ...payload }),
+    cache: "no-store"
+  });
+
+  const raw = await res.text();
+  let json = {};
+  try{ json = raw ? JSON.parse(raw) : {}; }catch(_){ json = { success:false, error:raw || "Invalid JSON response" }; }
+
+  if(!res.ok || json.success === false){
+    throw new Error(json.error || ("HTTP " + res.status));
+  }
+  return json;
+}
+
+function normalizeHomepageTestimonials(list){
+  if(!Array.isArray(list)) return [];
+  return list.map((item, idx)=>({
+    id: String(item?.id || ("row-" + (idx+1))),
+    name: String(item?.name || "").trim(),
+    role: String(item?.role || "").trim(),
+    text: String(item?.text || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
+  }));
+}
+
+function renderHomepageTestimonialsEditor(){
+  const wrap = document.getElementById("homepageTestimonialsEditor");
+  if(!wrap) return;
+
+  if(!HOMEPAGE_TESTIMONIAL_DRAFT.length){
+    HOMEPAGE_TESTIMONIAL_DRAFT = [
+      { id: "row-1", name: "", role: "", text: "", stars: 5 }
+    ];
+  }
+
+  wrap.innerHTML = HOMEPAGE_TESTIMONIAL_DRAFT.map((t, idx)=>`
+    <div class="tableWrap" style="padding:12px;">
+      <div class="inline">
+        <input id="hp-name-${idx}" class="w200" placeholder="Client name" value="${esc(t.name || "")}">
+        <input id="hp-role-${idx}" class="w200" placeholder="Role" value="${esc(t.role || "")}">
+        <input id="hp-stars-${idx}" class="w140" type="number" min="1" max="5" step="1" placeholder="Stars" value="${esc(String(t.stars || 5))}">
+      </div>
+      <div style="height:10px"></div>
+      <textarea id="hp-text-${idx}" placeholder="Testimonial text">${esc(t.text || "")}</textarea>
+      <div class="inline" style="margin-top:10px">
+        <button class="btnErr" onclick="removeHomepageTestimonialRow(${idx})">Remove</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function collectHomepageTestimonialsFromEditor(){
+  const next = [];
+  for(let i = 0; i < HOMEPAGE_TESTIMONIAL_DRAFT.length; i++){
+    const nameEl = document.getElementById(`hp-name-${i}`);
+    const roleEl = document.getElementById(`hp-role-${i}`);
+    const textEl = document.getElementById(`hp-text-${i}`);
+    const starsEl = document.getElementById(`hp-stars-${i}`);
+
+    if(!nameEl || !roleEl || !textEl || !starsEl) continue;
+
+    const row = {
+      id: HOMEPAGE_TESTIMONIAL_DRAFT[i]?.id || ("row-" + (i+1)),
+      name: String(nameEl.value || "").trim(),
+      role: String(roleEl.value || "").trim(),
+      text: String(textEl.value || "").trim(),
+      stars: Math.max(1, Math.min(5, Number(starsEl.value || 5) || 5))
+    };
+
+    if(row.name || row.role || row.text){
+      next.push(row);
+    }
+  }
+  HOMEPAGE_TESTIMONIAL_DRAFT = next.length ? next : [{ id: "row-1", name: "", role: "", text: "", stars: 5 }];
+}
+
+function addHomepageTestimonialRow(){
+  collectHomepageTestimonialsFromEditor();
+  HOMEPAGE_TESTIMONIAL_DRAFT.push({
+    id: "row-" + Date.now(),
+    name: "",
+    role: "",
+    text: "",
+    stars: 5
+  });
+  renderHomepageTestimonialsEditor();
+}
+
+function removeHomepageTestimonialRow(idx){
+  collectHomepageTestimonialsFromEditor();
+  HOMEPAGE_TESTIMONIAL_DRAFT.splice(idx, 1);
+  if(!HOMEPAGE_TESTIMONIAL_DRAFT.length){
+    HOMEPAGE_TESTIMONIAL_DRAFT = [{ id: "row-1", name: "", role: "", text: "", stars: 5 }];
+  }
+  renderHomepageTestimonialsEditor();
+}
+
+async function loadHomepageContent(){
+  const statusEl = document.getElementById("homepageContentStatus");
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const res = await siteContentCall("get_content", {});
+  const content = res.data || {};
+  CACHE.homepage_content = content;
+
+  const emailEl = document.getElementById("homepageSupportEmail");
+  if(emailEl) emailEl.value = String(content.support_email || "");
+
+  HOMEPAGE_TESTIMONIAL_DRAFT = normalizeHomepageTestimonials(content.testimonials || []);
+  renderHomepageTestimonialsEditor();
+
+  if(statusEl) statusEl.textContent = "Homepage content loaded ✅";
+}
+
+async function saveHomepageContent(){
+  const statusEl = document.getElementById("homepageContentStatus");
+  const emailEl = document.getElementById("homepageSupportEmail");
+
+  if(!emailEl){
+    throw new Error("Homepage support email field is missing in admin HTML.");
+  }
+
+  collectHomepageTestimonialsFromEditor();
+
+  const support_email = String(emailEl.value || "").trim();
+  if(!support_email){
+    modalShow("Missing email", "Enter the homepage support email first.");
+    return;
+  }
+
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Saving…`;
+
+  const payload = {
+    support_email,
+    testimonials: HOMEPAGE_TESTIMONIAL_DRAFT.map((t, idx)=>({
+      id: t.id || ("row-" + (idx+1)),
+      name: t.name || "",
+      role: t.role || "",
+      text: t.text || "",
+      stars: Math.max(1, Math.min(5, Number(t.stars || 5) || 5))
+    }))
+  };
+
+  await siteContentCall("save_content", payload);
+  if(statusEl) statusEl.textContent = "Homepage content saved ✅";
+  modalShow("Saved", "Homepage support email and testimonials updated.");
+  feed("homepage_content saved");
+  await loadHomepageContent();
+}
+
 /* DEPOSITS */
+
 async function loadDeposits(){
   document.getElementById("depStatus").innerHTML = `<span class="spin"></span>Loading…`;
   const res = await apiCall("deposits_list");
