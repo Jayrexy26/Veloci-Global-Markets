@@ -589,15 +589,26 @@
   
 </style>
 
+
+<link rel="preconnect" href="https://www.smartsuppchat.com" crossorigin>
+<link rel="dns-prefetch" href="//www.smartsuppchat.com">
+<link rel="preload" as="script" href="https://www.smartsuppchat.com/loader.js?">
+
+
 <!-- Smartsupp Live Chat script -->
 <script type="text/javascript">
 var _smartsupp = _smartsupp || {};
 _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
 window.smartsupp||(function(d) {
- var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
- s=d.getElementsByTagName('script')[0];c=d.createElement('script');
- c.type='text/javascript';c.charset='utf-8';c.async=false; /* instant load */
- c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+ var c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ c=d.createElement('script');
+ c.type='text/javascript';
+ c.charset='utf-8';
+ c.async=false;
+ c.defer=false;
+ c.fetchPriority='high';
+ c.src='https://www.smartsuppchat.com/loader.js?';
+ d.head.appendChild(c);
 })(document);
 </script>
 
@@ -642,6 +653,55 @@ window.smartsupp||(function(d) {
   }
 }
 </style>
+
+
+<script>
+(function () {
+  function nudgeSmartsuppLauncher() {
+    const nodes = Array.from(document.querySelectorAll('iframe, div'));
+    nodes.forEach((node) => {
+      const src = (node.getAttribute('src') || '').toLowerCase();
+      const id = (node.id || '').toLowerCase();
+      const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
+      const title = (node.getAttribute('title') || '').toLowerCase();
+      const looksLikeSmartsupp =
+        src.includes('smartsupp') ||
+        id.includes('smartsupp') ||
+        cls.includes('smartsupp') ||
+        title.includes('smartsupp');
+      if (!looksLikeSmartsupp) return;
+      node.style.setProperty('visibility', 'visible', 'important');
+      node.style.setProperty('opacity', '1', 'important');
+      node.style.setProperty('display', '', 'important');
+      node.style.setProperty('z-index', '99998', 'important');
+    });
+  }
+
+  function startNudge() {
+    nudgeSmartsuppLauncher();
+    let ticks = 0;
+    const t = setInterval(() => {
+      nudgeSmartsuppLauncher();
+      ticks += 1;
+      if (ticks > 20) clearInterval(t);
+    }, 120);
+  }
+
+  const gate = document.getElementById('authGate');
+  if (gate) {
+    const obs = new MutationObserver(() => {
+      const hidden = gate.style.display === 'none' || getComputedStyle(gate).display === 'none';
+      if (hidden) {
+        startNudge();
+        obs.disconnect();
+      }
+    });
+    obs.observe(gate, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  window.addEventListener('load', startNudge, { once: true });
+})();
+</script>
 
 </head>
 <body>
