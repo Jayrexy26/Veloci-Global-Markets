@@ -1782,6 +1782,34 @@ function normalizeTestimonialsAdmin(list){
   return cleaned.length ? cleaned : defaultSiteContent().testimonials;
 }
 
+function normalizeTestimonialsAdminDraft(list){
+  const raw = Array.isArray(list) ? list : [];
+  return raw.map((item, index) => ({
+    name: String(item?.name || "").trim(),
+    role: String(item?.role || "Client").trim() || "Client",
+    text: String(item?.text || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5)),
+    _id: String(item?._id || `draft-${Date.now()}-${index}`)
+  }));
+}
+
+function readSiteContentDraftFromForm(){
+  const email = String(document.getElementById("homepageSupportEmail")?.value || "").trim();
+  const cards = Array.from(document.querySelectorAll("[data-testimonial-card='1']"));
+  const testimonials = cards.map((card, idx) => ({
+    _id: String(card.getAttribute("data-row-id") || `draft-${idx}`),
+    name: String(card.querySelector(".testimonial-name")?.value || "").trim(),
+    role: String(card.querySelector(".testimonial-role")?.value || "").trim() || "Client",
+    text: String(card.querySelector(".testimonial-text")?.value || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(card.querySelector(".testimonial-stars")?.value || 5) || 5))
+  }));
+
+  return {
+    support_email: email,
+    testimonials
+  };
+}
+
 function renderSiteContentEditor(){
   const status = document.getElementById("siteContentStatus");
   const emailInput = document.getElementById("homepageSupportEmail");
@@ -1790,10 +1818,10 @@ function renderSiteContentEditor(){
 
   const content = CACHE.site_content || defaultSiteContent();
   emailInput.value = String(content.support_email || "").trim();
-  const items = normalizeTestimonialsAdmin(content.testimonials);
+  const items = normalizeTestimonialsAdminDraft(content.testimonials);
 
   wrap.innerHTML = items.map((item, idx) => `
-    <div class="card" style="padding:12px;border-radius:18px;background:rgba(2,6,23,.32);border:1px solid rgba(255,255,255,.10);">
+    <div class="card" data-testimonial-card="1" data-row-id="${esc(item._id)}" style="padding:12px;border-radius:18px;background:rgba(2,6,23,.32);border:1px solid rgba(255,255,255,.10);">
       <div class="inline" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div class="chip">Testimonial ${idx + 1}</div>
         <button class="btnErr" onclick="removeTestimonialItem(${idx})">Remove</button>
@@ -1814,43 +1842,31 @@ function renderSiteContentEditor(){
 }
 
 function collectSiteContentFromForm(){
-  const email = String(document.getElementById("homepageSupportEmail")?.value || "").trim();
-  const names = Array.from(document.querySelectorAll(".testimonial-name"));
-  const roles = Array.from(document.querySelectorAll(".testimonial-role"));
-  const texts = Array.from(document.querySelectorAll(".testimonial-text"));
-  const stars = Array.from(document.querySelectorAll(".testimonial-stars"));
-
-  const testimonials = names.map((input, idx) => ({
-    name: String(input.value || "").trim(),
-    role: String(roles[idx]?.value || "").trim(),
-    text: String(texts[idx]?.value || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(stars[idx]?.value || 5) || 5))
-  })).filter(item => item.text);
-
+  const draft = readSiteContentDraftFromForm();
   return {
-    support_email: email,
-    testimonials: normalizeTestimonialsAdmin(testimonials)
+    support_email: draft.support_email,
+    testimonials: normalizeTestimonialsAdmin(draft.testimonials)
   };
 }
 
 function addTestimonialItem(){
-  const current = CACHE.site_content || defaultSiteContent();
-  const next = Array.isArray(current.testimonials) ? current.testimonials.slice() : [];
-  next.push({ name:"", role:"Client", text:"", stars:5 });
+  const draft = readSiteContentDraftFromForm();
+  const next = normalizeTestimonialsAdminDraft(draft.testimonials);
+  next.push({ _id:`draft-${Date.now()}`, name:"", role:"Client", text:"", stars:5 });
   CACHE.site_content = {
-    support_email: current.support_email || defaultSiteContent().support_email,
+    support_email: draft.support_email || defaultSiteContent().support_email,
     testimonials: next
   };
   renderSiteContentEditor();
 }
 
 function removeTestimonialItem(idx){
-  const current = CACHE.site_content || defaultSiteContent();
-  const next = (Array.isArray(current.testimonials) ? current.testimonials.slice() : []);
+  const draft = readSiteContentDraftFromForm();
+  const next = normalizeTestimonialsAdminDraft(draft.testimonials);
   next.splice(idx, 1);
   CACHE.site_content = {
-    support_email: current.support_email || defaultSiteContent().support_email,
-    testimonials: next.length ? next : defaultSiteContent().testimonials
+    support_email: draft.support_email || defaultSiteContent().support_email,
+    testimonials: next.length ? next : [{ _id:`draft-${Date.now()}`, name:"", role:"Client", text:"", stars:5 }]
   };
   renderSiteContentEditor();
 }
@@ -1862,7 +1878,7 @@ async function loadSiteContentAdmin(){
   const res = await siteContentApiCall("get", { key:"homepage" }, true);
   CACHE.site_content = {
     support_email: String(res.data?.support_email || defaultSiteContent().support_email).trim() || defaultSiteContent().support_email,
-    testimonials: normalizeTestimonialsAdmin(res.data?.testimonials)
+    testimonials: normalizeTestimonialsAdminDraft(res.data?.testimonials)
   };
 
   renderSiteContentEditor();
@@ -1879,7 +1895,7 @@ async function saveSiteContentAdmin(){
   const res = await siteContentApiCall("save", { key:"homepage", ...data }, true);
   CACHE.site_content = {
     support_email: String(res.data?.support_email || data.support_email).trim(),
-    testimonials: normalizeTestimonialsAdmin(res.data?.testimonials || data.testimonials)
+    testimonials: normalizeTestimonialsAdminDraft(res.data?.testimonials || data.testimonials)
   };
 
   renderSiteContentEditor();
