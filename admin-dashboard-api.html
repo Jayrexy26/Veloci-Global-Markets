@@ -647,6 +647,19 @@
       border: 2px solid rgba(2,6,23,.55);
     }
   </style>
+
+  <!-- Smartsupp Live Chat script -->
+  <script type="text/javascript">
+  var _smartsupp = _smartsupp || {};
+  _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+  window.smartsupp||(function(d) {
+   var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+   s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+   c.type='text/javascript';c.charset='utf-8';c.async=true;
+   c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+  })(document);
+  </script>
+
 </head>
 
 <body>
@@ -1099,38 +1112,8 @@
                   <div class="small" id="supportStatus">Not loaded.</div>
                 </div>
                 <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(refreshSupportView)">Refresh</button>
+                  <button class="btnGhost" onclick="safeLoad(loadSupport)">Refresh</button>
                 </div>
-              </div>
-
-              <div class="card" style="margin:0 0 14px;padding:14px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
-                <div class="cardHead" style="margin-bottom:10px;">
-                  <div>
-                    <div class="cardTitle">🌐 Homepage Content</div>
-                    <div class="small" id="siteContentStatus">Not loaded.</div>
-                  </div>
-                  <div class="rowTools wrap">
-                    <button class="btnGhost" onclick="safeLoad(loadSiteContentAdmin)">Reload Content</button>
-                    <button class="btnPrimary" onclick="saveSiteContentAdmin()">Save Homepage Content</button>
-                  </div>
-                </div>
-
-                <div class="small" style="margin-bottom:10px;">
-                  This controls the homepage support email and the client testimonials shown publicly on the landing page.
-                </div>
-
-                <div class="inline">
-                  <input id="homepageSupportEmail" class="grow" type="email" placeholder="Support Email">
-                </div>
-
-                <div style="height:12px;"></div>
-
-                <div class="inline" style="justify-content:space-between;">
-                  <div class="chip">Testimonials</div>
-                  <button class="btnGhost" onclick="addTestimonialItem()">Add Testimonial</button>
-                </div>
-
-                <div id="testimonialAdminList" style="display:grid;gap:12px;margin-top:12px;"></div>
               </div>
 
               <div class="tableWrap">
@@ -1378,8 +1361,7 @@ const CACHE = {
   kyc: [],
   wallet_links: [],
   trades: [],
-  notifications: [],
-  site_content: null
+  notifications: []
 };
 
 const USERNAME_MAP = {};
@@ -1700,6 +1682,118 @@ async function apiCall(action, payload={}){
   return data;
 }
 
+async function siteContentApiCall(action, payload={}){
+  if(!ADMIN_SECRET) throw new Error("Admin not connected.");
+
+  const res = await fetch(SITE_CONTENT_API_URL, {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey": ANON_KEY,
+      "Authorization": "Bearer " + ANON_KEY,
+      "x-admin-secret": ADMIN_SECRET,
+      "x-admin-id": ADMIN_ID
+    },
+    body: JSON.stringify({ action, payload })
+  });
+
+  const raw = await res.text();
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
+
+  if(!res.ok || !data.success){
+    setDebugBox(`HTTP ${res.status}
+Action: site-content-api:${action}
+Payload: ${JSON.stringify(payload)}
+Response: ${raw}`);
+    feed("ERROR site-content-api " + action + " -> HTTP " + res.status);
+    throw new Error(data.error || ("HTTP " + res.status));
+  }
+  return data;
+}
+
+function getHomepageTestimonialsFromEditor(){
+  return Array.from(document.querySelectorAll(".home-testimonial-row")).map((row) => ({
+    name: String(row.querySelector('[data-field="name"]')?.value || "").trim(),
+    role: String(row.querySelector('[data-field="role"]')?.value || "").trim(),
+    text: String(row.querySelector('[data-field="text"]')?.value || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(row.querySelector('[data-field="stars"]')?.value || 5) || 5))
+  })).filter((item) => item.name || item.role || item.text);
+}
+
+function renderHomepageTestimonialsEditor(list){
+  const box = document.getElementById("homeTestimonialsRows");
+  if(!box) return;
+
+  const items = Array.isArray(list) && list.length ? list : [{ name:"", role:"", text:"", stars:5 }];
+  box.innerHTML = items.map((item, index) => `
+    <div class="home-testimonial-row" style="border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); border-radius:18px; padding:12px;">
+      <div class="inline" style="align-items:flex-start;">
+        <div class="grow">
+          <div class="small" style="margin-bottom:6px;">Client name</div>
+          <input data-field="name" value="${esc(item.name || "")}" placeholder="Daniel K." />
+        </div>
+        <div class="grow">
+          <div class="small" style="margin-bottom:6px;">Role</div>
+          <input data-field="role" value="${esc(item.role || "")}" placeholder="Client" />
+        </div>
+        <div style="width:120px; min-width:120px;">
+          <div class="small" style="margin-bottom:6px;">Stars</div>
+          <input data-field="stars" type="number" min="1" max="5" step="1" value="${Number(item.stars || 5)}" />
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="small" style="margin-bottom:6px;">Testimonial</div>
+        <textarea data-field="text" placeholder="Write testimonial text here...">${esc(item.text || "")}</textarea>
+      </div>
+      <div class="rowTools" style="margin-top:10px;">
+        <button class="btnErr" onclick="removeHomepageTestimonial(${index})">Remove</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function addHomepageTestimonial(){
+  const items = getHomepageTestimonialsFromEditor();
+  items.push({ name:"", role:"", text:"", stars:5 });
+  renderHomepageTestimonialsEditor(items);
+}
+
+function removeHomepageTestimonial(index){
+  const items = getHomepageTestimonialsFromEditor();
+  items.splice(index, 1);
+  renderHomepageTestimonialsEditor(items);
+}
+
+async function loadHomepageContent(){
+  const status = document.getElementById("homeCmsStatus");
+  if(status) status.innerHTML = `<span class="spin"></span>Loading homepage content…`;
+  const res = await siteContentApiCall("get_content");
+  const data = res.data || {};
+  document.getElementById("homeSupportEmail").value = String(data.support_email || "").trim();
+  renderHomepageTestimonialsEditor(Array.isArray(data.testimonials) ? data.testimonials : []);
+  if(status) status.textContent = `Homepage content loaded ✅ (${Array.isArray(data.testimonials) ? data.testimonials.length : 0} testimonial(s))`;
+  feed("homepage content loaded");
+}
+
+async function saveHomepageContent(){
+  const supportEmail = String(document.getElementById("homeSupportEmail")?.value || "").trim();
+  const testimonials = getHomepageTestimonialsFromEditor();
+  const status = document.getElementById("homeCmsStatus");
+
+  if(!supportEmail){
+    modalShow("Missing support email", "Enter the support email you want on the homepage.");
+    return;
+  }
+
+  if(status) status.innerHTML = `<span class="spin"></span>Saving homepage content…`;
+  await siteContentApiCall("save_content", { support_email: supportEmail, testimonials });
+  if(status) status.textContent = `Homepage content saved ✅ (${testimonials.length} testimonial(s))`;
+  feed("homepage content saved");
+  modalShow("Homepage Content Saved", "Support email and testimonials were saved successfully.");
+  await loadHomepageContent();
+}
+
 /* ✅ Wallet API (wallet-api Edge Function) */
 async function walletApiCall(action, bodyPayload={}){
   if(!ADMIN_SECRET) throw new Error("Admin not connected.");
@@ -1726,186 +1820,6 @@ async function walletApiCall(action, bodyPayload={}){
     throw new Error(data.error || ("HTTP " + res.status));
   }
   return data;
-}
-
-async function siteContentApiCall(action, payload={}, requiresAdmin=true){
-  const headers = {
-    "Content-Type":"application/json",
-    "apikey": ANON_KEY,
-    "Authorization": "Bearer " + ANON_KEY
-  };
-
-  if(requiresAdmin){
-    if(!ADMIN_SECRET) throw new Error("Admin not connected.");
-    headers["x-admin-secret"] = ADMIN_SECRET;
-    headers["x-admin-id"] = ADMIN_ID;
-  }
-
-  const res = await fetch(SITE_CONTENT_API_URL, {
-    method:"POST",
-    headers,
-    body: JSON.stringify({ action, payload })
-  });
-
-  const raw = await res.text();
-  let data;
-  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
-
-  if(!res.ok || !data.success){
-    setDebugBox(`HTTP ${res.status}\nSite Content Action: ${action}\nPayload: ${JSON.stringify(payload)}\nResponse: ${raw}`);
-    feed("ERROR site-content " + action + " -> HTTP " + res.status);
-    throw new Error(data.error || ("HTTP " + res.status));
-  }
-  return data;
-}
-
-function defaultSiteContent(){
-  return {
-    support_email: "support@velociglobal.pro",
-    testimonials: [
-      { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
-      { name:"Amina S.", role:"Investor", text:"The live markets and ticker give it a real terminal feel. Smooth experience.", stars:5 },
-      { name:"Michael R.", role:"Trader", text:"Verification and session PIN made me trust the security. Great UI and flow.", stars:5 }
-    ]
-  };
-}
-
-function normalizeTestimonialsAdmin(list){
-  const raw = Array.isArray(list) ? list : [];
-  const cleaned = raw.map((item, index) => ({
-    name: String(item?.name || `Client ${index + 1}`).trim() || `Client ${index + 1}`,
-    role: String(item?.role || "Client").trim() || "Client",
-    text: String(item?.text || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
-  })).filter(item => item.text);
-
-  return cleaned.length ? cleaned : defaultSiteContent().testimonials;
-}
-
-function normalizeTestimonialsAdminDraft(list){
-  const raw = Array.isArray(list) ? list : [];
-  return raw.map((item, index) => ({
-    name: String(item?.name || "").trim(),
-    role: String(item?.role || "Client").trim() || "Client",
-    text: String(item?.text || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5)),
-    _id: String(item?._id || `draft-${Date.now()}-${index}`)
-  }));
-}
-
-function readSiteContentDraftFromForm(){
-  const email = String(document.getElementById("homepageSupportEmail")?.value || "").trim();
-  const cards = Array.from(document.querySelectorAll("[data-testimonial-card='1']"));
-  const testimonials = cards.map((card, idx) => ({
-    _id: String(card.getAttribute("data-row-id") || `draft-${idx}`),
-    name: String(card.querySelector(".testimonial-name")?.value || "").trim(),
-    role: String(card.querySelector(".testimonial-role")?.value || "").trim() || "Client",
-    text: String(card.querySelector(".testimonial-text")?.value || "").trim(),
-    stars: Math.max(1, Math.min(5, Number(card.querySelector(".testimonial-stars")?.value || 5) || 5))
-  }));
-
-  return {
-    support_email: email,
-    testimonials
-  };
-}
-
-function renderSiteContentEditor(){
-  const status = document.getElementById("siteContentStatus");
-  const emailInput = document.getElementById("homepageSupportEmail");
-  const wrap = document.getElementById("testimonialAdminList");
-  if(!status || !emailInput || !wrap) return;
-
-  const content = CACHE.site_content || defaultSiteContent();
-  emailInput.value = String(content.support_email || "").trim();
-  const items = normalizeTestimonialsAdminDraft(content.testimonials);
-
-  wrap.innerHTML = items.map((item, idx) => `
-    <div class="card" data-testimonial-card="1" data-row-id="${esc(item._id)}" style="padding:12px;border-radius:18px;background:rgba(2,6,23,.32);border:1px solid rgba(255,255,255,.10);">
-      <div class="inline" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div class="chip">Testimonial ${idx + 1}</div>
-        <button class="btnErr" onclick="removeTestimonialItem(${idx})">Remove</button>
-      </div>
-
-      <div class="inline">
-        <input class="grow testimonial-name" data-idx="${idx}" placeholder="Client Name" value="${esc(item.name)}">
-        <input class="w200 testimonial-role" data-idx="${idx}" placeholder="Role" value="${esc(item.role)}">
-        <input class="w140 testimonial-stars" data-idx="${idx}" type="number" min="1" max="5" step="1" placeholder="Stars" value="${Number(item.stars || 5)}">
-      </div>
-
-      <div style="height:10px;"></div>
-      <textarea class="testimonial-text" data-idx="${idx}" placeholder="Testimonial text">${esc(item.text)}</textarea>
-    </div>
-  `).join("");
-
-  status.textContent = `Loaded support email + ${items.length} testimonial(s) ✅`;
-}
-
-function collectSiteContentFromForm(){
-  const draft = readSiteContentDraftFromForm();
-  return {
-    support_email: draft.support_email,
-    testimonials: normalizeTestimonialsAdmin(draft.testimonials)
-  };
-}
-
-function addTestimonialItem(){
-  const draft = readSiteContentDraftFromForm();
-  const next = normalizeTestimonialsAdminDraft(draft.testimonials);
-  next.push({ _id:`draft-${Date.now()}`, name:"", role:"Client", text:"", stars:5 });
-  CACHE.site_content = {
-    support_email: draft.support_email || defaultSiteContent().support_email,
-    testimonials: next
-  };
-  renderSiteContentEditor();
-}
-
-function removeTestimonialItem(idx){
-  const draft = readSiteContentDraftFromForm();
-  const next = normalizeTestimonialsAdminDraft(draft.testimonials);
-  next.splice(idx, 1);
-  CACHE.site_content = {
-    support_email: draft.support_email || defaultSiteContent().support_email,
-    testimonials: next.length ? next : [{ _id:`draft-${Date.now()}`, name:"", role:"Client", text:"", stars:5 }]
-  };
-  renderSiteContentEditor();
-}
-
-async function loadSiteContentAdmin(){
-  const status = document.getElementById("siteContentStatus");
-  if(status) status.innerHTML = `<span class="spin"></span>Loading…`;
-
-  const res = await siteContentApiCall("get", { key:"homepage" }, true);
-  CACHE.site_content = {
-    support_email: String(res.data?.support_email || defaultSiteContent().support_email).trim() || defaultSiteContent().support_email,
-    testimonials: normalizeTestimonialsAdminDraft(res.data?.testimonials)
-  };
-
-  renderSiteContentEditor();
-  feed("site-content loaded");
-}
-
-async function saveSiteContentAdmin(){
-  const data = collectSiteContentFromForm();
-  if(!data.support_email){
-    modalShow("Missing Support Email", "Enter the homepage support email before saving.");
-    return;
-  }
-
-  const res = await siteContentApiCall("save", { key:"homepage", ...data }, true);
-  CACHE.site_content = {
-    support_email: String(res.data?.support_email || data.support_email).trim(),
-    testimonials: normalizeTestimonialsAdminDraft(res.data?.testimonials || data.testimonials)
-  };
-
-  renderSiteContentEditor();
-  feed("site-content saved");
-  modalShow("Homepage Content Saved", "Support email and testimonials updated successfully.");
-}
-
-async function refreshSupportView(){
-  await loadSiteContentAdmin();
-  await loadSupport();
 }
 
 async function safeLoad(fn){
@@ -1982,7 +1896,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
-  if(ACTIVE_VIEW === "support"){ renderSiteContentEditor(); renderSupport(CACHE.support); }
+  if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
   if(ACTIVE_VIEW === "kyc") renderKyc(CACHE.kyc);
@@ -2018,7 +1932,6 @@ function refreshAll(){
   safeLoad(loadPlans);
   safeLoad(loadWallets);
   safeLoad(loadWalletLinks);
-  safeLoad(loadSiteContentAdmin);
   safeLoad(loadSupport);
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
@@ -2687,6 +2600,7 @@ async function loadSupport(){
   const res = await apiCall("tickets_list");
   CACHE.support = res.data || [];
   renderSupport(CACHE.support);
+  await loadHomepageContent();
   feed("tickets_list loaded (" + CACHE.support.length + ")");
   renderOverview();
 }
@@ -3402,19 +3316,6 @@ async function deleteTrade(id){
 
 
 attachScrollHandlers();
-</script>
-
-
-<!-- Smartsupp Live Chat script -->
-<script type="text/javascript">
-var _smartsupp = _smartsupp || {};
-_smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
-window.smartsupp||(function(d) {
- var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
- s=d.getElementsByTagName('script')[0];c=d.createElement('script');
- c.type='text/javascript';c.charset='utf-8';c.async=true;
- c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
-})(document);
 </script>
 
 </body>
