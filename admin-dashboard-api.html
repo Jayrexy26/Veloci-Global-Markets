@@ -1099,8 +1099,38 @@
                   <div class="small" id="supportStatus">Not loaded.</div>
                 </div>
                 <div class="rowTools">
-                  <button class="btnGhost" onclick="safeLoad(loadSupport)">Refresh</button>
+                  <button class="btnGhost" onclick="safeLoad(refreshSupportView)">Refresh</button>
                 </div>
+              </div>
+
+              <div class="card" style="margin:0 0 14px;padding:14px;border-radius:20px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
+                <div class="cardHead" style="margin-bottom:10px;">
+                  <div>
+                    <div class="cardTitle">🌐 Homepage Content</div>
+                    <div class="small" id="siteContentStatus">Not loaded.</div>
+                  </div>
+                  <div class="rowTools wrap">
+                    <button class="btnGhost" onclick="safeLoad(loadSiteContentAdmin)">Reload Content</button>
+                    <button class="btnPrimary" onclick="saveSiteContentAdmin()">Save Homepage Content</button>
+                  </div>
+                </div>
+
+                <div class="small" style="margin-bottom:10px;">
+                  This controls the homepage support email and the client testimonials shown publicly on the landing page.
+                </div>
+
+                <div class="inline">
+                  <input id="homepageSupportEmail" class="grow" type="email" placeholder="Support Email">
+                </div>
+
+                <div style="height:12px;"></div>
+
+                <div class="inline" style="justify-content:space-between;">
+                  <div class="chip">Testimonials</div>
+                  <button class="btnGhost" onclick="addTestimonialItem()">Add Testimonial</button>
+                </div>
+
+                <div id="testimonialAdminList" style="display:grid;gap:12px;margin-top:12px;"></div>
               </div>
 
               <div class="tableWrap">
@@ -1329,6 +1359,7 @@
 <script>
 const API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api";
 const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api";
+const SITE_CONTENT_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/site-content-api";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 let ADMIN_SECRET = "";
@@ -1347,7 +1378,8 @@ const CACHE = {
   kyc: [],
   wallet_links: [],
   trades: [],
-  notifications: []
+  notifications: [],
+  site_content: null
 };
 
 const USERNAME_MAP = {};
@@ -1696,6 +1728,170 @@ async function walletApiCall(action, bodyPayload={}){
   return data;
 }
 
+async function siteContentApiCall(action, payload={}, requiresAdmin=true){
+  const headers = {
+    "Content-Type":"application/json",
+    "apikey": ANON_KEY,
+    "Authorization": "Bearer " + ANON_KEY
+  };
+
+  if(requiresAdmin){
+    if(!ADMIN_SECRET) throw new Error("Admin not connected.");
+    headers["x-admin-secret"] = ADMIN_SECRET;
+    headers["x-admin-id"] = ADMIN_ID;
+  }
+
+  const res = await fetch(SITE_CONTENT_API_URL, {
+    method:"POST",
+    headers,
+    body: JSON.stringify({ action, payload })
+  });
+
+  const raw = await res.text();
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ data = { success:false, error: raw }; }
+
+  if(!res.ok || !data.success){
+    setDebugBox(`HTTP ${res.status}\nSite Content Action: ${action}\nPayload: ${JSON.stringify(payload)}\nResponse: ${raw}`);
+    feed("ERROR site-content " + action + " -> HTTP " + res.status);
+    throw new Error(data.error || ("HTTP " + res.status));
+  }
+  return data;
+}
+
+function defaultSiteContent(){
+  return {
+    support_email: "support@velociglobal.pro",
+    testimonials: [
+      { name:"Daniel K.", role:"Client", text:"Veloci Global Markets feels premium. The portal is fast, clean and secure.", stars:5 },
+      { name:"Amina S.", role:"Investor", text:"The live markets and ticker give it a real terminal feel. Smooth experience.", stars:5 },
+      { name:"Michael R.", role:"Trader", text:"Verification and session PIN made me trust the security. Great UI and flow.", stars:5 }
+    ]
+  };
+}
+
+function normalizeTestimonialsAdmin(list){
+  const raw = Array.isArray(list) ? list : [];
+  const cleaned = raw.map((item, index) => ({
+    name: String(item?.name || `Client ${index + 1}`).trim() || `Client ${index + 1}`,
+    role: String(item?.role || "Client").trim() || "Client",
+    text: String(item?.text || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(item?.stars || 5) || 5))
+  })).filter(item => item.text);
+
+  return cleaned.length ? cleaned : defaultSiteContent().testimonials;
+}
+
+function renderSiteContentEditor(){
+  const status = document.getElementById("siteContentStatus");
+  const emailInput = document.getElementById("homepageSupportEmail");
+  const wrap = document.getElementById("testimonialAdminList");
+  if(!status || !emailInput || !wrap) return;
+
+  const content = CACHE.site_content || defaultSiteContent();
+  emailInput.value = String(content.support_email || "").trim();
+  const items = normalizeTestimonialsAdmin(content.testimonials);
+
+  wrap.innerHTML = items.map((item, idx) => `
+    <div class="card" style="padding:12px;border-radius:18px;background:rgba(2,6,23,.32);border:1px solid rgba(255,255,255,.10);">
+      <div class="inline" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="chip">Testimonial ${idx + 1}</div>
+        <button class="btnErr" onclick="removeTestimonialItem(${idx})">Remove</button>
+      </div>
+
+      <div class="inline">
+        <input class="grow testimonial-name" data-idx="${idx}" placeholder="Client Name" value="${esc(item.name)}">
+        <input class="w200 testimonial-role" data-idx="${idx}" placeholder="Role" value="${esc(item.role)}">
+        <input class="w140 testimonial-stars" data-idx="${idx}" type="number" min="1" max="5" step="1" placeholder="Stars" value="${Number(item.stars || 5)}">
+      </div>
+
+      <div style="height:10px;"></div>
+      <textarea class="testimonial-text" data-idx="${idx}" placeholder="Testimonial text">${esc(item.text)}</textarea>
+    </div>
+  `).join("");
+
+  status.textContent = `Loaded support email + ${items.length} testimonial(s) ✅`;
+}
+
+function collectSiteContentFromForm(){
+  const email = String(document.getElementById("homepageSupportEmail")?.value || "").trim();
+  const names = Array.from(document.querySelectorAll(".testimonial-name"));
+  const roles = Array.from(document.querySelectorAll(".testimonial-role"));
+  const texts = Array.from(document.querySelectorAll(".testimonial-text"));
+  const stars = Array.from(document.querySelectorAll(".testimonial-stars"));
+
+  const testimonials = names.map((input, idx) => ({
+    name: String(input.value || "").trim(),
+    role: String(roles[idx]?.value || "").trim(),
+    text: String(texts[idx]?.value || "").trim(),
+    stars: Math.max(1, Math.min(5, Number(stars[idx]?.value || 5) || 5))
+  })).filter(item => item.text);
+
+  return {
+    support_email: email,
+    testimonials: normalizeTestimonialsAdmin(testimonials)
+  };
+}
+
+function addTestimonialItem(){
+  const current = CACHE.site_content || defaultSiteContent();
+  const next = Array.isArray(current.testimonials) ? current.testimonials.slice() : [];
+  next.push({ name:"", role:"Client", text:"", stars:5 });
+  CACHE.site_content = {
+    support_email: current.support_email || defaultSiteContent().support_email,
+    testimonials: next
+  };
+  renderSiteContentEditor();
+}
+
+function removeTestimonialItem(idx){
+  const current = CACHE.site_content || defaultSiteContent();
+  const next = (Array.isArray(current.testimonials) ? current.testimonials.slice() : []);
+  next.splice(idx, 1);
+  CACHE.site_content = {
+    support_email: current.support_email || defaultSiteContent().support_email,
+    testimonials: next.length ? next : defaultSiteContent().testimonials
+  };
+  renderSiteContentEditor();
+}
+
+async function loadSiteContentAdmin(){
+  const status = document.getElementById("siteContentStatus");
+  if(status) status.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const res = await siteContentApiCall("get", { key:"homepage" }, true);
+  CACHE.site_content = {
+    support_email: String(res.data?.support_email || defaultSiteContent().support_email).trim() || defaultSiteContent().support_email,
+    testimonials: normalizeTestimonialsAdmin(res.data?.testimonials)
+  };
+
+  renderSiteContentEditor();
+  feed("site-content loaded");
+}
+
+async function saveSiteContentAdmin(){
+  const data = collectSiteContentFromForm();
+  if(!data.support_email){
+    modalShow("Missing Support Email", "Enter the homepage support email before saving.");
+    return;
+  }
+
+  const res = await siteContentApiCall("save", { key:"homepage", ...data }, true);
+  CACHE.site_content = {
+    support_email: String(res.data?.support_email || data.support_email).trim(),
+    testimonials: normalizeTestimonialsAdmin(res.data?.testimonials || data.testimonials)
+  };
+
+  renderSiteContentEditor();
+  feed("site-content saved");
+  modalShow("Homepage Content Saved", "Support email and testimonials updated successfully.");
+}
+
+async function refreshSupportView(){
+  await loadSiteContentAdmin();
+  await loadSupport();
+}
+
 async function safeLoad(fn){
   try{
     await fn();
@@ -1770,7 +1966,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
-  if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
+  if(ACTIVE_VIEW === "support"){ renderSiteContentEditor(); renderSupport(CACHE.support); }
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
   if(ACTIVE_VIEW === "kyc") renderKyc(CACHE.kyc);
@@ -1806,6 +2002,7 @@ function refreshAll(){
   safeLoad(loadPlans);
   safeLoad(loadWallets);
   safeLoad(loadWalletLinks);
+  safeLoad(loadSiteContentAdmin);
   safeLoad(loadSupport);
   safeLoad(loadDeposits);
   safeLoad(loadWithdrawals);
@@ -3189,6 +3386,19 @@ async function deleteTrade(id){
 
 
 attachScrollHandlers();
+</script>
+
+
+<!-- Smartsupp Live Chat script -->
+<script type="text/javascript">
+var _smartsupp = _smartsupp || {};
+_smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+window.smartsupp||(function(d) {
+ var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+ c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+})(document);
 </script>
 
 </body>
