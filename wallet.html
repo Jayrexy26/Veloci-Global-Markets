@@ -515,7 +515,7 @@
 
     /* LINK FAB */
     .linkFab{
-      position: fixed; right: 16px; top: 28px; z-index: 70;
+      position: fixed; right: 16px; top: 20px; z-index: 70;
       display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
       border-radius:999px; padding:10px 12px;
       border: 1px solid rgba(255,255,255,.14);
@@ -523,7 +523,7 @@
       backdrop-filter: blur(10px);
       box-shadow: 0 26px 90px rgba(0,0,0,.55);
     }
-    @media (max-width: 860px){ .linkFab{ top:auto; bottom:168px; right:14px; } }
+    @media (max-width: 860px){ .linkFab{ top:20px; bottom:auto; right:14px; } }
     .bolt{
       width:34px;height:34px;border-radius:14px;display:grid;place-items:center;
       border: 1px solid rgba(255,255,255,.14);
@@ -619,7 +619,7 @@ _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
 window.smartsupp||(function(d) {
  var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
  s=d.getElementsByTagName('script')[0];c=d.createElement('script');
- c.type='text/javascript';c.charset='utf-8';c.async=true;
+ c.type='text/javascript';c.charset='utf-8';c.async=false; /* instant load */
  c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
 })(document);
 </script>
@@ -633,28 +633,21 @@ window.smartsupp||(function(d) {
     return window.currentUserEmail || "";
   }
 
-  function identifyAndOpen(){
-    if(!window.smartsupp) return false;
+  function identify(){
+    if(!window.smartsupp) return;
     const name = getName();
     const email = getEmail();
     if(name) smartsupp('name', name);
     if(email) smartsupp('email', email);
-    smartsupp('chat:open');
-    return true;
   }
 
   let tries = 0;
   const t = setInterval(()=>{
     tries++;
-    const ready = identifyAndOpen();
-    if(ready || tries > 30) clearInterval(t);
-  },200);
+    identify();
+    if(window.smartsupp || tries > 30) clearInterval(t);
+  },1000);
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', identifyAndOpen, { once: true });
-  } else {
-    identifyAndOpen();
-  }
 })();
 </script>
 
@@ -675,8 +668,6 @@ window.smartsupp||(function(d) {
       bottomGap = Math.max(104, fabHeight + 38);
       rightGap = 'auto';
       leftGap = '14px';
-    } else if (linkRect) {
-      bottomGap = Math.max(24, Math.ceil(window.innerHeight - linkRect.top + 28));
     }
 
     document.documentElement.style.setProperty('--smartsupp-safe-bottom', bottomGap + 'px');
