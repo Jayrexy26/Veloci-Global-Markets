@@ -1135,6 +1135,7 @@ window.smartsupp||(function(d) {
   <a class="sideItem" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
   <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
   <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
+  <a class="sideItem" href="trade-history.html"><div class="i">📈</div><div>Trade History<small>View your trades</small></div></a>
   <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
   <button class="sideLogout" onclick="logout()">Logout</button>
 </div>
@@ -1515,11 +1516,46 @@ function mountLogoSelect(rootId, options, initialValue, onPick){
 /* ============================================================
   ✅ AVATAR + NAME (same pattern as dashboard)
 ============================================================ */
+// ===== FIXED AVATAR PATH (MATCH PROFILE) =====
+function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+function looksLikeGoogleAvatar(u){
+  const s=String(u||"").toLowerCase();
+  return s.includes("googleusercontent.com") || s.includes("lh3.googleusercontent.com");
+}
+function extractPathFromPublicUrl(u){
+  try{
+    const m = String(u||"").match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+    if(!m || !m[1]) return "";
+    return decodeURIComponent(m[1].split("?")[0].split("#")[0]);
+  }catch(e){ return ""; }
+}
+function normalizeAvatarPath(userId, v){
+  let s=String(v||"").trim();
+  if(!s) return "";
+  if(isHttpUrl(s)){
+    const p = extractPathFromPublicUrl(s);
+    return p || "";
+  }
+  s=s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+  if(!s.includes("/") && userId) s=`${userId}/${s}`;
+  return s;
+}
+function publicAvatarUrl(path){
+  try{
+    if(!path) return "";
+    const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+    const url = data?.publicUrl || "";
+    return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+  }catch(e){ return ""; }
+}
+
 function setTopAvatar(avatarUrl){
   const fallback=document.getElementById("avatarFallback");
   const img=document.getElementById("avatarImgBtn");
   if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
+    img.src=avatarUrl;
     img.style.display="block";
     fallback.style.display="none";
   }else{
@@ -1531,7 +1567,7 @@ function setSideAvatar(avatarUrl){
   const fb=document.getElementById("sideAvatarFallback");
   const img=document.getElementById("sideAvatarImg");
   if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
+    img.src=avatarUrl;
     img.style.display="block";
     fb.style.display="none";
   }else{
