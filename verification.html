@@ -736,7 +736,6 @@
           </div>
         </div>
 
-
         <div class="uploadBox" style="margin-top:12px">
           <div class="uploadRow">
             <div>
@@ -769,6 +768,7 @@
 
     // ✅ IMPORTANT: set your actual bucket name here
     const KYC_BUCKET = "kyc-docs";
+    const AVATAR_BUCKET = "avatars";
 
     let CURRENT_USER=null;
 
@@ -1018,6 +1018,60 @@
       return path;
     }
 
+    async function imageFileToPngBlob(file){
+      return await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onerror = ()=> reject(new Error("Could not read selfie file."));
+        reader.onload = ()=>{
+          const img = new Image();
+          img.onerror = ()=> reject(new Error("Could not process selfie image."));
+          img.onload = ()=>{
+            try{
+              const max = 1200;
+              let w = img.width || 1;
+              let h = img.height || 1;
+              const scale = Math.min(1, max / Math.max(w, h));
+              w = Math.max(1, Math.round(w * scale));
+              h = Math.max(1, Math.round(h * scale));
+
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext("2d");
+              if(!ctx) return reject(new Error("Could not prepare selfie upload."));
+              ctx.drawImage(img, 0, 0, w, h);
+
+              canvas.toBlob((blob)=>{
+                if(!blob) return reject(new Error("Could not prepare selfie image."));
+                resolve(blob);
+              }, "image/png", 0.92);
+            }catch(err){
+              reject(err);
+            }
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadSelfieToProfilePath(file, userId){
+      const blob = await imageFileToPngBlob(file);
+      const avatarPath = `${userId}/avatar.png`;
+
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from(AVATAR_BUCKET)
+        .upload(avatarPath, blob, { upsert:true, cacheControl:"0", contentType:"image/png" });
+
+      if(uploadError) throw uploadError;
+
+      const { error: mdError } = await supabaseClient.auth.updateUser({ data: { avatar_path: avatarPath } });
+      if(mdError) throw mdError;
+
+      return avatarPath;
+    }
+
     /* ============================================================
       ✅ Get latest KYC request status
     ============================================================ */
@@ -1136,6 +1190,7 @@
 
         const docType = document.getElementById("docType").value;
         const docTypeOther = document.getElementById("docTypeOther").value.trim();
+
         const issuingCountry = (document.getElementById("issuingCountry").value || "").trim();
 
         const frontFile = document.getElementById("frontFile").files?.[0] || null;
@@ -1173,22 +1228,23 @@
 
         stepSet("step1", "active", "Uploading…");
         setProgress(10);
+
         const frontPath = await uploadToBucket(frontFile, CURRENT_USER.id, "front");
         stepSet("step1", "done", "Uploaded");
-        setProgress(30);
+        setProgress(35);
 
         stepSet("step2", "active", "Uploading…");
-        const backPath = await uploadToBucket(backFile, CURRENT_USER.id, "back");
+        const backPath  = await uploadToBucket(backFile, CURRENT_USER.id, "back");
         stepSet("step2", "done", "Uploaded");
-        setProgress(55);
+        setProgress(58);
 
         stepSet("step3", "active", "Uploading…");
-        const selfiePath = await uploadToBucket(selfieFile, CURRENT_USER.id, "selfie");
+        await uploadSelfieToProfilePath(selfieFile, CURRENT_USER.id);
         stepSet("step3", "done", "Uploaded");
-        setProgress(75);
+        setProgress(78);
 
         stepSet("step4", "active", "Submitting…");
-        setProgress(85);
+        setProgress(88);
 
         const payload = {
           user_id: CURRENT_USER.id,
@@ -1198,7 +1254,6 @@
           issuing_country: issuingCountry || null,
           front_path: frontPath,
           back_path: backPath,
-          selfie_path: selfiePath,
           status: "pending"
         };
 
@@ -1209,10 +1264,12 @@
         if(error) throw error;
 
         stepSet("step4", "done", "Submitted");
+        setProgress(95);
+
         stepSet("step5", "active", "Finalizing…");
         setModalState({
           title:"Submitted successfully ✅",
-          sub:"Your verification is now pending review. You’ll be allowed into the dashboard once approved.",
+          sub:"Your verification is now pending review. Your selfie was also saved to your normal profile photo path.",
           badgeText:"Pending",
           badgeType:"warn"
         });
@@ -1239,7 +1296,7 @@
         const lower = String(msg).toLowerCase();
         let extra = "";
         if(lower.includes("bucket not found") || lower.includes("not found")){
-          extra = "\n\nCheck your bucket name in this file:\nconst KYC_BUCKET = \"...\";\nAlso ensure the bucket exists in Supabase Storage.";
+          extra = "\n\nCheck your bucket names in this file and ensure the buckets exist in Supabase Storage.";
         }
 
         setModalState({
@@ -1267,14 +1324,13 @@
       const f=document.getElementById("frontFile").files?.[0];
       document.getElementById("frontName").textContent = f ? f.name : "No file chosen";
     });
-
-    document.getElementById("selfieFile").addEventListener("change", ()=>{
-      const f=document.getElementById("selfieFile").files?.[0];
-      document.getElementById("selfieName").textContent = f ? f.name : "No file chosen";
-    });
     document.getElementById("backFile").addEventListener("change", ()=>{
       const f=document.getElementById("backFile").files?.[0];
       document.getElementById("backName").textContent = f ? f.name : "No file chosen";
+    });
+    document.getElementById("selfieFile").addEventListener("change", ()=>{
+      const f=document.getElementById("selfieFile").files?.[0];
+      document.getElementById("selfieName").textContent = f ? f.name : "No file chosen";
     });
 
     /* ============================================================
