@@ -635,12 +635,16 @@
           <div id="step2r" class="stepRight">Waiting</div>
         </div>
         <div id="step3" class="step">
-          <div class="stepLeft"><div class="dot"></div><div class="stepText">Submitting request</div></div>
+          <div class="stepLeft"><div class="dot"></div><div class="stepText">Uploading selfie</div></div>
           <div id="step3r" class="stepRight">Waiting</div>
         </div>
         <div id="step4" class="step">
-          <div class="stepLeft"><div class="dot"></div><div class="stepText">Done</div></div>
+          <div class="stepLeft"><div class="dot"></div><div class="stepText">Submitting request</div></div>
           <div id="step4r" class="stepRight">Waiting</div>
+        </div>
+        <div id="step5" class="step">
+          <div class="stepLeft"><div class="dot"></div><div class="stepText">Done</div></div>
+          <div id="step5r" class="stepRight">Waiting</div>
         </div>
       </div>
 
@@ -730,20 +734,21 @@
             </div>
             <div class="hint">If your ID has no back, upload the same file again.</div>
           </div>
-        
+        </div>
+
+
         <div class="uploadBox" style="margin-top:12px">
           <div class="uploadRow">
             <div>
-              <div style="font-weight:1000">Selfie (Hold your ID)</div>
+              <div style="font-weight:1000">Selfie (image)</div>
               <div id="selfieName" class="fileName">No file chosen</div>
             </div>
             <div>
               <input id="selfieFile" type="file" accept="image/*" />
             </div>
           </div>
-          <div class="hint">Upload a clear selfie of yourself holding your ID.</div>
+          <div class="hint">Upload a clear selfie of yourself.</div>
         </div>
-
 
         <div class="actions">
           <button class="btn btnPrimary" id="submitBtn" onclick="submitKyc()">Submit Verification</button>
@@ -986,6 +991,7 @@
       stepSet("step2", "", "Waiting");
       stepSet("step3", "", "Waiting");
       stepSet("step4", "", "Waiting");
+      stepSet("step5", "", "Waiting");
       setProgress(0);
       modalHideDoneButtons();
       setModalState({
@@ -1052,8 +1058,9 @@
       setProgress(70);
       stepSet("step1", "done", "Uploaded");
       stepSet("step2", "done", "Uploaded");
-      stepSet("step3", "done", "Submitted");
-      stepSet("step4", "active", "Reviewing");
+      stepSet("step3", "done", "Uploaded");
+      stepSet("step4", "done", "Submitted");
+      stepSet("step5", "active", "Reviewing");
 
       modalShowDoneButtons();
       document.getElementById("modalCloseBtn").style.display="none";
@@ -1076,7 +1083,8 @@
       stepSet("step1", "done", "Done");
       stepSet("step2", "done", "Done");
       stepSet("step3", "done", "Done");
-      stepSet("step4", "done", "Approved");
+      stepSet("step4", "done", "Done");
+      stepSet("step5", "done", "Approved");
 
       modalShowDoneButtons();
     }
@@ -1128,13 +1136,12 @@
 
         const docType = document.getElementById("docType").value;
         const docTypeOther = document.getElementById("docTypeOther").value.trim();
-
         const issuingCountry = (document.getElementById("issuingCountry").value || "").trim();
 
         const frontFile = document.getElementById("frontFile").files?.[0] || null;
         const backFile  = document.getElementById("backFile").files?.[0] || null;
+        const selfieFile = document.getElementById("selfieFile").files?.[0] || null;
 
-        /* ✅ CHANGE: missing info must show popup modal BEFORE submitting */
         if(!docType){
           popShow("Missing Information", "Please select an ID type.", "warn");
           return;
@@ -1155,13 +1162,8 @@
           popShow("Missing Information", "Please upload the BACK of your ID.", "warn");
           return;
         }
-
-        const selfieFile = document.getElementById("selfieFile").files?.[0] || null;
         if(!selfieFile){
           popShow("Missing Information", "Please upload a selfie of yourself.", "warn");
-          return;
-        }
-          popShow("Missing Information", "Please upload the BACK of your ID.", "warn");
           return;
         }
 
@@ -1171,22 +1173,23 @@
 
         stepSet("step1", "active", "Uploading…");
         setProgress(10);
-
         const frontPath = await uploadToBucket(frontFile, CURRENT_USER.id, "front");
         stepSet("step1", "done", "Uploaded");
-        setProgress(40);
+        setProgress(30);
 
         stepSet("step2", "active", "Uploading…");
-        const backPath  = await uploadToBucket(backFile,  CURRENT_USER.id, "back");
-
-        const selfiePath = await uploadToBucket(selfieFile, CURRENT_USER.id, "selfie");
+        const backPath = await uploadToBucket(backFile, CURRENT_USER.id, "back");
         stepSet("step2", "done", "Uploaded");
-        setProgress(65);
+        setProgress(55);
 
-        stepSet("step3", "active", "Submitting…");
-        setProgress(78);
+        stepSet("step3", "active", "Uploading…");
+        const selfiePath = await uploadToBucket(selfieFile, CURRENT_USER.id, "selfie");
+        stepSet("step3", "done", "Uploaded");
+        setProgress(75);
 
-        /* ✅ IMPORTANT: user_id must be CURRENT_USER.id (uuid) for RLS */
+        stepSet("step4", "active", "Submitting…");
+        setProgress(85);
+
         const payload = {
           user_id: CURRENT_USER.id,
           user_email: CURRENT_USER.email,
@@ -1205,10 +1208,8 @@
 
         if(error) throw error;
 
-        stepSet("step3", "done", "Submitted");
-        setProgress(92);
-
-        stepSet("step4", "active", "Finalizing…");
+        stepSet("step4", "done", "Submitted");
+        stepSet("step5", "active", "Finalizing…");
         setModalState({
           title:"Submitted successfully ✅",
           sub:"Your verification is now pending review. You’ll be allowed into the dashboard once approved.",
@@ -1217,7 +1218,7 @@
         });
 
         await new Promise(r=>setTimeout(r, 900));
-        stepSet("step4", "done", "Pending review");
+        stepSet("step5", "done", "Pending review");
         setProgress(100);
 
         modalShowDoneButtons();
@@ -1230,12 +1231,11 @@
         stepSet("step1", "error", "Error");
         stepSet("step2", "error", "Error");
         stepSet("step3", "error", "Error");
-        stepSet("step4", "error", "Failed");
+        stepSet("step4", "error", "Error");
+        stepSet("step5", "error", "Failed");
         setProgress(25);
 
         const msg = (e?.message || String(e) || "Unknown error");
-
-        // ✅ Helpful bucket hint if it’s a bucket issue (without changing anything else)
         const lower = String(msg).toLowerCase();
         let extra = "";
         if(lower.includes("bucket not found") || lower.includes("not found")){
@@ -1267,13 +1267,11 @@
       const f=document.getElementById("frontFile").files?.[0];
       document.getElementById("frontName").textContent = f ? f.name : "No file chosen";
     });
-    
+
     document.getElementById("selfieFile").addEventListener("change", ()=>{
       const f=document.getElementById("selfieFile").files?.[0];
       document.getElementById("selfieName").textContent = f ? f.name : "No file chosen";
     });
-
-
     document.getElementById("backFile").addEventListener("change", ()=>{
       const f=document.getElementById("backFile").files?.[0];
       document.getElementById("backName").textContent = f ? f.name : "No file chosen";
@@ -1357,5 +1355,18 @@
       }
     })();
   </script>
+
+  <!-- Smartsupp Live Chat script -->
+  <script type="text/javascript">
+  var _smartsupp = _smartsupp || {};
+  _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+  window.smartsupp||(function(d) {
+   var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+   s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+   c.type='text/javascript';c.charset='utf-8';c.async=true;
+   c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+  })(document);
+  </script>
+
 </body>
 </html>
