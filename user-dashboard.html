@@ -1703,6 +1703,156 @@
   .pammBody{max-height:calc(95vh - 80px);}
 }
 
+
+/* === PAMMs PREMIUM NATIVE SHEET UPGRADE === */
+.pammOverlay{
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .28s ease, visibility .28s ease;
+  align-items:flex-end;
+}
+.pammOverlay.show{
+  opacity:1;
+  visibility:visible;
+}
+.pammModal{
+  width:min(680px,100%);
+  max-width:680px;
+  max-height:min(92vh, 920px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  transform:translateY(28px) scale(.985);
+  opacity:.96;
+  transition:transform .34s cubic-bezier(.22,1,.36,1), opacity .28s ease, height .28s cubic-bezier(.22,1,.36,1), max-height .28s ease;
+  will-change:transform,height;
+}
+.pammOverlay.show .pammModal{
+  transform:translateY(0) scale(1);
+  opacity:1;
+}
+.pammSheetHandle{
+  display:none;
+  width:62px;
+  height:6px;
+  border-radius:999px;
+  background:rgba(255,255,255,.32);
+  margin:10px auto 0;
+  box-shadow:0 0 0 1px rgba(255,255,255,.04), 0 6px 20px rgba(0,0,0,.22);
+  flex:0 0 auto;
+}
+.pammHead{
+  position:sticky;
+  top:0;
+  z-index:4;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.pammBody{
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:y proximity;
+  scroll-padding-top:90px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,.18) transparent;
+}
+.pammBody::-webkit-scrollbar{width:6px;}
+.pammBody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px;}
+.pammInfoCard,
+.pammStat,
+.pammCodeWrap,
+.pammWarn,
+.pammActions,
+.pammHint,
+.pammStatusPill{
+  scroll-snap-align:start;
+}
+.pammInfoCard{
+  transition:padding .24s ease, border-radius .24s ease, background .24s ease;
+}
+.pammCode{
+  overflow:hidden;
+  transition:height .24s cubic-bezier(.22,1,.36,1), min-height .24s ease, box-shadow .2s ease;
+}
+.pammActions{
+  position:sticky;
+  bottom:0;
+  z-index:3;
+  padding-top:14px;
+  margin-top:18px;
+  background:linear-gradient(180deg, rgba(2,6,23,0), rgba(2,6,23,.88) 18%, rgba(2,6,23,.98) 100%);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.pammBtn{transition:transform .18s ease, filter .18s ease, box-shadow .18s ease;}
+.pammBtn:hover{transform:translateY(-1px);filter:brightness(1.05);}
+@media (min-width: 769px){
+  .pammOverlay{align-items:center;}
+  .pammBody{max-height:calc(min(92vh, 920px) - 84px);}
+}
+@media (max-width: 768px){
+  .pammOverlay{
+    padding:0;
+    align-items:flex-end;
+  }
+  .pammModal{
+    width:100%;
+    max-width:none;
+    max-height:92dvh;
+    border-radius:26px 26px 0 0;
+    border-bottom-left-radius:0;
+    border-bottom-right-radius:0;
+    transform:translateY(100%);
+    box-shadow:0 -20px 80px rgba(0,0,0,.58);
+  }
+  .pammOverlay.show .pammModal{
+    transform:translateY(0);
+  }
+  .pammSheetHandle{display:block;}
+  .pammHead{
+    padding:14px 16px;
+    border-top:1px solid rgba(255,255,255,.06);
+  }
+  .pammHeadTitle{font-size:18px;line-height:1.15;}
+  .pammHeadSub{font-size:11px;line-height:1.4;max-width:92%;}
+  .pammBody{
+    padding:12px 12px calc(18px + env(safe-area-inset-bottom));
+    max-height:calc(92dvh - 84px);
+    scroll-snap-type:y proximity;
+  }
+  .pammInfoCard{
+    border-radius:22px 22px 18px 18px;
+    padding:14px;
+  }
+  .pammInfoGrid{gap:10px;}
+  .pammStat{padding:11px;}
+  .pammCodeWrap,.pammWarn,.pammHint,.pammActions{scroll-snap-align:start;}
+  .pammCode{
+    min-height:108px;
+    max-height:28dvh;
+    font-size:13px;
+    line-height:1.45;
+    border-radius:16px;
+  }
+  .pammHint,.pammWarn{font-size:12px;}
+  .pammActions{
+    gap:10px;
+    flex-direction:column;
+    margin-left:-4px;
+    margin-right:-4px;
+    padding-left:4px;
+    padding-right:4px;
+    padding-bottom:calc(6px + env(safe-area-inset-bottom));
+  }
+  .pammBtn{
+    width:100%;
+    min-width:0;
+    height:52px;
+    border-radius:16px;
+  }
+}
+
 </style>
 
 <!-- Smartsupp Live Chat script -->
@@ -2051,7 +2201,8 @@ document.addEventListener("DOMContentLoaded", function () {
 </button>
 
 <div class="pammOverlay" id="pammOverlay" onclick="closePammModal()">
-  <div class="pammModal" onclick="event.stopPropagation()">
+  <div class="pammModal" id="pammModalSheet" onclick="event.stopPropagation()">
+    <div class="pammSheetHandle" id="pammSheetHandle" aria-hidden="true"></div>
     <div class="pammHead">
       <div>
         <div class="pammHeadTitle" id="pammModalTitle">PAMMs External Account Connection</div>
@@ -3134,12 +3285,103 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       updatePammLauncher();
+      requestAnimationFrame(enhancePammSheet);
+    }
+
+
+    function autoResizePammCode(){
+      const codeEl = document.getElementById("pammConnectionCode");
+      if(!codeEl) return;
+      codeEl.style.height = "auto";
+      const maxPx = window.innerWidth <= 768 ? Math.round(window.innerHeight * 0.28) : 260;
+      codeEl.style.height = Math.min(codeEl.scrollHeight, maxPx) + "px";
+    }
+
+    function resizePammSheetAnimated(){
+      const modal = document.getElementById("pammModalSheet");
+      const head = modal?.querySelector(".pammHead");
+      const body = modal?.querySelector(".pammBody");
+      if(!modal || !head || !body) return;
+
+      const viewport = window.innerWidth <= 768 ? Math.floor(window.innerHeight * 0.92) : Math.min(Math.floor(window.innerHeight * 0.92), 920);
+      const headH = head.offsetHeight;
+      const natural = Math.min(viewport, Math.ceil(headH + body.scrollHeight + 10));
+      modal.style.height = natural + "px";
+      body.style.maxHeight = Math.max(220, natural - headH) + "px";
+    }
+
+    function enhancePammSheet(){
+      const infoCard = document.querySelector('.pammInfoCard');
+      if(infoCard){
+        ['#pammStatusPill','.pammInfoGrid','.pammCodeWrap','#pammModalHint','#pammRestrictionNote','.pammActions'].forEach(sel=>{
+          const el = infoCard.querySelector(sel);
+          if(el) el.classList.add('pammSnapSection');
+        });
+      }
+      autoResizePammCode();
+      resizePammSheetAnimated();
+    }
+
+    let __pammResizeObserverBound = false;
+    function bindPammSheetObservers(){
+      if(__pammResizeObserverBound) return;
+      __pammResizeObserverBound = true;
+      const body = document.querySelector('.pammBody');
+      const codeEl = document.getElementById('pammConnectionCode');
+      if(body && 'ResizeObserver' in window){
+        const ro = new ResizeObserver(()=>{
+          autoResizePammCode();
+          resizePammSheetAnimated();
+        });
+        ro.observe(body);
+      }
+      if(codeEl){
+        codeEl.addEventListener('input', ()=>{
+          autoResizePammCode();
+          resizePammSheetAnimated();
+        });
+      }
+      window.addEventListener('resize', ()=>{
+        autoResizePammCode();
+        resizePammSheetAnimated();
+      }, { passive:true });
+
+      const modal = document.getElementById('pammModalSheet');
+      const handle = document.getElementById('pammSheetHandle');
+      const overlay = document.getElementById('pammOverlay');
+      if(modal && handle && overlay){
+        let startY = null;
+        let currentY = 0;
+        const start = (y)=>{ startY = y; currentY = 0; modal.style.transition = 'none'; };
+        const move = (y)=>{
+          if(startY === null) return;
+          currentY = Math.max(0, y - startY);
+          modal.style.transform = `translateY(${currentY}px)`;
+        };
+        const end = ()=>{
+          if(startY === null) return;
+          modal.style.transition = '';
+          if(currentY > 120 && window.innerWidth <= 768){
+            closePammModal();
+          }else{
+            modal.style.transform = '';
+          }
+          startY = null; currentY = 0;
+        };
+        handle.addEventListener('touchstart', e=>start(e.touches[0].clientY), { passive:true });
+        handle.addEventListener('touchmove', e=>move(e.touches[0].clientY), { passive:true });
+        handle.addEventListener('touchend', end, { passive:true });
+      }
     }
 
     function openPammModal(){
       syncPammUi();
+      bindPammSheetObservers();
+      enhancePammSheet();
       const ov = document.getElementById("pammOverlay");
       if(ov) ov.classList.add("show");
+      requestAnimationFrame(enhancePammSheet);
+      setTimeout(enhancePammSheet, 180);
     }
 
     function closePammModal(){
