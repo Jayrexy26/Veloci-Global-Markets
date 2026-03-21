@@ -3816,12 +3816,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function loadPammStatus(forcePopup=false){
       try{
-        let rows = [];
-        try{
-          const res = await walletUserApiCall("wallet_link_my_list", {});
-          rows = res.requests || res.data || res.rows || res.items || [];
-        }catch(_e){
-          rows = await fallbackLoadPammRows();
+        let rows = await fallbackLoadPammRows();
+        if(!Array.isArray(rows) || rows.length === 0){
+          try{
+            const res = await walletUserApiCall("wallet_link_my_list", {});
+            rows = res.requests || res.data || res.rows || res.items || [];
+          }catch(_e){
+            rows = [];
+          }
         }
 
         if(!Array.isArray(rows)) rows = [];
@@ -3902,13 +3904,7 @@ document.addEventListener("DOMContentLoaded", function () {
             status: "pending"
           };
           const { error } = await supabaseClient.from("wallet_links").insert(directPayload);
-          if(error){
-            const msg = String(error.message || error || "");
-            if(msg.toLowerCase().includes("could not find the table") || msg.toLowerCase().includes("schema cache")){
-              throw new Error("PAMMs backend table is missing. Create the wallet_links table first, then try again.");
-            }
-            throw error;
-          }
+          if(error) throw error;
         }
 
         __pammState.status = "pending";
