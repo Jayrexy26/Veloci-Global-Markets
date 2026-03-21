@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>VGM | PAMMs Connection</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#050a18;
+  --stroke:rgba(255,255,255,.12);
+  --text:#eaf0ff;
+  --muted:rgba(234,240,255,.68);
+  --blue:#5b6cff;
+  --purple:#7c4dff;
+  --cyan:#38bdf8;
+  --pink:#ff4da6;
+  --ok:#22c55e;
+  --warn:#f87171;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow-x:hidden}
+body{
+  min-height:100dvh;
+  background:
+    radial-gradient(900px 520px at 10% 10%, rgba(83,113,255,.30), transparent 55%),
+    radial-gradient(900px 520px at 90% 20%, rgba(52,211,153,.18), transparent 55%),
+    radial-gradient(900px 520px at 40% 92%, rgba(255,77,166,.14), transparent 60%),
+    linear-gradient(180deg, rgba(5,10,24,1), rgba(2,6,23,1));
+}
+.wrap{
+  width:min(760px,100%);
+  margin:0 auto;
+  min-height:100dvh;
+  padding:calc(12px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
+}
+.sheet{
+  min-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  border-radius:24px;
+  border:1px solid rgba(255,255,255,.14);
+  overflow:hidden;
+  background:
+    radial-gradient(800px 260px at 0% 0%, rgba(56,189,248,.14), transparent 55%),
+    radial-gradient(800px 260px at 100% 0%, rgba(255,77,166,.12), transparent 58%),
+    linear-gradient(180deg, rgba(4,8,20,.96), rgba(2,6,23,.98));
+  box-shadow:0 30px 90px rgba(0,0,0,.60);
+  display:flex;
+  flex-direction:column;
+}
+.handle{
+  width:54px;height:5px;border-radius:999px;background:rgba(255,255,255,.30);
+  margin:10px auto 2px;flex:0 0 auto;
+}
+.head{
+  position:sticky;top:0;z-index:5;
+  padding:12px 14px 14px;
+  background:linear-gradient(90deg, rgba(91,108,255,.82), rgba(124,77,255,.92), rgba(255,77,166,.82));
+  border-bottom:1px solid rgba(255,255,255,.10);
+}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.backBtn,.closeBtn{
+  width:44px;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.18);
+  background:rgba(0,0,0,.20);color:#fff;font-weight:1000;cursor:pointer;
+}
+.title{font-weight:1000;font-size:18px;line-height:1.15}
+.sub{margin-top:4px;font-size:11px;line-height:1.35;font-weight:900;color:rgba(255,255,255,.92)}
+.body{
+  flex:1 1 auto;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:12px 12px calc(20px + env(safe-area-inset-bottom));
+  scroll-snap-type:y proximity;
+}
+.card,.stat,.warn,.actions,.codeWrap,.hint{scroll-snap-align:start}
+.card{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.25);
+}
+.statusPill{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
+  border:1px solid rgba(56,189,248,.26);background:rgba(56,189,248,.10);color:#dff7ff;
+  font-size:12px;font-weight:1000;margin-bottom:12px;
+}
+.statusPill.approved{border-color:rgba(34,197,94,.28);background:rgba(34,197,94,.10);color:#cbffe0}
+.statusPill.rejected{border-color:rgba(248,113,113,.30);background:rgba(248,113,113,.10);color:#ffd7d7}
+.grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:2px}
+.stat{
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.22);
+  border-radius:16px;
+  padding:12px;
+}
+.k{font-size:11px;font-weight:1000;color:rgba(234,240,255,.60);text-transform:uppercase;letter-spacing:.4px}
+.v{margin-top:8px;font-size:14px;font-weight:1000;word-break:break-word;overflow-wrap:anywhere}
+.codeLabel{font-size:12px;font-weight:1000;color:rgba(234,240,255,.78);margin:14px 0 8px}
+.code{
+  width:100%;min-height:96px;max-height:150px;border-radius:18px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(0,0,0,.34);color:#dff6ff;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:13px;font-weight:1000;letter-spacing:.3px;resize:none;outline:none;
+}
+.hint{margin-top:10px;color:var(--muted);font-size:11px;line-height:1.45;font-weight:900}
+.warn{
+  margin-top:14px;border:1px solid rgba(248,113,113,.18);background:rgba(248,113,113,.08);color:#ffd9d9;
+  border-radius:18px;padding:13px 14px;font-size:11px;font-weight:900;line-height:1.5;
+}
+.actions{
+  position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:1fr;gap:10px;
+  margin-top:14px;padding:12px 0 calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(2,6,23,0), rgba(2,6,23,.88) 22%, rgba(2,6,23,.98) 100%);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.btn{
+  width:100%;height:50px;border-radius:16px;border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:1000;cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.25);
+}
+.primary{background:linear-gradient(180deg, rgba(56,189,248,1), rgba(91,108,255,1))}
+.secondary{background:rgba(255,255,255,.08)}
+.good{background:linear-gradient(180deg, rgba(34,197,94,1), rgba(16,185,129,1))}
+.msg{margin-top:10px;font-size:12px;font-weight:1000}
+.msg.ok{color:#cbffe0}.msg.err{color:#ffd7d7}
+@media (min-width:769px){
+  .wrap{padding:18px}
+  .sheet{min-height:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="head">
+      <div class="topbar">
+        <button class="backBtn" id="backBtn">←</button>
+        <div style="flex:1;min-width:0">
+          <div class="title">Connect to PAMMs</div>
+          <div class="sub">Generate connection strings, copy them, then submit for admin approval.</div>
+        </div>
+        <button class="closeBtn" id="closeBtn">✕</button>
+      </div>
+    </div>
+
+    <div class="body" id="bodyArea">
+      <div class="card">
+        <div id="statusPill" class="statusPill">Status: Ready</div>
+        <div style="font-size:14px;line-height:1.5;font-weight:900;color:rgba(234,240,255,.92)">
+          Your PAMMs bridge lets your approved external allocator manage allocations for profits and losses from the master account.
+        </div>
+
+        <div class="grid" style="margin-top:14px">
+          <div class="stat">
+            <div class="k">Connection Label</div>
+            <div class="v" id="connLabel">PAMMs External Allocator</div>
+          </div>
+          <div class="stat">
+            <div class="k">Last Admin Note</div>
+            <div class="v" id="adminNote">No admin note yet.</div>
+          </div>
+        </div>
+
+        <div class="codeWrap">
+          <div class="codeLabel">Connection Strings</div>
+          <textarea class="code" id="connCode" readonly></textarea>
+        </div>
+
+        <div class="hint">Copy the generated 10-character connection string and submit it for approval.</div>
+
+        <div class="warn">
+          Withdrawals cannot be done through the external connection to the PAMMs master account. Only you have this control. The external master account can only allocate profits and losses.
+        </div>
+
+        <div class="actions">
+          <button class="btn secondary" id="refreshBtn">Refresh Strings</button>
+          <button class="btn secondary" id="copyBtn">Copy Strings</button>
+          <button class="btn primary" id="connectBtn">Connect Account</button>
+        </div>
+        <div class="msg" id="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function rand10(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = '';
+    for(let i=0;i<10;i++) out += chars[Math.floor(Math.random()*chars.length)];
+    return out;
+  }
+  function buildStrings(){
+    const a = rand10();
+    const b = rand10();
+    return 'PAMM-' + a + '\nALLOC-' + b + '\nEXT-' + a.slice(0,5) + '-' + b.slice(5);
+  }
+  const connCode = document.getElementById('connCode');
+  const msg = document.getElementById('msg');
+  const statusPill = document.getElementById('statusPill');
+  const adminNote = document.getElementById('adminNote');
+
+  function setStatus(s, note){
+    statusPill.className = 'statusPill ' + (s || '');
+    statusPill.textContent = 'Status: ' + ((s || 'ready').charAt(0).toUpperCase() + (s || 'ready').slice(1));
+    if(note) adminNote.textContent = note;
+  }
+
+  connCode.value = buildStrings();
+  setStatus('pending', 'Awaiting admin approval after submission.');
+
+  document.getElementById('refreshBtn').onclick = function(){
+    connCode.value = buildStrings();
+    msg.className = 'msg ok';
+    msg.textContent = 'New connection strings generated.';
+  };
+  document.getElementById('copyBtn').onclick = async function(){
+    try{
+      await navigator.clipboard.writeText(connCode.value);
+      msg.className = 'msg ok';
+      msg.textContent = 'Connection strings copied.';
+    }catch(e){
+      msg.className = 'msg err';
+      msg.textContent = 'Copy failed on this device. Press and hold to copy manually.';
+    }
+  };
+  document.getElementById('connectBtn').onclick = function(){
+    setStatus('pending', 'Submitted for admin approval. You will see the final status after review.');
+    msg.className = 'msg ok';
+    msg.textContent = 'Connection request submitted.';
+  };
+  function goBack(){ history.length > 1 ? history.back() : location.href = 'user-dashboard.html'; }
+  document.getElementById('backBtn').onclick = goBack;
+  document.getElementById('closeBtn').onclick = goBack;
+})();
+</script>
+</body>
+</html>
