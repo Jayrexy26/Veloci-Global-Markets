@@ -797,22 +797,35 @@ window.closeSiteNotice = closeSiteNotice;
 }
 
 
-/* ===== CHAT BUTTON POSITION FIX (SAFE) ===== */
+/* ===== CHAT BUTTON ABOVE PROFILE NAV ===== */
 html body #smartsupp-widget-container,
 html body .smartsupp_widget_container,
 html body iframe[src*="smartsupp"],
-html body iframe[src*="smartsuppchat.com"]{
-  bottom: 120px !important;
-  top: auto !important;
+html body iframe[src*="smartsuppchat.com"],
+html body div[id*="smartsupp"],
+html body div[class*="smartsupp"]{
+  top:auto !important;
 }
 
 @media (max-width: 768px){
   html body #smartsupp-widget-container,
   html body .smartsupp_widget_container,
   html body iframe[src*="smartsupp"],
-  html body iframe[src*="smartsuppchat.com"]{
-    bottom: 130px !important;
-    top: auto !important;
+  html body iframe[src*="smartsuppchat.com"],
+  html body div[id*="smartsupp"],
+  html body div[class*="smartsupp"]{
+    bottom: 170px !important;
+  }
+}
+
+@media (min-width: 769px){
+  html body #smartsupp-widget-container,
+  html body .smartsupp_widget_container,
+  html body iframe[src*="smartsupp"],
+  html body iframe[src*="smartsuppchat.com"],
+  html body div[id*="smartsupp"],
+  html body div[class*="smartsupp"]{
+    bottom: 120px !important;
   }
 }
 
@@ -1832,23 +1845,28 @@ window.closeSiteNotice = closeSiteNotice;
 
 
 <script>
-/* ===== CHAT BUTTON POSITION FIX (SAFE) ===== */
+/* ===== CHAT BUTTON ABOVE PROFILE NAV ===== */
 (function () {
-  function moveSmartsupp() {
+  function moveChatUp() {
     try {
       var selectors = [
         '#smartsupp-widget-container',
         '.smartsupp_widget_container',
         'iframe[src*="smartsupp"]',
-        'iframe[src*="smartsuppchat.com"]'
+        'iframe[src*="smartsuppchat.com"]',
+        'div[id*="smartsupp"]',
+        'div[class*="smartsupp"]'
       ];
       var isMobile = window.innerWidth <= 768;
-      var bottomValue = isMobile ? '130px' : '120px';
+      var bottomValue = isMobile ? '170px' : '120px';
 
       selectors.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
-          el.style.setProperty('bottom', bottomValue, 'important');
-          el.style.setProperty('top', 'auto', 'important');
+          try {
+            el.style.setProperty('top', 'auto', 'important');
+            el.style.setProperty('bottom', bottomValue, 'important');
+            el.style.setProperty('z-index', '3000', 'important');
+          } catch (e) {}
         });
       });
     } catch (e) {}
@@ -1856,14 +1874,23 @@ window.closeSiteNotice = closeSiteNotice;
 
   var tries = 0;
   var timer = setInterval(function () {
-    moveSmartsupp();
+    moveChatUp();
     tries++;
-    if (tries > 40) clearInterval(timer);
-  }, 700);
+    if (tries > 120) clearInterval(timer);
+  }, 500);
 
-  window.addEventListener('load', moveSmartsupp);
-  window.addEventListener('resize', moveSmartsupp);
-  document.addEventListener('DOMContentLoaded', moveSmartsupp);
+  window.addEventListener('load', moveChatUp);
+  window.addEventListener('resize', moveChatUp);
+  document.addEventListener('DOMContentLoaded', moveChatUp);
+
+  try {
+    var observer = new MutationObserver(function () {
+      moveChatUp();
+    });
+    window.addEventListener('load', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  } catch (e) {}
 })();
 </script>
 
