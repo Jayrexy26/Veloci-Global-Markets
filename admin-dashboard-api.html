@@ -1500,6 +1500,7 @@ function esc(s){
     .replaceAll("'","&#39;");
 }
 function nowStamp(){ return new Date().toLocaleString(); }
+function nowStampSafe(v){ const d = new Date(v||0); return isNaN(d.getTime()) ? "-" : d.toLocaleString(); }
 
 function inferUsernameFromEmail(email){
   const e = String(email||"").trim().toLowerCase();
@@ -1945,32 +1946,39 @@ function riskForEmail(email){
 }
 
 function renderOverview(){
-  document.getElementById("ov-users").textContent = String(CACHE.users.length);
-  document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
-  document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
-  document.getElementById("ov-walletlinks").textContent = String(CACHE.wallet_links.length);
-  document.getElementById("ov-pamms").textContent = String((CACHE.pamms||[]).length);
-  document.getElementById("ov-notification").textContent = String((CACHE.notifications||[]).filter(n => !!(n.enabled ?? n.is_active ?? n.active)).length);
-  document.getElementById("ov-support").textContent = String(CACHE.support.length);
-  document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
+  const setTxt = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  };
 
-  document.getElementById("cnt-users").textContent = String(CACHE.users.filter(matchSearch).length);
-  document.getElementById("cnt-plans").textContent = String(CACHE.plans.filter(matchSearch).length);
-  document.getElementById("cnt-wallets").textContent = String(CACHE.wallets.filter(matchSearch).length);
-  document.getElementById("cnt-walletlinks").textContent = String(CACHE.wallet_links.filter(matchSearch).length);
-  document.getElementById("cnt-pamms").textContent = String((CACHE.pamms||[]).filter(matchSearch).length);
-  document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
-  document.getElementById("cnt-notification").textContent = String(CACHE.users.filter(matchSearch).length);
-  document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
-  document.getElementById("cnt-withdrawals").textContent = String(CACHE.withdrawals.filter(matchSearch).length);
-  document.getElementById("cnt-cryptoops").textContent = String(CACHE.users.filter(matchSearch).length);
-  document.getElementById("cnt-trades").textContent = String((CACHE.trades||[]).filter(matchSearch).length);
-  document.getElementById("cnt-kyc").textContent = String(CACHE.kyc.filter(matchSearch).length);
+  setTxt("ov-users", CACHE.users.length);
+  setTxt("ov-plans", CACHE.plans.length);
+  setTxt("ov-wallets", CACHE.wallets.length);
+  setTxt("ov-walletlinks", CACHE.wallet_links.length);
+  setTxt("ov-pamms", (CACHE.pamms||[]).length);
+  setTxt("ov-notification", (CACHE.notifications||[]).filter(n => !!(n.enabled ?? n.is_active ?? n.active)).length);
+  setTxt("ov-support", CACHE.support.length);
+  setTxt("ov-kyc", CACHE.kyc.length);
+
+  setTxt("cnt-users", CACHE.users.filter(matchSearch).length);
+  setTxt("cnt-plans", CACHE.plans.filter(matchSearch).length);
+  setTxt("cnt-wallets", CACHE.wallets.filter(matchSearch).length);
+  setTxt("cnt-walletlinks", CACHE.wallet_links.filter(matchSearch).length);
+  setTxt("cnt-pamms", (CACHE.pamms||[]).filter(matchSearch).length);
+  setTxt("cnt-support", CACHE.support.filter(matchSearch).length);
+  setTxt("cnt-notification", CACHE.users.filter(matchSearch).length);
+  setTxt("cnt-deposits", CACHE.deposits.filter(matchSearch).length);
+  setTxt("cnt-withdrawals", CACHE.withdrawals.filter(matchSearch).length);
+  setTxt("cnt-cryptoops", CACHE.users.filter(matchSearch).length);
+  setTxt("cnt-trades", (CACHE.trades||[]).filter(matchSearch).length);
+  setTxt("cnt-kyc", CACHE.kyc.filter(matchSearch).length);
 
   const tbody = document.getElementById("riskRows");
-  const emails = Array.from(new Set((CACHE.withdrawals||[]).map(w=>String(w.user_email||"").toLowerCase()).filter(Boolean)));
-  const rows = emails.map(e=>({ email:e, ...riskForEmail(e) }))
-    .sort((a,b)=> (b.total - a.total))
+  if (!tbody) return;
+
+  const emails = Array.from(new Set((CACHE.withdrawals||[]).map(w => String(w.user_email||"").toLowerCase()).filter(Boolean)));
+  const rows = emails.map(e => ({ email:e, ...riskForEmail(e) }))
+    .sort((a,b) => (b.total - a.total))
     .filter(matchSearch);
 
   if(rows.length === 0){
@@ -1979,13 +1987,13 @@ function renderOverview(){
   }
 
   tbody.innerHTML = "";
-  rows.forEach(r=>{
+  rows.forEach(r => {
     tbody.innerHTML += `
       <tr>
         <td>${userPillHtml(r.email)}</td>
         <td>${esc(r.count)}</td>
         <td>$${Number(r.total||0).toFixed(2)}</td>
-        <td>${esc(r.latest||"-")}</td>
+        <td>${esc(r.latest || nowStampSafe(r.created_at) || "-")}</td>
       </tr>
     `;
   });
