@@ -6,36 +6,29 @@
 <title>Support - Coinluxora</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-/* ===== SMARTSUPP USER IDENTIFICATION ===== */
-function initSmartsuppUser(user){
-  if(!user || !window.smartsupp) return;
+// ===== AVATAR FIX (MATCH PROFILE) =====
+async function loadSidebarAvatar(user){
+  try{
+    const avatarImg = document.getElementById("sideAvatarImg");
+    const fallback = document.getElementById("sideAvatarFallback");
+    if(!avatarImg || !user) return;
 
-  const fullName =
-    user.user_metadata?.full_name ||
-    user.user_metadata?.name ||
-    user.email?.split("@")[0] ||
-    "User";
+    const path = `${user.id}/avatar.png`;
+    const url = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
 
-  smartsupp('name', fullName);
-  smartsupp('email', user.email);
-
-  smartsupp('variables', {
-    User_ID: user.id,
-    Email: user.email
-  });
+    avatarImg.src = url;
+    avatarImg.style.display = "block";
+    if(fallback) fallback.style.display = "none";
+  }catch(e){}
 }
 
-/* ===== AVATAR PATH FIX ===== */
-function resolveAvatarUrl(user){
-  const path =
-    user?.user_metadata?.avatar_path ||
-    user?.user_metadata?.avatar_url ||
-    null;
-
-  if(!path) return null;
-
-  return `https://YOUR_PROJECT_ID.supabase.co/storage/v1/object/public/avatars/${user.id}/avatar.png?ts=${Date.now()}`;
-}
+// hook after user loads
+(async ()=>{
+  try{
+    const { data: { user } } = await supabase.auth.getUser();
+    if(user) loadSidebarAvatar(user);
+  }catch(e){}
+})();
 
 </script>
 
