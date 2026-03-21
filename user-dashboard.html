@@ -5291,5 +5291,42 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 </script>
 
+
+<script>
+(function(){
+  var launcher = document.getElementById('pammLauncher') || document.querySelector('.pammLauncher');
+  if (!launcher) return;
+
+  function goMobilePammPage(){
+    try {
+      var current = location.pathname.split('/').pop() || 'user-dashboard.html';
+      var mobilePage = 'pamms-mobile.html';
+      var qs = new URLSearchParams(location.search);
+      if (qs.get('email')) mobilePage += '?email=' + encodeURIComponent(qs.get('email'));
+      location.href = mobilePage;
+    } catch(e) {
+      location.href = 'pamms-mobile.html';
+    }
+  }
+
+  launcher.addEventListener('click', function(ev){
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      goMobilePammPage();
+    }
+  }, true);
+
+  var oldOpen = window.openPammModal;
+  window.openPammModal = function(){
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      goMobilePammPage();
+      return;
+    }
+    if (typeof oldOpen === 'function') return oldOpen.apply(this, arguments);
+  };
+})();
+</script>
+
 </body>
 </html>
