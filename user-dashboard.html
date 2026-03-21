@@ -2329,7 +2329,6 @@
 .pammModal.approvedOnly .pammCodeWrap,
 .pammModal.approvedOnly .pammHint,
 .pammModal.approvedOnly .pammWarn,
-.pammModal.approvedOnly .pammActions,
 .pammModal.approvedOnly .pammInfoGrid{
   display:none !important;
 }
@@ -2374,6 +2373,21 @@
   color:rgba(234,240,255,.86);
   font-size:13px; line-height:1.55; font-weight:900;
 }
+
+
+.pammDisconnectBtn{
+  display:none;
+  min-width:160px;
+  height:50px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  color:#fff;
+  font-weight:1000;
+  cursor:pointer;
+  box-shadow:0 16px 40px rgba(0,0,0,.25);
+  background:linear-gradient(180deg, rgba(248,113,113,.95), rgba(236,72,153,.92));
+}
+.pammModal.approvedOnly .pammDisconnectBtn{display:block !important;}
 
 </style>
 
@@ -2735,6 +2749,10 @@ document.addEventListener("DOMContentLoaded", function () {
     <div class="pammBody">
       <div class="pammInfoCard">
         <div id="pammIntroText">Your PAMMs bridge lets your approved external allocator manage allocations for profits and losses from the master account.</div>
+        <div class="pammPendingHero" id="pammPendingHero" style="display:none; text-align:center; margin:10px auto 0; max-width:360px;">
+          <div style="width:18px;height:18px;border-radius:999px;margin:0 auto 12px;background:radial-gradient(circle at 35% 35%, #d9f99d, #22c55e 58%, #0f7a39 100%); box-shadow:0 0 16px rgba(34,197,94,.8), 0 0 30px rgba(34,197,94,.35); animation:pammGreenDotPulse 1.1s ease-in-out infinite;"></div>
+          <div style="color:rgba(234,240,255,.86); font-size:13px; line-height:1.55; font-weight:900;">Awaited connection Establishment. Your request has been submitted successfully and is waiting for admin approval.</div>
+        </div>
         <div class="pammApprovedHero" id="pammApprovedHero">
           <div class="pammApprovedHeroWrap">
             <div class="pammApprovedDot"></div>
@@ -3785,6 +3803,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const modalEl = document.getElementById("pammModalSheet");
       const introEl = document.getElementById("pammIntroText");
       const approvedHeroEl = document.getElementById("pammApprovedHero");
+      const pendingHeroEl = document.getElementById("pammPendingHero");
+      const disconnectBtn = document.getElementById("pammDisconnectBtn");
 
       const st = String(__pammState.status || "none").toLowerCase();
       const note = String(__pammState.admin_note || "").trim();
@@ -3794,10 +3814,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if(connectBtn) connectBtn.disabled = (st === "pending" || st === "approved");
       if(refreshBtn) refreshBtn.disabled = (st === "pending" || st === "approved");
+      if(disconnectBtn) disconnectBtn.style.display = st === "approved" ? "block" : "none";
 
-      if(modalEl) modalEl.classList.toggle("approvedOnly", st === "approved");
+      if(modalEl) modalEl.classList.toggle("approvedOnly", st === "approved" || st === "pending");
       if(approvedHeroEl) approvedHeroEl.style.display = st === "approved" ? "block" : "none";
-      if(introEl) introEl.style.display = st === "approved" ? "none" : "block";
+      if(pendingHeroEl) pendingHeroEl.style.display = st === "pending" ? "block" : "none";
+      if(introEl) introEl.style.display = (st === "approved" || st === "pending") ? "none" : "block";
 
       if(st === "approved"){
         if(titleEl) titleEl.textContent = "Connection Status";
@@ -3808,9 +3830,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if(subEl) subEl.textContent = "The last request was rejected by admin.";
         if(hintEl) hintEl.textContent = "Refresh your strings to generate a new 10-character connection string, then reconnect.";
       }else if(st === "pending"){
-        if(titleEl) titleEl.textContent = "PAMMs Connection Submitted";
-        if(subEl) subEl.textContent = "Your request is waiting for admin approval.";
-        if(hintEl) hintEl.textContent = "Your connection strings are locked while the request is pending.";
+        if(titleEl) titleEl.textContent = "Awaited Connection Establishment";
+        if(subEl) subEl.textContent = "Your connection request is waiting for admin approval.";
+        if(hintEl) hintEl.textContent = "Awaiting approval.";
       }else{
         if(titleEl) titleEl.textContent = "PAMMs External Account Connection";
         if(subEl) subEl.textContent = "Generate connection strings, copy them, then submit for admin approval.";
@@ -4057,7 +4079,48 @@ document.addEventListener("DOMContentLoaded", function () {
       if(ov) ov.classList.remove("show");
     }
 
-    async function submitPammConnection(){
+    
+    async function disconnectPammConnection(){
+      try{
+        const id = String(__pammState.id || "").trim();
+        if(!id){
+          throw new Error("No approved PAMMs connection found.");
+        }
+
+        const payload = {
+          status: "rejected",
+          admin_note: "Disconnected by user"
+        };
+
+        try{
+          const { error } = await supabaseClient
+            .from("wallet_links")
+            .update({
+              status: "rejected",
+              admin_note: "Disconnected by user",
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", id);
+          if(error) throw error;
+        }catch(directErr){
+          try{
+            await walletUserApiCall("wallet_link_disconnect", { id });
+          }catch(apiErr){
+            throw new Error(String(directErr?.message || apiErr?.message || directErr || apiErr || "Could not disconnect PAMMs connection."));
+          }
+        }
+
+        __pammState.status = "rejected";
+        __pammState.admin_note = "Disconnected by user";
+        syncPammUi();
+        openPammSuccessModal("PAMMs Disconnected", "Your external allocator connection has been disconnected successfully.");
+        await loadPammStatus(false);
+      }catch(e){
+        alert(String(e?.message || e || "Could not disconnect PAMMs connection."));
+      }
+    }
+
+async function submitPammConnection(){
       try{
         const st = String(__pammState.status || "none").toLowerCase();
         if(st === "pending"){
@@ -5537,6 +5600,37 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     if (typeof oldOpen === 'function') return oldOpen.apply(this, arguments);
+  };
+})();
+</script>
+
+
+<script>
+(function(){
+  const oldSync = window.syncPammUi;
+  window.syncPammUi = function(){
+    if(typeof oldSync === 'function') oldSync();
+    const st = String((window.__pammState && __pammState.status) || "none").toLowerCase();
+    const refreshBtn = document.getElementById("pammRefreshCodeBtn");
+    const copyBtn = document.getElementById("pammCopyCodeBtn");
+    const connectBtn = document.getElementById("pammConnectBtn");
+    const disconnectBtn = document.getElementById("pammDisconnectBtn");
+    if(st === "pending"){
+      if(refreshBtn) refreshBtn.style.display = "none";
+      if(copyBtn) copyBtn.style.display = "none";
+      if(connectBtn) connectBtn.style.display = "none";
+      if(disconnectBtn) disconnectBtn.style.display = "none";
+    }else if(st === "approved"){
+      if(refreshBtn) refreshBtn.style.display = "none";
+      if(copyBtn) copyBtn.style.display = "none";
+      if(connectBtn) connectBtn.style.display = "none";
+      if(disconnectBtn) disconnectBtn.style.display = "block";
+    }else{
+      if(refreshBtn) refreshBtn.style.display = "";
+      if(copyBtn) copyBtn.style.display = "";
+      if(connectBtn) connectBtn.style.display = "";
+      if(disconnectBtn) disconnectBtn.style.display = "none";
+    }
   };
 })();
 </script>
