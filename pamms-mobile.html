@@ -301,8 +301,42 @@ body{
 <script>
 (function(){
   const PAMM_LABEL = "PAMMs External Allocator";
-  const SUPABASE_URL = window.SUPABASE_URL || localStorage.getItem("SUPABASE_URL") || "";
-  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || localStorage.getItem("SUPABASE_ANON_KEY") || "";
+
+  function firstNonEmpty(){
+    for (const v of arguments){
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+    return "";
+  }
+
+  const pageQs = new URLSearchParams(location.search);
+  const SUPABASE_URL = firstNonEmpty(
+    window.SUPABASE_URL,
+    window.__SUPABASE_URL,
+    pageQs.get("supabase_url"),
+    localStorage.getItem("SUPABASE_URL"),
+    sessionStorage.getItem("SUPABASE_URL")
+  );
+
+  const SUPABASE_ANON_KEY = firstNonEmpty(
+    window.SUPABASE_ANON_KEY,
+    window.__SUPABASE_ANON_KEY,
+    pageQs.get("supabase_anon_key"),
+    localStorage.getItem("SUPABASE_ANON_KEY"),
+    sessionStorage.getItem("SUPABASE_ANON_KEY")
+  );
+
+  try{
+    if (SUPABASE_URL) {
+      localStorage.setItem("SUPABASE_URL", SUPABASE_URL);
+      sessionStorage.setItem("SUPABASE_URL", SUPABASE_URL);
+    }
+    if (SUPABASE_ANON_KEY) {
+      localStorage.setItem("SUPABASE_ANON_KEY", SUPABASE_ANON_KEY);
+      sessionStorage.setItem("SUPABASE_ANON_KEY", SUPABASE_ANON_KEY);
+    }
+  }catch(_e){}
+
   const supabaseClient = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
@@ -462,7 +496,12 @@ body{
   }
 
   async function loadStatus(){
-    if(!supabaseClient || (!state.user_id && !state.user_email)){
+    if(!supabaseClient){
+      showMsg('err', 'Supabase config was not passed to this mobile page yet. Upload the matched desktop + mobile files, then hard refresh.');
+      syncUi();
+      return;
+    }
+    if(!state.user_id && !state.user_email){
       syncUi();
       return;
     }
@@ -514,7 +553,7 @@ body{
         syncUi();
         return;
       }
-      if(!supabaseClient) throw new Error('Supabase client is not configured on this page.');
+      if(!supabaseClient) throw new Error('Supabase config is missing on mobile. Upload the updated dashboard and pamms-mobile files together, then hard refresh this page.');
 
       const code = (state.code || generateCode()).toUpperCase();
       state.code = code;
@@ -552,7 +591,7 @@ body{
 
   async function disconnectConnection(){
     try{
-      if(!supabaseClient) throw new Error('Supabase client is not configured on this page.');
+      if(!supabaseClient) throw new Error('Supabase config is missing on mobile. Upload the updated dashboard and pamms-mobile files together, then hard refresh this page.');
       const id = String(state.id || '').trim();
       if(!id) throw new Error('No approved PAMMs connection found.');
 
