@@ -1514,12 +1514,11 @@ function mountLogoSelect(rootId, options, initialValue, onPick){
 }
 
 /* ============================================================
-  ✅ AVATAR + NAME (same pattern as dashboard)
+  ✅ AVATAR + NAME (MATCH PROFILE FILE EXACT FLOW)
 ============================================================ */
-// ===== FIXED AVATAR PATH (MATCH PROFILE) =====
 function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
 function looksLikeGoogleAvatar(u){
-  const s=String(u||"").toLowerCase();
+  const s = String(u||"").toLowerCase();
   return s.includes("googleusercontent.com") || s.includes("lh3.googleusercontent.com");
 }
 function extractPathFromPublicUrl(u){
@@ -1530,16 +1529,16 @@ function extractPathFromPublicUrl(u){
   }catch(e){ return ""; }
 }
 function normalizeAvatarPath(userId, v){
-  let s=String(v||"").trim();
+  let s = String(v||"").trim();
   if(!s) return "";
   if(isHttpUrl(s)){
     const p = extractPathFromPublicUrl(s);
     return p || "";
   }
-  s=s.replace(/^\/+/, "");
-  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
-  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
-  if(!s.includes("/") && userId) s=`${userId}/${s}`;
+  s = s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s = s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s = s.slice("public/avatars/".length);
+  if(!s.includes("/") && userId) s = `${userId}/${s}`;
   return s;
 }
 function publicAvatarUrl(path){
@@ -1550,34 +1549,75 @@ function publicAvatarUrl(path){
     return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
   }catch(e){ return ""; }
 }
-
 function setTopAvatar(avatarUrl){
-  const fallback=document.getElementById("avatarFallback");
-  const img=document.getElementById("avatarImgBtn");
+  const fallback = document.getElementById("avatarFallback");
+  const img = document.getElementById("avatarImgBtn");
   if(avatarUrl){
-    img.src=avatarUrl;
-    img.style.display="block";
-    fallback.style.display="none";
+    img.src = avatarUrl;
+    img.style.display = "block";
+    fallback.style.display = "none";
   }else{
-    img.style.display="none";
-    fallback.style.display="block";
+    img.style.display = "none";
+    fallback.style.display = "block";
   }
 }
 function setSideAvatar(avatarUrl){
-  const fb=document.getElementById("sideAvatarFallback");
-  const img=document.getElementById("sideAvatarImg");
+  const fb = document.getElementById("sideAvatarFallback");
+  const img = document.getElementById("sideAvatarImg");
   if(avatarUrl){
-    img.src=avatarUrl;
-    img.style.display="block";
-    fb.style.display="none";
+    img.src = avatarUrl;
+    img.style.display = "block";
+    fb.style.display = "none";
   }else{
-    img.style.display="none";
-    fb.style.display="block";
+    img.style.display = "none";
+    fb.style.display = "block";
   }
 }
 function setNameEverywhere(fullName){
-  const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
-  document.getElementById("sideName").textContent=nice;
+  const nice = (fullName && fullName.trim()) ? fullName.trim() : "User";
+  const sideName = document.getElementById("sideName");
+  if(sideName) sideName.textContent = nice;
+  window.currentUserName = nice;
+}
+
+async function loadUserIdentity(){
+  try{
+    let fullName = "";
+    let avatarVal = "";
+    let avatarUrl = "";
+
+    const { data: row, error } = await supabaseClient
+      .from("users")
+      .select("full_name, avatar_url")
+      .eq("email", currentUserEmail)
+      .maybeSingle();
+
+    if(!error && row){
+      fullName = row.full_name || "";
+      avatarVal = row.avatar_url || "";
+    }
+
+    const md = (window.COINLUXORA_USER?.user_metadata || {});
+    if(!fullName) fullName = md.full_name || md.name || "";
+    if(!avatarVal) avatarVal = md.avatar_path || md.avatar_url || "";
+
+    const avatarPath = normalizeAvatarPath(currentUserId, avatarVal);
+    if(avatarPath){
+      avatarUrl = publicAvatarUrl(avatarPath);
+    }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+      avatarUrl = avatarVal + (avatarVal.includes("?") ? "&" : "?") + "t=" + Date.now();
+    }else{
+      avatarUrl = "";
+    }
+
+    setNameEverywhere(fullName);
+    setTopAvatar(avatarUrl);
+    setSideAvatar(avatarUrl);
+  }catch(e){
+    setNameEverywhere("User");
+    setTopAvatar("");
+    setSideAvatar("");
+  }
 }
 
 /* ============================================================
@@ -2133,7 +2173,8 @@ async function loadIdentity(){
     await loadIdentity();
     await clearDepositBadge();
 
-    await loadDepositAddresses();
+    await loadUserIdentity();
+  await loadDepositAddresses();
     await renderDepositAddress();
 
     await loadSiteNotification(true);
