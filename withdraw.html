@@ -3,544 +3,37 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Withdraw - Coinluxora</title>
+  <title>VGM | Crypto Wallet</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-/* ===== SITE-WIDE NOTIFICATION ===== */
-let __siteNoticeShownKey = "";
-let __siteNoticeTimer = null;
-
-function showSiteNotice(title, message){
-  const ov = document.getElementById("siteNoticeOverlay");
-  const ttl = document.getElementById("siteNoticeTitle");
-  const body = document.getElementById("siteNoticeBody");
-  if(!ov || !ttl || !body) return;
-  ttl.textContent = String(title || "Notification");
-  body.textContent = String(message || "");
-  ov.style.display = "flex";
-  ov.setAttribute("aria-hidden", "false");
-}
-function closeSiteNotice(){
-  const ov = document.getElementById("siteNoticeOverlay");
-  if(ov){
-    ov.style.display = "none";
-    ov.setAttribute("aria-hidden", "true");
-  }
-}
-async function loadSiteNotification(forceOpen=false){
-  try{
-    const userObj = window.COINLUXORA_USER || null;
-    const uid =
-      (typeof currentUserId !== "undefined" && currentUserId) ? currentUserId :
-      (typeof currentUser !== "undefined" && currentUser?.id) ? currentUser.id :
-      (userObj?.id || "");
-    const emailRaw =
-      (typeof currentUserEmail !== "undefined" && currentUserEmail) ? currentUserEmail :
-      (typeof currentUser !== "undefined" && currentUser?.email) ? currentUser.email :
-      (userObj?.email || "");
-    const email = String(emailRaw || "").trim().toLowerCase();
-
-    let row = null;
-
-    if(uid){
-      const byId = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .eq("user_id", uid)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byId.error && byId.data) row = byId.data;
-    }
-
-    if(!row && email){
-      const byEmail = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .ilike("user_email", email)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byEmail.error && byEmail.data) row = byEmail.data;
-    }
-
-    const enabled = !!(row?.enabled ?? false);
-    const title = String(row?.title ?? "Notification").trim();
-    const message = String(row?.message ?? "").trim();
-    const updatedAt = String(row?.updated_at ?? "");
-    const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
-
-    if(!enabled || !message){
-      __siteNoticeShownKey = "";
-      closeSiteNotice();
-      return false;
-    }
-
-    if(forceOpen || __siteNoticeShownKey !== noticeKey){
-      __siteNoticeShownKey = noticeKey;
-      showSiteNotice(title, message);
-    }
-    return true;
-  }catch(e){
-    return false;
-  }
-}
-function startSiteNotificationAutoRefresh(){
-  if(__siteNoticeTimer) clearInterval(__siteNoticeTimer);
-  __siteNoticeTimer = setInterval(()=> loadSiteNotification(false), 15000);
-}
-window.closeSiteNotice = closeSiteNotice;
-
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#050a18;
-      --border:rgba(255,255,255,.12);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.65);
-      --ok:#34d399;
-      --err:#fb7185;
-      --blue:#5b6cff;
-      --purple:#7c4dff;
-      --orange:#f59e0b;
-      --green:#22c55e;
-      --cyan:#38bdf8;
+      --bg:#050a18; --bg2:#020617; --text:#eaf0ff;
+      --muted: rgba(234,240,255,.65); --muted2: rgba(234,240,255,.45);
+      --stroke: rgba(255,255,255,.12);
+      --ok:#22c55e; --err:#f87171; --warn:#f59e0b;
+      --blue:#5b6cff; --purple:#7c4dff; --cyan:#38bdf8;
+      --shadow: 0 26px 90px rgba(0,0,0,.55);
     }
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background:
-        radial-gradient(900px 420px at 10% 0%, rgba(83,113,255,.20), transparent 55%),
-        radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.16), transparent 55%),
-        var(--bg);
+        radial-gradient(1200px 700px at 15% 10%, rgba(91,108,255,.15), transparent 55%),
+        radial-gradient(900px 600px at 90% 20%, rgba(124,77,255,.14), transparent 55%),
+        radial-gradient(700px 500px at 40% 90%, rgba(56,189,248,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
       color:var(--text);
-      padding:16px;
-      padding-bottom:34px;
+      overflow-x:hidden;
     }
-    .container{max-width:980px;margin:0 auto}
+    .wrap{ width: min(1180px, 92vw); margin: 0 auto; padding: 18px 0 42px; }
 
-    /* ✅ TOP FLOAT NAV */
-    .topFloatNav{
-      position:sticky;
-      top:10px;
-      z-index:500;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      margin-bottom:12px;
-    }
-    .backBtn{
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
-      color:white;
-      font-weight:1000;
-      cursor:pointer;
-      backdrop-filter: blur(12px);
-      box-shadow:0 20px 70px rgba(0,0,0,.55);
-    }
-    .backBtn:hover{background:rgba(255,255,255,.08)}
-    .menuBtn{
-      width:48px;
-      height:48px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 20px 70px rgba(0,0,0,.55);
-      backdrop-filter: blur(12px);
-      cursor:pointer;
-      font-weight:1000;
-      color:white;
-    }
-    .menuBtn:hover{background:rgba(255,255,255,.10)}
-
-    /* ============================================================
-      ✅ SIDEBAR (MATCH USER DASHBOARD STRUCTURE)
-    ============================================================ */
-    .overlay{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.65);
-      display:none; z-index:999;
-      backdrop-filter: blur(4px);
-    }
-    .overlay.show{display:block;}
-    .sidebar{
-      position:fixed; top:0; left:-315px;
-      width:292px; height:100vh;
-      padding:16px;
-      z-index:1000;
-      transition: .28s ease;
-      border-right:1px solid rgba(255,255,255,.10);
-      background:
-        radial-gradient(900px 420px at 15% 10%, rgba(91,108,255,.18), transparent 55%),
-        radial-gradient(900px 420px at 90% 20%, rgba(52,211,153,.12), transparent 55%),
-        linear-gradient(180deg, rgba(4,8,20,0.98), rgba(2,6,23,0.98));
-      box-shadow:0 26px 90px rgba(0,0,0,.60);
-      backdrop-filter: blur(16px);
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
-    }
-    .sidebar::-webkit-scrollbar{width:8px}
-    .sidebar::-webkit-scrollbar-track{background:transparent}
-    .sidebar::-webkit-scrollbar-thumb{
-      background:rgba(255,255,255,.16);
-      border-radius:999px;
-      border:2px solid rgba(0,0,0,0);
-      background-clip:padding-box;
-    }
-    .sidebar::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
-    .sidebar.open{ left:0; }
-
-    .sideTop{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:10px;margin-bottom:12px;
-    }
-    .sideBrand{
-      display:flex;
-      align-items:center;
-      gap:0;
-      padding:0;
-      border:none;
-      background:transparent;
-      box-shadow:none;
-      min-width:unset;
-    }
-    .sideLogoWide{
-      height:92px;
-      width:auto;
-      max-width:230px;
-      display:block;
-      object-fit:contain;
-      filter:
-        drop-shadow(0 18px 35px rgba(0,0,0,.55))
-        drop-shadow(0 0 22px rgba(91,108,255,.18));
-    }
-    .closeBtn{
-      background:rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.14);
-      color:rgba(234,240,255,.95);
-      border-radius:14px;
-      width:44px;height:44px;
-      cursor:pointer;
-      display:grid;place-items:center;
-      font-weight:1000;
-    }
-    .closeBtn:hover{background:rgba(255,255,255,.08)}
-
-    .userTag{
-      padding:12px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 18px 55px rgba(0,0,0,.35);
-      margin:14px 0 14px;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-    }
-    .userTagLeft{min-width:0}
-    .userTag .t1{color:rgba(234,240,255,.55);font-weight:1000;font-size:12px}
-    .userTag .t2{
-      margin-top:6px;font-weight:1000;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      max-width:180px;
-    }
-    .sideAvatar{
-      width:46px;height:46px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.25);
-      display:grid;place-items:center;
-      position:relative;overflow:hidden;
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      flex:0 0 auto;
-    }
-    .sideAvatar span{font-size:18px}
-    .sideAvatar img{
-      position:absolute; inset:0;
-      width:100%;height:100%;
-      object-fit:cover;
-      display:none;
-    }
-
-    .menuGroupTitle{
-      margin:10px 0 8px;
-      font-size:12px;font-weight:1000;
-      color:rgba(234,240,255,.50);
-      letter-spacing:.8px;
-      text-transform:uppercase;
-    }
-    .sideItem{
-      display:flex;align-items:center;gap:12px;
-      padding:12px 12px;border-radius:18px;
-      color:rgba(234,240,255,.82);
-      text-decoration:none;
-      font-weight:1000;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      margin-bottom:10px;
-      position:relative;overflow:hidden;
-    }
-    .sideItem:hover{background:rgba(255,255,255,.08)}
-    .sideItem .i{
-      width:42px;height:42px;border-radius:16px;
-      display:grid;place-items:center;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-size:18px;
-    }
-    .sideItem small{display:block;color:rgba(234,240,255,.55);font-size:12px;font-weight:900;margin-top:2px}
-    .activeLink{
-      border:1px solid rgba(56,189,248,.55);
-      background:linear-gradient(180deg, rgba(56,189,248,0.14), rgba(56,189,248,0.08));
-      color:#cfefff;
-    }
-    .activeLink::after{
-      content:"";
-      position:absolute; inset:0;
-      background: radial-gradient(600px 160px at 30% 20%, rgba(56,189,248,.20), transparent 60%);
-      pointer-events:none;
-    }
-    .sideLogout{
-      margin-top:10px;
-      background:linear-gradient(90deg, rgba(248,113,113,1), rgba(239,68,68,1));
-      color:#020617;border:none;width:100%;
-      padding:14px;border-radius:18px;font-weight:1000;cursor:pointer;
-      box-shadow:0 18px 55px rgba(239,68,68,.18);
-    }
-    .sideLogout:hover{filter:brightness(1.03)}
-
-    /* ✅ Top header glass bar (NOW ORANGE+GREEN+BLUE MIX) */
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:16px 18px;
-      border-radius:18px;
-      background:
-        radial-gradient(800px 180px at 15% 0%, rgba(245,158,11,.28), transparent 60%),
-        radial-gradient(800px 180px at 55% 0%, rgba(34,197,94,.22), transparent 60%),
-        radial-gradient(800px 180px at 90% 0%, rgba(56,189,248,.22), transparent 60%),
-        linear-gradient(90deg, rgba(245,158,11,.16), rgba(34,197,94,.14), rgba(56,189,248,.14));
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow:0 20px 80px rgba(0,0,0,.55);
-      backdrop-filter: blur(12px);
-      margin-bottom:14px;
-    }
-    .topbar h2{ margin:0; font-size:18px; font-weight:1000; letter-spacing:.2px; }
-    .topbar .who{
-      opacity:.92;font-weight:1000;font-size:13px;
-      max-width:60%; overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-      color:rgba(234,240,255,.90);
-    }
-    .mutedTiny{ color:rgba(234,240,255,.62); font-weight:900; font-size:12px; }
-
-    .card{
-      max-width:980px;
-      margin:0 auto 14px auto;
-      padding:18px;
-      border-radius:22px;
-      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 26px 90px rgba(0,0,0,.55);
-      backdrop-filter: blur(12px);
-    }
-    .card h3{ margin:0 0 8px 0; font-size:24px; font-weight:1000; }
-    .card .sub{ margin-top:6px; color:var(--muted); font-weight:900; font-size:13px; }
-
-    .note{
-      margin-top:10px;
-      padding:12px 14px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      color:rgba(234,240,255,.75);
-      font-weight:900;
-      font-size:13px;
-      line-height:1.35;
-    }
-
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
-    label{ display:block; font-size:13px; font-weight:900; margin-bottom:8px; color:rgba(255,255,255,0.85); }
-    .req{ color:#fda4af; font-weight:1000; margin-left:6px; }
-
-    input,select{
-      width:100%;
-      padding:16px 14px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.32);
-      color:var(--text);
-      outline:none;
-      box-sizing:border-box;
-      font-size:15px;
-    }
-    input::placeholder{ color:rgba(255,255,255,.35); }
-    input:focus,select:focus{
-      border-color:rgba(99,102,241,.55);
-      box-shadow:0 0 0 4px rgba(99,102,241,.18);
-    }
-    .full{ grid-column:1 / -1; }
-
-    button{
-      padding:16px 14px;
-      border:0;
-      border-radius:16px;
-      background:linear-gradient(90deg,#6366f1,#22c55e);
-      color:#fff;
-      font-weight:1000;
-      cursor:pointer;
-      font-size:15px;
-      box-shadow:0 18px 60px rgba(0,0,0,.45);
-    }
-    button:active{transform:translateY(1px)}
-    button:disabled{ opacity:0.6; cursor:not-allowed; }
-
-    /* Error/info box still used for errors only */
-    .msg{
-      margin-top:14px;
-      padding:12px;
-      border-radius:16px;
-      background:rgba(0,0,0,0.25);
-      border:1px solid rgba(255,255,255,0.08);
-      font-weight:900;
-      font-size:14px;
-      display:none;
-      white-space:pre-wrap;
-    }
-    .msg.ok{ color:#4ade80; display:block; }
-    .msg.err{ color:#fb7185; display:block; }
-
-    /* Method switch */
-    .methodSwitch{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
-    .mBtn{
-      padding:10px 12px;
-      border-radius:999px;
-      font-weight:1000;
-      font-size:12px;
-      cursor:pointer;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.06);
-      color:rgba(234,240,255,0.92);
-      user-select:none;
-    }
-    .mBtn.active{
-      border-color:rgba(99,102,241,0.55);
-      background:rgba(99,102,241,0.22);
-    }
-
-    /* History header */
-    .historyHead{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom:14px;
-      flex-wrap:wrap;
-    }
-    .historyHead h4{ margin:0; font-size:16px; font-weight:1000; }
-
-    /* Tabs */
-    .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
-    .tab{
-      padding:9px 12px;
-      border-radius:999px;
-      font-weight:1000;
-      font-size:12px;
-      cursor:pointer;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(255,255,255,0.05);
-      color:rgba(255,255,255,0.9);
-      user-select:none;
-    }
-    .tab.active{
-      border-color:rgba(99,102,241,0.55);
-      background:rgba(99,102,241,0.22);
-    }
-
-    /* History table */
-    .tableWrap{
-      overflow:auto;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.22);
-    }
-    table{ width:100%; border-collapse:collapse; min-width:860px; }
-    th,td{
-      text-align:left; padding:13px 12px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      font-size:13px;
-      vertical-align:middle;
-    }
-    th{ font-size:12px; color:rgba(255,255,255,0.75); font-weight:1000; }
-    tr:hover td{ background:rgba(255,255,255,0.03); }
-
-    .pill{
-      display:inline-block;
-      padding:7px 12px;
-      border-radius:999px;
-      font-weight:1000;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,0.12);
-    }
-    .pending{ background:rgba(250,204,21,0.10); color:#fde047; border-color:rgba(250,204,21,0.25); }
-    .approved{ background:rgba(34,197,94,0.10); color:#4ade80; border-color:rgba(34,197,94,0.25); }
-    .rejected{ background:rgba(244,63,94,0.10); color:#fb7185; border-color:rgba(244,63,94,0.25); }
-    .cancelled{ background:rgba(148,163,184,0.10); color:#cbd5e1; border-color:rgba(148,163,184,0.25); }
-
-    .miniBtn{
-      padding:11px 13px;
-      border-radius:14px;
-      font-size:13px;
-      font-weight:1000;
-      cursor:pointer;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.25);
-      color:#fff;
-      box-shadow:none;
-    }
-    .miniBtn:hover{ background:rgba(255,255,255,0.10); }
-
-    .dangerBtn{
-      padding:9px 12px;
-      border-radius:12px;
-      font-size:12px;
-      font-weight:1000;
-      cursor:pointer;
-      border:1px solid rgba(244,63,94,0.35);
-      background:rgba(244,63,94,0.12);
-      color:#fb7185;
-      box-shadow:none;
-    }
-    .dangerBtn:hover{ background:rgba(244,63,94,0.18); }
-    .dangerBtn:disabled{ opacity:0.55; cursor:not-allowed; }
-
-    .empty{
-      padding:14px;
-      border-radius:18px;
-      background:rgba(0,0,0,0.25);
-      border:1px solid rgba(255,255,255,0.08);
-      font-weight:1000;
-      opacity:0.9;
-    }
-    .footerActions{
-      display:flex;
-      justify-content:center;
-      margin-top:14px;
-    }
-
-    /* Small screens */
-    @media (max-width: 900px){
-      .grid{ grid-template-columns:1fr; }
-      th:nth-child(4), td:nth-child(4){ display:none; } /* hide destination column */
-      th:nth-child(6), td:nth-child(6){ display:none; } /* hide method column */
-    }
-
-    /* ===== Loading Gate (same pattern) ===== */
+    /* LOADING */
     #authGate{
       position:fixed; inset:0; z-index:99999;
       display:flex; align-items:center; justify-content:center;
@@ -549,309 +42,604 @@ window.closeSiteNotice = closeSiteNotice;
         radial-gradient(900px 420px at 90% 0%, rgba(52,211,153,.18), transparent 55%),
         var(--bg);
     }
-    .gateCard{
-      width:min(520px,92vw);
-      border:none;
-      background:transparent;
-      border-radius:0;
-      padding:0;
-      box-shadow:none;
-      text-align:center;
-    }
+    .gateCard{ width:min(520px,92vw); background:transparent; text-align:center; }
     .gateLogo{
-      width:180px;height:180px;border-radius:0;
-      margin:0 auto 14px;
-      display:grid;place-items:center;
-      border:none;
-      background:transparent;
-      box-shadow:none;
-      overflow:visible;
+      width:240px;height:240px;margin:0 auto 14px;display:grid;place-items:center;
       animation: premiumPulse 2.4s ease-in-out infinite;
-      filter:
-        drop-shadow(0 18px 45px rgba(0,0,0,.55))
-        drop-shadow(0 0 36px rgba(91,108,255,.45));
+      filter: drop-shadow(0 18px 45px rgba(0,0,0,.55)) drop-shadow(0 0 36px rgba(91,108,255,.45));
     }
     .logoImg{ width:100%; height:100%; object-fit:contain; display:block; }
     @keyframes premiumPulse{
-      0%{transform:scale(1);opacity:.90}
-      50%{transform:scale(1.08);opacity:1}
-      100%{transform:scale(1);opacity:.90}
+      0%{ transform: scale(1); opacity:.92; filter: drop-shadow(0 18px 45px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(91,108,255,.28)) drop-shadow(0 0 30px rgba(255,77,166,.18)); }
+      50%{ transform: scale(1.10); opacity:1; filter: drop-shadow(0 18px 55px rgba(0,0,0,.60)) drop-shadow(0 0 40px rgba(91,108,255,.50)) drop-shadow(0 0 56px rgba(56,189,248,.30)) drop-shadow(0 0 64px rgba(255,77,166,.30)); }
+      100%{ transform: scale(1); opacity:.92; filter: drop-shadow(0 18px 45px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(91,108,255,.28)) drop-shadow(0 0 30px rgba(255,77,166,.18)); }
     }
     .gateTxt{ font-weight:1000; font-size:18px; letter-spacing:.2px; }
     .gateSub{ margin-top:8px; color:rgba(234,240,255,.70); font-weight:900; font-size:13px; }
 
-    /* ============================================================
-      ✅ POPUP MODAL (for success)
-    ============================================================ */
-    .popOverlay{
-      position:fixed; inset:0;
-      background:rgba(0,0,0,.72);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:9999;
-      backdrop-filter: blur(8px);
-      padding:16px;
+    /* TOPBAR */
+    .topbar{
+      position: sticky; top: 0; z-index: 40;
+      padding: 12px 0 10px;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(5,10,24,.74), rgba(5,10,24,.28));
+      border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .popOverlay.show{ display:flex; }
-    .popBox{
-      width:min(520px, 95vw);
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.16);
-      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
-      box-shadow:0 30px 110px rgba(0,0,0,.70);
-      backdrop-filter: blur(14px);
-      padding:18px;
-      position:relative;
-      overflow:hidden;
+    .toprow{
+      width: min(1180px, 92vw); margin: 0 auto;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
     }
-    .popGlow{
-      position:absolute; inset:-40px;
+    .leftTop{ display:flex; align-items:center; gap:10px; min-width:0; flex:0 0 auto; }
+    .menuBtn{
+      border:none; cursor:pointer; border-radius:14px; padding:10px 10px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+      color:var(--text); display:grid; place-items:center; flex:0 0 auto; transition: transform .12s ease;
+    }
+    .menuBtn:active{ transform: translateY(1px); }
+    .menuBtn svg{ width:18px; height:18px; opacity:.95; }
+    .title{ display:flex; flex-direction:column; gap:4px; min-width:220px; }
+    .title h1{ margin:0; font-size:16px; letter-spacing:.2px; font-weight:900; }
+    .title p{ margin:0; font-size:12px; color:var(--muted); }
+    .rightTop{ flex:1; display:flex; justify-content:flex-end; gap:10px; align-items:center; min-width:0; }
+    .searchBox{
+      width:min(520px,100%); display:flex; align-items:center; gap:10px;
+      padding:10px 12px; border-radius:14px; border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04); min-width:180px; flex:1 1 auto;
+    }
+    .searchBox input{ width:100%; border:none; outline:none; color:var(--text); background:transparent; font-size:13px; min-width:0; }
+    .searchBox .icon{ width:18px; height:18px; opacity:.9; flex:0 0 auto; }
+    .btnTop{
+      border:none; cursor:pointer; border-radius:12px; padding:10px 12px;
+      color:var(--text); font-weight:900; font-size:12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+      transition: transform .12s ease, opacity .12s ease; white-space: nowrap; flex: 0 0 auto;
+    }
+    .btnTop:active{ transform: translateY(1px); }
+    .btnTop.primary{
+      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 18px 55px rgba(56,189,248,.16);
+    }
+    @media (max-width: 860px){
+      .toprow{ flex-wrap:wrap; align-items:flex-start; }
+      .leftTop{ width:100%; justify-content:flex-start; }
+      .rightTop{ width:100%; flex-wrap:wrap; justify-content:flex-end; }
+      .searchBox{ flex:1 1 100%; width:100%; min-width:0; }
+      .title{ min-width:0; }
+    }
+
+    /* NOTICE */
+    .notice{
+      margin: 14px 0 16px;
+      border: 1px solid rgba(245,158,11,.35);
+      background: rgba(245,158,11,.08);
+      border-radius: 16px;
+      padding: 14px 14px;
+      display:flex; gap:12px; align-items:flex-start;
+    }
+    .notice .small{ color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .notice .dot{ width:10px;height:10px;border-radius:999px;margin-top:4px;background: radial-gradient(circle at 30% 30%, #fff, rgba(245,158,11,.95)); box-shadow: 0 0 0 4px rgba(245,158,11,.18); flex:0 0 auto; }
+
+    /* TOTAL */
+    .balanceCard{
+      margin: 0 0 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.10);
       background:
-        radial-gradient(circle at 15% 0%, rgba(245,158,11,.18), transparent 55%),
-        radial-gradient(circle at 55% 0%, rgba(34,197,94,.14), transparent 55%),
-        radial-gradient(circle at 90% 0%, rgba(56,189,248,.14), transparent 55%);
-      pointer-events:none;
+        radial-gradient(900px 420px at 15% 20%, rgba(0,0,0,0.55), transparent 55%),
+        radial-gradient(900px 420px at 70% 20%, rgba(52,211,153,.20), transparent 55%),
+        radial-gradient(900px 420px at 90% 0%, rgba(56,189,248,.16), transparent 55%),
+        linear-gradient(135deg, rgba(3,7,18,0.92), rgba(15,23,42,0.84));
+      box-shadow: var(--shadow);
+      padding: 14px;
+      overflow:hidden;
+      position: relative;
     }
-    .popInner{ position:relative; z-index:2; }
-    .popTitle{
-      margin:0;
-      font-size:18px;
-      font-weight:1000;
-      letter-spacing:.2px;
+    .bTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .bLeft{ min-width:220px; }
+    .bTitle{ font-size:12px; font-weight:1000; color: rgba(234,240,255,.78); }
+    .bValueRow{ display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap; }
+    .bValue{ font-size:32px; font-weight:1000; letter-spacing:.2px; line-height:1.1; }
+    .eyeBtn{
+      border:none; cursor:pointer; border-radius:12px; padding:10px 10px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+      color: var(--text); display:grid; place-items:center; transition: transform .12s ease, opacity .12s ease;
+      flex:0 0 auto;
     }
-    .popText{
-      margin-top:10px;
-      color:rgba(234,240,255,.85);
-      font-weight:900;
-      line-height:1.45;
-      white-space:pre-wrap;
+    .eyeBtn:active{ transform: translateY(1px); }
+    .eyeBtn svg{ width:18px; height:18px; opacity:.95; }
+    .bSub{ margin-top:6px; font-size:12px; color: rgba(234,240,255,.70); font-weight:900; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .dotLive{ width:10px;height:10px;border-radius:999px;background:rgba(34,197,94,1); box-shadow: 0 0 18px rgba(34,197,94,.55); }
+    .bRight{ display:flex; gap:10px; align-items:center; justify-content:flex-end; flex:1; min-width:220px; }
+    .actionBtn{
+      border:none; cursor:pointer; border-radius:14px; padding:10px 12px;
+      color:var(--text); font-weight:1000; font-size:12px; letter-spacing:.2px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      display:flex; align-items:center; gap:8px; white-space:nowrap; flex:0 0 auto;
     }
-    .popBtns{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      margin-top:14px;
-      flex-wrap:wrap;
+    .actionBtn.primary{ background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(56,189,248,.16); }
+    .actionBtn.green{ background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(16,185,129,.90)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(34,197,94,.14); }
+    .actionBtn.orange{ background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(249,115,22,.92)); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 55px rgba(245,158,11,.14); }
+    .actionBtn.alloc{
+      background: linear-gradient(135deg, rgba(124,77,255,.92), rgba(56,189,248,.92));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 18px 55px rgba(124,77,255,.14);
     }
-    .popBtn{
-      padding:12px 14px;
+    .actionBtn.alloc span{ font-size:14px; }
+    @media (max-width: 560px){
+      .bValue{ font-size:28px; }
+      .bRight{ justify-content:flex-start; }
+      .actionBtn{ flex:1 1 auto; justify-content:center; }
+      .actionBtn.alloc{ display:none; } /* hide desktop placement on mobile */
+    }
+
+    /* mobile allocation button (top-right of balance card) */
+    .allocMini{
+      display:none;
+      position:absolute;
+      top:12px;
+      right:12px;
+      width:42px;
+      height:42px;
       border-radius:14px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.22);
-      color:white;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      color: var(--text);
       font-weight:1000;
       cursor:pointer;
-      box-shadow:none;
+      box-shadow: 0 26px 90px rgba(0,0,0,.45);
+      place-items:center;
     }
-    .popBtn:hover{ background:rgba(255,255,255,.10); }
-    .popBtn.primary{
-      border:none;
-      background:linear-gradient(90deg, #5b6cff, #34d399);
-      color:white;
-      box-shadow:0 18px 60px rgba(0,0,0,.35);
+    .allocMini:active{ transform: translateY(1px); }
+    @media (max-width: 560px){
+      .allocMini{ display:grid; }
     }
-    .popBtn.primary:hover{ filter:brightness(1.03); }
-  
-    /* ============================================================
-      ✅ WITHDRAWAL PIN MODAL
-    ============================================================ */
-    .withdrawPinOverlay{
-      position:fixed; inset:0; z-index:11000;
-      display:none; align-items:center; justify-content:center;
-      padding:16px; background:rgba(0,0,0,.78);
+
+    /* GRID */
+    .grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:14px; }
+    @media (max-width: 860px){ .grid{ grid-template-columns:1fr; } }
+    .card{
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      --coinA: rgba(91,108,255,.22);
+      --coinB: rgba(124,77,255,.18);
+      background:
+        radial-gradient(1200px 600px at 10% 0%, var(--coinA), transparent 50%),
+        radial-gradient(900px 500px at 95% 10%, var(--coinB), transparent 55%),
+        rgba(255,255,255,.035);
+      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease, filter .12s ease;
+    }
+    .card:hover{ border-color: rgba(255,255,255,.18); filter: brightness(1.03); }
+    .card.selected{
+      border-color: rgba(56,189,248,.55);
+      box-shadow: 0 26px 90px rgba(0,0,0,.55), 0 0 0 2px rgba(56,189,248,.20) inset;
+      transform: translateY(-1px);
+    }
+    .card::before{
+      content:""; position:absolute; inset:-140px -120px auto auto;
+      width:240px;height:240px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.10), transparent 62%);
+      transform: rotate(14deg); pointer-events:none; opacity:.65;
+    }
+    .row{ display:flex; gap:14px; align-items:flex-start; justify-content:space-between; position: relative; z-index:2; }
+    .left{ min-width:0; flex:1; }
+    .meta{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+    .coin{ display:flex; gap:10px; align-items:center; min-width:0; }
+    .badge{
+      width:36px;height:36px;border-radius:12px;display:grid;place-items:center;
+      border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.20);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35); flex:0 0 auto; overflow:hidden;
+    }
+    .badge img{ width:26px;height:26px;display:block;object-fit:contain;filter: drop-shadow(0 8px 18px rgba(0,0,0,.35)); }
+    .badge .fallback{ font-weight:900;font-size:12px;letter-spacing:.4px;opacity:.95;display:none; }
+    .names{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .names .sym{ font-size:13px; font-weight:900; letter-spacing:.3px; line-height:1.2; }
+    .names .net{ font-size:12px; color:var(--muted); white-space: normal; word-break: break-word; line-height:1.25; max-width:100%; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size:12px; user-select:none; white-space:nowrap; height: fit-content;
+    }
+    .pill .mini{ width:8px;height:8px;border-radius:999px;background: radial-gradient(circle at 30% 30%, #fff, rgba(34,197,94,.9)); box-shadow: 0 0 0 4px rgba(34,197,94,.16); }
+    .stats{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+    @media (max-width: 520px){ .stats{ grid-template-columns:1fr; } }
+    .statBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px;
+      display:flex; flex-direction:column; gap:6px; overflow:hidden;
+    }
+    .statLabel{ font-size:11px; color: var(--muted2); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .statValue{ font-weight:1000; font-size:13px; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .chg{ font-weight:1000; font-size:12px; }
+    .chg.up{ color: rgba(34,197,94,1); }
+    .chg.down{ color: rgba(248,113,113,1); }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .btn{
+      border:none; cursor:pointer; border-radius:12px; padding:10px 12px;
+      color:var(--text); font-weight:900; font-size:12px; letter-spacing:.2px;
+      background: linear-gradient(135deg, rgba(91,108,255,.95), rgba(124,77,255,.92));
+      box-shadow: 0 18px 50px rgba(91,108,255,.20);
+      transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+      user-select:none; white-space:nowrap; flex:0 0 auto;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary{ background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); box-shadow:none; }
+    .btn.send{ background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(91,108,255,.92)); box-shadow: 0 18px 50px rgba(56,189,248,.18); }
+    .btn.receive{ background: linear-gradient(135deg, rgba(34,197,94,.95), rgba(16,185,129,.92)); box-shadow: 0 18px 50px rgba(34,197,94,.16); }
+    .hint{ font-size:11px; color:var(--muted); line-height:1.35; margin-top:8px; }
+    .empty{
+      margin-top:14px;
+      border: 1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.03);
+      border-radius: 16px;
+      padding: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      display:none;
+    }
+
+    /* chart emoji on card */
+    .miniChartBtn{
+      position:absolute;
+      right:12px;
+      bottom:10px;
+      z-index:3;
+      font-size:18px;
+      opacity:.18;
+      cursor:pointer;
+      user-select:none;
+      transition: opacity .12s ease, transform .12s ease;
+      padding:6px 8px;
+      border-radius:12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
       backdrop-filter: blur(8px);
     }
-    .withdrawPinOverlay.show{ display:flex; }
-    .withdrawPinCard{
-      width:min(440px, 96vw);
-      border-radius:24px;
-      border:1px solid rgba(255,255,255,.14);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      box-shadow:0 30px 110px rgba(0,0,0,.72);
-      backdrop-filter: blur(14px);
+    .miniChartBtn:hover{ opacity:.55; }
+    .miniChartBtn:active{ transform: translateY(1px); }
+
+    /* TOAST */
+    .toast{
+      position: fixed; left: 50%; top: 50%;
+      transform: translate(-50%, -50%) scale(.98);
+      z-index: 120;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.70);
+      backdrop-filter: blur(12px);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 40px 140px rgba(0,0,0,.75);
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+      min-width: 220px; text-align: center;
+    }
+    .toast.show{ opacity:1; transform: translate(-50%, -50%) scale(1); }
+
+    /* MODALS */
+    .overlay{
+      position: fixed; inset:0; z-index: 80;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      display:none; align-items:center; justify-content:center;
+      padding: 18px;
+    }
+    .overlay.show{ display:flex; }
+    .modal{
+      width: min(560px, 92vw);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.16), transparent 60%),
+        rgba(2,6,23,.92);
+      box-shadow: 0 40px 140px rgba(0,0,0,.70);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding: 14px 14px 12px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
       position:relative; overflow:hidden;
     }
-    .withdrawPinGlow{
-      position:absolute; inset:-40px; pointer-events:none;
+    .modalHead.pulseHead::before{
+      content:""; position:absolute; inset:-40px;
       background:
-        radial-gradient(circle at 14% 0%, rgba(91,108,255,.18), transparent 55%),
-        radial-gradient(circle at 86% 0%, rgba(52,211,153,.14), transparent 55%),
-        radial-gradient(circle at 50% 100%, rgba(56,189,248,.12), transparent 55%);
+        radial-gradient(600px 220px at 20% 30%, rgba(56,189,248,.28), transparent 60%),
+        radial-gradient(600px 220px at 80% 30%, rgba(124,77,255,.28), transparent 60%),
+        linear-gradient(90deg, rgba(91,108,255,.22), rgba(56,189,248,.18), rgba(124,77,255,.22));
+      filter: blur(18px);
+      opacity:.75;
+      animation: headPulse 2.2s ease-in-out infinite;
+      pointer-events:none;
     }
-    .withdrawPinInner{ position:relative; z-index:2; padding:20px; }
-    .withdrawPinHead{ text-align:center; }
-    .withdrawPinTitle{ margin:0; font-size:20px; font-weight:1000; }
-    .withdrawPinSub{ margin-top:8px; color:rgba(234,240,255,.75); font-size:13px; font-weight:900; line-height:1.45; }
-    .withdrawPinDots{
-      display:flex; justify-content:center; gap:16px;
-      margin:18px 0 10px;
-      padding:8px 10px; border-radius:999px; transition:.14s ease;
+    @keyframes headPulse{
+      0%{ transform: translateX(-12px) scale(1); opacity:.62; }
+      50%{ transform: translateX(12px) scale(1.06); opacity:.92; }
+      100%{ transform: translateX(-12px) scale(1); opacity:.62; }
     }
-    .withdrawPinDots.shake{
-      animation:withdrawPinShake .42s ease;
-      background:rgba(239,68,68,.10);
-      box-shadow:0 0 0 4px rgba(239,68,68,.14);
+    .modalHead > *{ position:relative; z-index:2; }
+    .modalTitle{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .modalTitle .h{ font-size:13px; font-weight:900; margin:0; letter-spacing:.2px; }
+    .modalTitle .s{ font-size:12px; color: var(--muted); margin:0; white-space:nowrap; overflow:hidden; text-overflow: ellipsis; }
+    .modalClose{
+      border:none; cursor:pointer; border-radius:12px; padding:10px 12px;
+      color: var(--text); font-weight:900; font-size:12px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+      flex:0 0 auto;
     }
-    @keyframes withdrawPinShake{
-      0%{ transform:translateX(0); }
-      15%{ transform:translateX(-10px); }
-      30%{ transform:translateX(10px); }
-      45%{ transform:translateX(-8px); }
-      60%{ transform:translateX(8px); }
-      75%{ transform:translateX(-6px); }
-      90%{ transform:translateX(6px); }
-      100%{ transform:translateX(0); }
+    .modalBody{ padding:14px; display:flex; flex-direction:column; gap:12px; }
+    .modalFoot{ padding:12px 14px 14px; border-top: 1px solid rgba(255,255,255,.08); display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+    .smallWarn{ font-size:12px; color: rgba(245,158,11,.95); line-height:1.4; }
+    .formGrid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:520px){ .formGrid{ grid-template-columns:1fr; } }
+    .in{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 10px;
+      display:flex; flex-direction:column; gap:6px;
     }
-    .withdrawPinDot{
-      width:16px; height:16px; border-radius:999px;
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.20);
-      transition:.12s ease;
+    .in label{ font-size:11px; color: var(--muted2); }
+    .in input, .in select{
+      border:none; outline:none; background:transparent; color:var(--text);
+      font-size:13px; padding:2px 0;
     }
-    .withdrawPinDot.filled{
-      background:rgba(255,255,255,.94);
-      border-color:rgba(255,255,255,.94);
-      transform:scale(1.08);
+    .in input::placeholder{ color: rgba(234,240,255,.35); }
+    .feeBox{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex; flex-direction:column; gap:8px;
     }
-    .withdrawPinAttempts{
-      min-height:18px; text-align:center; font-size:12px; font-weight:1000;
-      color:rgba(234,240,255,.65); margin-bottom:10px;
+    .feeRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; color: var(--muted); }
+    .feeRow b{ color: var(--text); font-weight:900; }
+    .field{ border: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.22); border-radius: 14px; padding: 10px; }
+    .field .label{ font-size:11px; color: var(--muted2); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .field .value{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:12px; color: var(--text); word-break: break-all; line-height:1.35;
     }
-    .withdrawPinAttempts.danger{ color:rgba(248,113,113,.96); }
-    .withdrawPinLockBox{
-      display:none; text-align:center; margin:6px 0 14px;
-      padding:12px 14px; border-radius:18px;
-      border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.20);
+    .qr{ width:200px;height:200px; display:grid; place-items:center; border-radius:16px; background: transparent; margin: 0 auto; }
+    .qr svg{ width:200px;height:200px; display:block; }
+
+    /* ASSET SELECT */
+    .assetSearch{ display:flex; align-items:center; gap:10px; padding: 10px 12px; border-radius:14px; border:1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.18); }
+    .assetSearch input{ width:100%; border:none; outline:none; background:transparent; color:var(--text); font-size:13px; }
+    .assetList{ display:flex; flex-direction:column; gap:10px; max-height:52vh; overflow:auto; padding-right:4px; }
+    .assetItem{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 12px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor:pointer; user-select:none;
+    }
+    .assetItem:hover{ border-color: rgba(255,255,255,.18); }
+    .assetLeft{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .assetMeta{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .assetMeta b{ font-size:12px; font-weight:1000; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .assetMeta span{ font-size:12px; color: var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* STATUS DOT */
+    .statusDot{
+      width:10px;height:10px;border-radius:999px;background: rgba(34,197,94,1);
+      box-shadow: 0 0 0 0 rgba(34,197,94,.35);
+      animation: glowPulse 1.35s ease-in-out infinite; flex:0 0 auto;
+    }
+    @keyframes glowPulse{
+      0%{ box-shadow: 0 0 0 0 rgba(34,197,94,.35), 0 0 12px rgba(34,197,94,.28); opacity:.85; }
+      50%{ box-shadow: 0 0 0 8px rgba(34,197,94,.10), 0 0 22px rgba(34,197,94,.40); opacity:1; }
+      100%{ box-shadow: 0 0 0 0 rgba(34,197,94,.35), 0 0 12px rgba(34,197,94,.28); opacity:.85; }
+    }
+
+    /* MENU DRAWER (NO PORTFOLIO) */
+    .drawerOverlay{ position: fixed; inset:0; z-index:90; background: rgba(0,0,0,.55); backdrop-filter: blur(8px); display:none; }
+    .drawerOverlay.show{ display:block; }
+    .drawer{
+      position: fixed; top:0; left:0; height:100%; width: min(330px, 86vw);
+      z-index:95; transform: translateX(-102%); transition: transform .18s ease;
+      border-right: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(91,108,255,.16), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,.14), transparent 60%),
+        rgba(2,6,23,.94);
+      box-shadow: 0 40px 160px rgba(0,0,0,.75);
+      padding: 14px; display:flex; flex-direction:column; gap:12px; overflow:auto;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) rgba(0,0,0,0);
+    }
+    .drawer::-webkit-scrollbar{ width:8px } .drawer::-webkit-scrollbar-track{ background:transparent }
+    .drawer::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.16); border-radius:999px; border:2px solid rgba(0,0,0,0); background-clip:padding-box; }
+    .drawer.show{ transform: translateX(0); }
+    .drawerTop{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .drawerTop .brand{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .drawerTop .brand img{ width:56px;height:56px; object-fit:contain; filter: drop-shadow(0 12px 28px rgba(0,0,0,.55)); }
+    .drawerTop .brand b{ font-weight:1000; letter-spacing:.3px; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .userTag{
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
       box-shadow:0 18px 55px rgba(0,0,0,.35);
+      margin:2px 0 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
     }
-    .withdrawPinLockBox.show{ display:block; }
-    .withdrawPinLockBox .t1{ font-weight:1000; color:rgba(234,240,255,.92); }
-    .withdrawPinLockBox .t2{ margin-top:6px; font-size:22px; font-weight:1000; letter-spacing:1px; }
-    .withdrawPinLockBox .t3{ margin-top:5px; font-size:12px; color:rgba(234,240,255,.60); font-weight:900; }
-    .withdrawPinPad{
-      display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;
-      max-width:320px; margin:0 auto; transition:.2s ease;
+    .userTagLeft{ min-width:0; }
+    .userTag .t1{ color:rgba(234,240,255,.55); font-weight:1000; font-size:12px; }
+    .userTag .t2{
+      margin-top:6px; font-weight:1000;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;
     }
-    .withdrawPinPad.locked{ opacity:.4; pointer-events:none; filter:grayscale(25%); }
-    .withdrawPinKey{
-      height:58px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.92); color:#08101e;
-      font-size:22px; font-weight:1000; cursor:pointer;
-      box-shadow:none;
+    .sideAvatar{
+      width:46px; height:46px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.25);
+      display:grid; place-items:center;
+      position:relative; overflow:hidden;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      flex:0 0 auto;
     }
-    .withdrawPinKey.ghost{ background:transparent; color:rgba(234,240,255,.82); }
-    .withdrawPinBtns{
-      display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px;
-    }
-    .withdrawPinBtn{
-      padding:12px 14px; border-radius:14px; cursor:pointer; font-weight:1000;
-      box-shadow:none;
-    }
-    .withdrawPinBtn.secondary{
-      border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.22); color:white;
-    }
-    .withdrawPinBtn.linkish{
-      border:1px solid rgba(91,108,255,.24); background:rgba(91,108,255,.12); color:#dfe6ff;
+    .sideAvatar span{ font-size:18px; }
+    .sideAvatar img{
+      position:absolute; inset:0;
+      width:100%; height:100%; object-fit:cover; display:none;
     }
 
-/* ===== SITE-WIDE NOTIFICATION MODAL + GLOBAL FOOTER ===== */
-.siteNoticeOverlay{
-  position:fixed; inset:0; z-index:120000;
-  background:rgba(0,0,0,.72);
-  display:none; align-items:center; justify-content:center;
-  padding:18px;
-  backdrop-filter: blur(6px);
-}
-.siteNoticeCard{
-  width:min(680px, 100%);
-  border-radius:28px;
-  border:1px solid rgba(255,255,255,.14);
-  background:
-    radial-gradient(700px 220px at 12% 10%, rgba(56,189,248,.16), transparent 62%),
-    radial-gradient(700px 220px at 88% 18%, rgba(255,77,166,.10), transparent 62%),
-    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  box-shadow:0 30px 110px rgba(0,0,0,.70);
-  overflow:hidden;
-  backdrop-filter: blur(12px);
-}
-.siteNoticeHead{
-  padding:18px 18px 14px;
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  background: linear-gradient(90deg, rgba(91,108,255,.22), rgba(56,189,248,.18), rgba(255,77,166,.16));
-  animation: siteNoticePulse 2.4s ease-in-out infinite;
-}
-@keyframes siteNoticePulse{
-  0%{ filter:brightness(1); }
-  50%{ filter:brightness(1.08); }
-  100%{ filter:brightness(1); }
-}
-.siteNoticeTitleWrap{display:flex; align-items:center; gap:12px; min-width:0;}
-.siteNoticeIcon{
-  width:50px; height:50px; border-radius:18px;
-  display:grid; place-items:center;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(0,0,0,.18);
-  box-shadow:0 18px 45px rgba(0,0,0,.28);
-  font-size:24px;
-  flex:0 0 auto;
-}
-.siteNoticeTitle{
-  font-weight:1000; font-size:20px; letter-spacing:.2px;
-  color:rgba(234,240,255,.98);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.siteNoticeClose{
-  width:44px; height:44px; border-radius:16px;
-  border:1px solid rgba(255,255,255,.16);
-  background:rgba(0,0,0,.18);
-  color:white; cursor:pointer; font-weight:1000;
-  flex:0 0 auto;
-}
-.siteNoticeClose:hover{background:rgba(255,255,255,.10)}
-.siteNoticeBody{
-  padding:18px;
-  color:rgba(234,240,255,.84);
-  font-weight:900;
-  line-height:1.55;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-.siteNoticeActions{
-  padding:0 18px 18px;
-  display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;
-}
-.siteNoticeBtn{
-  border:none;
-  padding:12px 16px;
-  border-radius:16px;
-  cursor:pointer;
-  font-weight:1000;
-  color:white;
-  background:linear-gradient(90deg, #5b6cff, #34d399);
-  box-shadow:0 18px 60px rgba(0,0,0,.45);
-}
-.siteWideFooter{
-  width:100%;
-  text-align:center;
-  color:rgba(234,240,255,.58);
-  font-size:13px;
-  font-weight:900;
-  padding:20px 12px 8px;
-}
+    .drawerNav{ display:flex; flex-direction:column; gap:10px; }
+    .navItem{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 12px; border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      cursor:pointer; user-select:none;
+      font-weight:900; font-size:12px; color: var(--text); text-decoration:none;
+    }
+    .navItem:hover{ border-color: rgba(255,255,255,.18); }
+    .navItem small{ color: var(--muted); font-weight:800; }
+    .navItem.active{ border: 1px solid rgba(56,189,248,.55); background: linear-gradient(180deg, rgba(56,189,248,.12), rgba(56,189,248,.06)); }
 
+    /* HISTORY DRAWER */
+    .historyOverlay{ position: fixed; inset:0; z-index:90; background: rgba(0,0,0,.55); backdrop-filter: blur(8px); display:none; }
+    .historyOverlay.show{ display:block; }
+    .history{
+      position: fixed; top:0; right:0; height:100%; width: min(420px, 92vw);
+      z-index:95; transform: translateX(102%); transition: transform .18s ease;
+      border-left: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(56,189,248,.16), transparent 55%),
+        radial-gradient(900px 500px at 90% 10%, rgba(91,108,255,.14), transparent 60%),
+        rgba(2,6,23,.94);
+      box-shadow: 0 40px 160px rgba(0,0,0,.75);
+      padding:14px; display:flex; flex-direction:column; gap:12px; overflow:auto;
+    }
+    .history.show{ transform: translateX(0); }
+    .historyTop{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding-bottom:10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .historyTop .h{ font-weight:1000; font-size:13px; margin:0; }
+    .historyTop .s{ margin:4px 0 0; font-size:12px; color: var(--muted); }
+    .historyList{ display:flex; flex-direction:column; gap:10px; padding-bottom:10px; }
+    .hItem{ border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+    .hRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .hLeft{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+    .hLeft b{ font-size:12px; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hLeft span{ font-size:12px; color: var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tag{ font-size:11px; font-weight:1000; padding:6px 10px; border-radius:999px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.18); white-space:nowrap; }
+    .tag.pending{ color: rgba(245,158,11,.95); border-color: rgba(245,158,11,.30); }
+    .tag.approved{ color: rgba(34,197,94,.95); border-color: rgba(34,197,94,.30); }
+    .tag.rejected{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
+    .tag.sent{ color: rgba(56,189,248,.95); border-color: rgba(56,189,248,.30); }
+    .tag.failed{ color: rgba(248,113,113,.95); border-color: rgba(248,113,113,.30); }
+    .tag.processing{ color: rgba(147,197,253,.95); border-color: rgba(147,197,253,.30); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+
+    /* LINK FAB */
+    .linkFab{
+      position: fixed; right: 16px; top: 92px; z-index: 70;
+      display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
+      border-radius:999px; padding:10px 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 26px 90px rgba(0,0,0,.55);
+    }
+    @media (max-width: 860px){ .linkFab{ top:auto; bottom:260px; right:14px; } }
+    .bolt{
+      width:34px;height:34px;border-radius:14px;display:grid;place-items:center;
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(135deg, rgba(245,158,11,.95), rgba(91,108,255,.75));
+      box-shadow: 0 18px 55px rgba(245,158,11,.18);
+      transform-origin: top center;
+      animation: swing 1.4s ease-in-out infinite;
+    }
+    @keyframes swing{ 0%{ transform: rotate(-8deg) translateY(0);} 50%{ transform: rotate(10deg) translateY(1px);} 100%{ transform: rotate(-8deg) translateY(0);} }
+    .bolt svg{ width:16px;height:16px;opacity:.98; }
+    .linkFab .t{ display:flex; flex-direction:column; gap:2px; line-height:1.1; }
+    .linkFab .t b{ font-size:12px; font-weight:1000; }
+    .linkFab .t span{ font-size:11px; color: var(--muted); font-weight:900; }
+
+    /* footer */
+    footer{
+      width: min(1180px, 92vw);
+      margin: 0 auto;
+      padding: 18px 0 26px;
+      text-align:center;
+      color: rgba(234,240,255,.55);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+
+    /* allocation chart modal canvas */
+    .chartWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .chartGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 720px){
+      .chartGrid{ grid-template-columns: 1fr; }
+    }
+    .chartBox{
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 10px;
+      min-height: 260px;
+    }
+    .chartBox canvas{ width:100% !important; height:240px !important; }
+
+    /* tradingview modal container */
+    .tvWrap{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      overflow:hidden;
+      min-height: 420px;
+    }
+    #tvContainer{ width:100%; height: 420px; }
+  
 </style>
+
+
+<link rel="preconnect" href="https://www.smartsuppchat.com" crossorigin>
+<link rel="dns-prefetch" href="//www.smartsuppchat.com">
+<link rel="preload" as="script" href="https://www.smartsuppchat.com/loader.js?">
+
 
 <!-- Smartsupp Live Chat script -->
 <script type="text/javascript">
 var _smartsupp = _smartsupp || {};
 _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
 window.smartsupp||(function(d) {
- var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
- s=d.getElementsByTagName('script')[0];c=d.createElement('script');
- c.type='text/javascript';c.charset='utf-8';c.async=true;
- c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+ var c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+ c=d.createElement('script');
+ c.type='text/javascript';
+ c.charset='utf-8';
+ c.async=false;
+ c.defer=false;
+ c.fetchPriority='high';
+ c.src='https://www.smartsuppchat.com/loader.js?';
+ d.head.appendChild(c);
 })(document);
 </script>
 
@@ -882,110 +670,93 @@ window.smartsupp||(function(d) {
 })();
 </script>
 
-</head>
 
+
+
+
+<style>
+@media (max-width: 860px){
+  iframe[src*="smartsupp"],
+  .smartsupp-launcher{
+    bottom: 70px !important;
+    left: 14px !important;
+    right: auto !important;
+  }
+}
+</style>
+
+
+<script>
+(function () {
+  function nudgeSmartsuppLauncher() {
+    const nodes = Array.from(document.querySelectorAll('iframe, div'));
+    nodes.forEach((node) => {
+      const src = (node.getAttribute('src') || '').toLowerCase();
+      const id = (node.id || '').toLowerCase();
+      const cls = (typeof node.className === 'string' ? node.className : '').toLowerCase();
+      const title = (node.getAttribute('title') || '').toLowerCase();
+      const looksLikeSmartsupp =
+        src.includes('smartsupp') ||
+        id.includes('smartsupp') ||
+        cls.includes('smartsupp') ||
+        title.includes('smartsupp');
+      if (!looksLikeSmartsupp) return;
+      node.style.setProperty('visibility', 'visible', 'important');
+      node.style.setProperty('opacity', '1', 'important');
+      node.style.setProperty('display', '', 'important');
+      node.style.setProperty('z-index', '99998', 'important');
+    });
+  }
+
+  function startNudge() {
+    nudgeSmartsuppLauncher();
+    let ticks = 0;
+    const t = setInterval(() => {
+      nudgeSmartsuppLauncher();
+      ticks += 1;
+      if (ticks > 20) clearInterval(t);
+    }, 120);
+  }
+
+  const gate = document.getElementById('authGate');
+  if (gate) {
+    const obs = new MutationObserver(() => {
+      const hidden = gate.style.display === 'none' || getComputedStyle(gate).display === 'none';
+      if (hidden) {
+        startNudge();
+        obs.disconnect();
+      }
+    });
+    obs.observe(gate, { attributes: true, attributeFilter: ['style', 'class'] });
+  }
+
+  window.addEventListener('load', startNudge, { once: true });
+})();
+</script>
+
+</head>
 <body>
 
-<div id="siteNoticeOverlay" class="siteNoticeOverlay" aria-hidden="true">
-  <div class="siteNoticeCard" role="dialog" aria-modal="true" aria-labelledby="siteNoticeTitle">
-    <div class="siteNoticeHead">
-      <div class="siteNoticeTitleWrap">
-        <div class="siteNoticeIcon">🔔</div>
-        <div id="siteNoticeTitle" class="siteNoticeTitle">Notification</div>
-      </div>
-      <button class="siteNoticeClose" onclick="closeSiteNotice()" aria-label="Close">✕</button>
-    </div>
-    <div id="siteNoticeBody" class="siteNoticeBody"></div>
-    <div class="siteNoticeActions">
-      <button class="siteNoticeBtn" onclick="closeSiteNotice()">OK</button>
-    </div>
-  </div>
-</div>
-
-
-  <!-- Loading -->
+  <!-- LOADING -->
   <div id="authGate">
     <div class="gateCard">
       <div class="gateLogo">
-        <img class="logoImg" src="assets/vgm-logo.png" alt="Coinluxora Logo">
+        <img class="logoImg" src="assets/vgm-logo.png" alt="VGM Logo">
       </div>
       <div class="gateTxt">Veloci Global Markets</div>
-      <div class="gateSub">Secure withdrawals • Fast processing</div>
+      <div class="gateSub">Seamless transaction simplified.</div>
     </div>
   </div>
 
-  <!-- ✅ POP MODAL -->
-  <div id="popOverlay" class="popOverlay" onclick="closePop(event)">
-    <div class="popBox" role="dialog" aria-modal="true" aria-labelledby="popTitle">
-      <div class="popGlow"></div>
-      <div class="popInner">
-        <h3 id="popTitle" class="popTitle">Success</h3>
-        <div id="popText" class="popText"></div>
-        <div class="popBtns">
-          <button class="popBtn" type="button" onclick="closePop()">Close</button>
-          <button class="popBtn primary" type="button" onclick="closePop()">Okay</button>
-        </div>
+  <!-- MENU DRAWER -->
+  <div id="menuOverlay" class="drawerOverlay"></div>
+  <aside id="menuDrawer" class="drawer" aria-label="Menu drawer">
+    <div class="drawerTop">
+      <div class="brand">
+        <img src="assets/vgm-logo.png" alt="VGM Logo">
+        <b>VGM • Navigation</b>
       </div>
-    </div>
-  </div>
-
-  <!-- ✅ WITHDRAWAL PIN MODAL -->
-  <div id="withdrawPinOverlay" class="withdrawPinOverlay" onclick="closeWithdrawPin(event)">
-    <div class="withdrawPinCard" role="dialog" aria-modal="true" aria-labelledby="withdrawPinTitle">
-      <div class="withdrawPinGlow"></div>
-      <div class="withdrawPinInner">
-        <div class="withdrawPinHead">
-          <h3 id="withdrawPinTitle" class="withdrawPinTitle">Confirm Withdrawal PIN</h3>
-          <div class="withdrawPinSub">Enter your 4-digit login PIN to submit this withdrawal request.</div>
-        </div>
-
-        <div id="withdrawPinDots" class="withdrawPinDots">
-          <div class="withdrawPinDot"></div>
-          <div class="withdrawPinDot"></div>
-          <div class="withdrawPinDot"></div>
-          <div class="withdrawPinDot"></div>
-        </div>
-
-        <div id="withdrawPinAttempts" class="withdrawPinAttempts"></div>
-
-        <div id="withdrawPinLockBox" class="withdrawPinLockBox">
-          <div class="t1">Too many incorrect PIN attempts 🔒</div>
-          <div id="withdrawPinLockTime" class="t2">05:00</div>
-          <div class="t3">Please wait before trying again.</div>
-        </div>
-
-        <div id="withdrawPinPad" class="withdrawPinPad">
-          <button type="button" class="withdrawPinKey" data-num="1">1</button>
-          <button type="button" class="withdrawPinKey" data-num="2">2</button>
-          <button type="button" class="withdrawPinKey" data-num="3">3</button>
-          <button type="button" class="withdrawPinKey" data-num="4">4</button>
-          <button type="button" class="withdrawPinKey" data-num="5">5</button>
-          <button type="button" class="withdrawPinKey" data-num="6">6</button>
-          <button type="button" class="withdrawPinKey" data-num="7">7</button>
-          <button type="button" class="withdrawPinKey" data-num="8">8</button>
-          <button type="button" class="withdrawPinKey" data-num="9">9</button>
-          <button type="button" class="withdrawPinKey ghost" data-action="clear">Clear</button>
-          <button type="button" class="withdrawPinKey" data-num="0">0</button>
-          <button type="button" class="withdrawPinKey ghost" data-action="backspace">⌫</button>
-        </div>
-
-        <div class="withdrawPinBtns">
-          <button class="withdrawPinBtn secondary" type="button" onclick="closeWithdrawPin()">Cancel</button>
-          <button id="withdrawPinForgotBtn" class="withdrawPinBtn linkish" type="button">Forgot PIN?</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ OVERLAY + SIDEBAR -->
-  <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-  <div id="sidebar" class="sidebar" aria-hidden="true">
-    <div class="sideTop">
-      <div class="sideBrand">
-        <img class="sideLogoWide" src="assets/vgm-logo.png" alt="Coinluxora Logo">
-      </div>
-      <button class="closeBtn" onclick="closeMenu()" aria-label="Close menu">✕</button>
+      <button class="modalClose" id="btnMenuClose" type="button">Close</button>
     </div>
 
     <div class="userTag">
@@ -999,1288 +770,1998 @@ window.smartsupp||(function(d) {
       </div>
     </div>
 
-    <div class="menuGroupTitle">Navigation</div>
-    <a class="sideItem" href="user-dashboard.html"><div class="i">🏠</div><div>Dashboard<small>Main overview</small></div></a>
-    <a class="sideItem" href="wallet.html"><div class="i">👛</div><div>Wallet<small>Manage funds</small></div></a>
-    <a class="sideItem" href="deposits.html"><div class="i">💳</div><div>Deposit<small>Fund your account</small></div></a>
-    <a class="sideItem activeLink" href="withdraw.html"><div class="i">➡</div><div>Withdraw Funds<small>Request payout</small></div></a>
-    <a class="sideItem" href="support.html"><div class="i">🧑‍💻</div><div>Support / Contact<small>Tickets & help</small></div></a>
-    <a class="sideItem" href="plans.html"><div class="i">💼</div><div>Investment Plans<small>Start investing</small></div></a>
-    <a class="sideItem" href="profile.html"><div class="i">👤</div><div>Profile / Settings<small>Account security</small></div></a>
+    <div class="drawerNav">
+      <a class="navItem" href="user-dashboard.html"><span>Dashboard</span><small>Main overview</small></a>
+      <a class="navItem active" href="wallet.html"><span>Wallet</span><small>Manage funds</small></a>
+      <a class="navItem" href="deposits.html"><span>Deposits</span><small>Fund account</small></a>
+      <a class="navItem" href="withdraw.html"><span>Withdraw Funds</span><small>Request payout</small></a>
+      <a class="navItem" href="support.html"><span>Support</span><small>Tickets</small></a>
+      <a class="navItem" href="plans.html"><span>Plans</span><small>Invest</small></a>
+      <a class="navItem" href="trade-history.html"><span>Trade History</span><small>View trades</small></a>
+      <a class="navItem" href="profile.html"><span>Profile</span><small>Security</small></a>
+      <button class="navItem" id="btnLogout" type="button"><span>Logout</span><small>Sign out</small></button>
+    </div>
+  </aside>
 
-    <button class="sideLogout" onclick="logout()">Logout</button>
+  <!-- SEND HISTORY DRAWER -->
+  <div id="historyOverlay" class="historyOverlay"></div>
+  <aside id="historyDrawer" class="history" aria-label="Send history drawer">
+    <div class="historyTop">
+      <div style="min-width:0;">
+        <p class="h">Send History</p>
+        <p class="s">Pending • Approved • Sent • Failed</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="btnTop" id="btnHistoryRefresh" type="button">Refresh</button>
+        <button class="btnTop" id="btnHistoryClose" type="button">Close</button>
+      </div>
+    </div>
+    <div id="historyList" class="historyList"></div>
+    <div id="historyEmpty" class="empty" style="display:none; margin-top:0;">No send history yet.</div>
+  </aside>
+
+  <!-- Floating Link Wallet -->
+  <div class="linkFab" id="btnLinkWallet" title="Link external wallet (safe)">
+    <div class="bolt">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M13 2 3 14h7l-1 8 12-14h-7l-1-6Z" stroke="rgba(10,12,18,.95)" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="t">
+      <b id="linkFabTitle">Link Wallet</b>
+      <span id="linkFabSub">External address</span>
+    </div>
   </div>
 
-  <div class="container">
-
-    <!-- ✅ Sticky top nav -->
-    <div class="topFloatNav">
-      <button class="backBtn" onclick="goDashboard()">← Dashboard</button>
-      <button class="menuBtn" onclick="openMenu()" aria-label="Open menu">☰</button>
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="toprow">
+      <div class="leftTop">
+        <button class="menuBtn" id="btnMenu" type="button" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="title">
+          <h1>Crypto Wallet</h1>
+          <p>Select coin + network when sending/receiving.</p>
+        </div>
+      </div>
+      <div class="rightTop">
+        <div class="searchBox">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="rgba(234,240,255,.85)" stroke-width="2"/>
+            <path d="M16.5 16.5 21 21" stroke="rgba(234,240,255,.85)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input id="q" placeholder="Search asset (e.g. BTC, USDT, Cardano, TRC20)..." autocomplete="off"/>
+        </div>
+        <button class="btnTop" id="btnReload" type="button">Reload</button>
+        <button class="btnTop primary" id="btnHistoryOpen" type="button">History</button>
+      </div>
     </div>
+  </div>
 
-    <div class="topbar">
+  <div class="wrap">
+    <div class="notice">
+      <div class="dot"></div>
       <div>
-        <h2>Withdrawals</h2>
-        <div class="mutedTiny">Choose method: Crypto or Bank</div>
-      </div>
-      <div id="userWho" class="who">Loading…</div>
-    </div>
-
-    <!-- ✅ Withdraw form -->
-    <div class="card">
-      <h3>Request Withdrawal</h3>
-      <div class="sub">Make sure your details are correct. Pending withdrawals can be cancelled.</div>
-
-      <!-- Method switch -->
-      <div class="methodSwitch" id="methodSwitch">
-        <div class="mBtn active" data-method="crypto">Crypto Withdrawal</div>
-        <div class="mBtn" data-method="bank">Bank Withdrawal</div>
-      </div>
-
-      <div class="grid">
-
-        <div>
-          <label>Amount <span class="req">*</span></label>
-          <input type="number" id="amount" placeholder="Enter amount"/>
+        <div style="font-size:13px; font-weight:1000; margin-bottom:4px;">
+          Important: Send only the exact asset on the exact network shown.
         </div>
-
-        <div>
-          <label>Asset <span class="req">*</span></label>
-          <select id="asset">
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="GBP">GBP</option>
-            <option value="ETH">ETH</option>
-            <option value="BTC">BTC</option>
-            <option value="USDT">USDT</option>
-          </select>
-        </div>
-
-        <!-- =========================
-             CRYPTO FIELDS
-        ========================== -->
-        <div class="full" id="cryptoBlock">
-          <div class="grid" style="grid-template-columns:1fr 1fr; gap:14px; margin-top:0;">
-            <div class="full">
-              <label>Network <span class="req">*</span></label>
-              <select id="network">
-                <option value="TRC20">TRC20</option>
-                <option value="ERC20">ERC20</option>
-                <option value="BEP20">BEP20</option>
-                <option value="BTC">BTC</option>
-              </select>
-            </div>
-
-            <div class="full">
-              <label>Wallet Address <span class="req">*</span></label>
-              <input type="text" id="wallet_address" placeholder="Enter your wallet address"/>
-            </div>
-          </div>
-
-          <div class="note">
-            ⏱️ Crypto withdrawals may take up to <strong>1 hour</strong> to process due to network congestion.
-          </div>
-        </div>
-
-        <!-- =========================
-             BANK FIELDS
-        ========================== -->
-        <div class="full" id="bankBlock" style="display:none;">
-          <div class="grid" style="grid-template-columns:1fr 1fr; gap:14px; margin-top:0;">
-            <div>
-              <label>Bank Country / Region <span class="req">*</span></label>
-              <select id="bank_region">
-                <option value="US">United States</option>
-                <option value="UK">United Kingdom</option>
-                <option value="EU">Europe (IBAN)</option>
-                <option value="INTL">International (SWIFT)</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Bank Name <span class="req">*</span></label>
-              <input id="bank_name" placeholder="Example: Chase / Barclays / Deutsche Bank"/>
-            </div>
-
-            <div>
-              <label>Account Holder Name <span class="req">*</span></label>
-              <input id="account_name" placeholder="Account name exactly as bank records"/>
-            </div>
-
-            <div>
-              <label>Account Number <span class="req">*</span></label>
-              <input id="account_number" placeholder="Enter account number"/>
-            </div>
-
-            <div id="usRoutingWrap" style="display:none;">
-              <label>Routing Number (US) <span class="req">*</span></label>
-              <input id="routing_number" placeholder="9-digit routing number"/>
-            </div>
-
-            <div id="ukSortWrap" style="display:none;">
-              <label>Sort Code (UK) <span class="req">*</span></label>
-              <input id="sort_code" placeholder="Example: 12-34-56"/>
-            </div>
-
-            <div id="ibanWrap" style="display:none;">
-              <label>IBAN <span class="req">*</span></label>
-              <input id="iban" placeholder="International Bank Account Number"/>
-            </div>
-
-            <div id="swiftWrap" style="display:none;">
-              <label>SWIFT / BIC <span class="req">*</span></label>
-              <input id="swift_bic" placeholder="Example: ABCDUS33XXX"/>
-            </div>
-
-            <div class="full">
-              <label>Bank Address (Optional)</label>
-              <input id="bank_address" placeholder="Optional: bank branch address"/>
-            </div>
-
-            <div class="full">
-              <label>Reference / Note (Optional)</label>
-              <input id="bank_reference" placeholder="Optional: reference for bank transfer"/>
-            </div>
-          </div>
-
-          <div class="note">
-            🏦 Bank withdrawals could take up to <strong>2 business days</strong> to process.
-          </div>
-        </div>
-
-        <div class="full">
-          <button id="submitBtn" type="button" style="width:100%;">Submit Withdrawal</button>
-          <div id="msg" class="msg"></div>
+        <div class="small">
+          Deposits sent on the wrong network (e.g. ERC20 vs BEP20) may be unrecoverable.
+          Never share your seed phrase — support will never request it.
         </div>
       </div>
     </div>
 
-    <!-- ✅ History -->
-    <div class="card">
-      <div class="historyHead">
-        <h4>Withdrawal History</h4>
+    <!-- TOTAL WALLET BALANCE -->
+    <div class="balanceCard">
+      <button class="allocMini" id="btnAllocMini" type="button" title="Allocation charts">📊</button>
 
-        <div class="tabs" id="tabs">
-          <div class="tab active" data-status="all">All</div>
-          <div class="tab" data-status="pending">Pending</div>
-          <div class="tab" data-status="approved">Approved</div>
-          <div class="tab" data-status="rejected">Rejected</div>
-          <div class="tab" data-status="cancelled">Cancelled</div>
+      <div class="bTop">
+        <div class="bLeft">
+          <div class="bTitle">Total Wallet Balance</div>
+          <div class="bValueRow">
+            <div class="bValue" id="totalBalanceUsd" data-bal="1" data-bal-real="$0.00">$0.00</div>
+            <button class="eyeBtn" id="btnToggleHide" type="button" aria-label="Hide balances" title="Hide/Show balances">
+              <svg id="eyeIcon" viewBox="0 0 24 24" fill="none">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="rgba(234,240,255,.9)" stroke-width="2"/>
+              </svg>
+              <svg id="eyeOffIcon" viewBox="0 0 24 24" fill="none" style="display:none;">
+                <path d="M3 3l18 18" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M10.7 10.7A3 3 0 0 0 13.3 13.3" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a18.7 18.7 0 0 1-4 5.1" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.2 6.2C3.8 8 2 12 2 12s3.5 7 10 7c1 0 2-.2 2.9-.5" stroke="rgba(234,240,255,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="bSub">
+            <span class="dotLive"></span>
+            <span id="totalHint">Linked with dashboard balance</span>
+          </div>
         </div>
-
-        <button id="refreshHistoryBtn" class="miniBtn" type="button">Refresh</button>
-      </div>
-
-      <div id="historyContainer"></div>
-
-      <div class="footerActions">
-        <button id="loadMoreBtn" class="miniBtn" type="button" style="display:none;">Load More</button>
+        <div class="bRight">
+          <button class="actionBtn primary" id="btnMainSend" type="button">📤 Send</button>
+          <button class="actionBtn green" id="btnMainReceive" type="button">📥 Receive</button>
+          <button class="actionBtn orange" id="btnMainSwap" type="button">⇄ Swap</button>
+          <button class="actionBtn alloc" id="btnAlloc" type="button" title="Allocation charts"><span>📊</span> Allocation</button>
+        </div>
       </div>
     </div>
 
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty">No assets match your search.</div>
   </div>
 
-<script>
-  /* ============================================================
-    ✅ SUPABASE
-  ============================================================ */
-  const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <footer>© 2026 Veloci Global Markets. All rights reserved.</footer>
 
-  /* ============================================================
-    ✅ SIDEBAR MENU
-  ============================================================ */
-  function openMenu(){
-    document.getElementById("sidebar").classList.add("open");
-    document.getElementById("overlay").classList.add("show");
-    document.getElementById("sidebar").setAttribute("aria-hidden","false");
-    document.body.style.overflow="hidden";
-  }
-  function closeMenu(){
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("overlay").classList.remove("show");
-    document.getElementById("sidebar").setAttribute("aria-hidden","true");
-    document.body.style.overflow="";
-  }
-  document.addEventListener("keydown",(e)=>{
-    if(e.key==="Escape") closeMenu();
-  });
+  <div id="toast" class="toast"></div>
 
-  function goDashboard(){
-    window.location.href="user-dashboard.html";
-  }
-
-  function hideGate(){
-    const g=document.getElementById("authGate");
-    if(g) g.style.display="none";
-  }
-
-  /* ============================================================
-    ✅ POP MODAL
-  ============================================================ */
-  function openPop(title, text){
-    document.getElementById("popTitle").textContent = title || "Notice";
-    document.getElementById("popText").textContent = text || "";
-    document.getElementById("popOverlay").classList.add("show");
-    document.body.style.overflow = "hidden";
-  }
-  function closePop(e){
-    // If clicked backdrop, close; if called directly, close
-    if(e && e.target && !e.target.classList.contains("popOverlay")) return;
-    document.getElementById("popOverlay").classList.remove("show");
-    document.body.style.overflow = "";
-  }
-  window.closePop = closePop;
-
-  /* ============================================================
-    ✅ UI Helpers
-  ============================================================ */
-  const msg = document.getElementById("msg");
-  const submitBtn = document.getElementById("submitBtn");
-  const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
-  const historyContainer = document.getElementById("historyContainer");
-  const loadMoreBtn = document.getElementById("loadMoreBtn");
-  const tabsEl = document.getElementById("tabs");
-
-  const userWho = document.getElementById("userWho");
-  const sideName = document.getElementById("sideName");
-
-  const sideAvatarFallback = document.getElementById("sideAvatarFallback");
-  const sideAvatarImg = document.getElementById("sideAvatarImg");
-
-  let currentUserEmail = null;
-  let currentUserId = null;
-  let currentFilter = "all";
-  let pageSize = 10;
-  let currentOffset = 0;
-  let historyCache = [];
-
-  let currentMethod = "crypto"; // "crypto" | "bank"
-
-  function showError(text) {
-    msg.textContent = text;
-    msg.className = "msg err";
-    msg.style.display = "block";
-  }
-  function clearError(){
-    msg.style.display = "none";
-    msg.textContent = "";
-  }
-
-  function escapeHtml(str="") {
-    return String(str).replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
-
-  function formatDate(iso){
-    try { return new Date(iso).toLocaleString(); }
-    catch { return iso; }
-  }
-
-  function statusPill(status){
-    const s = (status || "pending").toLowerCase();
-    if (s === "approved") return `<span class="pill approved">APPROVED</span>`;
-    if (s === "rejected") return `<span class="pill rejected">REJECTED</span>`;
-    if (s === "cancelled") return `<span class="pill cancelled">CANCELLED</span>`;
-    return `<span class="pill pending">PENDING</span>`;
-  }
-
-  function setSideAvatar(avatarUrl){
-    if(avatarUrl){
-      sideAvatarImg.src = avatarUrl + "?t=" + Date.now();
-      sideAvatarImg.style.display="block";
-      sideAvatarFallback.style.display="none";
-    }else{
-      sideAvatarImg.style.display="none";
-      sideAvatarFallback.style.display="block";
-    }
-  }
-
-  function setNameEverywhere(fullName){
-    const nice = (fullName && String(fullName).trim()) ? String(fullName).trim() : "User";
-    userWho.textContent = nice;
-    sideName.textContent = nice;
-  }
-
-  /* ============================================================
-    ✅ Method Switch + Bank Requirements (NO NIGERIA)
-  ============================================================ */
-  const methodSwitch = document.getElementById("methodSwitch");
-  const cryptoBlock = document.getElementById("cryptoBlock");
-  const bankBlock = document.getElementById("bankBlock");
-
-  const bankRegion = document.getElementById("bank_region");
-  const usRoutingWrap = document.getElementById("usRoutingWrap");
-  const ukSortWrap = document.getElementById("ukSortWrap");
-  const ibanWrap = document.getElementById("ibanWrap");
-  const swiftWrap = document.getElementById("swiftWrap");
-
-  function applyBankFieldRules(){
-    const r = (bankRegion.value || "US").toUpperCase();
-
-    usRoutingWrap.style.display  = (r === "US") ? "block" : "none";
-    ukSortWrap.style.display     = (r === "UK") ? "block" : "none";
-
-    // EU -> IBAN + SWIFT required
-    if(r === "EU"){
-      ibanWrap.style.display = "block";
-      swiftWrap.style.display = "block";
-    }else if(r === "INTL"){
-      // INTL -> SWIFT required, IBAN optional but shown
-      ibanWrap.style.display = "block";
-      swiftWrap.style.display = "block";
-    }else{
-      ibanWrap.style.display = "none";
-      swiftWrap.style.display = "none";
-    }
-  }
-
-  methodSwitch.addEventListener("click",(e)=>{
-    const btn = e.target.closest(".mBtn");
-    if(!btn) return;
-
-    clearError();
-
-    document.querySelectorAll(".mBtn").forEach(x=>x.classList.remove("active"));
-    btn.classList.add("active");
-
-    currentMethod = btn.getAttribute("data-method") || "crypto";
-
-    if(currentMethod === "bank"){
-      cryptoBlock.style.display = "none";
-      bankBlock.style.display = "block";
-      applyBankFieldRules();
-    }else{
-      bankBlock.style.display = "none";
-      cryptoBlock.style.display = "block";
-    }
-  });
-
-  bankRegion.addEventListener("change", applyBankFieldRules);
-
-  function required(val){ return !!(val && String(val).trim().length); }
-
-  function validateBankPayload(bank){
-    if(!required(bank.bank_region)) return "Bank country/region is required.";
-    if(!required(bank.bank_name)) return "Bank name is required.";
-    if(!required(bank.account_name)) return "Account holder name is required.";
-    if(!required(bank.account_number)) return "Account number is required.";
-
-    const r = bank.bank_region;
-
-    if(r === "US"){
-      if(!required(bank.routing_number)) return "Routing number is required for US bank withdrawal.";
-      const rn = String(bank.routing_number).replace(/\D/g,"");
-      if(rn.length !== 9) return "Routing number must be 9 digits.";
-    }
-    if(r === "UK"){
-      if(!required(bank.sort_code)) return "Sort code is required for UK bank withdrawal.";
-      const sc = String(bank.sort_code).replace(/\D/g,"");
-      if(sc.length !== 6) return "Sort code must be 6 digits (example: 12-34-56).";
-    }
-    if(r === "EU"){
-      if(!required(bank.iban)) return "IBAN is required for Europe (IBAN) withdrawals.";
-      if(!required(bank.swift_bic)) return "SWIFT/BIC is required for Europe (IBAN) withdrawals.";
-    }
-    if(r === "INTL"){
-      if(!required(bank.swift_bic)) return "SWIFT/BIC is required for International withdrawals.";
-    }
-
-    return "";
-  }
-
-  /* ============================================================
-    ✅ Balance Deduction (after successful request)
-    - Uses public.user_crypto_balances
-    - Matches asset_key safely even if DB casing differs
-    - Verifies that the update actually changed a row
-  ============================================================ */
-  function normalizeAssetKey(value){
-    return String(value || "")
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "");
-  }
-
-  async function deductFromBalance(amount, assetKey){
-    if(!currentUserId) return { ok:false, message:"No user id found." };
-
-    const requestedAsset = String(assetKey || "").trim();
-    const normalizedRequestedAsset = normalizeAssetKey(requestedAsset);
-    if(!normalizedRequestedAsset) return { ok:false, message:"No asset selected." };
-
-    const numericAmount = Number(amount);
-    if(!Number.isFinite(numericAmount) || numericAmount <= 0){
-      return { ok:false, message:"Invalid withdrawal amount." };
-    }
-
-    try{
-      const { data: rows, error: selErr } = await supabaseClient
-        .from("user_crypto_balances")
-        .select("user_id, asset_key, balance")
-        .eq("user_id", currentUserId);
-
-      if(selErr) return { ok:false, message: selErr.message };
-
-      const matches = Array.isArray(rows) ? rows : [];
-      const matchedRow = matches.find((row) => normalizeAssetKey(row?.asset_key) === normalizedRequestedAsset)
-        || matches.find((row) => normalizeAssetKey(row?.asset_key).startsWith(normalizedRequestedAsset))
-        || matches.find((row) => normalizedRequestedAsset.startsWith(normalizeAssetKey(row?.asset_key)));
-
-      if(!matchedRow){
-        return { ok:false, message:`No ${requestedAsset || normalizedRequestedAsset} balance record found for this user.` };
-      }
-
-      const exactAssetKey = String(matchedRow.asset_key || "").trim();
-      const currentBalance = Number(matchedRow.balance ?? 0);
-
-      if(!Number.isFinite(currentBalance)) return { ok:false, message:"Balance is not a number." };
-      if(currentBalance < numericAmount){
-        return { ok:false, message:`Insufficient ${exactAssetKey} balance to complete this withdrawal.` };
-      }
-
-      const newBalance = Number((currentBalance - numericAmount).toFixed(8));
-
-      const { data: updatedRows, error: updErr } = await supabaseClient
-        .from("user_crypto_balances")
-        .update({
-          balance: newBalance,
-          updated_at: new Date().toISOString(),
-          email: currentUserEmail || null,
-          updated_by: "withdrawal_request"
-        })
-        .eq("user_id", currentUserId)
-        .eq("asset_key", exactAssetKey)
-        .select("user_id, asset_key, balance");
-
-      if(updErr) return { ok:false, message: updErr.message };
-      if(!updatedRows || !updatedRows.length){
-        return { ok:false, message:"Balance row was not updated. Check your RLS update policy for user_crypto_balances." };
-      }
-
-      return { ok:true, message:`${exactAssetKey} balance updated.`, balance:newBalance };
-
-    }catch(e){
-      return { ok:false, message: e?.message || String(e) };
-    }
-  }
-
-  /* ============================================================
-    ✅ History Rendering
-  ============================================================ */
-  function renderHistoryTable(records){
-    if (!records || records.length === 0) {
-      historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
-      return;
-    }
-
-    const rows = records.map((w) => {
-      const method = (w.method || "crypto").toLowerCase();
-      const status = (w.status || "pending").toLowerCase();
-      const canCancel = status === "pending";
-
-      let destination = "";
-      if(method === "bank"){
-        destination = w.wallet_address || "Bank transfer";
-      }else{
-        const wa = (w.wallet_address || "");
-        destination = wa ? (wa.slice(0, 10) + (wa.length > 10 ? "..." : "")) : "-";
-      }
-
-      return `
-        <tr>
-          <td>${escapeHtml(w.asset || "")}</td>
-          <td>${escapeHtml(String(w.amount || ""))}</td>
-          <td>${escapeHtml(w.network || "")}</td>
-          <td title="${escapeHtml(w.wallet_address || "")}">
-            ${escapeHtml(destination)}
-          </td>
-          <td>${statusPill(w.status)}</td>
-          <td>${escapeHtml(method)}</td>
-          <td>${escapeHtml(formatDate(w.created_at))}</td>
-          <td>
-            ${canCancel
-              ? `<button class="dangerBtn" data-cancel-id="${escapeHtml(w.id)}">Cancel</button>`
-              : `<span style="opacity:0.55;font-weight:900;">—</span>`
-            }
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    historyContainer.innerHTML = `
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>Amount</th>
-              <th>Network</th>
-              <th>Destination</th>
-              <th>Status</th>
-              <th>Method</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+  <!-- ASSET SELECTOR -->
+  <div id="assetOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Select coin">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="assetTitle">Select Asset</p>
+          <p class="s" id="assetSub">Choose coin + network</p>
+        </div>
+        <button class="modalClose" id="btnAssetClose" type="button">Close</button>
       </div>
-    `;
+      <div class="modalBody">
+        <div class="assetSearch">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" style="width:18px;height:18px;opacity:.9;flex:0 0 auto;">
+            <path d="M10.5 19a8.5 8.5 0 1 1 0-17 8.5 8.5 0 0 1 0 17Z" stroke="rgba(234,240,255,.85)" stroke-width="2"/>
+            <path d="M16.5 16.5 21 21" stroke="rgba(234,240,255,.85)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input id="assetQ" placeholder="Search coin or network (e.g. USDT, TRC20, Cardano)..." autocomplete="off"/>
+        </div>
+        <div id="assetList" class="assetList"></div>
+        <div id="assetEmpty" class="empty" style="display:none; margin-top:0;">No matches.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnAssetCancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-    document.querySelectorAll("[data-cancel-id]").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const withdrawalId = e.currentTarget.getAttribute("data-cancel-id");
-        await cancelWithdrawal(withdrawalId, e.currentTarget);
-      });
-    });
-  }
+  <!-- RECEIVE MODAL -->
+  <div id="recvOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Receive crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="recvTitle">Receive</p>
+          <p class="s" id="recvSub">—</p>
+        </div>
+        <button class="modalClose" id="btnRecvClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="smallWarn">✅ Only send the exact asset/network shown. Wrong network may cause permanent loss.</div>
+        <div class="qr" id="recvQr"></div>
+        <div class="field">
+          <div class="label">
+            <span>Deposit Address</span>
+            <button class="btn secondary" id="btnRecvCopyAddr" type="button">Copy</button>
+          </div>
+          <div class="value" id="recvAddr">—</div>
+        </div>
+        <div id="recvMemoWrap" style="display:none;">
+          <div class="field">
+            <div class="label">
+              <span id="recvMemoLabel">Memo</span>
+              <button class="btn secondary" id="btnRecvCopyMemo" type="button">Copy</button>
+            </div>
+            <div class="value" id="recvMemoVal">—</div>
+          </div>
+        </div>
+        <div class="hint" id="recvNote">Deposit only.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnRecvDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
 
-  async function fetchWithdrawals({ reset=false } = {}) {
-    if (!currentUserEmail) return;
+  <!-- SEND MODAL -->
+  <div id="sendOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Send crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="sendTitle">Send</p>
+          <p class="s" id="sendSub">—</p>
+        </div>
+        <button class="modalClose" id="btnSendClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="smallWarn">⚠️ Always confirm the network. Sending to the wrong network may result in permanent loss.</div>
+        <div class="in">
+          <label>Recipient Wallet Address</label>
+          <input id="sendTo" placeholder="Paste recipient address..." autocomplete="off" />
+        </div>
+        <div class="formGrid">
+          <div class="in">
+            <label>Amount</label>
+            <input id="sendAmount" placeholder="0.00" inputmode="decimal" autocomplete="off" />
+          </div>
+          <div class="in">
+            <label>Network</label>
+            <select id="sendNetwork"></select>
+          </div>
+        </div>
+        <div class="feeBox">
+          <div class="feeRow"><span>Network fee (est.)</span><b id="feeEst" data-bal="1" data-bal-real="—">—</b></div>
+          <div class="feeRow"><span>Total (amount + fee)</span><b id="totalEst" data-bal="1" data-bal-real="—">—</b></div>
+        </div>
+        <div class="in">
+          <label>Note (optional)</label>
+          <input id="sendNote" placeholder="e.g. Payment / Transfer" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnSendCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnSendSubmit" type="button">Send</button>
+      </div>
+    </div>
+  </div>
 
-    if (reset) {
-      currentOffset = 0;
-      historyCache = [];
-      loadMoreBtn.style.display = "none";
-      historyContainer.innerHTML = `<div class="empty">Loading withdrawal history...</div>`;
+  <!-- SWAP MODAL (REALTIME PRICES) -->
+  <div id="swapOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Swap crypto">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="swapTitle">Swap</p>
+          <p class="s" id="swapSub">Realtime exchange prices</p>
+        </div>
+        <button class="modalClose" id="btnSwapClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="smallWarn">✅ Quote is realtime. Execution requires your backend swap action (UI quote works now).</div>
+
+        <div class="formGrid">
+          <div class="in">
+            <label>From</label>
+            <select id="swapFrom"></select>
+          </div>
+          <div class="in">
+            <label>To</label>
+            <select id="swapTo"></select>
+          </div>
+        </div>
+
+        <div class="in">
+          <label>Amount (From)</label>
+          <input id="swapAmount" placeholder="0.00" inputmode="decimal" autocomplete="off"/>
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow"><span>Rate</span><b id="swapRate">—</b></div>
+          <div class="feeRow"><span>Estimated Receive</span><b id="swapReceive" data-bal="1" data-bal-real="—">—</b></div>
+          <div class="feeRow"><span>From Balance</span><b id="swapFromBal" data-bal="1" data-bal-real="—">—</b></div>
+        </div>
+
+        <div class="hint" id="swapHint">Tip: pick two coins and type amount — quote updates instantly.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnSwapCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnSwapDo" type="button">Swap</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINK WALLET MODAL -->
+  <div id="linkOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Link external wallet">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="linkModalTitle">Link External Wallet</p>
+          <p class="s" id="linkModalSub">Add a public address (never seed phrase)</p>
+        </div>
+        <button class="modalClose" id="btnLinkClose" type="button">Close</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="smallWarn">✅ Only paste your <b>public</b> wallet address. Never share 12/24-word phrases.</div>
+
+        <div class="in">
+          <label>Wallet Address</label>
+          <input id="linkAddress" placeholder="0x... / bc1... / T... (public address)" autocomplete="off"/>
+        </div>
+
+        <div class="in">
+          <label>Label (optional)</label>
+          <input id="linkLabel" placeholder="e.g. My Trust Wallet" autocomplete="off"/>
+        </div>
+
+        <div class="feeBox">
+          <div class="feeRow"><span>Status</span><b id="linkStatus">Not linked</b></div>
+          <div class="feeRow"><span>Submitted</span><b id="linkWhen">—</b></div>
+        </div>
+
+        <div id="linkRejectWrap" class="feeBox" style="display:none;">
+          <div class="feeRow"><span>Rejection</span><b style="color:rgba(248,113,113,1)" id="linkRejectMsg">—</b></div>
+        </div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnLinkCancel" type="button">Cancel</button>
+        <button class="btn send" id="btnLinkSubmit" type="button" disabled style="opacity:.55; cursor:not-allowed;">Link Wallet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALLET LINKED POPUP -->
+  <div id="linkedOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Wallet linked">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Wallet Linked ✅</p>
+          <p class="s">Your wallet connection is now active</p>
+        </div>
+        <button class="modalClose" id="btnLinkedClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="feeBox">
+          <div class="feeRow"><span>Status</span><b style="color:rgba(34,197,94,1)">Wallet Linked</b></div>
+          <div class="feeRow"><span>Next</span><b>View Wallet Connection</b></div>
+        </div>
+        <div class="hint">You can now view your linked wallet details anytime from the corner lightning button.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn send" id="btnLinkedOk" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALLET REJECTED POPUP -->
+  <div id="rejectedOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Wallet rejected">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Wallet Linking Unsuccessful ❌</p>
+          <p class="s">Try again with the correct details</p>
+        </div>
+        <button class="modalClose" id="btnRejectedClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="feeBox">
+          <div class="feeRow"><span>Status</span><b style="color:rgba(248,113,113,1)">Rejected</b></div>
+          <div class="feeRow"><span>Action</span><b>Retry wallet linking</b></div>
+        </div>
+        <div class="hint" id="rejectedReason">Wallet linking unsuccessful, try again.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn send" id="btnRejectedOk" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALLOCATION MODAL -->
+  <div id="allocOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Allocation charts">
+    <div class="modal" style="width:min(860px, 94vw);">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h">Asset Allocation 📊</p>
+          <p class="s">Pie + Bar (based on your balances & live prices)</p>
+        </div>
+        <button class="modalClose" id="btnAllocClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="chartWrap">
+          <div class="chartGrid">
+            <div class="chartBox">
+              <div style="font-weight:1000; font-size:12px; color:rgba(234,240,255,.78); margin-bottom:8px;">Allocation (Pie)</div>
+              <canvas id="allocPie"></canvas>
+            </div>
+            <div class="chartBox">
+              <div style="font-weight:1000; font-size:12px; color:rgba(234,240,255,.78); margin-bottom:8px;">Allocation (Bar)</div>
+              <canvas id="allocBar"></canvas>
+            </div>
+          </div>
+          <div class="hint" id="allocHint">Charts update whenever you reload prices/balances.</div>
+        </div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnAllocRefresh" type="button">Refresh</button>
+        <button class="btn send" id="btnAllocDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE CHART MODAL -->
+  <div id="chartOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Live chart">
+    <div class="modal" style="width:min(920px, 95vw);">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="chartTitle">Live Chart</p>
+          <p class="s" id="chartSub">TradingView</p>
+        </div>
+        <button class="modalClose" id="btnChartClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="tvWrap">
+          <div id="tvContainer"></div>
+        </div>
+        <div class="hint">Tip: you can zoom and switch timeframes inside the chart.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn send" id="btnChartDone" type="button">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN NOTICE MODAL (site-wide, default OFF) -->
+  <div id="noticeOverlay" class="overlay" role="dialog" aria-modal="true" aria-label="Notice">
+    <div class="modal">
+      <div class="modalHead pulseHead">
+        <div class="modalTitle">
+          <p class="h" id="noticeTitle">Notice</p>
+          <p class="s" id="noticeSub">Admin message</p>
+        </div>
+        <button class="modalClose" id="btnNoticeClose" type="button">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="feeBox">
+          <div style="font-weight:1000; font-size:13px; line-height:1.35;" id="noticeMsg">—</div>
+        </div>
+        <div class="hint">This notice will keep appearing across pages while admin keeps it ON.</div>
+      </div>
+      <div class="modalFoot">
+        <button class="btn secondary" id="btnNoticeDismiss" type="button">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+      SUPABASE AUTH + EMAIL VERIFICATION GUARD (ONE-BLOCK)
+      (kept exactly in one block as requested)
+    ============================================================ */
+    const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+    const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
+
+    let CURRENT_USER=null, CURRENT_USER_ID="", CURRENT_EMAIL="";
+
+    function hideGate(){ const g=document.getElementById("authGate"); if(g) g.style.display="none"; }
+    setTimeout(()=>hideGate(), 3800);
+
+    function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function toast(msg){
+      const el=document.getElementById("toast");
+      el.textContent=msg;
+      el.classList.add("show");
+      clearTimeout(window.__toastT);
+      window.__toastT=setTimeout(()=> el.classList.remove("show"), 1700);
     }
-
-    let query = supabaseClient
-      .from("withdrawals")
-      .select("id, user_email, asset, network, amount, wallet_address, status, created_at, method")
-      .eq("user_email", currentUserEmail)
-      .order("created_at", { ascending: false })
-      .range(currentOffset, currentOffset + pageSize - 1);
-
-    if (currentFilter !== "all") query = query.eq("status", currentFilter);
-
-    const { data, error } = await query;
-
-    if (error) {
-      historyContainer.innerHTML = `<div class="empty">Could not load history: ${escapeHtml(error.message)}</div>`;
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      if (historyCache.length === 0) {
-        historyContainer.innerHTML = `<div class="empty">No withdrawal history found for this filter.</div>`;
+    async function copyText(text){
+      try{ await navigator.clipboard.writeText(text); toast("Copied ✅"); }
+      catch(e){
+        const ta=document.createElement("textarea");
+        ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+        toast("Copied ✅");
       }
-      loadMoreBtn.style.display = "none";
-      return;
     }
 
-    historyCache = historyCache.concat(data);
-    renderHistoryTable(historyCache);
-
-    if (data.length === pageSize) {
-      loadMoreBtn.style.display = "inline-block";
-      currentOffset += pageSize;
-    } else {
-      loadMoreBtn.style.display = "none";
+    function buildQrData(item){
+      if(item.asset_key === "XRP" && item.memo_value){ return `${item.address}?dt=${encodeURIComponent(item.memo_value)}`; }
+      return item.address;
     }
-  }
-
-  async function cancelWithdrawal(withdrawalId, btnEl) {
-    try {
-      btnEl.disabled = true;
-      btnEl.textContent = "Cancelling...";
-
-      const ok = confirm("Cancel this pending withdrawal request?");
-      if (!ok) {
-        btnEl.disabled = false;
-        btnEl.textContent = "Cancel";
-        return;
-      }
-
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const session = sessionData?.session;
-
-      if (!session?.access_token) {
-        showError("Session expired. Please login again.");
-        btnEl.disabled = false;
-        btnEl.textContent = "Cancel";
-        return;
-      }
-
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-          action: "cancel",
-          withdrawal_id: withdrawalId
-        })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || data?.success === false || data?.error) {
-        showError(data?.details || data?.error || "Cancel failed.");
-        btnEl.disabled = false;
-        btnEl.textContent = "Cancel";
-        return;
-      }
-
-      openPop("Cancelled", "Withdrawal cancelled and balance restored ✅");
-      await fetchWithdrawals({ reset:true });
-
-    } catch (e) {
-      showError("Cancel error: " + (e?.message || String(e)));
-    } finally {
-      if (btnEl) {
-        btnEl.disabled = false;
-        btnEl.textContent = "Cancel";
-      }
-    }
-  }
-
-  const withdrawPinOverlay = document.getElementById("withdrawPinOverlay");
-  const withdrawPinPad = document.getElementById("withdrawPinPad");
-  const withdrawPinDots = document.getElementById("withdrawPinDots");
-  const withdrawPinDotEls = Array.from(document.querySelectorAll(".withdrawPinDot"));
-  const withdrawPinAttempts = document.getElementById("withdrawPinAttempts");
-  const withdrawPinLockBox = document.getElementById("withdrawPinLockBox");
-  const withdrawPinLockTime = document.getElementById("withdrawPinLockTime");
-  const withdrawPinForgotBtn = document.getElementById("withdrawPinForgotBtn");
-
-  let withdrawPinInput = "";
-  let withdrawPinHashFromDb = null;
-  let withdrawPinUser = null;
-  let withdrawPendingAction = null;
-  let withdrawPinBusy = false;
-  let withdrawPinLockInterval = null;
-  let withdrawPinLimiterId = "guest";
-
-  const WITHDRAW_PIN_MAX_TRIES = 5;
-  const WITHDRAW_PIN_LOCK_MINUTES = 5;
-
-  function withdrawPinTriesKey(){ return `coinluxora_withdraw_pin_tries_${withdrawPinLimiterId}`; }
-  function withdrawPinLockKey(){ return `coinluxora_withdraw_pin_lock_${withdrawPinLimiterId}`; }
-  function getWithdrawPinTries(){
-    const v = parseInt(localStorage.getItem(withdrawPinTriesKey()) || "0", 10);
-    return Number.isFinite(v) ? v : 0;
-  }
-  function setWithdrawPinTries(val){ localStorage.setItem(withdrawPinTriesKey(), String(val)); }
-  function getWithdrawPinLockUntil(){
-    const v = parseInt(localStorage.getItem(withdrawPinLockKey()) || "0", 10);
-    return Number.isFinite(v) ? v : 0;
-  }
-  function setWithdrawPinLockUntil(val){ localStorage.setItem(withdrawPinLockKey(), String(val)); }
-  function formatWithdrawPinMMSS(ms){
-    const totalSec = Math.max(0, Math.floor(ms / 1000));
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
-  }
-  function renderWithdrawPinDots(){
-    withdrawPinDotEls.forEach((el, i) => el.classList.toggle("filled", i < withdrawPinInput.length));
-  }
-  function resetWithdrawPinInput(){
-    withdrawPinInput = "";
-    renderWithdrawPinDots();
-  }
-  function shakeWithdrawPinDots(){
-    withdrawPinDots.classList.remove("shake");
-    void withdrawPinDots.offsetWidth;
-    withdrawPinDots.classList.add("shake");
-    setTimeout(() => withdrawPinDots.classList.remove("shake"), 520);
-  }
-  function softWithdrawPinVibrate(){
-    try{ if(navigator.vibrate) navigator.vibrate([18, 30, 18]); }catch(e){}
-  }
-  function updateWithdrawPinAttemptsUI(){
-    const tries = getWithdrawPinTries();
-    const left = Math.max(0, WITHDRAW_PIN_MAX_TRIES - tries);
-    const until = getWithdrawPinLockUntil();
-    const locked = until && until > Date.now();
-
-    if(locked){
-      withdrawPinAttempts.textContent = "";
-      withdrawPinAttempts.classList.remove("danger");
-      return;
-    }
-    if(tries <= 0){
-      withdrawPinAttempts.textContent = "";
-      withdrawPinAttempts.classList.remove("danger");
-      return;
-    }
-    withdrawPinAttempts.textContent = `Attempts left: ${left}`;
-    withdrawPinAttempts.classList.toggle("danger", left <= 2);
-  }
-  function lockWithdrawPinPad(){
-    withdrawPinPad.classList.add("locked");
-    withdrawPinLockBox.classList.add("show");
-    withdrawPinAttempts.textContent = "";
-    withdrawPinAttempts.classList.remove("danger");
-  }
-  function unlockWithdrawPinPad(){
-    withdrawPinPad.classList.remove("locked");
-    withdrawPinLockBox.classList.remove("show");
-  }
-  function startWithdrawPinCountdown(){
-    clearInterval(withdrawPinLockInterval);
-    lockWithdrawPinPad();
-
-    const tick = () => {
-      const until = getWithdrawPinLockUntil();
-      const remaining = until - Date.now();
-      if(remaining <= 0){
-        clearInterval(withdrawPinLockInterval);
-        withdrawPinLockInterval = null;
-        setWithdrawPinLockUntil(0);
-        setWithdrawPinTries(0);
-        unlockWithdrawPinPad();
-        resetWithdrawPinInput();
-        withdrawPinBusy = false;
-        updateWithdrawPinAttemptsUI();
-        return;
-      }
-      withdrawPinLockTime.textContent = formatWithdrawPinMMSS(remaining);
-    };
-
-    tick();
-    withdrawPinLockInterval = setInterval(tick, 250);
-  }
-  function enforceWithdrawPinLockIfNeeded(){
-    const until = getWithdrawPinLockUntil();
-    if(until && until > Date.now()){
-      startWithdrawPinCountdown();
-      return true;
-    }
-    return false;
-  }
-  function lockWithdrawPinFor5Minutes(){
-    const until = Date.now() + WITHDRAW_PIN_LOCK_MINUTES * 60 * 1000;
-    setWithdrawPinLockUntil(until);
-    startWithdrawPinCountdown();
-  }
-  async function sha256Value(str){
-    const data = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-  async function prepareWithdrawPin(user){
-    withdrawPinUser = user || null;
-    withdrawPinLimiterId = ((user?.email || user?.id || "guest").toLowerCase()).replace(/[^a-z0-9@._-]/g, "_");
-    const { data, error } = await supabaseClient
-      .from("user_pins")
-      .select("pin_hash")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if(error){
-      throw new Error(error.message || "Could not verify PIN setup.");
-    }
-    if(!data?.pin_hash){
-      throw new Error("No login PIN found for this account. Please set your login PIN first.");
-    }
-    withdrawPinHashFromDb = data.pin_hash;
-  }
-  function openWithdrawPin(actionFn){
-    withdrawPendingAction = actionFn;
-    resetWithdrawPinInput();
-    withdrawPinBusy = false;
-    withdrawPinOverlay.classList.add("show");
-    document.body.style.overflow = "hidden";
-    if(enforceWithdrawPinLockIfNeeded()) return;
-    unlockWithdrawPinPad();
-    updateWithdrawPinAttemptsUI();
-  }
-  function closeWithdrawPin(e, forceClose = false){
-    if(e && e.target && !e.target.classList.contains("withdrawPinOverlay")) return;
-    if(withdrawPinBusy && !forceClose) return;
-    withdrawPinOverlay.classList.remove("show");
-    document.body.style.overflow = "";
-    resetWithdrawPinInput();
-    updateWithdrawPinAttemptsUI();
-  }
-  window.closeWithdrawPin = closeWithdrawPin;
-
-  async function verifyWithdrawPinAndProceed(){
-    if(withdrawPinBusy) return;
-    if(enforceWithdrawPinLockIfNeeded()) return;
-    if(withdrawPinInput.length !== 4) return;
-    if(!withdrawPinUser || !withdrawPinHashFromDb) return;
-
-    withdrawPinBusy = true;
-    try{
-      const attemptHash = await sha256Value(withdrawPinInput + ":" + withdrawPinUser.id);
-
-      if(attemptHash !== withdrawPinHashFromDb){
-        softWithdrawPinVibrate();
-        const tries = getWithdrawPinTries() + 1;
-        setWithdrawPinTries(tries);
-        shakeWithdrawPinDots();
-        updateWithdrawPinAttemptsUI();
-
-        if(tries >= WITHDRAW_PIN_MAX_TRIES){
-          resetWithdrawPinInput();
-          openPop("PIN Locked 🔒", "Too many incorrect PIN attempts. Please wait 5 minutes and try again.");
-          lockWithdrawPinFor5Minutes();
-          withdrawPinBusy = false;
-          return;
+    function renderTransparentQrSvg(data, size=200){
+      const qr=qrcode(0, "M"); qr.addData(data); qr.make();
+      const cellCount=qr.getModuleCount(); const quiet=4; const total=cellCount + quiet*2; const cell=size/total;
+      let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">`;
+      for(let r=0;r<cellCount;r++){
+        for(let c=0;c<cellCount;c++){
+          if(qr.isDark(r,c)){
+            const x=(c+quiet)*cell, y=(r+quiet)*cell;
+            svg += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" fill="rgba(234,240,255,.95)"/>`;
+          }
         }
+      }
+      svg += `</svg>`;
+      return svg;
+    }
 
-        openPop("Incorrect PIN ❌", `${WITHDRAW_PIN_MAX_TRIES - tries} tries left. Please enter the correct login PIN.`);
-        withdrawPinBusy = false;
-        resetWithdrawPinInput();
+    function normalizeSymbol(assetKey){
+      const raw=String(assetKey||"").toUpperCase().trim();
+      if(raw.startsWith("USDT")) return "USDT";
+      if(raw.startsWith("USDC")) return "USDC";
+      if(raw.startsWith("ADA")) return "ADA";
+      return raw;
+    }
+    function iconLetters(asset_key){ return normalizeSymbol(asset_key); }
+    function logoUrlFor(asset_key){
+      const sym=normalizeSymbol(asset_key).toLowerCase();
+      return `https://assets.coincap.io/assets/icons/${sym}@2x.png`;
+    }
+
+    const COIN_GRAD = {
+      BTC:["rgba(247,147,26,.28)","rgba(255,193,7,.18)"],
+      ETH:["rgba(98,126,234,.26)","rgba(124,77,255,.18)"],
+      USDT:["rgba(38,161,123,.26)","rgba(34,197,94,.16)"],
+      USDC:["rgba(39,117,202,.26)","rgba(56,189,248,.16)"],
+      BNB:["rgba(240,185,11,.26)","rgba(245,158,11,.16)"],
+      SOL:["rgba(0,255,163,.18)","rgba(220,31,255,.16)"],
+      TRX:["rgba(239,68,68,.22)","rgba(245,158,11,.14)"],
+      LTC:["rgba(190,190,190,.22)","rgba(56,189,248,.12)"],
+      TON:["rgba(56,189,248,.22)","rgba(91,108,255,.16)"],
+      DOGE:["rgba(198,172,105,.22)","rgba(245,158,11,.14)"],
+      MATIC:["rgba(168,85,247,.22)","rgba(91,108,255,.14)"],
+      AVAX:["rgba(248,113,113,.22)","rgba(124,77,255,.14)"],
+      ADA:["rgba(56,189,248,.20)","rgba(91,108,255,.14)"]
+    };
+    function getGradFor(asset_key){ const key=normalizeSymbol(asset_key); return COIN_GRAD[key] || ["rgba(91,108,255,.22)","rgba(124,77,255,.18)"]; }
+
+    function estimateFee(asset_key, network){
+      const sym=normalizeSymbol(asset_key);
+      const net=String(network||"").toUpperCase();
+      if(sym==="USDT"||sym==="USDC"){
+        if(net.includes("TRC")) return 1.0;
+        if(net.includes("BEP")) return 0.3;
+        if(net.includes("ERC")) return 6.0;
+        return 1.0;
+      }
+      if(net.includes("BTC")) return 0.00015;
+      if(net.includes("ETH")||net.includes("ERC")) return 0.0012;
+      if(net.includes("BSC")||net.includes("BEP")) return 0.0006;
+      if(net.includes("TRON")||net.includes("TRC")) return 2.0;
+      if(net.includes("SOL")) return 0.00005;
+      return 0.001;
+    }
+    function money(n){ const v=Number(n||0); return "$" + v.toLocaleString(undefined,{ minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+    let __wallets=[], __selectedCard=null;
+    let __balances={}, __prices={}, __totalUsd=0;
+    const WALLET_BAL_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
+    let __walletBalanceRealtimeSub = null;
+
+    function getWalletBalanceCacheKey(){ return `vgm_wallet_total_cache_${CURRENT_USER_ID || CURRENT_EMAIL || "guest"}`; }
+    function getWalletPriceCacheKey(){ return `vgm_wallet_price_cache_${CURRENT_USER_ID || CURRENT_EMAIL || "guest"}`; }
+
+    function readWalletTotalCache(){
+      try{
+        const raw = localStorage.getItem(getWalletBalanceCacheKey());
+        if(!raw) return null;
+        const parsed = JSON.parse(raw);
+        const value = Number(parsed?.value);
+        return Number.isFinite(value) ? value : null;
+      }catch(e){
+        return null;
+      }
+    }
+
+    function writeWalletTotalCache(value){
+      try{
+        localStorage.setItem(getWalletBalanceCacheKey(), JSON.stringify({ value: Number(value||0), ts: Date.now() }));
+      }catch(e){}
+    }
+
+    function readWalletPriceCache(){
+      try{
+        const raw = localStorage.getItem(getWalletPriceCacheKey());
+        if(!raw) return {};
+        const parsed = JSON.parse(raw);
+        return (parsed && typeof parsed === "object") ? parsed : {};
+      }catch(e){
+        return {};
+      }
+    }
+
+    function writeWalletPriceCache(map){
+      try{
+        const merged = { ...readWalletPriceCache(), ...(map || {}) };
+        localStorage.setItem(getWalletPriceCacheKey(), JSON.stringify(merged));
+      }catch(e){}
+    }
+
+    function stableUsdPrice(sym){
+      const s = normalizeSymbol(sym);
+      if(s === "USDT" || s === "USDC") return 1;
+      return null;
+    }
+
+    function computeWalletTotalFromBalances(priceSource){
+      let total = 0;
+      let pricedCount = 0;
+      const syms = uniqueSymbols();
+      syms.forEach(sym=>{
+        const bal = Number(__balances?.[sym] || 0);
+        if(!Number.isFinite(bal) || bal === 0) return;
+        let px = stableUsdPrice(sym);
+        if(px === null){
+          px = Number(priceSource?.[sym]?.usd || 0);
+          if(!(px > 0)) px = null;
+        }
+        if(px !== null){
+          total += bal * px;
+          pricedCount += 1;
+        }
+      });
+      return { total, pricedCount };
+    }
+
+    function applyCachedWalletTotal(){
+      const cachedTotal = readWalletTotalCache();
+      if(Number.isFinite(cachedTotal)){
+        __totalUsd = Number(cachedTotal);
+        setTotalBalanceDisplay(money(__totalUsd));
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = "Refreshing from wallet balances…";
+      }
+    }
+
+    /* HIDE / SHOW BALANCES */
+    let __hideBalances=false;
+    function getHideKey(){ return `vgm_hide_bal_${CURRENT_USER_ID || "anon"}`; }
+    function maskText(){ return "••••"; }
+    function updateEyeIcon(){
+      const eye=document.getElementById("eyeIcon");
+      const off=document.getElementById("eyeOffIcon");
+      if(!eye||!off) return;
+      if(__hideBalances){ eye.style.display="none"; off.style.display="block"; }
+      else{ eye.style.display="block"; off.style.display="none"; }
+    }
+    function applyHideBalances(){
+      const els=Array.from(document.querySelectorAll("[data-bal='1']"));
+      els.forEach(el=>{
+        if(!el.dataset.balReal) el.dataset.balReal = el.textContent || "";
+        el.textContent = __hideBalances ? maskText() : (el.dataset.balReal || el.textContent || "");
+      });
+    }
+    function setHideBalances(on){
+      __hideBalances=!!on;
+      try{ localStorage.setItem(getHideKey(), __hideBalances ? "1" : "0"); }catch(e){}
+      applyHideBalances(); updateEyeIcon();
+    }
+    function loadHideBalances(){
+      try{ __hideBalances = (localStorage.getItem(getHideKey()) === "1"); }catch(e){ __hideBalances=false; }
+      applyHideBalances(); updateEyeIcon();
+    }
+    document.getElementById("btnToggleHide").addEventListener("click", ()=> setHideBalances(!__hideBalances));
+
+    /* RECEIVE MODAL */
+    const recvOverlay=document.getElementById("recvOverlay");
+    const recvTitle=document.getElementById("recvTitle");
+    const recvSub=document.getElementById("recvSub");
+    const recvQr=document.getElementById("recvQr");
+    const recvAddr=document.getElementById("recvAddr");
+    const recvMemoWrap=document.getElementById("recvMemoWrap");
+    const recvMemoLabel=document.getElementById("recvMemoLabel");
+    const recvMemoVal=document.getElementById("recvMemoVal");
+    const recvNote=document.getElementById("recvNote");
+    let __recvItem=null;
+    function closeReceive(){
+      recvOverlay.classList.remove("show");
+      __recvItem=null;
+      recvQr.innerHTML=""; recvAddr.textContent="—";
+      recvMemoWrap.style.display="none";
+      recvMemoLabel.textContent="Memo"; recvMemoVal.textContent="—";
+      recvNote.textContent="Deposit only.";
+    }
+    function openReceive(item){
+      __recvItem=item;
+      recvTitle.textContent=`Receive ${normalizeSymbol(item.asset_key)}`;
+      recvSub.textContent=String(item.network||"");
+      recvAddr.textContent=String(item.address||"");
+      recvQr.innerHTML = renderTransparentQrSvg(buildQrData(item), 200);
+      if(item.memo_label && item.memo_value){
+        recvMemoWrap.style.display="block";
+        recvMemoLabel.textContent=String(item.memo_label);
+        recvMemoVal.textContent=String(item.memo_value);
+      }else recvMemoWrap.style.display="none";
+      recvNote.textContent = item.note ? String(item.note) : "Deposit only.";
+      recvOverlay.classList.add("show");
+    }
+    document.getElementById("btnRecvClose").addEventListener("click", closeReceive);
+    document.getElementById("btnRecvDone").addEventListener("click", closeReceive);
+    recvOverlay.addEventListener("click", (e)=>{ if(e.target===recvOverlay) closeReceive(); });
+    document.addEventListener("keydown", (e)=>{ if(e.key==="Escape" && recvOverlay.classList.contains("show")) closeReceive(); });
+    document.getElementById("btnRecvCopyAddr").addEventListener("click", ()=>{ if(__recvItem) copyText(__recvItem.address||""); });
+    document.getElementById("btnRecvCopyMemo").addEventListener("click", ()=>{ if(__recvItem) copyText(__recvItem.memo_value||""); });
+
+    /* ASSET SELECTOR */
+    const assetOverlay=document.getElementById("assetOverlay");
+    const assetTitle=document.getElementById("assetTitle");
+    const assetSub=document.getElementById("assetSub");
+    const assetQ=document.getElementById("assetQ");
+    const assetList=document.getElementById("assetList");
+    const assetEmpty=document.getElementById("assetEmpty");
+    let __assetMode="receive";
+    function openAssetSelector(mode){
+      __assetMode=mode;
+      assetTitle.textContent = mode==="send" ? "Select Asset to Send" : "Select Asset to Receive";
+      assetSub.textContent="Choose coin + network";
+      assetQ.value="";
+      renderAssetSelector();
+      assetOverlay.classList.add("show");
+      setTimeout(()=>assetQ.focus(), 80);
+    }
+    function closeAssetSelector(){ assetOverlay.classList.remove("show"); }
+    document.getElementById("btnAssetClose").addEventListener("click", closeAssetSelector);
+    document.getElementById("btnAssetCancel").addEventListener("click", closeAssetSelector);
+    assetOverlay.addEventListener("click",(e)=>{ if(e.target===assetOverlay) closeAssetSelector(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && assetOverlay.classList.contains("show")) closeAssetSelector(); });
+    assetQ.addEventListener("input", renderAssetSelector);
+
+    function renderAssetSelector(){
+      const q=(assetQ.value||"").trim().toLowerCase();
+      assetList.innerHTML="";
+      let shown=0;
+      __wallets.slice().forEach(w=>{
+        const sym=normalizeSymbol(w.asset_key);
+        const hay=`${sym} ${w.name||""} ${w.network||""}`.toLowerCase();
+        if(q && !hay.includes(q)) return;
+        shown++;
+        const div=document.createElement("div");
+        div.className="assetItem";
+        div.innerHTML=`
+          <div class="assetLeft">
+            <div class="badge" title="${escapeHtml(sym)}">
+              <img src="${escapeHtml(logoUrlFor(sym))}" alt="${escapeHtml(sym)} logo"
+                onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='block';">
+              <span class="fallback">${escapeHtml(iconLetters(sym))}</span>
+            </div>
+            <div class="assetMeta">
+              <b>${escapeHtml(sym)} • ${escapeHtml(w.name||sym)}</b>
+              <span>${escapeHtml(w.network||"")}</span>
+            </div>
+          </div>
+          <div class="pill"><span class="mini"></span>${__assetMode==="send" ? "Send" : "Receive"}</div>
+        `;
+        div.addEventListener("click", ()=>{
+          closeAssetSelector();
+          if(__assetMode==="receive") openReceive(w);
+          else openSendModal(sym, w.network || "");
+        });
+        assetList.appendChild(div);
+      });
+      assetEmpty.style.display = shown ? "none" : "block";
+    }
+
+    /* MAIN BUTTONS */
+    document.getElementById("btnMainReceive").addEventListener("click", ()=> openAssetSelector("receive"));
+    document.getElementById("btnMainSend").addEventListener("click", ()=> openAssetSelector("send"));
+
+    /* SWAP MODAL LOGIC (REALTIME PRICES) */
+    const swapOverlay=document.getElementById("swapOverlay");
+    const swapFrom=document.getElementById("swapFrom");
+    const swapTo=document.getElementById("swapTo");
+    const swapAmount=document.getElementById("swapAmount");
+    const swapRate=document.getElementById("swapRate");
+    const swapReceive=document.getElementById("swapReceive");
+    const swapFromBal=document.getElementById("swapFromBal");
+    const btnSwapDo=document.getElementById("btnSwapDo");
+
+    function closeSwap(){
+      swapOverlay.classList.remove("show");
+      swapAmount.value="";
+      swapRate.textContent="—";
+      swapReceive.dataset.balReal="—";
+      swapReceive.textContent="—";
+      swapFromBal.dataset.balReal="—";
+      swapFromBal.textContent="—";
+      applyHideBalances();
+    }
+    function openSwap(){
+      buildSwapSelectors();
+      swapOverlay.classList.add("show");
+      setTimeout(()=>swapAmount.focus(), 80);
+      updateSwapQuote();
+    }
+    document.getElementById("btnSwapClose").addEventListener("click", closeSwap);
+    document.getElementById("btnSwapCancel").addEventListener("click", closeSwap);
+    swapOverlay.addEventListener("click",(e)=>{ if(e.target===swapOverlay) closeSwap(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && swapOverlay.classList.contains("show")) closeSwap(); });
+    document.getElementById("btnMainSwap").addEventListener("click", openSwap);
+
+    function uniqueSymbols(){
+      const set=new Set();
+      (__wallets||[]).forEach(w=> set.add(normalizeSymbol(w.asset_key)));
+      Object.keys(__balances||{}).forEach(k=> set.add(normalizeSymbol(k)));
+      return Array.from(set).filter(Boolean).sort();
+    }
+    function buildSwapSelectors(){
+      const syms=uniqueSymbols();
+      swapFrom.innerHTML=""; swapTo.innerHTML="";
+      syms.forEach(sym=>{
+        const a=document.createElement("option"); a.value=sym; a.textContent=sym; swapFrom.appendChild(a);
+        const b=document.createElement("option"); b.value=sym; b.textContent=sym; swapTo.appendChild(b);
+      });
+      if(syms.includes("USDT")) swapFrom.value="USDT";
+      if(syms.includes("BTC")) swapTo.value="BTC";
+      if(swapFrom.value===swapTo.value && syms.length>1) swapTo.value = syms.find(x=>x!==swapFrom.value) || swapTo.value;
+    }
+
+    async function ensurePrice(sym){
+      sym=normalizeSymbol(sym);
+      if(__prices?.[sym]?.usd) return;
+      await fetchPricesUSD([sym]);
+    }
+
+    function parseAmount(v){
+      const n=Number(String(v||"").replace(/,/g,"").trim());
+      return Number.isFinite(n) && n>0 ? n : 0;
+    }
+    function fmtBal(sym, v){
+      const n=Number(v||0);
+      if(sym==="USDT"||sym==="USDC") return n.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+      if(n>=1) return n.toLocaleString(undefined,{maximumFractionDigits:6});
+      return n.toLocaleString(undefined,{maximumFractionDigits:10});
+    }
+
+    async function updateSwapQuote(){
+      const from=normalizeSymbol(swapFrom.value);
+      const to=normalizeSymbol(swapTo.value);
+      const amt=parseAmount(swapAmount.value);
+
+      if(!from || !to){ swapRate.textContent="—"; return; }
+      if(from===to){
+        swapRate.textContent="Pick two different assets";
+        swapReceive.dataset.balReal="—"; swapReceive.textContent="—";
+        btnSwapDo.disabled=true; btnSwapDo.style.opacity=".55"; btnSwapDo.style.cursor="not-allowed";
+        applyHideBalances();
         return;
       }
 
-      setWithdrawPinTries(0);
-      setWithdrawPinLockUntil(0);
-      unlockWithdrawPinPad();
-      updateWithdrawPinAttemptsUI();
+      await ensurePrice(from);
+      await ensurePrice(to);
 
-      const verifiedPin = String(withdrawPinInput || "");
-      const run = withdrawPendingAction;
-      withdrawPendingAction = null;
-      withdrawPinBusy = false;
-      closeWithdrawPin(null, true);
-      if(typeof run === "function") await run(verifiedPin);
-
-    }catch(err){
-      console.error(err);
-      withdrawPinBusy = false;
-      resetWithdrawPinInput();
-      openPop("PIN Verification Failed", err?.message || "Could not verify your PIN. Please try again.");
-    }
-  }
-
-  withdrawPinPad.addEventListener("click", (e) => {
-    if(enforceWithdrawPinLockIfNeeded()) return;
-    const btn = e.target.closest("button");
-    if(!btn) return;
-
-    const num = btn.getAttribute("data-num");
-    const action = btn.getAttribute("data-action");
-
-    if(num !== null){
-      if(withdrawPinBusy) return;
-      if(withdrawPinInput.length >= 4) return;
-      withdrawPinInput += String(num);
-      renderWithdrawPinDots();
-      if(withdrawPinInput.length === 4){
-        setTimeout(() => verifyWithdrawPinAndProceed(), 120);
+      const pFrom=Number(__prices?.[from]?.usd||0);
+      const pTo=Number(__prices?.[to]?.usd||0);
+      if(!pFrom || !pTo){
+        swapRate.textContent="Price unavailable — reload";
+        btnSwapDo.disabled=true; btnSwapDo.style.opacity=".55"; btnSwapDo.style.cursor="not-allowed";
+        applyHideBalances();
+        return;
       }
-      return;
+
+      const rate = pFrom / pTo;
+      swapRate.textContent = `1 ${from} ≈ ${rate.toLocaleString(undefined,{maximumFractionDigits:10})} ${to}`;
+
+      const recv = amt ? (amt * rate) : 0;
+      const recvText = amt ? `${fmtBal(to, recv)} ${to}` : "—";
+      swapReceive.dataset.balReal = recvText;
+      swapReceive.textContent = __hideBalances ? maskText() : recvText;
+
+      const fromBal = Number(__balances?.[from]||0);
+      const fromBalText = `${fmtBal(from, fromBal)} ${from}`;
+      swapFromBal.dataset.balReal = fromBalText;
+      swapFromBal.textContent = __hideBalances ? maskText() : fromBalText;
+
+      const ok = (amt>0 && fromBal>=amt);
+      btnSwapDo.disabled = !ok;
+      btnSwapDo.style.opacity = ok ? "1" : ".55";
+      btnSwapDo.style.cursor = ok ? "pointer" : "not-allowed";
+      applyHideBalances();
     }
 
-    if(action === "backspace"){
-      if(withdrawPinBusy) return;
-      withdrawPinInput = withdrawPinInput.slice(0, -1);
-      renderWithdrawPinDots();
-      return;
-    }
+    swapFrom.addEventListener("change", updateSwapQuote);
+    swapTo.addEventListener("change", updateSwapQuote);
+    swapAmount.addEventListener("input", updateSwapQuote);
 
-    if(action === "clear"){
-      if(withdrawPinBusy) return;
-      resetWithdrawPinInput();
-    }
-  });
-
-  withdrawPinForgotBtn.addEventListener("click", () => {
-    closeWithdrawPin();
-    window.location.href = "index.html";
-  });
-
-  async function processWithdrawalRequest(session, payload, amountVal, verifiedPin){
-    const securePayload = {
-      ...payload,
-      pin: String(verifiedPin || "").trim()
-    };
-
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/request_withdrawal`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify(securePayload)
+    btnSwapDo.addEventListener("click", async ()=>{
+      const from=normalizeSymbol(swapFrom.value);
+      const to=normalizeSymbol(swapTo.value);
+      const amt=parseAmount(swapAmount.value);
+      if(!from || !to || !amt || from===to){ toast("Invalid swap"); return; }
+      const bal=Number(__balances?.[from]||0);
+      if(bal < amt){ toast("Insufficient balance"); return; }
+      toast("Swap quoted ✅ (enable execution via backend)");
     });
 
-    const data = await res.json().catch(()=> ({}));
-
-    if (!res.ok || data?.error) {
-      console.error("Withdraw error:", data);
-      throw new Error(data?.details || data?.error || "Withdrawal failed.");
-    }
-
-    let successText = String(
-      data?.message ||
-      data?.data?.message ||
-      "Withdrawal successfully submitted, awaiting approval."
-    );
-
-    if (data?.data?.new_balance !== undefined && data?.data?.asset_key) {
-      successText += `\n\nNew ${data.data.asset_key} balance: ${data.data.new_balance}`;
-    }
-
-    openPop("Withdrawal Submitted ✅", successText);
-
-    document.getElementById("amount").value = "";
-    if(currentMethod === "crypto"){
-      document.getElementById("wallet_address").value = "";
-    }else{
-      document.getElementById("bank_name").value = "";
-      document.getElementById("account_name").value = "";
-      document.getElementById("account_number").value = "";
-      document.getElementById("routing_number").value = "";
-      document.getElementById("sort_code").value = "";
-      document.getElementById("iban").value = "";
-      document.getElementById("swift_bic").value = "";
-      document.getElementById("bank_address").value = "";
-      document.getElementById("bank_reference").value = "";
-    }
-
-    await fetchWithdrawals({ reset:true });
-  }
-
-  function getSelectedWithdrawalAsset(){
-    const assetEl = document.getElementById("asset");
-    if(!assetEl) return "";
-    const rawValue = String(assetEl.value || "").trim();
-    const optionText = String(assetEl.options?.[assetEl.selectedIndex]?.text || "").trim();
-    const asset = (rawValue || optionText || "").trim().toUpperCase();
-    return asset;
-  }
-
-  tabsEl.addEventListener("click", async (e) => {
-    const tab = e.target.closest(".tab");
-    if (!tab) return;
-
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-
-    currentFilter = tab.getAttribute("data-status") || "all";
-    await fetchWithdrawals({ reset:true });
-  });
-
-  refreshHistoryBtn.addEventListener("click", async () => {
-    await fetchWithdrawals({ reset:true });
-  });
-
-  loadMoreBtn.addEventListener("click", async () => {
-    await fetchWithdrawals({ reset:false });
-  });
-
-  /* ============================================================
-    ✅ Submit Withdrawal (CRYPTO + BANK) — uses EDGE FUNCTION
-    ✅ SUCCESS NOW POPUP MODAL
-    ✅ AFTER SUCCESS: AUTO DEDUCT FROM BALANCE
-  ============================================================ */
-  submitBtn.addEventListener("click", async () => {
-    try {
-      clearError();
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Checking...";
-
-      const { data: sessionData } = await supabaseClient.auth.getSession();
-      const session = sessionData?.session;
-
-      if (!session?.user) {
-        showError("You are not logged in. Please login again.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Withdrawal";
-        return;
-      }
-
-      const amountVal = Number(document.getElementById("amount").value);
-
-      if (!amountVal || amountVal <= 0) {
-        showError("Enter a valid amount.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Withdrawal";
-        return;
-      }
-
-      const selectedAsset = getSelectedWithdrawalAsset();
-
-      if (!selectedAsset) {
-        showError("Please select an asset.");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Withdrawal";
-        return;
-      }
-
-      const basePayload = {
-        amount: amountVal,
-        asset: selectedAsset,
-        asset_key: selectedAsset,
-        currency: selectedAsset,
-        coin: selectedAsset,
-        method: currentMethod
+    /* PRICES */
+    async function fetchPricesUSD(assetKeys){
+      const map = {
+        BTC:"bitcoin", ETH:"ethereum", USDT:"tether", USDC:"usd-coin",
+        BNB:"binancecoin", SOL:"solana", TRX:"tron", LTC:"litecoin",
+        TON:"the-open-network", DOGE:"dogecoin", XRP:"ripple",
+        MATIC:"matic-network", AVAX:"avalanche-2", ADA:"cardano"
       };
-
-      let payload = {};
-
-      if(currentMethod === "bank"){
-        const bank = {
-          bank_region: String(document.getElementById("bank_region").value || "").toUpperCase(),
-          bank_name: document.getElementById("bank_name").value.trim(),
-          account_name: document.getElementById("account_name").value.trim(),
-          account_number: document.getElementById("account_number").value.trim(),
-          routing_number: (document.getElementById("routing_number").value || "").trim(),
-          sort_code: (document.getElementById("sort_code").value || "").trim(),
-          iban: (document.getElementById("iban").value || "").trim(),
-          swift_bic: (document.getElementById("swift_bic").value || "").trim(),
-          bank_address: (document.getElementById("bank_address").value || "").trim(),
-          reference: (document.getElementById("bank_reference").value || "").trim()
-        };
-
-        const bankErr = validateBankPayload(bank);
-        if(bankErr){
-          showError(bankErr);
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit Withdrawal";
-          return;
-        }
-
-        const acctDigits = bank.account_number.replace(/\s+/g, "");
-        const last4 = acctDigits.length >= 4 ? acctDigits.slice(-4) : acctDigits;
-        const maskedDestination = `${bank.bank_name} • ****${last4}`;
-
-        payload = {
-          ...basePayload,
-          network: "BANK",
-          wallet_address: maskedDestination,
-          bank_details: bank
-        };
-      }else{
-        const wallet = document.getElementById("wallet_address").value.trim();
-        const network = document.getElementById("network").value;
-
-        if (!wallet) {
-          showError("Wallet address is required.");
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit Withdrawal";
-          return;
-        }
-
-        payload = {
-          ...basePayload,
-          network,
-          wallet_address: wallet
-        };
+      const normalizedSet=new Set(assetKeys.map(k=>normalizeSymbol(k)));
+      const ids=[], symById={};
+      for(const sym of normalizedSet){
+        const id=map[sym];
+        if(id){ ids.push(id); symById[id]=sym; }
       }
-
-      await prepareWithdrawPin(session.user);
-
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Submit Withdrawal";
-
-      openWithdrawPin(async (verifiedPin) => {
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Submitting...";
-        clearError();
-
-        try{
-          await processWithdrawalRequest(session, payload, amountVal, verifiedPin);
-        }catch(err){
-          console.error(err);
-          showError(err?.message || "Withdrawal failed.");
-        }finally{
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit Withdrawal";
+      if(!ids.length){ return; }
+      try{
+        const url=`https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids.join(","))}&vs_currencies=usd&include_24hr_change=true`;
+        const res=await fetch(url);
+        const data=await res.json();
+        const out={};
+        for(const id of ids){
+          const sym=symById[id];
+          out[sym] = { usd: Number(data?.[id]?.usd||0), chg: Number(data?.[id]?.usd_24h_change||0) };
         }
+        __prices = { ...__prices, ...out };
+      }catch(e){}
+    }
+
+    function setTotalBalanceDisplay(text){
+      const el=document.getElementById("totalBalanceUsd");
+      if(!el) return;
+      el.dataset.balReal=String(text||"$0.00");
+      el.textContent = __hideBalances ? maskText() : el.dataset.balReal;
+    }
+
+    function chgText(sym){
+      const c=__prices?.[sym]?.chg;
+      if(typeof c!=="number" || !isFinite(c)) return {txt:"—", cls:""};
+      const sign=c>=0?"+":"";
+      return { txt: `${sign}${c.toFixed(2)}% (24h)`, cls: c>=0 ? "up" : "down" };
+    }
+
+    /* ===========================
+       BALANCES (NEW TABLE)
+       - user_crypto_balances (per coin)
+       - users.balance (dashboard total)
+    =========================== */
+    async function loadBalancesSafe(){
+      __balances={};
+      try{
+        if(!CURRENT_USER_ID) return;
+        const { data, error } = await supabaseClient
+          .from("user_crypto_balances")
+          .select("asset_key,balance")
+          .eq("user_id", CURRENT_USER_ID);
+        if(error) throw error;
+        (data||[]).forEach(r=>{
+          const sym=normalizeSymbol(r.asset_key);
+          __balances[sym]=Number(r.balance||0);
+        });
+      }catch(e){
+        __balances={};
+      }
+    }
+
+    async function refreshWalletTotalFromBalances(forceLivePrices=false){
+      const cachedPriceRows = readWalletPriceCache();
+      const cachedPrices = {};
+      Object.keys(cachedPriceRows || {}).forEach(sym=>{
+        cachedPrices[normalizeSymbol(sym)] = cachedPriceRows[sym];
       });
 
-    } catch (err) {
-      console.error(err);
-      showError(err?.message || "Unexpected error occurred.");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Submit Withdrawal";
-    }
-  });
+      const quick = computeWalletTotalFromBalances({ ...cachedPrices, ...__prices });
+      if(quick.pricedCount > 0 || uniqueSymbols().every(sym => stableUsdPrice(sym) !== null || Number(__balances?.[sym]||0) === 0)){
+        __totalUsd = Number(quick.total || 0);
+        setTotalBalanceDisplay(money(__totalUsd));
+        writeWalletTotalCache(__totalUsd);
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = forceLivePrices ? "Refreshing live prices…" : "Linked with dashboard balance";
+      }
 
-  async function logout(){
-    await supabaseClient.auth.signOut();
-    window.location.href="login.html";
-  }
-
-  /* ============================================================
-    ✅ LOAD USER (Name instead of email)
-  ============================================================ */
-  async function loadIdentity(user){
-    try{
-      currentUserEmail = user.email || "";
-      currentUserId = user.id || "";
-
-      let fullName = "";
-      let avatarUrl = "";
+      const symbolsNeedingPrices = uniqueSymbols().filter(sym => Number(__balances?.[sym]||0) !== 0 && stableUsdPrice(sym) === null);
+      if(!symbolsNeedingPrices.length){
+        const hint = document.getElementById("totalHint");
+        if(hint) hint.textContent = "Linked with dashboard balance";
+        return;
+      }
 
       try{
-        const { data: row } = await supabaseClient
-          .from("users")
-          .select("full_name, avatar_url")
-          .eq("email", currentUserEmail)
-          .maybeSingle();
-
-        if(row){
-          fullName = row.full_name || "";
-          avatarUrl = row.avatar_url || "";
+        await fetchPricesUSD(symbolsNeedingPrices);
+        writeWalletPriceCache(__prices);
+        const rich = computeWalletTotalFromBalances(__prices);
+        if(rich.pricedCount > 0){
+          __totalUsd = Number(rich.total || 0);
+          setTotalBalanceDisplay(money(__totalUsd));
+          writeWalletTotalCache(__totalUsd);
+          const hint = document.getElementById("totalHint");
+          if(hint) hint.textContent = "Linked with dashboard balance";
         }
       }catch(e){}
-
-      const md = user.user_metadata || {};
-      if(!fullName) fullName = md.full_name || "User";
-      if(!avatarUrl) avatarUrl = md.avatar_url || "";
-
-      setNameEverywhere(fullName);
-      setSideAvatar(avatarUrl);
-    }catch(e){
-      setNameEverywhere("User");
-      setSideAvatar("");
     }
-  }
 
-  /* ============================================================
-    ✅ COINLUXORA AUTH + EMAIL VERIFICATION GUARD (ONE BLOCK)
-  ============================================================ */
-  (async function authGuard(){
-    try{
+    /* BACKEND WALLETS LIST */
+    async function getAuthHeaders(){
       const { data: sessionData } = await supabaseClient.auth.getSession();
-      const session = sessionData?.session;
+      const accessToken = sessionData?.session?.access_token;
+      return {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+      };
+    }
 
-      if(!session){
+    async function loadFromBackend(){
+      try{
+        applyCachedWalletTotal();
+        const headersPromise = getAuthHeaders();
+        const balancesPromise = loadBalancesSafe();
+        const headers = await headersPromise;
+        const walletFetchPromise = fetch(WALLET_API_URL, {
+          method:"POST",
+          headers,
+          body: JSON.stringify({ action:"wallets_public_list" })
+        });
+
+        await balancesPromise;
+        await refreshWalletTotalFromBalances(false);
+
+        const res = await walletFetchPromise;
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Load failed (${res.status})`);
+          console.error("wallets_public_list failed:", { status:res.status, data });
+          return;
+        }
+
+        const wallets=(data.wallets||[]).map(w=>({
+          asset_key:w.asset_key, name:w.name, network:w.network, address:w.address,
+          memo_label:w.memo_label, memo_value:w.memo_value, note:w.note
+        }));
+        __wallets = wallets.filter(w => String(w.asset_key||"").toUpperCase() !== "XRP");
+
+        render(__wallets);
+        await fetchPricesUSD(__wallets.map(w=>w.asset_key));
+        writeWalletPriceCache(__prices);
+        await refreshWalletTotalFromBalances(true);
+        render(__wallets);
+        toast("Loaded ✅");
+      }catch(e){
+        toast("Network error ❌");
+        console.error("Wallet fetch error:", e);
+      }finally{
         hideGate();
-        window.location.replace("login.html");
-        return;
       }
+    }
 
-      const { data, error } = await supabaseClient.auth.getUser();
-      const user = data?.user;
+    function makeCard(item){
+      const sym=normalizeSymbol(item.asset_key);
+      const grad=getGradFor(sym);
+      const bal=Number(__balances[sym]||0);
+      const px=Number(__prices?.[sym]?.usd||0);
+      const usdVal=(bal && px) ? (bal*px) : 0;
+      const ch=chgText(sym);
+      const balText=fmtBal(sym, bal);
+      const usdText=money(usdVal);
+      const pxText=px ? money(px) : "$—";
+      const el=document.createElement("div");
+      el.className="card";
+      el.setAttribute("data-search", `${sym} ${item.name} ${item.network}`.toLowerCase());
+      el.style.setProperty("--coinA", grad[0]);
+      el.style.setProperty("--coinB", grad[1]);
+      el.innerHTML=`
+        <div class="row">
+          <div class="left">
+            <div class="meta">
+              <div class="coin">
+                <div class="badge" title="${escapeHtml(sym)}">
+                  <img src="${escapeHtml(logoUrlFor(sym))}" alt="${escapeHtml(sym)} logo"
+                    onerror="this.style.display='none'; this.parentElement.querySelector('.fallback').style.display='block';">
+                  <span class="fallback">${escapeHtml(iconLetters(sym))}</span>
+                </div>
+                <div class="names">
+                  <div class="sym">${escapeHtml(item.name || sym)} <span style="opacity:.7;">•</span> ${escapeHtml(sym)}</div>
+                  <div class="net">${escapeHtml(item.network)}</div>
+                </div>
+              </div>
+              <div class="pill"><span class="mini"></span>Wallet</div>
+            </div>
 
-      if(error || !user){
-        hideGate();
-        window.location.replace("login.html");
-        return;
+            <div class="stats">
+              <div class="statBox">
+                <div class="statLabel"><span>Balance</span><span style="opacity:.8">${escapeHtml(sym)}</span></div>
+                <div class="statValue"><span data-bal="1" data-bal-real="${escapeHtml(balText)}">${escapeHtml(__hideBalances?maskText():balText)}</span></div>
+                <div class="hint" style="margin-top:0">≈ <span data-bal="1" data-bal-real="${escapeHtml(usdText)}">${escapeHtml(__hideBalances?maskText():usdText)}</span></div>
+              </div>
+
+              <div class="statBox">
+                <div class="statLabel"><span>Live Price</span><span class="chg ${ch.cls}">${escapeHtml(ch.txt)}</span></div>
+                <div class="statValue"><span data-bal="1" data-bal-real="${escapeHtml(pxText)}">${escapeHtml(__hideBalances?maskText():pxText)}</span></div>
+                <div class="hint" style="margin-top:0">Updates on refresh</div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn receive" data-recv="1" type="button">Receive</button>
+              <button class="btn send" data-send="1" type="button">Send</button>
+            </div>
+
+            <div class="hint">${escapeHtml(item.note || "Receive shows deposit address & QR.")}</div>
+          </div>
+        </div>
+        <div class="miniChartBtn" title="Live chart" data-chart="1">〽️</div>
+      `;
+      el.addEventListener("click",(e)=>{
+        const t=e.target;
+        if(t && (t.closest("button")||t.closest("a")||t.closest("input")||t.closest("select")||t.closest("[data-chart]"))) return;
+        if(__selectedCard) __selectedCard.classList.remove("selected");
+        el.classList.add("selected"); __selectedCard=el;
+      });
+      el.querySelectorAll("[data-send]").forEach(btn=>{
+        btn.addEventListener("click",(e)=>{ e.stopPropagation(); openSendModal(sym, item.network || ""); });
+      });
+      el.querySelectorAll("[data-recv]").forEach(btn=>{
+        btn.addEventListener("click",(e)=>{ e.stopPropagation(); openReceive(item); });
+      });
+      const chartBtn = el.querySelector("[data-chart]");
+      if(chartBtn){
+        chartBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          openLiveChart(sym);
+        });
       }
+      return el;
+    }
 
-      const confirmed = !!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified === true);
+    function render(list){
+      const grid=document.getElementById("grid");
+      grid.innerHTML="";
+      list.forEach(item=> grid.appendChild(makeCard(item)));
+      applySearch();
+      applyHideBalances();
+    }
 
-      if(!confirmed){
-        await supabaseClient.auth.signOut();
-        hideGate();
-        window.location.replace("verify.html?status=unverified");
-        return;
+    function applySearch(){
+      const q=(document.getElementById("q").value||"").trim().toLowerCase();
+      const cards=Array.from(document.querySelectorAll("#grid .card"));
+      let shown=0;
+      cards.forEach(card=>{
+        const hay=card.getAttribute("data-search")||"";
+        const ok=!q || hay.includes(q);
+        card.style.display=ok ? "" : "none";
+        if(ok) shown++;
+      });
+      document.getElementById("empty").style.display = shown ? "none" : "block";
+    }
+
+    /* SEND MODAL */
+    const sendOverlay=document.getElementById("sendOverlay");
+    const sendTitle=document.getElementById("sendTitle");
+    const sendSub=document.getElementById("sendSub");
+    const sendTo=document.getElementById("sendTo");
+    const sendAmount=document.getElementById("sendAmount");
+    const sendNetwork=document.getElementById("sendNetwork");
+    const sendNote=document.getElementById("sendNote");
+    const feeEst=document.getElementById("feeEst");
+    const totalEst=document.getElementById("totalEst");
+
+    let __sendAsset="", __sendDefaultNetwork="";
+    function closeSendModal(){
+      sendOverlay.classList.remove("show");
+      __sendAsset=""; __sendDefaultNetwork="";
+      sendTo.value=""; sendAmount.value=""; sendNote.value="";
+      sendNetwork.innerHTML="";
+      feeEst.textContent="—"; feeEst.dataset.balReal="—";
+      totalEst.textContent="—"; totalEst.dataset.balReal="—";
+      applyHideBalances();
+    }
+    function openSendModal(asset_key, preferredNetwork){
+      __sendAsset=normalizeSymbol(asset_key);
+      __sendDefaultNetwork=String(preferredNetwork||"");
+      const nets=__wallets.filter(w=>normalizeSymbol(w.asset_key)===__sendAsset).map(w=>w.network).filter(Boolean);
+      const options=(nets.length?nets:[__sendDefaultNetwork]).filter(Boolean);
+      sendNetwork.innerHTML="";
+      options.forEach((n, idx)=>{
+        const opt=document.createElement("option");
+        opt.value=n; opt.textContent=n;
+        if(n===__sendDefaultNetwork || idx===0) opt.selected=true;
+        sendNetwork.appendChild(opt);
+      });
+      sendTitle.textContent=`Send ${__sendAsset}`;
+      sendSub.textContent=`${options[sendNetwork.selectedIndex] || __sendDefaultNetwork || "Network"}`;
+      updateFeeEstimate();
+      sendOverlay.classList.add("show");
+      sendTo.focus();
+    }
+    function fmtNum(n, decimals=8){
+      if(!Number.isFinite(n)) return "—";
+      if(__sendAsset==="USDT"||__sendAsset==="USDC") decimals=2;
+      return n.toFixed(decimals).replace(/\.?0+$/,"");
+    }
+    function updateFeeEstimate(){
+      const net=sendNetwork.value || __sendDefaultNetwork || "";
+      const amt=parseAmount(sendAmount.value);
+      sendSub.textContent=`${net || "Network"}`;
+      const fee=estimateFee(__sendAsset, net);
+      const feeText=`${fmtNum(fee, (__sendAsset==="USDT"||__sendAsset==="USDC")?2:8)} ${__sendAsset}`;
+      feeEst.dataset.balReal=feeText; feeEst.textContent=__hideBalances?maskText():feeText;
+      const total=amt + (Number(fee)||0);
+      const totalText=amt ? `${fmtNum(total, (__sendAsset==="USDT"||__sendAsset==="USDC")?2:8)} ${__sendAsset}` : "—";
+      totalEst.dataset.balReal=totalText; totalEst.textContent=__hideBalances?maskText():totalText;
+    }
+    document.getElementById("btnSendClose").addEventListener("click", closeSendModal);
+    document.getElementById("btnSendCancel").addEventListener("click", closeSendModal);
+    sendOverlay.addEventListener("click",(e)=>{ if(e.target===sendOverlay) closeSendModal(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && sendOverlay.classList.contains("show")) closeSendModal(); });
+    sendAmount.addEventListener("input", updateFeeEstimate);
+    sendNetwork.addEventListener("change", updateFeeEstimate);
+
+    document.getElementById("btnSendSubmit").addEventListener("click", async ()=>{
+      const to=(sendTo.value||"").trim();
+      const amt=parseAmount(sendAmount.value);
+      const net=(sendNetwork.value||"").trim();
+      const note=(sendNote.value||"").trim();
+      if(!__sendAsset){ toast("Select an asset"); return; }
+      if(!net){ toast("Select a network"); return; }
+      if(!to || to.length<12){ toast("Enter a valid address"); return; }
+      if(!amt){ toast("Enter amount"); return; }
+
+      const fee=estimateFee(__sendAsset, net);
+      try{
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{
+          method:"POST", headers,
+          body: JSON.stringify({ action:"send_create", asset_key:__sendAsset, network:net, to_address:to, amount:amt, fee_est:fee, note })
+        });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Send failed (${res.status})`);
+          console.error("send_create failed:", { status:res.status, data });
+          return;
+        }
+        toast("Send request submitted ✅");
+        closeSendModal();
+        await loadSendHistory(true);
+      }catch(e){
+        toast("Send error ❌"); console.error("send_create error:", e);
       }
+    });
 
-      await loadIdentity(user);
+    /* SEND HISTORY */
+    const historyOverlay=document.getElementById("historyOverlay");
+    const historyDrawer=document.getElementById("historyDrawer");
+    const historyList=document.getElementById("historyList");
+    const historyEmpty=document.getElementById("historyEmpty");
+    function openHistory(){ historyOverlay.classList.add("show"); historyDrawer.classList.add("show"); }
+    function closeHistory(){ historyOverlay.classList.remove("show"); historyDrawer.classList.remove("show"); }
+    function statusTagClass(s){
+      const x=String(s||"").toLowerCase();
+      if(x==="pending") return "pending";
+      if(x==="approved") return "approved";
+      if(x==="rejected") return "rejected";
+      if(x==="sent") return "sent";
+      if(x==="failed") return "failed";
+      if(x==="processing") return "processing";
+      return "pending";
+    }
+    function shortAddr(a){ const s=String(a||""); return s.length<=16 ? s : (s.slice(0,8)+"..."+s.slice(-6)); }
+    function formatWhen(ts){ const d=ts?new Date(ts):null; if(!d||isNaN(d.getTime())) return ""; return d.toLocaleString(); }
 
-      await loadSiteNotification(true);
-      startSiteNotificationAutoRefresh();
+    async function loadSendHistory(silent=false){
+      try{
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{ method:"POST", headers, body: JSON.stringify({ action:"send_my_list" }) });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          if(!silent) toast(`History failed (${res.status})`);
+          console.error("send_my_list failed:", { status:res.status, data });
+          return;
+        }
+        const rows=Array.isArray(data?.requests) ? data.requests : [];
+        historyList.innerHTML="";
+        if(!rows.length){ historyEmpty.style.display="block"; return; }
+        historyEmpty.style.display="none";
+        rows.forEach(r=>{
+          const st=String(r.status||"pending");
+          const item=document.createElement("div");
+          item.className="hItem";
+          item.innerHTML=`
+            <div class="hRow">
+              <div class="hLeft" style="min-width:0;">
+                <b>${escapeHtml(normalizeSymbol(r.asset_key||"").toUpperCase())} • ${escapeHtml(r.network||"")}</b>
+                <span class="mono">To: ${escapeHtml(shortAddr(r.to_address||""))}</span>
+              </div>
+              <div class="tag ${statusTagClass(st)}">${escapeHtml(st.toUpperCase())}</div>
+            </div>
+            <div class="hRow">
+              <span class="mono" style="color: var(--muted); font-size:12px;">
+                Amount: <b style="color:var(--text);">${escapeHtml(String(r.amount||""))}</b>
+                &nbsp;|&nbsp; Fee: <b style="color:var(--text);">${escapeHtml(String(r.fee_est||"0"))}</b>
+              </span>
+              <span style="color: var(--muted); font-size:12px;">${escapeHtml(formatWhen(r.created_at||r.updated_at||""))}</span>
+            </div>
+            ${r.admin_note ? `<div style="color: var(--muted); font-size:12px;">Admin: ${escapeHtml(r.admin_note)}</div>` : ``}
+          `;
+          historyList.appendChild(item);
+        });
+        if(!silent) toast("History updated ✅");
+      }catch(e){
+        if(!silent) toast("History error ❌");
+        console.error("History error:", e);
+      }
+    }
+    document.getElementById("btnHistoryOpen").addEventListener("click", async ()=>{ openHistory(); await loadSendHistory(true); });
+    document.getElementById("btnHistoryClose").addEventListener("click", closeHistory);
+    document.getElementById("btnHistoryRefresh").addEventListener("click", ()=> loadSendHistory(false));
+    historyOverlay.addEventListener("click", closeHistory);
 
-      hideGate();
-
-      // init history
-      await fetchWithdrawals({ reset:true });
-
-      // apply initial bank rules just in case
-      applyBankFieldRules();
-
-    }catch(e){
-      hideGate();
+    /* MENU */
+    const menuOverlay=document.getElementById("menuOverlay");
+    const menuDrawer=document.getElementById("menuDrawer");
+    function openMenu(){ menuOverlay.classList.add("show"); menuDrawer.classList.add("show"); }
+    function closeMenu(){ menuOverlay.classList.remove("show"); menuDrawer.classList.remove("show"); }
+    document.getElementById("btnMenu").addEventListener("click", openMenu);
+    document.getElementById("btnMenuClose").addEventListener("click", closeMenu);
+    menuOverlay.addEventListener("click", closeMenu);
+    document.getElementById("btnLogout").addEventListener("click", async ()=>{
+      try{ await supabaseClient.auth.signOut(); }catch(e){}
       window.location.replace("login.html");
+    });
+
+    /* ============================================================
+      WALLET LINK (TABLE: user_wallet_link_requests)
+      - popup on approve/reject
+      - approved => FAB becomes "View Wallet Connection"
+      - processing/pending not required in your DB right now, but supported
+    ============================================================ */
+    const btnLinkWallet=document.getElementById("btnLinkWallet");
+    const linkOverlay=document.getElementById("linkOverlay");
+    const btnLinkClose=document.getElementById("btnLinkClose");
+    const btnLinkCancel=document.getElementById("btnLinkCancel");
+    const btnLinkSubmit=document.getElementById("btnLinkSubmit");
+    const linkAddress=document.getElementById("linkAddress");
+    const linkLabel=document.getElementById("linkLabel");
+    const linkStatus=document.getElementById("linkStatus");
+    const linkWhen=document.getElementById("linkWhen");
+    const linkRejectWrap=document.getElementById("linkRejectWrap");
+    const linkRejectMsg=document.getElementById("linkRejectMsg");
+    const linkFabTitle=document.getElementById("linkFabTitle");
+    const linkFabSub=document.getElementById("linkFabSub");
+
+    const linkedOverlay=document.getElementById("linkedOverlay");
+    const rejectedOverlay=document.getElementById("rejectedOverlay");
+    const rejectedReason=document.getElementById("rejectedReason");
+
+    function closeLinkedPopup(){ linkedOverlay.classList.remove("show"); }
+    document.getElementById("btnLinkedClose").addEventListener("click", closeLinkedPopup);
+    document.getElementById("btnLinkedOk").addEventListener("click", closeLinkedPopup);
+    linkedOverlay.addEventListener("click",(e)=>{ if(e.target===linkedOverlay) closeLinkedPopup(); });
+
+    function closeRejectedPopup(){ rejectedOverlay.classList.remove("show"); }
+    document.getElementById("btnRejectedClose").addEventListener("click", closeRejectedPopup);
+    document.getElementById("btnRejectedOk").addEventListener("click", closeRejectedPopup);
+    rejectedOverlay.addEventListener("click",(e)=>{ if(e.target===rejectedOverlay) closeRejectedPopup(); });
+
+    let __linkState="none"; // none | processing | approved | rejected
+    let __linkDetails=null;
+
+    function looksLikeAddress(a){
+      const s=String(a||"").trim();
+      if(s.length<12) return false;
+      if(/^0x[a-fA-F0-9]{40}$/.test(s)) return true;
+      if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{20,}$/.test(s)) return true;
+      if(/^T[1-9A-HJ-NP-Za-km-z]{25,}$/.test(s)) return true;
+      if(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) return true;
+      return true;
     }
-  })();
-
-/* ===== SITE-WIDE NOTIFICATION ===== */
-let __siteNoticeShownKey = "";
-let __siteNoticeTimer = null;
-
-function showSiteNotice(title, message){
-  const ov = document.getElementById("siteNoticeOverlay");
-  const ttl = document.getElementById("siteNoticeTitle");
-  const body = document.getElementById("siteNoticeBody");
-  if(!ov || !ttl || !body) return;
-  ttl.textContent = String(title || "Notification");
-  body.textContent = String(message || "");
-  ov.style.display = "flex";
-  ov.setAttribute("aria-hidden", "false");
-}
-function closeSiteNotice(){
-  const ov = document.getElementById("siteNoticeOverlay");
-  if(ov){
-    ov.style.display = "none";
-    ov.setAttribute("aria-hidden", "true");
-  }
-}
-async function loadSiteNotification(forceOpen=false){
-  try{
-    const userObj = window.COINLUXORA_USER || null;
-    const uid =
-      (typeof currentUserId !== "undefined" && currentUserId) ? currentUserId :
-      (typeof currentUser !== "undefined" && currentUser?.id) ? currentUser.id :
-      (userObj?.id || "");
-    const emailRaw =
-      (typeof currentUserEmail !== "undefined" && currentUserEmail) ? currentUserEmail :
-      (typeof currentUser !== "undefined" && currentUser?.email) ? currentUser.email :
-      (userObj?.email || "");
-    const email = String(emailRaw || "").trim().toLowerCase();
-
-    let row = null;
-
-    if(uid){
-      const byId = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .eq("user_id", uid)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byId.error && byId.data) row = byId.data;
+    function validateLink(){
+      const ok=looksLikeAddress(linkAddress.value);
+      btnLinkSubmit.disabled=!ok;
+      btnLinkSubmit.style.opacity=ok?"1":".55";
+      btnLinkSubmit.style.cursor=ok?"pointer":"not-allowed";
     }
+    linkAddress.addEventListener("input", validateLink);
 
-    if(!row && email){
-      const byEmail = await supabaseClient
-        .from("user_notices")
-        .select("*")
-        .ilike("user_email", email)
-        .order("updated_at", { ascending:false })
-        .limit(1)
-        .maybeSingle();
-      if(!byEmail.error && byEmail.data) row = byEmail.data;
-    }
-
-    const enabled = !!(row?.enabled ?? false);
-    const title = String(row?.title ?? "Notification").trim();
-    const message = String(row?.message ?? "").trim();
-    const updatedAt = String(row?.updated_at ?? "");
-    const noticeKey = [enabled ? "1" : "0", title, message, updatedAt].join("|");
-
-    if(!enabled || !message){
-      __siteNoticeShownKey = "";
-      closeSiteNotice();
-      return false;
+    function normalizeLinkStatus(s){
+      const x=String(s||"").toLowerCase().trim();
+      if(["approved","linked","active"].includes(x)) return "approved";
+      if(["pending","processing","awaiting","in_review"].includes(x)) return "processing";
+      if(["rejected","declined","failed"].includes(x)) return "rejected";
+      return x || "none";
     }
 
-    if(forceOpen || __siteNoticeShownKey !== noticeKey){
-      __siteNoticeShownKey = noticeKey;
-      showSiteNotice(title, message);
+    function setFabState(state){
+      __linkState=state;
+      if(state==="approved"){ linkFabTitle.textContent="View Wallet Connection"; linkFabSub.textContent="Linked ✅"; return; }
+      if(state==="processing"){ linkFabTitle.textContent="Processing"; linkFabSub.textContent="Awaiting approval"; return; }
+      if(state==="rejected"){ linkFabTitle.textContent="Link Wallet"; linkFabSub.textContent="Rejected — retry"; return; }
+      linkFabTitle.textContent="Link Wallet"; linkFabSub.textContent="External address";
     }
-    return true;
-  }catch(e){
-    return false;
-  }
-}
-function startSiteNotificationAutoRefresh(){
-  if(__siteNoticeTimer) clearInterval(__siteNoticeTimer);
-  __siteNoticeTimer = setInterval(()=> loadSiteNotification(false), 15000);
-}
-window.closeSiteNotice = closeSiteNotice;
 
-</script>
+    function setLinkModalViewMode(mode){
+      const view = (mode==="view");
+      linkAddress.disabled=view;
+      linkLabel.disabled=view;
+      btnLinkSubmit.style.display = view ? "none" : "";
+      btnLinkCancel.textContent = view ? "Close" : "Cancel";
+      btnLinkClose.textContent = "Close";
+    }
 
+    function fillLinkDetails(details){
+      __linkDetails = details || __linkDetails || null;
+      linkAddress.value = __linkDetails?.address || "";
+      linkLabel.value = __linkDetails?.label || "";
+      const st = normalizeLinkStatus(__linkDetails?.status);
+      const when = __linkDetails?.created_at || __linkDetails?.updated_at || "";
+      linkWhen.textContent = when ? new Date(when).toLocaleString() : "—";
 
-<footer style="text-align:center;padding:20px 16px 8px;color:#aaa;">© 2026 Veloci Global Markets. All rights reserved.</footer>
+      if(st==="approved"){
+        linkStatus.innerHTML = `<span style="display:inline-flex;align-items:center;gap:10px;"><span class="statusDot"></span><span>Wallet Linked</span></span>`;
+      }else if(st==="processing"){
+        linkStatus.textContent="Processing";
+      }else if(st==="rejected"){
+        linkStatus.textContent="Rejected";
+      }else{
+        linkStatus.textContent="Not linked";
+      }
+
+      const rej = __linkDetails?.admin_note || __linkDetails?.reject_reason || __linkDetails?.note || "";
+      if(st==="rejected" && rej){
+        linkRejectWrap.style.display="block";
+        linkRejectMsg.textContent = String(rej);
+      }else{
+        linkRejectWrap.style.display="none";
+        linkRejectMsg.textContent="—";
+      }
+      validateLink();
+    }
+
+    function openLink(){
+      if(__linkState==="approved"){
+        document.getElementById("linkModalTitle").textContent="Wallet Connection";
+        document.getElementById("linkModalSub").textContent="Your linked wallet details";
+        setLinkModalViewMode("view");
+        fillLinkDetails(__linkDetails);
+        linkOverlay.classList.add("show");
+        return;
+      }
+      if(__linkState==="processing"){
+        document.getElementById("linkModalTitle").textContent="Wallet Connection";
+        document.getElementById("linkModalSub").textContent="Processing — details you submitted";
+        setLinkModalViewMode("view");
+        fillLinkDetails(__linkDetails);
+        linkOverlay.classList.add("show");
+        return;
+      }
+      if(__linkState==="rejected"){
+        document.getElementById("linkModalTitle").textContent="Re-Link External Wallet";
+        document.getElementById("linkModalSub").textContent="Rejected — update and resubmit";
+        setLinkModalViewMode("edit");
+        fillLinkDetails(__linkDetails);
+        linkOverlay.classList.add("show");
+        linkAddress.focus();
+        return;
+      }
+
+      document.getElementById("linkModalTitle").textContent="Link External Wallet";
+      document.getElementById("linkModalSub").textContent="Add a public address (never seed phrase)";
+      setLinkModalViewMode("edit");
+      linkRejectWrap.style.display="none";
+      linkRejectMsg.textContent="—";
+      linkWhen.textContent="—";
+      linkStatus.textContent="Not linked";
+      linkAddress.value="";
+      linkLabel.value="";
+      validateLink();
+      linkOverlay.classList.add("show");
+      linkAddress.focus();
+    }
+
+    function closeLink(){
+      linkOverlay.classList.remove("show");
+      btnLinkSubmit.disabled=true;
+      btnLinkSubmit.style.opacity=".55";
+      btnLinkSubmit.style.cursor="not-allowed";
+      btnLinkSubmit.style.display="";
+    }
+
+    btnLinkWallet.addEventListener("click", openLink);
+    btnLinkClose.addEventListener("click", closeLink);
+    btnLinkCancel.addEventListener("click", closeLink);
+    linkOverlay.addEventListener("click",(e)=>{ if(e.target===linkOverlay) closeLink(); });
+
+    btnLinkSubmit.addEventListener("click", async ()=>{
+      const addr=(linkAddress.value||"").trim();
+      const label=(linkLabel.value||"").trim();
+      if(!looksLikeAddress(addr)){ toast("Enter a valid public address"); return; }
+
+      try{
+        const headers=await getAuthHeaders();
+        const res=await fetch(WALLET_API_URL,{
+          method:"POST", headers,
+          body: JSON.stringify({ action:"wallet_link_request", address: addr, label: label || null })
+        });
+        const data=await res.json().catch(()=> ({}));
+        if(!res.ok || data?.success===false){
+          toast(`Link not enabled yet (${res.status})`);
+          console.error("wallet_link_request failed:", { status:res.status, data });
+          return;
+        }
+
+        const edgeReq = data?.request || null;
+        if(edgeReq && typeof edgeReq === "object"){
+          __linkDetails = edgeReq;
+        }else{
+          __linkDetails = {
+            address: addr,
+            label: label || null,
+            status: "processing",
+            created_at: new Date().toISOString()
+          };
+        }
+
+        try{ localStorage.setItem(`vgm_link_last_${CURRENT_USER_ID}`, JSON.stringify(__linkDetails)); }catch(e){}
+        setFabState("processing");
+        fillLinkDetails(__linkDetails);
+
+        toast("Link request submitted ✅");
+        closeLink();
+      }catch(e){
+        toast("Link error ❌");
+        console.error("Link error:", e);
+      }
+    });
+
+    // realtime listener (best effort) + polling (reliable)
+    let __linkRealtimeSub=null;
+
+    async function fetchLatestLinkRow(){
+      try{
+        if(!CURRENT_USER_ID) return null;
+        const { data, error } = await supabaseClient
+          .from("user_wallet_link_requests")
+          .select("id,status,address,label,created_at,updated_at,admin_note")
+          .eq("user_id", CURRENT_USER_ID)
+          .order("created_at", { ascending:false })
+          .limit(1);
+        if(error) return null;
+        const row = Array.isArray(data) ? data[0] : null;
+        return row || null;
+      }catch(e){ return null; }
+    }
+
+    function getLastSeenLinkStatusKey(){ return `vgm_link_last_status_${CURRENT_USER_ID}`; }
+    function showApprovedPopupOnceOnChange(currentStatus){
+      try{
+        const key=getLastSeenLinkStatusKey();
+        const prev=localStorage.getItem(key) || "";
+        if(prev && prev!==currentStatus){
+          if(currentStatus==="approved"){
+            linkedOverlay.classList.add("show");
+          }
+          if(currentStatus==="rejected"){
+            const reason = (__linkDetails?.admin_note || "Wallet linking unsuccessful, try again.");
+            rejectedReason.textContent = reason;
+            rejectedOverlay.classList.add("show");
+          }
+        }
+        localStorage.setItem(key, currentStatus);
+      }catch(e){}
+    }
+
+    async function checkLinkStatus(){
+      const row = await fetchLatestLinkRow();
+      if(!row){
+        setFabState("none");
+        return;
+      }
+      __linkDetails = row;
+      const st = normalizeLinkStatus(row.status);
+      const was = __linkState;
+      setFabState(st);
+      fillLinkDetails(__linkDetails);
+
+      // Popup only if status changed since last time we saw it
+      if(was !== st){
+        showApprovedPopupOnceOnChange(st);
+      }
+    }
+
+    function setupLinkRealtime(){
+      try{ if(__linkRealtimeSub){ supabaseClient.removeChannel(__linkRealtimeSub); __linkRealtimeSub=null; } }catch(e){}
+      if(!CURRENT_USER_ID) return;
+
+      const channel = supabaseClient.channel(`vgm-link-${CURRENT_USER_ID}`);
+      channel.on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_wallet_link_requests',
+        filter: `user_id=eq.${CURRENT_USER_ID}`
+      }, payload => {
+        const row = payload?.new || payload?.old || null;
+        if(!row) return;
+        __linkDetails = row;
+        const st = normalizeLinkStatus(row.status);
+        const prev = __linkState;
+        setFabState(st);
+        fillLinkDetails(__linkDetails);
+        if(prev !== st){
+          showApprovedPopupOnceOnChange(st);
+        }
+      });
+
+      __linkRealtimeSub = channel.subscribe();
+    }
+
+    /* ADMIN NOTICE */
+    const noticeOverlay=document.getElementById("noticeOverlay");
+    let __noticeKey = "";
+
+    function closeNotice(){
+      noticeOverlay.classList.remove("show");
+      try{
+        sessionStorage.setItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`, __noticeKey || "1");
+      }catch(e){}
+    }
+    document.getElementById("btnNoticeClose").addEventListener("click", closeNotice);
+    document.getElementById("btnNoticeDismiss").addEventListener("click", closeNotice);
+    noticeOverlay.addEventListener("click",(e)=>{ if(e.target===noticeOverlay) closeNotice(); });
+
+    async function checkNotice(forceOpen=false){
+      try{
+        if(!CURRENT_USER_ID && !CURRENT_EMAIL) return;
+
+        let row = null;
+
+        if(CURRENT_USER_ID){
+          const byId = await supabaseClient
+            .from("user_notices")
+            .select("*")
+            .eq("user_id", CURRENT_USER_ID)
+            .order("updated_at", { ascending:false })
+            .limit(1);
+
+          if(!byId.error && Array.isArray(byId.data) && byId.data.length){
+            row = byId.data[0];
+          }
+        }
+
+        if(!row && CURRENT_EMAIL){
+          const byEmail = await supabaseClient
+            .from("user_notices")
+            .select("*")
+            .ilike("user_email", String(CURRENT_EMAIL||"").trim().toLowerCase())
+            .order("updated_at", { ascending:false })
+            .limit(1);
+
+          if(!byEmail.error && Array.isArray(byEmail.data) && byEmail.data.length){
+            row = byEmail.data[0];
+          }
+        }
+
+        if(!row || !row.enabled || !String(row.message || "").trim()){
+          __noticeKey = "";
+          noticeOverlay.classList.remove("show");
+          return;
+        }
+
+        const title = String(row.title || "Notice");
+        const message = String(row.message || "");
+        const updatedAt = String(row.updated_at || row.created_at || "");
+        const nextKey = [String(row.user_id || ""), String(row.user_email || ""), title, message, updatedAt].join("|");
+        const dismissedKey = (()=>{ try{ return sessionStorage.getItem(`vgm_notice_dismiss_${CURRENT_USER_ID}`) || ""; }catch(e){ return ""; }})();
+
+        __noticeKey = nextKey;
+
+        if(forceOpen || dismissedKey !== nextKey){
+          document.getElementById("noticeTitle").textContent = title;
+          document.getElementById("noticeSub").textContent = "Admin message";
+          document.getElementById("noticeMsg").textContent = message;
+          noticeOverlay.classList.add("show");
+        }
+      }catch(e){}
+    }
+
+    /* ALLOCATION CHARTS */
+    const allocOverlay = document.getElementById("allocOverlay");
+    const btnAlloc = document.getElementById("btnAlloc");
+    const btnAllocMini = document.getElementById("btnAllocMini");
+    const btnAllocClose = document.getElementById("btnAllocClose");
+    const btnAllocDone = document.getElementById("btnAllocDone");
+    const btnAllocRefresh = document.getElementById("btnAllocRefresh");
+    let __pieChart=null, __barChart=null;
+
+    function closeAlloc(){
+      allocOverlay.classList.remove("show");
+    }
+    btnAllocClose.addEventListener("click", closeAlloc);
+    btnAllocDone.addEventListener("click", closeAlloc);
+    allocOverlay.addEventListener("click",(e)=>{ if(e.target===allocOverlay) closeAlloc(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && allocOverlay.classList.contains("show")) closeAlloc(); });
+
+    function buildAllocData(){
+      // Compute USD values per symbol using balances+prices
+      const rows=[];
+      const syms = uniqueSymbols();
+      syms.forEach(sym=>{
+        const bal = Number(__balances?.[sym]||0);
+        const px = Number(__prices?.[sym]?.usd||0);
+        const usd = (bal && px) ? bal*px : 0;
+        if(usd>0) rows.push({ sym, usd });
+      });
+      rows.sort((a,b)=>b.usd-a.usd);
+      return rows;
+    }
+
+    function openAlloc(){
+      allocOverlay.classList.add("show");
+      setTimeout(()=>renderAllocCharts(), 60);
+    }
+
+    async function renderAllocCharts(){
+      // Ensure prices for all symbols
+      const syms = uniqueSymbols();
+      await fetchPricesUSD(syms);
+
+      const rows = buildAllocData();
+      const labels = rows.map(r=>r.sym);
+      const values = rows.map(r=>Number(r.usd||0));
+
+      const hint = document.getElementById("allocHint");
+      if(!rows.length){
+        hint.textContent = "No allocation data yet (add balances in user_crypto_balances).";
+      }else{
+        hint.textContent = "Charts update whenever you reload prices/balances.";
+      }
+
+      const pieCtx = document.getElementById("allocPie");
+      const barCtx = document.getElementById("allocBar");
+
+      if(__pieChart){ __pieChart.destroy(); __pieChart=null; }
+      if(__barChart){ __barChart.destroy(); __barChart=null; }
+
+      __pieChart = new Chart(pieCtx, {
+        type: "pie",
+        data: { labels, datasets: [{ data: values }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: "rgba(234,240,255,.85)", font: { weight: 800 } } },
+            tooltip: { callbacks: { label: (ctx)=> `${ctx.label}: ${money(ctx.parsed)}` } }
+          }
+        }
+      });
+
+      __barChart = new Chart(barCtx, {
+        type: "bar",
+        data: { labels, datasets: [{ label: "USD value", data: values }] },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: "rgba(234,240,255,.85)", font: { weight: 800 } } },
+            tooltip: { callbacks: { label: (ctx)=> `${money(ctx.parsed.y)}` } }
+          },
+          scales: {
+            x: { ticks: { color: "rgba(234,240,255,.75)" }, grid: { color: "rgba(255,255,255,.06)" } },
+            y: { ticks: { color: "rgba(234,240,255,.75)" }, grid: { color: "rgba(255,255,255,.06)" } }
+          }
+        }
+      });
+    }
+
+    btnAlloc.addEventListener("click", openAlloc);
+    btnAllocMini.addEventListener("click", openAlloc);
+    btnAllocRefresh.addEventListener("click", renderAllocCharts);
+
+    /* LIVE CHART MODAL (TradingView embed) */
+    const chartOverlay = document.getElementById("chartOverlay");
+    const btnChartClose = document.getElementById("btnChartClose");
+    const btnChartDone = document.getElementById("btnChartDone");
+    const chartTitle = document.getElementById("chartTitle");
+    const chartSub = document.getElementById("chartSub");
+    const tvContainer = document.getElementById("tvContainer");
+    let __tvScriptEl=null;
+
+    function closeChart(){
+      chartOverlay.classList.remove("show");
+      // cleanup
+      try{
+        if(__tvScriptEl){ __tvScriptEl.remove(); __tvScriptEl=null; }
+      }catch(e){}
+      tvContainer.innerHTML="";
+    }
+    btnChartClose.addEventListener("click", closeChart);
+    btnChartDone.addEventListener("click", closeChart);
+    chartOverlay.addEventListener("click",(e)=>{ if(e.target===chartOverlay) closeChart(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && chartOverlay.classList.contains("show")) closeChart(); });
+
+    function tvSymbolFor(sym){
+      // reasonable defaults (USDT pairs)
+      const s = normalizeSymbol(sym);
+      if(s==="USDT") return "BINANCE:USDTUSD";
+      if(s==="USDC") return "COINBASE:USDCUSD";
+      if(s==="BTC") return "BINANCE:BTCUSDT";
+      if(s==="ETH") return "BINANCE:ETHUSDT";
+      if(s==="BNB") return "BINANCE:BNBUSDT";
+      if(s==="SOL") return "BINANCE:SOLUSDT";
+      if(s==="TRX") return "BINANCE:TRXUSDT";
+      if(s==="LTC") return "BINANCE:LTCUSDT";
+      if(s==="DOGE") return "BINANCE:DOGEUSDT";
+      if(s==="ADA") return "BINANCE:ADAUSDT";
+      if(s==="AVAX") return "BINANCE:AVAXUSDT";
+      if(s==="MATIC") return "BINANCE:MATICUSDT";
+      return `BINANCE:${s}USDT`;
+    }
+
+    function openLiveChart(sym){
+      const tvSym = tvSymbolFor(sym);
+      chartTitle.textContent = `${sym} Live Chart`;
+      chartSub.textContent = tvSym;
+
+      tvContainer.innerHTML = `<div class="tradingview-widget-container" style="height:420px;width:100%">
+        <div class="tradingview-widget-container__widget" style="height:420px;width:100%"></div>
+      </div>`;
+
+      // add tradingview script
+      const s=document.createElement("script");
+      s.type="text/javascript";
+      s.src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      s.async=true;
+      s.innerHTML = JSON.stringify({
+        autosize: true,
+        symbol: tvSym,
+        interval: "60",
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        allow_symbol_change: true,
+        calendar: false,
+        support_host: "https://www.tradingview.com"
+      });
+      __tvScriptEl=s;
+      tvContainer.querySelector(".tradingview-widget-container").appendChild(s);
+      chartOverlay.classList.add("show");
+    }
+
+    /* INIT */
+    document.getElementById("q").addEventListener("input", applySearch);
+    document.getElementById("btnReload").addEventListener("click", async ()=>{
+      await loadFromBackend();
+      await checkLinkStatus();
+      await checkNotice();
+      applyHideBalances();
+    });
+
+    function subscribeWalletBalanceRealtime(){
+      try{
+        if(__walletBalanceRealtimeSub){
+          supabaseClient.removeChannel(__walletBalanceRealtimeSub);
+          __walletBalanceRealtimeSub = null;
+        }
+      }catch(e){}
+      if(!CURRENT_USER_ID) return;
+      __walletBalanceRealtimeSub = supabaseClient
+        .channel(`wallet-balance-${CURRENT_USER_ID}`)
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "user_crypto_balances",
+          filter: `user_id=eq.${CURRENT_USER_ID}`
+        }, async ()=>{
+          await loadBalancesSafe();
+          await refreshWalletTotalFromBalances(false);
+          render(__wallets);
+          applyHideBalances();
+        })
+        .subscribe();
+    }
+
+    function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+    function looksLikeGoogleAvatar(u){
+      const s=String(u||"").toLowerCase();
+      return s.includes("googleusercontent.com") || s.includes("lh3.googleusercontent.com");
+    }
+    function extractPathFromPublicUrl(u){
+      try{
+        const m = String(u||"").match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+        if(!m || !m[1]) return "";
+        return decodeURIComponent(m[1].split("?")[0].split("#")[0]);
+      }catch(e){ return ""; }
+    }
+    function normalizeAvatarPath(userId, v){
+      let s=String(v||"").trim();
+      if(!s) return "";
+      if(isHttpUrl(s)){
+        const p = extractPathFromPublicUrl(s);
+        return p || "";
+      }
+      s=s.replace(/^\/+/, "");
+      if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+      if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+      if(!s.includes("/") && userId) s=`${userId}/${s}`;
+      return s;
+    }
+    function publicAvatarUrl(path){
+      try{
+        if(!path) return "";
+        const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+        const url = data?.publicUrl || "";
+        return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+      }catch(e){ return ""; }
+    }
+    function setSideAvatar(avatarUrl){
+      const fb=document.getElementById("sideAvatarFallback");
+      const img=document.getElementById("sideAvatarImg");
+      if(!fb || !img) return;
+      if(avatarUrl){
+        img.src=avatarUrl;
+        img.style.display="block";
+        fb.style.display="none";
+      }else{
+        img.style.display="none";
+        fb.style.display="block";
+      }
+    }
+    function setNameEverywhere(fullName){
+      const nice=(fullName && fullName.trim()) ? fullName.trim() : "User";
+      const sideName=document.getElementById("sideName");
+      if(sideName) sideName.textContent=nice;
+      window.currentUserName=nice;
+    }
+    async function loadIdentity(){
+      try{
+        let fullName="", avatarVal="", avatarUrl="";
+        const { data: row, error } = await supabaseClient
+          .from("users")
+          .select("full_name, avatar_url")
+          .eq("email", CURRENT_EMAIL)
+          .maybeSingle();
+
+        if(!error && row){
+          fullName = row.full_name || "";
+          avatarVal = row.avatar_url || "";
+        }
+
+        const md = (CURRENT_USER?.user_metadata || {});
+        if(!fullName) fullName = md.full_name || md.name || "User";
+        if(!avatarVal) avatarVal = md.avatar_path || md.avatar_url || "";
+
+        const avatarPath = normalizeAvatarPath(CURRENT_USER_ID, avatarVal);
+        if(avatarPath){
+          avatarUrl = publicAvatarUrl(avatarPath);
+        }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+          avatarUrl = avatarVal + (avatarVal.includes("?") ? "&" : "?") + "t=" + Date.now();
+        }else{
+          avatarUrl = "";
+        }
+
+        setNameEverywhere(fullName);
+        setSideAvatar(avatarUrl);
+      }catch(e){
+        setNameEverywhere("User");
+        setSideAvatar("");
+      }
+    }
+
+    (async function authGuard(){
+      try{
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const session=sessionData?.session;
+        if(!session){ hideGate(); window.location.replace("login.html"); return; }
+
+        const { data, error } = await supabaseClient.auth.getUser();
+        const user=data?.user;
+        if(error || !user){ hideGate(); window.location.replace("login.html"); return; }
+
+        const confirmed=!!(user.email_confirmed_at || user.confirmed_at || user.user_metadata?.email_verified===true);
+        if(!confirmed){
+          await supabaseClient.auth.signOut();
+          hideGate();
+          window.location.replace("verify.html?status=unverified");
+          return;
+        }
+
+        CURRENT_USER=user;
+        CURRENT_USER_ID=user.id;
+        CURRENT_EMAIL=user.email || "";
+
+        await loadIdentity();
+        loadHideBalances();
+        applyCachedWalletTotal();
+
+        await loadFromBackend();
+        subscribeWalletBalanceRealtime();
+
+        // wallet link status + realtime/poll fallback
+        await checkLinkStatus();
+        setupLinkRealtime();
+
+        // notice
+        await checkNotice(true);
+
+        // periodic refresh
+        setInterval(checkLinkStatus, 15000);
+        setInterval(checkNotice, 30000);
+      }catch(e){
+        hideGate();
+        window.location.replace("login.html");
+      }
+    })();
+  </script>
 </body>
 </html>
