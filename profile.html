@@ -797,26 +797,22 @@ window.closeSiteNotice = closeSiteNotice;
 }
 
 
-/* ===== FINAL CHAT POSITION FIX ===== */
-html body iframe[src*="smartsupp"],
-html body iframe[src*="smartsuppchat"],
+/* ===== CHAT BUTTON POSITION FIX (SAFE) ===== */
 html body #smartsupp-widget-container,
 html body .smartsupp_widget_container,
-html body [id*="smartsupp"],
-html body [class*="smartsupp"]{
-  bottom: 165px !important;
-  transform: translateY(-35px) !important;
+html body iframe[src*="smartsupp"],
+html body iframe[src*="smartsuppchat.com"]{
+  bottom: 120px !important;
+  top: auto !important;
 }
 
 @media (max-width: 768px){
-  html body iframe[src*="smartsupp"],
-  html body iframe[src*="smartsuppchat"],
   html body #smartsupp-widget-container,
   html body .smartsupp_widget_container,
-  html body [id*="smartsupp"],
-  html body [class*="smartsupp"]{
-    bottom: 185px !important;
-    transform: translateY(-45px) !important;
+  html body iframe[src*="smartsupp"],
+  html body iframe[src*="smartsuppchat.com"]{
+    bottom: 130px !important;
+    top: auto !important;
   }
 }
 
@@ -1836,54 +1832,38 @@ window.closeSiteNotice = closeSiteNotice;
 
 
 <script>
-/* ===== FINAL CHAT POSITION FIX ===== */
-(function(){
-  function moveSmartsupp(){
-    try{
+/* ===== CHAT BUTTON POSITION FIX (SAFE) ===== */
+(function () {
+  function moveSmartsupp() {
+    try {
       var selectors = [
-        'iframe[src*="smartsupp"]',
-        'iframe[src*="smartsuppchat"]',
         '#smartsupp-widget-container',
         '.smartsupp_widget_container',
-        '[id*="smartsupp"]',
-        '[class*="smartsupp"]'
+        'iframe[src*="smartsupp"]',
+        'iframe[src*="smartsuppchat.com"]'
       ];
       var isMobile = window.innerWidth <= 768;
-      var bottomValue = isMobile ? '185px' : '165px';
-      var liftValue = isMobile ? 'translateY(-45px)' : 'translateY(-35px)';
+      var bottomValue = isMobile ? '130px' : '120px';
 
-      selectors.forEach(function(sel){
-        document.querySelectorAll(sel).forEach(function(el){
+      selectors.forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
           el.style.setProperty('bottom', bottomValue, 'important');
-          el.style.setProperty('transform', liftValue, 'important');
           el.style.setProperty('top', 'auto', 'important');
         });
       });
-    }catch(e){}
+    } catch (e) {}
   }
 
   var tries = 0;
-  var timer = setInterval(function(){
+  var timer = setInterval(function () {
     moveSmartsupp();
     tries++;
-    if(tries > 120) clearInterval(timer);
-  }, 500);
+    if (tries > 40) clearInterval(timer);
+  }, 700);
 
   window.addEventListener('load', moveSmartsupp);
   window.addEventListener('resize', moveSmartsupp);
-
-  var observer = new MutationObserver(function(){
-    moveSmartsupp();
-  });
-
-  document.addEventListener('DOMContentLoaded', function(){
-    moveSmartsupp();
-    observer.observe(document.documentElement || document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true
-    });
-  });
+  document.addEventListener('DOMContentLoaded', moveSmartsupp);
 })();
 </script>
 
