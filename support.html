@@ -5,7 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Support - Coinluxora</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+/* ===== SMARTSUPP USER IDENTIFICATION ===== */
+function initSmartsuppUser(user){
+  if(!user || !window.smartsupp) return;
+
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split("@")[0] ||
+    "User";
+
+  smartsupp('name', fullName);
+  smartsupp('email', user.email);
+
+  smartsupp('variables', {
+    User_ID: user.id,
+    Email: user.email
+  });
+}
+
+/* ===== AVATAR PATH FIX ===== */
+function resolveAvatarUrl(user){
+  const path =
+    user?.user_metadata?.avatar_path ||
+    user?.user_metadata?.avatar_url ||
+    null;
+
+  if(!path) return null;
+
+  return `https://YOUR_PROJECT_ID.supabase.co/storage/v1/object/public/avatars/${user.id}/avatar.png?ts=${Date.now()}`;
+}
+
+</script>
 
 <style>
 :root{
