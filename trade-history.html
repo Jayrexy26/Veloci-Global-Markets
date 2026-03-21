@@ -939,10 +939,56 @@ window.smartsupp||(function(d) {
       document.getElementById("avatar").addEventListener("click", ()=> window.location.href="profile.html");
 
       try{
+        function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+        function looksLikeGoogleAvatar(u){
+          const s=String(u||"").toLowerCase();
+          return s.includes("googleusercontent.com") || s.includes("lh3.googleusercontent.com");
+        }
+        function extractPathFromPublicUrl(u){
+          try{
+            const m = String(u||"").match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+            if(!m || !m[1]) return "";
+            return decodeURIComponent(m[1].split("?")[0].split("#")[0]);
+          }catch(e){ return ""; }
+        }
+        function normalizeAvatarPath(userId, v){
+          let s=String(v||"").trim();
+          if(!s) return "";
+          if(isHttpUrl(s)){
+            const p = extractPathFromPublicUrl(s);
+            return p || "";
+          }
+          s=s.replace(/^\/+/, "");
+          if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+          if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+          if(!s.includes("/") && userId) s=`${userId}/${s}`;
+          return s;
+        }
+        function publicAvatarUrl(path){
+          try{
+            if(!path) return "";
+            const { data } = sb.storage.from("avatars").getPublicUrl(path);
+            const url = data?.publicUrl || "";
+            return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+          }catch(e){ return ""; }
+        }
+
+        let avatarVal = "";
         const { data } = await sb.from("users").select("avatar_url").eq("email", USER.email).maybeSingle();
-        if(data?.avatar_url){
+        if(data?.avatar_url) avatarVal = data.avatar_url;
+        if(!avatarVal) avatarVal = USER?.user_metadata?.avatar_path || USER?.user_metadata?.avatar_url || "";
+
+        const avatarPath = normalizeAvatarPath(USER.id, avatarVal);
+        let finalAvatar = "";
+        if(avatarPath){
+          finalAvatar = publicAvatarUrl(avatarPath);
+        }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+          finalAvatar = avatarVal + (avatarVal.includes("?") ? "&" : "?") + "t=" + Date.now();
+        }
+
+        if(finalAvatar){
           const img = document.getElementById("avatarImg");
-          img.src = data.avatar_url;
+          img.src = finalAvatar;
           img.style.display = "block";
           document.getElementById("avatarLetter").style.display = "none";
         }
