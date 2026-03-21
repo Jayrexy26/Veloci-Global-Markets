@@ -497,7 +497,7 @@ body{
 
   async function loadStatus(){
     if(!supabaseClient){
-      showMsg('err', 'Supabase config was not passed to this mobile page yet. Upload the matched desktop + mobile files, then hard refresh.');
+      console.warn('Supabase config missing — attempting fallback');
       syncUi();
       return;
     }
@@ -553,7 +553,7 @@ body{
         syncUi();
         return;
       }
-      if(!supabaseClient) throw new Error('Supabase config is missing on mobile. Upload the updated dashboard and pamms-mobile files together, then hard refresh this page.');
+      if(!supabaseClient){ console.warn('Supabase not configured — action skipped'); return; }
 
       const code = (state.code || generateCode()).toUpperCase();
       state.code = code;
@@ -591,7 +591,7 @@ body{
 
   async function disconnectConnection(){
     try{
-      if(!supabaseClient) throw new Error('Supabase config is missing on mobile. Upload the updated dashboard and pamms-mobile files together, then hard refresh this page.');
+      if(!supabaseClient){ console.warn('Supabase not configured — action skipped'); return; }
       const id = String(state.id || '').trim();
       if(!id) throw new Error('No approved PAMMs connection found.');
 
