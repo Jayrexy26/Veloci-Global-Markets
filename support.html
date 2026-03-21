@@ -5,32 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Support - Coinluxora</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-// ===== AVATAR FIX (MATCH PROFILE) =====
-async function loadSidebarAvatar(user){
-  try{
-    const avatarImg = document.getElementById("sideAvatarImg");
-    const fallback = document.getElementById("sideAvatarFallback");
-    if(!avatarImg || !user) return;
-
-    const path = `${user.id}/avatar.png`;
-    const url = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
-
-    avatarImg.src = url;
-    avatarImg.style.display = "block";
-    if(fallback) fallback.style.display = "none";
-  }catch(e){}
-}
-
-// hook after user loads
-(async ()=>{
-  try{
-    const { data: { user } } = await supabase.auth.getUser();
-    if(user) loadSidebarAvatar(user);
-  }catch(e){}
-})();
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
@@ -720,11 +695,44 @@ function popBackdropClose(e){
 /* ============================================================
   ✅ PROFILE DISPLAY (NAME INSTEAD OF EMAIL)
 ============================================================ */
+function isHttpUrl(u){ return /^https?:\/\//i.test(String(u||"").trim()); }
+function looksLikeGoogleAvatar(u){
+  const s=String(u||"").toLowerCase();
+  return s.includes("googleusercontent.com") || s.includes("lh3.googleusercontent.com");
+}
+function extractPathFromPublicUrl(u){
+  try{
+    const m = String(u||"").match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/i);
+    if(!m || !m[1]) return "";
+    return decodeURIComponent(m[1].split("?")[0].split("#")[0]);
+  }catch(e){ return ""; }
+}
+function normalizeAvatarPath(userId, v){
+  let s=String(v||"").trim();
+  if(!s) return "";
+  if(isHttpUrl(s)){
+    const p = extractPathFromPublicUrl(s);
+    return p || "";
+  }
+  s=s.replace(/^\/+/, "");
+  if(s.toLowerCase().startsWith("avatars/")) s=s.slice("avatars/".length);
+  if(s.toLowerCase().startsWith("public/avatars/")) s=s.slice("public/avatars/".length);
+  if(!s.includes("/") && userId) s=`${userId}/${s}`;
+  return s;
+}
+function publicAvatarUrl(path){
+  try{
+    if(!path) return "";
+    const { data } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+    const url = data?.publicUrl || "";
+    return url ? (url + (url.includes("?") ? "&" : "?") + "t=" + Date.now()) : "";
+  }catch(e){ return ""; }
+}
 function setSideAvatar(avatarUrl){
   const fb=document.getElementById("sideAvatarFallback");
   const img=document.getElementById("sideAvatarImg");
   if(avatarUrl){
-    img.src=avatarUrl+"?t="+Date.now();
+    img.src=avatarUrl;
     img.style.display="block";
     fb.style.display="none";
   }else{
@@ -739,7 +747,7 @@ function setNameEverywhere(fullName){
 }
 async function loadIdentity(){
   try{
-    let fullName="", avatarUrl="";
+    let fullName="", avatarVal="", avatarUrl="";
     const { data: row, error } = await supabaseClient
       .from("users")
       .select("full_name, avatar_url")
@@ -747,13 +755,22 @@ async function loadIdentity(){
       .maybeSingle();
 
     if(!error && row){
-      fullName=row.full_name||"";
-      avatarUrl=row.avatar_url||"";
+      fullName = row.full_name || "";
+      avatarVal = row.avatar_url || "";
     }
 
     const md=(window.COINLUXORA_USER?.user_metadata||{});
-    if(!fullName) fullName=md.full_name||"User";
-    if(!avatarUrl) avatarUrl=md.avatar_url||"";
+    if(!fullName) fullName = md.full_name || "User";
+    if(!avatarVal) avatarVal = md.avatar_path || md.avatar_url || "";
+
+    const avatarPath = normalizeAvatarPath(currentUserId, avatarVal);
+    if(avatarPath){
+      avatarUrl = publicAvatarUrl(avatarPath);
+    }else if(isHttpUrl(avatarVal) && !looksLikeGoogleAvatar(avatarVal)){
+      avatarUrl = avatarVal + (avatarVal.includes("?") ? "&" : "?") + "t=" + Date.now();
+    }else{
+      avatarUrl = "";
+    }
 
     setNameEverywhere(fullName);
     setSideAvatar(avatarUrl);
