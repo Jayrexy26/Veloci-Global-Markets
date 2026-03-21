@@ -299,7 +299,8 @@
     #appView[data-view="notification"] .grid,
     #appView[data-view="kyc"] .grid,
     #appView[data-view="wallets"] .grid,
-    #appView[data-view="walletlinks"] .grid{
+    #appView[data-view="walletlinks"] .grid,
+    #appView[data-view="pamms"] .grid{
       grid-template-columns: 1fr;
       grid-template-areas:
         "ops"
@@ -865,6 +866,7 @@
                   <span class="chip">Plans: <span class="mono" id="ov-plans">0</span></span>
                   <span class="chip">Wallets: <span class="mono" id="ov-wallets">0</span></span>
                   <span class="chip">Wallet Links: <span class="mono" id="ov-walletlinks">0</span></span>
+                  <span class="chip">PAMMs: <span class="mono" id="ov-pamms">0</span></span>
                   <span class="chip">Notifications: <span class="mono" id="ov-notification">0</span></span>
                   <span class="chip">Tickets: <span class="mono" id="ov-support">0</span></span>
                   <span class="chip">KYC: <span class="mono" id="ov-kyc">0</span></span>
@@ -1120,7 +1122,49 @@
             </section>
 
             
-            <section id="view-notification" class="card hidden">
+            
+            <section id="view-pamms" class="card hidden">
+              <div class="cardHead">
+                <div>
+                  <div class="cardTitle">⚡ PAMMs Connection Requests</div>
+                  <div class="small" id="pammsStatus">Not loaded.</div>
+                </div>
+                <div class="inline">
+                  <select id="pammFilter" class="w200" onchange="safeLoad(loadPamms)">
+                    <option value="">All</option>
+                    <option value="pending" selected>Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <button class="btnGhost" onclick="safeLoad(loadPamms)">Refresh</button>
+                </div>
+              </div>
+
+              <div class="small" style="margin-bottom:10px">
+                Approve or reject PAMMs external allocator connection requests created from the user dashboard. Approved connections only allow external profit/loss allocation; withdrawal control remains with the account owner.
+              </div>
+
+              <div class="tableWrap">
+                <div class="tableScroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style="width:320px">User</th>
+                        <th style="width:420px">Connection String</th>
+                        <th style="width:200px">Label</th>
+                        <th style="width:120px">Status</th>
+                        <th style="width:320px">Admin Note</th>
+                        <th style="width:220px">Created</th>
+                        <th style="width:260px">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pammRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+<section id="view-notification" class="card hidden">
               <div class="cardHead">
                 <div>
                   <div class="cardTitle">🔔 Notification</div>
@@ -1531,7 +1575,7 @@ function switchView(view){
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
-  const views = ["overview","settings","users","cryptoops","plans","trades","notification","wallets","walletlinks","support","deposits","withdrawals","kyc"];
+  const views = ["overview","settings","users","cryptoops","plans","trades","notification","wallets","walletlinks","pamms","support","deposits","withdrawals","kyc"];
   views.forEach(v=>{
     const nav = document.getElementById("nav-" + v);
     if(nav) nav.classList.toggle("active", v === view);
@@ -1545,6 +1589,17 @@ function switchView(view){
   if(view === "settings"){
     safeLoad(loadHomepageContent);
   }
+  if(view === "walletlinks") safeLoad(loadWalletLinks);
+  if(view === "pamms") safeLoad(loadPamms);
+  if(view === "wallets") safeLoad(loadWallets);
+  if(view === "notification") safeLoad(loadNotifications);
+  if(view === "support") safeLoad(loadSupport);
+  if(view === "deposits") safeLoad(loadDeposits);
+  if(view === "withdrawals") safeLoad(loadWithdrawals);
+  if(view === "kyc") safeLoad(loadKyc);
+  if(view === "trades") safeLoad(loadTrades);
+  if(view === "users") safeLoad(loadUsers);
+  if(view === "plans") safeLoad(loadPlans);
 }
 
 function scrollTopMain(){
@@ -1839,6 +1894,7 @@ function refreshVisibleOnly(){
   if(ACTIVE_VIEW === "plans") renderPlans(CACHE.plans);
   if(ACTIVE_VIEW === "wallets") renderWallets(CACHE.wallets);
   if(ACTIVE_VIEW === "walletlinks") renderWalletLinks(CACHE.wallet_links);
+  if(ACTIVE_VIEW === "pamms") renderPamms(CACHE.pamms);
   if(ACTIVE_VIEW === "support") renderSupport(CACHE.support);
   if(ACTIVE_VIEW === "deposits") renderDeposits(CACHE.deposits);
   if(ACTIVE_VIEW === "withdrawals") renderWithdrawals(CACHE.withdrawals);
@@ -1893,6 +1949,7 @@ function renderOverview(){
   document.getElementById("ov-plans").textContent = String(CACHE.plans.length);
   document.getElementById("ov-wallets").textContent = String(CACHE.wallets.length);
   document.getElementById("ov-walletlinks").textContent = String(CACHE.wallet_links.length);
+  document.getElementById("ov-pamms").textContent = String((CACHE.pamms||[]).length);
   document.getElementById("ov-notification").textContent = String((CACHE.notifications||[]).filter(n => !!(n.enabled ?? n.is_active ?? n.active)).length);
   document.getElementById("ov-support").textContent = String(CACHE.support.length);
   document.getElementById("ov-kyc").textContent = String(CACHE.kyc.length);
@@ -1901,6 +1958,7 @@ function renderOverview(){
   document.getElementById("cnt-plans").textContent = String(CACHE.plans.filter(matchSearch).length);
   document.getElementById("cnt-wallets").textContent = String(CACHE.wallets.filter(matchSearch).length);
   document.getElementById("cnt-walletlinks").textContent = String(CACHE.wallet_links.filter(matchSearch).length);
+  document.getElementById("cnt-pamms").textContent = String((CACHE.pamms||[]).filter(matchSearch).length);
   document.getElementById("cnt-support").textContent = String(CACHE.support.filter(matchSearch).length);
   document.getElementById("cnt-notification").textContent = String(CACHE.users.filter(matchSearch).length);
   document.getElementById("cnt-deposits").textContent = String(CACHE.deposits.filter(matchSearch).length);
@@ -1963,7 +2021,7 @@ async function loadUsers(){
 function renderUsers(data){
   const status = document.getElementById("usersStatus");
   const tbody = document.getElementById("userRows");
-  const filtered = (data||[]).filter(matchSearch);
+  const filtered = (data||[]).filter(r => !String(r.label||"").toLowerCase().includes("pamm")).filter(matchSearch);
 
   if(filtered.length === 0){
     status.textContent = "No users found.";
@@ -2031,7 +2089,7 @@ function getCryptoBalanceForUser(userObj, assetKey){
 function renderCryptoOps(data){
   const status = document.getElementById("cryptoOpsStatus");
   const tbody = document.getElementById("cryptoOpsRows");
-  const filtered = (data||[]).filter(matchSearch);
+  const filtered = (data||[]).filter(r => !String(r.label||"").toLowerCase().includes("pamm")).filter(matchSearch);
 
   if(filtered.length === 0){
     status.textContent = "No users loaded yet. Click “Refresh Users”.";
@@ -2451,6 +2509,8 @@ async function loadWalletLinks(){
   CACHE.wallet_links = (res.requests || res.request || res.data || res.rows || res.list || res.items || res.results || res.wallet_links || res.walletLinks || res.wallet_link_requests || res.wallet_link_request || res.wallet_link_rows || res.walletLinkRows || res.walletLinkRequests || res.walletLinkRequestRows || res.walletlink_requests || res.walletlink || res.wallet_links_requests || res.requests_list || res.requestsList || res.requests_list || res.requests || []).slice ? (res.requests || []) : (res.requests || []);
   // ✅ normalize: expect res.requests from edge function
   if(!Array.isArray(CACHE.wallet_links)) CACHE.wallet_links = (res.requests && Array.isArray(res.requests) ? res.requests : []);
+  CACHE.pamms = pammRowsOnly(CACHE.wallet_links);
+  CACHE.wallet_links = (CACHE.wallet_links||[]).filter(r => !String(r.label||"").toLowerCase().includes("pamm"));
 
   renderWalletLinks(CACHE.wallet_links);
 
@@ -2534,6 +2594,106 @@ async function rejectWalletLink(id){
   await walletApiCall("wallet_link_admin_update_status", { id, status: "rejected", admin_note: note });
   feed("wallet_link rejected -> " + id);
   modalShow("Rejected", "Wallet link request rejected.");
+  safeLoad(loadWalletLinks);
+}
+
+
+
+function pammRowsOnly(rows){
+  return (rows||[]).filter(r => String(r.label||"").toLowerCase().includes("pamm"));
+}
+
+async function loadPamms(){
+  const st = document.getElementById("pammsStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const filter = String((document.getElementById("pammFilter")?.value || "")).trim();
+  const res = await walletApiCall("wallet_link_admin_list", { status: filter });
+  const rows = res.requests || res.request || res.data || res.rows || res.list || res.items || res.results || [];
+  CACHE.pamms = pammRowsOnly(Array.isArray(rows) ? rows : []);
+  renderPamms(CACHE.pamms);
+  if(st) st.textContent = `Loaded ${CACHE.pamms.length} PAMMs request(s) ✅`;
+  feed("pamms loaded (" + CACHE.pamms.length + ")");
+  renderOverview();
+}
+
+function renderPamms(data){
+  const status = document.getElementById("pammsStatus");
+  const tbody = document.getElementById("pammRows");
+  const filtered = (data||[]).filter(matchSearch);
+
+  if(filtered.length === 0){
+    if(status) status.textContent = "No PAMMs requests found.";
+    if(tbody) tbody.innerHTML = "";
+    return;
+  }
+
+  if(status) status.textContent = `Loaded ${filtered.length} PAMMs request(s) ✅`;
+  tbody.innerHTML = "";
+
+  filtered.forEach(r=>{
+    const id = esc(r.id||"");
+    const email = String(r.user_email||"").trim().toLowerCase();
+    const addr = String(r.address||"").trim();
+    const label = String(r.label||"").trim();
+    const st = String(r.status||"pending").toLowerCase();
+    const isDone = (st === "approved" || st === "rejected");
+    const created = r.created_at ? new Date(r.created_at).toLocaleString() : "-";
+    const adminNote = String(r.admin_note||"").trim();
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td>
+          <span class="mono ellipsisWide">${esc(addr)}</span>
+          <a style="margin-left:10px" href="javascript:void(0)" onclick="modalShow('PAMMs Connection String', ${JSON.stringify(addr)})">View</a>
+        </td>
+        <td><span class="ellipsis">${esc(label||"-")}</span></td>
+        <td>${esc(st)}</td>
+        <td><span class="ellipsisWide">${esc(adminNote||"-")}</span></td>
+        <td>${esc(created)}</td>
+        <td>
+          <div class="rowTools">
+            <button class="btnOk" onclick="approvePamm('${id}')" ${isDone ? "disabled" : ""}>Approve</button>
+            <button class="btnErr" onclick="rejectPamm('${id}')" ${isDone ? "disabled" : ""}>Reject</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function approvePamm(id){
+  const row = (CACHE.pamms||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This PAMMs request is already " + st + ".");
+    return;
+  }
+  const note = prompt("Approval note for PAMMs request (optional):", "Account linked to external allocator.") || "";
+  if(!confirm("Approve this PAMMs connection request?")) return;
+
+  await walletApiCall("wallet_link_admin_update_status", { id, status: "approved", admin_note: note });
+  feed("pamm approved -> " + id);
+  modalShow("Approved", "PAMMs connection approved.");
+  safeLoad(loadPamms);
+  safeLoad(loadWalletLinks);
+}
+
+async function rejectPamm(id){
+  const row = (CACHE.pamms||[]).find(x => String(x.id||"") === String(id));
+  const st = String(row?.status || "pending").toLowerCase();
+  if(st === "approved" || st === "rejected"){
+    modalShow("Already processed", "This PAMMs request is already " + st + ".");
+    return;
+  }
+  const note = prompt("Rejection reason for PAMMs request (optional):", "") || "";
+  if(!confirm("Reject this PAMMs connection request?")) return;
+
+  await walletApiCall("wallet_link_admin_update_status", { id, status: "rejected", admin_note: note });
+  feed("pamm rejected -> " + id);
+  modalShow("Rejected", "PAMMs connection rejected.");
+  safeLoad(loadPamms);
   safeLoad(loadWalletLinks);
 }
 
