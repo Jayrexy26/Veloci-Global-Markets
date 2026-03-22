@@ -4120,7 +4120,12 @@ document.addEventListener("DOMContentLoaded", function () {
           if(error) throw error;
         }catch(directErr){
           try{
-            await walletUserApiCall("wallet_link_disconnect", { id });
+            const apiRes = await walletUserApiCall("wallet_link_disconnect", { id });
+        window.__lastPammEmailMsg = apiRes && apiRes.email_result
+          ? (apiRes.email_result.sent
+              ? "Admin email sent successfully."
+              : "Admin email issue: " + String(apiRes.email_result.reason || apiRes.email_result.error || "email skipped"))
+          : "";
           }catch(apiErr){
             throw new Error(String(directErr?.message || apiErr?.message || directErr || apiErr || "Could not disconnect PAMMs connection."));
           }
@@ -4202,7 +4207,7 @@ async function submitPammConnection(){
         __pammState.updated_at = String(latest.updated_at || latest.created_at || "");
         syncPammUi();
         closePammModal();
-        openPammSuccessModal("PAMMs Connection Submitted", "Your PAMMs connection request was sent successfully and is now waiting for admin approval.");
+        openPammSuccessModal("PAMMs Connection Submitted", "Your PAMMs connection request was sent successfully and is now waiting for admin approval." + (window.__lastPammEmailMsg ? " " + window.__lastPammEmailMsg : ""));
         await loadPammStatus(false);
       }catch(e){
         alert(String(e?.message || e || "Could not submit PAMMs connection."));
