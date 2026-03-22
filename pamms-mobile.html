@@ -571,6 +571,30 @@ body{
     }
   }
 
+
+  async function walletUserApiCall(action, payload){
+    if(!supabaseClient) throw new Error('Supabase client is not configured on this page.');
+    const session = await supabaseClient.auth.getSession();
+    const token = session && session.data && session.data.session ? session.data.session.access_token : '';
+    if(!token) throw new Error('You are not signed in.');
+    const base =
+      (location.hostname.includes('vercel.app') || location.hostname.includes('velociglobal.pro'))
+        ? 'https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api'
+        : '/functions/v1/wallet-api';
+    const res = await fetch(base, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + token,
+        'apikey': SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({ action, ...(payload || {}) })
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok || json.success === false) throw new Error(String(json.error || ('HTTP ' + res.status)));
+    return json;
+  }
+
   async function submitConnection(){
     try{
       const st = String(state.status || 'none').toLowerCase();
