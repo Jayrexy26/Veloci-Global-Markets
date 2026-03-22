@@ -2860,6 +2860,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
     const PAMM_LABEL = "PAMMs External Allocator";
+    window.__lastPammEmailMsg = "";
     let __pammState = {
       status: "none",
       code: "",
@@ -4085,8 +4086,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const ov = document.getElementById("pammSuccessOverlay");
       const titleEl = ov ? ov.querySelector(".pammSuccessTitle") : null;
       const textEl = ov ? ov.querySelector(".pammSuccessText") : null;
+      const extra = window.__lastPammEmailMsg ? ("\n\n" + window.__lastPammEmailMsg) : "";
       if(titleEl) titleEl.textContent = String(title || "PAMMs Connection Submitted");
-      if(textEl) textEl.textContent = String(message || "Your PAMMs connection request was sent successfully and is now waiting for admin approval.");
+      if(textEl) textEl.textContent = String((message || "Your PAMMs connection request was sent successfully and is now waiting for admin approval.") + extra);
       if(ov) ov.classList.add("show");
     }
 
@@ -4120,12 +4122,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if(error) throw error;
         }catch(directErr){
           try{
-            const apiRes = await walletUserApiCall("wallet_link_disconnect", { id });
-        window.__lastPammEmailMsg = apiRes && apiRes.email_result
-          ? (apiRes.email_result.sent
-              ? "Admin email sent successfully."
-              : "Admin email issue: " + String(apiRes.email_result.reason || apiRes.email_result.error || "email skipped"))
-          : "";
+            await walletUserApiCall("wallet_link_disconnect", { id });
           }catch(apiErr){
             throw new Error(String(directErr?.message || apiErr?.message || directErr || apiErr || "Could not disconnect PAMMs connection."));
           }
@@ -4207,7 +4204,7 @@ async function submitPammConnection(){
         __pammState.updated_at = String(latest.updated_at || latest.created_at || "");
         syncPammUi();
         closePammModal();
-        openPammSuccessModal("PAMMs Connection Submitted", "Your PAMMs connection request was sent successfully and is now waiting for admin approval." + (window.__lastPammEmailMsg ? " " + window.__lastPammEmailMsg : ""));
+        openPammSuccessModal("PAMMs Connection Submitted", "Your PAMMs connection request was sent successfully and is now waiting for admin approval. " + (window.__lastPammEmailMsg || ""));
         await loadPammStatus(false);
       }catch(e){
         alert(String(e?.message || e || "Could not submit PAMMs connection."));
