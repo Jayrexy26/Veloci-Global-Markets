@@ -315,7 +315,8 @@ body{
     window.__SUPABASE_URL,
     pageQs.get("supabase_url"),
     localStorage.getItem("SUPABASE_URL"),
-    sessionStorage.getItem("SUPABASE_URL")
+    sessionStorage.getItem("SUPABASE_URL"),
+    "https://xdcscknfomlzwysczegc.supabase.co"
   );
 
   const SUPABASE_ANON_KEY = firstNonEmpty(
@@ -323,7 +324,8 @@ body{
     window.__SUPABASE_ANON_KEY,
     pageQs.get("supabase_anon_key"),
     localStorage.getItem("SUPABASE_ANON_KEY"),
-    sessionStorage.getItem("SUPABASE_ANON_KEY")
+    sessionStorage.getItem("SUPABASE_ANON_KEY"),
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4"
   );
 
   try{
@@ -374,6 +376,27 @@ body{
     user_email: ""
   };
 
+  function saveState(){
+    try{ localStorage.setItem("PAMM_STATE_MOBILE", JSON.stringify(state)); }catch(_e){}
+  }
+
+  function loadSavedState(){
+    try{
+      const raw = localStorage.getItem("PAMM_STATE_MOBILE");
+      if(!raw) return false;
+      const s = JSON.parse(raw);
+      if(!s || typeof s !== "object") return false;
+      state.id = String(s.id || state.id || "");
+      state.status = String(s.status || state.status || "none").toLowerCase();
+      state.code = String(s.code || state.code || "");
+      state.address = String(s.address || state.address || "");
+      state.admin_note = String(s.admin_note || state.admin_note || "");
+      state.user_id = String(s.user_id || state.user_id || "");
+      state.user_email = String(s.user_email || state.user_email || "");
+      return true;
+    }catch(_e){ return false; }
+  }
+
   function rand10(){
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let out = '';
@@ -415,6 +438,7 @@ body{
   }
 
   function syncUi(){
+    saveState();
     const st = String(state.status || 'none').toLowerCase();
     els.adminNote.textContent = state.admin_note || 'No admin note yet.';
 
@@ -492,16 +516,18 @@ body{
       const user = data && data.user ? data.user : null;
       state.user_id = user && user.id ? String(user.id) : '';
       state.user_email = user && user.email ? String(user.email).trim().toLowerCase() : '';
+      saveState();
     }catch(e){}
   }
 
   async function loadStatus(){
     if(!supabaseClient){
-      console.warn('Supabase config missing — attempting fallback');
+      loadSavedState();
       syncUi();
       return;
     }
     if(!state.user_id && !state.user_email){
+      loadSavedState();
       syncUi();
       return;
     }
@@ -531,10 +557,13 @@ body{
         state.address = String(row.address || '');
         state.admin_note = String(row.admin_note || '').trim();
       }else{
-        state.id = '';
-        state.status = 'none';
-        state.address = '';
-        state.admin_note = '';
+        const hadSaved = loadSavedState();
+        if(!hadSaved){
+          state.id = '';
+          state.status = 'none';
+          state.address = '';
+          state.admin_note = '';
+        }
       }
       syncUi();
     }catch(e){
@@ -553,7 +582,7 @@ body{
         syncUi();
         return;
       }
-      if(!supabaseClient){ console.warn('Supabase not configured — action skipped'); return; }
+      if(!supabaseClient) throw new Error('Supabase client could not start on mobile. Re-upload this updated pamms-mobile file and try again.');
 
       const code = (state.code || generateCode()).toUpperCase();
       state.code = code;
@@ -581,6 +610,7 @@ body{
       state.address = String(data.address || connectionAddress);
       state.admin_note = String(data.admin_note || '').trim();
 
+      saveState();
       syncUi();
       openSuccessModal('PAMMs Connection Submitted', 'Your PAMMs connection request was sent successfully and is now waiting for admin approval.');
       await loadStatus();
@@ -591,7 +621,7 @@ body{
 
   async function disconnectConnection(){
     try{
-      if(!supabaseClient){ console.warn('Supabase not configured — action skipped'); return; }
+      if(!supabaseClient) throw new Error('Supabase client could not start on mobile. Re-upload this updated pamms-mobile file and try again.');
       const id = String(state.id || '').trim();
       if(!id) throw new Error('No approved PAMMs connection found.');
 
@@ -608,6 +638,7 @@ body{
 
       state.status = 'rejected';
       state.admin_note = 'Disconnected by user';
+      saveState();
       syncUi();
       openSuccessModal('PAMMs Disconnected', 'Your external allocator connection has been disconnected successfully.');
       await loadStatus();
@@ -639,7 +670,8 @@ body{
   document.getElementById('closeBtn').onclick = goBack;
 
   (async function boot(){
-    state.code = generateCode();
+    loadSavedState();
+    state.code = state.code || generateCode();
     els.connCode.value = buildStrings();
     await initUser();
     await loadStatus();
