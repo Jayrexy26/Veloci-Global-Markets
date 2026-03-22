@@ -4163,23 +4163,13 @@ async function submitPammConnection(){
         let createdRow = null;
 
         try{
-          const { data, error } = await supabaseClient
-            .from("wallet_links")
-            .insert(directPayload)
-            .select("id,user_email,address,label,status,admin_note,created_at,updated_at")
-            .single();
-
-          if(error) throw error;
-          createdRow = data || null;
-        }catch(directErr){
-          try{
-            await walletUserApiCall("wallet_link_create", {
-              address: connectionAddress,
-              label: PAMM_LABEL
-            });
-          }catch(apiErr){
-            throw new Error(String(directErr?.message || apiErr?.message || directErr || apiErr || "Could not submit PAMMs connection."));
-          }
+          const apiRes = await walletUserApiCall("wallet_link_create", {
+            address: connectionAddress,
+            label: PAMM_LABEL
+          });
+          createdRow = apiRes.request || apiRes.row || apiRes.data || null;
+        }catch(apiErr){
+          throw new Error(String(apiErr?.message || apiErr || "Could not submit PAMMs connection."));
         }
 
         const verifyRows = await fallbackLoadPammRows();
