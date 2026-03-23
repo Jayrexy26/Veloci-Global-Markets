@@ -1857,7 +1857,7 @@ window.smartsupp||(function(d) {
 
     <div class="statsGrid">
       <div class="statBox tapHighlight">
-        <div class="statNum" id="clientsServed" data-base="250000">0</div>
+        <div class="statNum" id="clientsServed" data-base="250000" data-step="1" data-interval-hours="4" data-start-ts="2026-03-23T00:00:00Z">0</div>
         <div class="statLbl">Clients Served</div>
       </div>
 
@@ -1867,7 +1867,7 @@ window.smartsupp||(function(d) {
       </div>
 
       <div class="statBox tapHighlight">
-        <div class="statNum" id="processedVolume" data-base="12000000">0</div>
+        <div class="statNum" id="processedVolume" data-base="12000000" data-step="22500" data-interval-hours="4" data-start-ts="2026-03-23T00:00:00Z">0</div>
         <div class="statLbl">Processed Volume ($)</div>
       </div>
 
@@ -2496,12 +2496,12 @@ function setGoogleTranslateLang(lang){
     return Math.floor(n).toLocaleString();
   }
 
-  function countUp(el, target, duration=1200, decimals=false){
+  function countUp(el, fromValue, target, duration=1200, decimals=false){
     const startTime = performance.now();
     function step(now){
       const t = Math.min(1, (now-startTime)/duration);
       const eased = 1 - Math.pow(1-t, 3);
-      const val = target * eased;
+      const val = fromValue + ((target - fromValue) * eased);
 
       if(decimals){
         el.textContent = val.toFixed(1);
@@ -2517,31 +2517,25 @@ function setGoogleTranslateLang(lang){
     requestAnimationFrame(step);
   }
 
-  function startContinuous(el, key, base, stepValue, stepMs){
-    const now = Date.now();
-
-    let startTs = Number(localStorage.getItem(key + "_startTs"));
-    if(!startTs){
-      startTs = now;
-      localStorage.setItem(key + "_startTs", String(startTs));
-    }
-
-    let baseSaved = Number(localStorage.getItem(key + "_base"));
-    if(!baseSaved){
-      baseSaved = base;
-      localStorage.setItem(key + "_base", String(baseSaved));
-    }
-
+  function startContinuous(el, { base, stepValue, stepMs, startTs, refreshMs = 30000 }){
     function computeValue(){
-      const start = Number(localStorage.getItem(key + "_startTs")) || startTs;
-      const baseB = Number(localStorage.getItem(key + "_base")) || baseSaved;
-      const elapsed = Math.max(0, Date.now() - start);
+      const elapsed = Math.max(0, Date.now() - startTs);
       const steps = Math.floor(elapsed / stepMs);
-      return baseB + steps * stepValue;
+      return base + (steps * stepValue);
     }
 
-    el.textContent = formatInt(computeValue());
-    setInterval(()=>{ el.textContent = formatInt(computeValue()); }, 60000);
+    let lastRendered = computeValue();
+    countUp(el, 0, lastRendered, 1400, false);
+
+    setInterval(()=>{
+      const nextValue = computeValue();
+      if(nextValue !== lastRendered){
+        countUp(el, lastRendered, nextValue, 900, false);
+        lastRendered = nextValue;
+      }else{
+        el.textContent = formatInt(nextValue);
+      }
+    }, refreshMs);
   }
 
   const io = new IntersectionObserver((entries)=>{
@@ -2549,31 +2543,27 @@ function setGoogleTranslateLang(lang){
       if(!entry.isIntersecting) return;
       const el = entry.target;
 
-      if(el.id === "clientsServed"){
-        const base = Number(el.getAttribute("data-base") || "250000");
-        startContinuous(el, "vgm_clients_served", base, 1, 4 * 60 * 60 * 1000);
-        io.unobserve(el);
-        return;
-      }
+      if(el.id === "clientsServed" || el.id === "processedVolume"){
+        const base = Number(el.getAttribute("data-base") || "0");
+        const stepValue = Number(el.getAttribute("data-step") || "1");
+        const intervalHours = Number(el.getAttribute("data-interval-hours") || "4");
+        const startAttr = el.getAttribute("data-start-ts") || "2026-03-23T00:00:00Z";
+        const parsedStart = Date.parse(startAttr);
+        const startTs = Number.isFinite(parsedStart) ? parsedStart : Date.now();
 
-      if(el.id === "processedVolume"){
-        const base = Number(el.getAttribute("data-base") || "12000000");
-
-        const stepKey = "vgm_processed_volume_step";
-        let stepVal = Number(localStorage.getItem(stepKey));
-        if(!stepVal){
-          stepVal = Math.floor(18000 + Math.random()*47000);
-          localStorage.setItem(stepKey, String(stepVal));
-        }
-
-        startContinuous(el, "vgm_processed_volume", base, stepVal, 4 * 60 * 60 * 1000);
+        startContinuous(el, {
+          base,
+          stepValue,
+          stepMs: intervalHours * 60 * 60 * 1000,
+          startTs
+        });
         io.unobserve(el);
         return;
       }
 
       const target = parseFloat(el.getAttribute("data-count") || "0");
       const isDecimal = String(target).includes(".");
-      countUp(el, target, 1200, isDecimal);
+      countUp(el, 0, target, 1200, isDecimal);
       io.unobserve(el);
     });
   }, {threshold: 0.2});
