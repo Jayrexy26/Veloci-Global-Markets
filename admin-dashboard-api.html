@@ -935,6 +935,41 @@
                   <button class="btnGhost" onclick="addHomepageTestimonialRow()">Add Testimonial</button>
                 </div>
               </div>
+            
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📧 Manual Branded Email</div>
+                    <div class="small" id="manualEmailStatus">Send branded user emails directly from admin.</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnPrimary" onclick="safeLoad(sendManualBrandedEmail)">Send Email</button>
+                  </div>
+                </div>
+
+                <div class="small" style="margin-bottom:10px">
+                  Uses the same Veloci branded template as verification and plan approval emails. Multiple paragraphs can be added by placing each paragraph on a new line in the message box.
+                </div>
+
+                <div style="display:grid; gap:12px;">
+                  <div class="inline">
+                    <input id="manualEmailTo" class="grow" placeholder="Recipient email">
+                    <input id="manualEmailUserName" class="grow" placeholder="User name (optional)">
+                  </div>
+
+                  <div class="inline">
+                    <input id="manualEmailSubject" class="grow" placeholder="Email subject">
+                    <input id="manualEmailTitle" class="grow" placeholder="Email title (optional)">
+                  </div>
+
+                  <textarea id="manualEmailMessage" placeholder="Write the email message here.&#10;Use a new line between each paragraph." style="min-height:180px;"></textarea>
+
+                  <div class="inline">
+                    <input id="manualEmailButtonText" class="grow" placeholder="Button text (optional)">
+                    <input id="manualEmailButtonUrl" class="grow" placeholder="Button URL (optional)">
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section id="view-users" class="card hidden">
@@ -2952,6 +2987,62 @@ async function uploadHomepageTestimonialAvatar(idx, input){
   }finally{
     if(input) input.value = "";
   }
+}
+
+
+async function sendManualBrandedEmail(){
+  const statusEl = document.getElementById("manualEmailStatus");
+  const to = String(document.getElementById("manualEmailTo")?.value || "").trim();
+  const user_name = String(document.getElementById("manualEmailUserName")?.value || "").trim();
+  const subject = String(document.getElementById("manualEmailSubject")?.value || "").trim();
+  const title = String(document.getElementById("manualEmailTitle")?.value || "").trim();
+  const message = String(document.getElementById("manualEmailMessage")?.value || "").trim();
+  const button_text = String(document.getElementById("manualEmailButtonText")?.value || "").trim();
+  const button_url = String(document.getElementById("manualEmailButtonUrl")?.value || "").trim();
+
+  if(!to){
+    modalShow("Missing recipient", "Enter the recipient email first.");
+    return;
+  }
+  if(!subject){
+    modalShow("Missing subject", "Enter the email subject first.");
+    return;
+  }
+  if(!message){
+    modalShow("Missing message", "Write the email message first.");
+    return;
+  }
+
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Sending…`;
+
+  await apiCall("manual_email_send", {
+    to,
+    user_name,
+    subject,
+    title,
+    message,
+    button_text,
+    button_url
+  });
+
+  if(statusEl) statusEl.textContent = "Email sent ✅";
+  modalShow("Email Sent", "The branded email was sent successfully.");
+
+  const ids = [
+    "manualEmailTo",
+    "manualEmailUserName",
+    "manualEmailSubject",
+    "manualEmailTitle",
+    "manualEmailMessage",
+    "manualEmailButtonText",
+    "manualEmailButtonUrl"
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+
+  feed("manual_email_send -> " + to);
 }
 
 
