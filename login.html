@@ -753,9 +753,9 @@ async function sendLoginAlert(accessToken){
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`
-      },
+        },
       body: JSON.stringify({
+        email: (await supabaseClient.auth.getUser()).data.user.email,
         event: "password_login",
         login_time: new Date().toISOString(),
         user_agent: navigator.userAgent || "",
@@ -812,7 +812,7 @@ async function login(){
   }
 
   const accessToken = data?.session?.access_token || "";
-  await sendLoginAlert(accessToken);
+  sendLoginAlert(accessToken);
 
   setMsg("", "");
   showSuccessModal();
