@@ -742,32 +742,35 @@ function showResetEmailModal(){
   modal.setAttribute("aria-hidden","false");
 }
 
-async function sendLoginAlert(accessToken){
+function sendLoginAlert(userEmail){
   try{
-    if(!accessToken) return;
+    const email = String(userEmail || "").trim().toLowerCase();
+    if(!email) return false;
 
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 2500);
+    const payload = JSON.stringify({
+      email,
+      event: "password_login",
+      login_time: new Date().toISOString(),
+      user_agent: navigator.userAgent || "",
+      device_language: navigator.language || "",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      platform: navigator.platform || ""
+    });
 
-    await fetch(LOGIN_ALERT_URL, {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
+      return navigator.sendBeacon(LOGIN_ALERT_URL, blob);
+    }
+
+    fetch(LOGIN_ALERT_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        },
-      body: JSON.stringify({
-        email: (await supabaseClient.auth.getUser()).data.user.email,
-        event: "password_login",
-        login_time: new Date().toISOString(),
-        user_agent: navigator.userAgent || "",
-        device_language: navigator.language || "",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-        platform: navigator.platform || ""
-      }),
-      signal: controller.signal
+      keepalive: true,
+      body: payload
     }).catch(() => {});
-
-    clearTimeout(t);
-  }catch(e){}
+    return true;
+  }catch(e){
+    return false;
+  }
 }
 
 async function signInWithGoogle(){
@@ -815,7 +818,7 @@ async function login(){
 
   setMsg("", "");
   showSuccessModal();
-  setTimeout(()=> window.location.href="/session/", 1800);
+  setTimeout(()=> window.location.href="/session/", 2200);
 }
 
 async function forgotPassword(){
