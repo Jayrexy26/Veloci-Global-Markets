@@ -690,6 +690,7 @@ window.smartsupp||(function(d) {
 
 <script>
 const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
+const LOGIN_ALERT_URL = `${SUPABASE_URL}/functions/v1/login-alert`;
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -741,6 +742,34 @@ function showResetEmailModal(){
   modal.setAttribute("aria-hidden","false");
 }
 
+async function sendLoginAlert(accessToken){
+  try{
+    if(!accessToken) return;
+
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 2500);
+
+    await fetch(LOGIN_ALERT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        event: "password_login",
+        login_time: new Date().toISOString(),
+        user_agent: navigator.userAgent || "",
+        device_language: navigator.language || "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        platform: navigator.platform || ""
+      }),
+      signal: controller.signal
+    }).catch(() => {});
+
+    clearTimeout(t);
+  }catch(e){}
+}
+
 async function signInWithGoogle(){
   setMsg("", "Opening Google sign-in…");
 
@@ -781,6 +810,9 @@ async function login(){
     setMsg("err", "Your email is not verified yet. Please check your inbox and verify your account.");
     return;
   }
+
+  const accessToken = data?.session?.access_token || "";
+  await sendLoginAlert(accessToken);
 
   setMsg("", "");
   showSuccessModal();
