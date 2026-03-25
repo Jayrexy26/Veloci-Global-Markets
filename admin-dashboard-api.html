@@ -2116,18 +2116,37 @@ function getCryptoBalanceForUser(userObj, assetKey){
   const m = userObj?.crypto_balances;
   if(!m) return 0;
 
-  // Map/object form: { BTC: 0.1, USDT: 50 }
-  if(typeof m === "object" && !Array.isArray(m)){
-    const v = m[ak];
+  const toFinite = (v) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
+  };
+
+  // Map/object form: { BTC: 0.1, USDT: 50, USDT_ERC20: 25 }
+  if(typeof m === "object" && !Array.isArray(m)){
+    if(Object.prototype.hasOwnProperty.call(m, ak)){
+      return toFinite(m[ak]);
+    }
+
+    let total = 0;
+    for(const [k, v] of Object.entries(m)){
+      const kk = String(k||"").trim().toUpperCase();
+      if(kk === ak || kk.startsWith(ak + "_")){
+        total += toFinite(v);
+      }
+    }
+    return total;
   }
 
-  // Array form: [{asset_key:"BTC", balance:0.1}]
+  // Array form: [{asset_key:"BTC", balance:0.1}, {asset_key:"USDT_ERC20", balance:50}]
   if(Array.isArray(m)){
-    const row = m.find(r => String(r?.asset_key||r?.asset||"").trim().toUpperCase() === ak);
-    const n = Number(row?.balance ?? row?.amount ?? 0);
-    return Number.isFinite(n) ? n : 0;
+    let total = 0;
+    for(const row of m){
+      const rowKey = String(row?.asset_key||row?.asset||"").trim().toUpperCase();
+      if(rowKey === ak || rowKey.startsWith(ak + "_")){
+        total += toFinite(row?.balance ?? row?.amount ?? 0);
+      }
+    }
+    return total;
   }
 
   return 0;
@@ -2191,12 +2210,16 @@ function onCryptoAssetChange(uid){
   const sel = document.getElementById(`casset-${uid}`);
   const balEl = document.getElementById(`cbal-${uid}`);
   if(!sel || !balEl) return;
-  const asset = String(sel.value||"").trim().toUpperCase();
 
-  let m = {};
-  try{ m = JSON.parse(balEl.dataset.cryptoBalances || "{}"); }catch(_e){ m = {}; }
-  const n = Number(m?.[asset] ?? 0);
-  balEl.textContent = (Number.isFinite(n) ? n : 0).toFixed(8);
+  let cryptoBalances = {};
+  try{
+    cryptoBalances = JSON.parse(balEl.dataset.cryptoBalances || "{}");
+  }catch(_e){
+    cryptoBalances = {};
+  }
+
+  const balance = getCryptoBalanceForUser({ crypto_balances: cryptoBalances }, sel.value);
+  balEl.textContent = Number(balance || 0).toFixed(8);
 }
 
 async function creditUser(email,id){
