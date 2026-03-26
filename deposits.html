@@ -1582,36 +1582,27 @@ function setNameEverywhere(fullName){
 }
 
 /* ============================================================
-  ✅ DEPOSIT ADDRESSES
+  ✅ DEPOSIT ADDRESSES (synced with wallet page source)
 ============================================================ */
-function normalizeDepositAssetKey(value){
-  return String(value || "").trim().toUpperCase();
-}
-function normalizeDepositNetworkKey(value){
-  const raw = String(value || "").trim().toUpperCase();
-  const compact = raw.replace(/[^A-Z0-9]/g, "");
-  if(compact === "TRON" || compact === "TRC20") return "TRC20";
-  if(compact === "ERC20" || compact === "ETHEREUM") return "ERC20";
-  if(compact === "BTC" || compact === "BITCOIN") return "BTC";
-  if(compact === "BEP20" || compact === "BNBSMARTCHAIN" || compact === "BSC") return "BEP20";
-  return compact || raw;
-}
 async function getWalletApiHeaders(){
-  try{
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const accessToken = session?.access_token || "";
-    return {
-      "Content-Type":"application/json",
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
-    };
-  }catch(e){
-    return {
-      "Content-Type":"application/json",
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
-    };
-  }
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  return {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_ANON_KEY,
+    "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+  };
+}
+function normalizeDepositAsset(v){
+  return String(v||"").trim().toLowerCase();
+}
+function normalizeDepositNetwork(v){
+  return String(v||"")
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/network/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
 }
 async function loadDepositAddresses(){
   try{
@@ -1621,23 +1612,29 @@ async function loadDepositAddresses(){
       headers,
       body: JSON.stringify({ action:"wallets_public_list" })
     });
-    const payload = await res.json().catch(() => ({}));
-    if(!res.ok || payload?.success === false){
-      throw new Error(payload?.error || `wallet api error ${res.status}`);
+    const payload = await res.json().catch(()=> ({}));
+    if(!res.ok || payload?.success===false){
+      console.error("wallets_public_list failed on deposits:", { status:res.status, payload });
+      document.getElementById("depAddress").innerText="Failed to load addresses";
+      document.getElementById("addrStatus").innerText="Offline";
+      depositAddresses=[];
+      return;
     }
-    depositAddresses = Array.isArray(payload?.wallets) ? payload.wallets.map((item) => ({
-      asset: String(item?.asset_key || "").trim(),
-      network: String(item?.network || "").trim(),
-      address: String(item?.address || "").trim(),
-      memo_label: String(item?.memo_label || "").trim(),
-      memo_value: String(item?.memo_value || "").trim(),
-      note: String(item?.note || "").trim()
-    })) : [];
+    depositAddresses = Array.isArray(payload?.wallets)
+      ? payload.wallets.map(w => ({
+          asset: String(w?.asset_key || "").trim(),
+          network: String(w?.network || "").trim(),
+          address: String(w?.address || "").trim(),
+          memo_label: String(w?.memo_label || "").trim(),
+          memo_value: String(w?.memo_value || "").trim(),
+          note: String(w?.note || "").trim()
+        }))
+      : [];
   }catch(error){
-    console.error("Failed to load deposit wallets from wallet-api:", error);
+    console.error("Deposit wallet load error:", error);
     document.getElementById("depAddress").innerText="Failed to load addresses";
     document.getElementById("addrStatus").innerText="Offline";
-    depositAddresses = [];
+    depositAddresses=[];
   }
 }
 function getCurrentDepAsset(){ return document.getElementById("depAsset").value.toLowerCase(); }
@@ -1653,9 +1650,11 @@ async function renderDepositAddress(){
   document.getElementById("warnAsset").textContent = String(asset).toUpperCase();
   document.getElementById("warnNetwork").textContent = network;
 
+  const assetNorm = normalizeDepositAsset(asset);
+  const networkNorm = normalizeDepositNetwork(network);
   const found=depositAddresses.find(d =>
-    normalizeDepositAssetKey(d.asset) === normalizeDepositAssetKey(asset) &&
-    normalizeDepositNetworkKey(d.network) === normalizeDepositNetworkKey(network)
+    normalizeDepositAsset(d.asset)===assetNorm &&
+    normalizeDepositNetwork(d.network)===networkNorm
   );
 
   const addrEl=document.getElementById("depAddress");
