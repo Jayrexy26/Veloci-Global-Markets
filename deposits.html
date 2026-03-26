@@ -1357,6 +1357,7 @@ const SUPABASE_URL="https://xdcscknfomlzwysczegc.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 const EDGE_SUBMIT_DEPOSIT_URL = `${SUPABASE_URL}/functions/v1/submit_deposit`;
 const EDGE_CLEAR_BADGE_URL = `${SUPABASE_URL}/functions/v1/clear_badge`;
+const WALLET_API_URL = `${SUPABASE_URL}/functions/v1/wallet-api`;
 const BUCKET_NAME="proofs";
 
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -1583,14 +1584,61 @@ function setNameEverywhere(fullName){
 /* ============================================================
   ✅ DEPOSIT ADDRESSES
 ============================================================ */
+function normalizeDepositAssetKey(value){
+  return String(value || "").trim().toUpperCase();
+}
+function normalizeDepositNetworkKey(value){
+  const raw = String(value || "").trim().toUpperCase();
+  const compact = raw.replace(/[^A-Z0-9]/g, "");
+  if(compact === "TRON" || compact === "TRC20") return "TRC20";
+  if(compact === "ERC20" || compact === "ETHEREUM") return "ERC20";
+  if(compact === "BTC" || compact === "BITCOIN") return "BTC";
+  if(compact === "BEP20" || compact === "BNBSMARTCHAIN" || compact === "BSC") return "BEP20";
+  return compact || raw;
+}
+async function getWalletApiHeaders(){
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const accessToken = session?.access_token || "";
+    return {
+      "Content-Type":"application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${accessToken || SUPABASE_ANON_KEY}`
+    };
+  }catch(e){
+    return {
+      "Content-Type":"application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+    };
+  }
+}
 async function loadDepositAddresses(){
-  const { data, error } = await supabaseClient.from("deposit_addresses").select("asset,network,address");
-  if(error){
+  try{
+    const headers = await getWalletApiHeaders();
+    const res = await fetch(WALLET_API_URL, {
+      method:"POST",
+      headers,
+      body: JSON.stringify({ action:"wallets_public_list" })
+    });
+    const payload = await res.json().catch(() => ({}));
+    if(!res.ok || payload?.success === false){
+      throw new Error(payload?.error || `wallet api error ${res.status}`);
+    }
+    depositAddresses = Array.isArray(payload?.wallets) ? payload.wallets.map((item) => ({
+      asset: String(item?.asset_key || "").trim(),
+      network: String(item?.network || "").trim(),
+      address: String(item?.address || "").trim(),
+      memo_label: String(item?.memo_label || "").trim(),
+      memo_value: String(item?.memo_value || "").trim(),
+      note: String(item?.note || "").trim()
+    })) : [];
+  }catch(error){
+    console.error("Failed to load deposit wallets from wallet-api:", error);
     document.getElementById("depAddress").innerText="Failed to load addresses";
     document.getElementById("addrStatus").innerText="Offline";
-    return;
+    depositAddresses = [];
   }
-  depositAddresses=data||[];
 }
 function getCurrentDepAsset(){ return document.getElementById("depAsset").value.toLowerCase(); }
 function getCurrentDepNetwork(){ return document.getElementById("depNetwork").value.toUpperCase(); }
@@ -1606,8 +1654,8 @@ async function renderDepositAddress(){
   document.getElementById("warnNetwork").textContent = network;
 
   const found=depositAddresses.find(d =>
-    (d.asset||"").toLowerCase()===asset &&
-    (d.network||"").toUpperCase()===network
+    normalizeDepositAssetKey(d.asset) === normalizeDepositAssetKey(asset) &&
+    normalizeDepositNetworkKey(d.network) === normalizeDepositNetworkKey(network)
   );
 
   const addrEl=document.getElementById("depAddress");
