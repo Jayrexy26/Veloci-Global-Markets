@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veloci Dashboard Switch</title>
+  <style>
+    :root{
+      --bg:#06070b;
+      --panel:#111318;
+      --panel-2:#0d0f14;
+      --panel-3:#171a21;
+      --line:#20242c;
+      --text:#f5f7fb;
+      --muted:#8d93a5;
+      --muted-2:#666d80;
+      --cyan:#62dbff;
+      --cyan-soft:#8be6ff;
+      --pink:#f39bf9;
+      --pink-2:#d87cff;
+      --green:#33d17a;
+      --red:#ff5f73;
+      --chip:#1b1f27;
+      --shadow:0 24px 60px rgba(0,0,0,.45);
+      --radius:22px;
+      --sidebar-w:180px;
+      --topbar-h:72px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background:linear-gradient(135deg,#f08ae8 0%, #cfb4ff 30%, #b6dfff 100%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      overflow-x:hidden;
+    }
+
+    .frame{
+      width:min(1280px,100%);
+      min-height:690px;
+      background:#000;
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 35px 80px rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.06);
+      position:relative;
+    }
+
+    .dashboard{
+      display:grid;
+      grid-template-columns:var(--sidebar-w) 1fr;
+      min-height:690px;
+      background:radial-gradient(circle at top right, rgba(118,225,255,.08), transparent 28%), #040507;
+    }
+
+    .sidebar{
+      padding:20px 14px 18px;
+      background:#020305;
+      border-right:1px solid rgba(146,164,255,.14);
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      min-height:100%;
+    }
+
+    .brand{
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size:24px;
+      padding:10px 10px 4px;
+    }
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:6px;
+    }
+
+    .nav-item{
+      height:46px;
+      border-radius:13px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:0 13px;
+      color:#9ca3b5;
+      font-size:14px;
+      text-decoration:none;
+      transition:.2s ease;
+      border:1px solid transparent;
+    }
+
+    .nav-item svg{width:18px;height:18px;opacity:.92;flex:0 0 auto}
+    .nav-item:hover{
+      background:rgba(255,255,255,.03);
+      color:#fff;
+      border-color:rgba(255,255,255,.05);
+    }
+
+    .nav-item.active{
+      background:linear-gradient(90deg, rgba(247,167,255,.95), rgba(102,220,255,.92));
+      color:#101217;
+      font-weight:700;
+      box-shadow:0 10px 30px rgba(126,219,255,.22);
+    }
+
+    .badge{
+      margin-left:auto;
+      min-width:20px;
+      height:20px;
+      padding:0 6px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:11px;
+      font-weight:700;
+      color:#03151f;
+      background:linear-gradient(135deg,#73e8ff,#00c7ff);
+    }
+
+    .sidebar-spacer{
+      flex:1;
+      border-top:1px solid rgba(255,255,255,.08);
+      margin:18px 10px 0;
+    }
+
+    .logout{margin-top:4px}
+
+    .main{
+      display:grid;
+      grid-template-rows:var(--topbar-h) 1fr;
+      min-width:0;
+    }
+
+    .topbar{
+      border-bottom:1px solid rgba(255,255,255,.07);
+      display:grid;
+      grid-template-columns:minmax(180px,1fr) minmax(280px,420px) auto;
+      align-items:center;
+      gap:22px;
+      padding:0 18px 0 22px;
+      min-width:0;
+    }
+
+    .hello{
+      font-size:18px;
+      color:#f2f5fb;
+      white-space:nowrap;
+    }
+
+    .search{
+      position:relative;
+      max-width:420px;
+      width:100%;
+      justify-self:center;
+    }
+
+    .search input{
+      width:100%;
+      height:38px;
+      border:none;
+      outline:none;
+      border-radius:8px;
+      padding:0 14px 0 38px;
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      font-size:13px;
+      border:1px solid rgba(255,255,255,.04);
+    }
+
+    .search svg{
+      position:absolute;
+      left:12px;
+      top:50%;
+      transform:translateY(-50%);
+      width:15px;height:15px;
+      color:#7d8698;
+    }
+
+    .top-actions{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      justify-self:end;
+    }
+
+    .notify{
+      position:relative;
+      width:22px;height:22px;
+      display:grid;place-items:center;
+      color:#b7bfd1;
+    }
+    .notify .dot{
+      position:absolute;
+      top:1px;right:2px;
+      width:7px;height:7px;border-radius:50%;
+      background:linear-gradient(135deg,var(--pink),#fff);
+      box-shadow:0 0 10px rgba(243,155,249,.65);
+    }
+
+    .profile{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding-left:4px;
+    }
+
+    .avatar{
+      width:34px;height:34px;border-radius:50%;
+      background:radial-gradient(circle at 35% 30%, #ffc98d, #694738 50%, #0d111b 100%);
+      border:2px solid rgba(255,255,255,.06);
+      box-shadow:0 5px 16px rgba(0,0,0,.3);
+      position:relative;
+      overflow:hidden;
+    }
+    .avatar::before{
+      content:"";
+      position:absolute;
+      inset:8px 8px auto 8px;
+      height:10px;
+      border-radius:50%;
+      background:#141923;
+      opacity:.55;
+    }
+    .avatar::after{
+      content:"";
+      position:absolute;
+      left:7px;right:7px;bottom:3px;
+      height:15px;
+      border-radius:10px 10px 14px 14px;
+      background:#0e1420;
+      opacity:.65;
+    }
+
+    .content{
+      padding:18px;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 260px;
+      gap:16px;
+      min-width:0;
+    }
+
+    .left-col,.right-col{min-width:0}
+    .left-col{display:flex;flex-direction:column;gap:14px}
+    .right-col{display:flex;flex-direction:column;gap:14px}
+
+    .section-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:2px;
+    }
+
+    .balance-title{font-size:13px;color:#c1c6d4;margin-bottom:2px}
+    .balance-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .balance-value{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1}
+    .pill-label{
+      height:24px;padding:0 8px;border-radius:6px;
+      background:rgba(255,255,255,.08);color:#a7afc2;
+      display:inline-flex;align-items:center;font-size:12px;font-weight:700;
+      border:1px solid rgba(255,255,255,.04)
+    }
+    .balance-sub{margin-top:8px;color:#b7bdd0;font-size:14px}
+
+    .tab-switch{
+      display:flex;
+      align-items:center;
+      gap:3px;
+      background:#11141b;
+      border-radius:10px;
+      padding:4px;
+      border:1px solid rgba(255,255,255,.05);
+      align-self:flex-start;
+      margin-top:2px;
+      flex-wrap:wrap;
+    }
+
+    .tab-btn{
+      border:none;
+      background:transparent;
+      color:#b5bccd;
+      height:30px;
+      padding:0 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:12px;
+      transition:.18s ease;
+    }
+    .tab-btn.active{
+      background:linear-gradient(90deg, rgba(246,170,255,.96), rgba(104,222,255,.95));
+      color:#0f1219;
+      font-weight:800;
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(25,28,36,.96), rgba(16,18,24,.96));
+      border:1px solid rgba(255,255,255,.05);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .chart-card{padding:16px}
+
+    .toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
+    .range-group,.coin-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+    .small-chip{
+      height:29px;
+      padding:0 11px;
+      border-radius:8px;
+      border:none;
+      background:transparent;
+      color:#9ea6ba;
+      font-size:12px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    .small-chip.active{
+      background:linear-gradient(135deg, rgba(246,173,255,.96), rgba(104,224,255,.95));
+      color:#0c1118;
+      font-weight:800;
+    }
+    .small-chip.ghost{
+      background:#262b36;
+      color:#c4c9d4;
+      border:1px solid rgba(255,255,255,.06)
+    }
+
+    .coin-chip{
+      height:30px;
+      padding:0 10px;
+      border-radius:8px;
+      background:#242935;
+      color:#cad0de;
+      border:1px solid rgba(255,255,255,.05);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .coin-dot{width:10px;height:10px;border-radius:50%}
+    .btc{background:linear-gradient(135deg,#65e1ff,#28cfff)}
+    .eth{background:linear-gradient(135deg,#f4afff,#ca7aff)}
+
+    .chart-wrap{
+      background:#141821;
+      border:1px solid rgba(255,255,255,.04);
+      border-radius:12px;
+      padding:10px 12px 8px;
+      position:relative;
+      min-height:350px;
+    }
+
+    .chart-svg{width:100%;height:280px;display:block}
+    .axis-label{fill:#62697c;font-size:11px;font-family:inherit}
+    .grid-line{stroke:rgba(255,255,255,.06);stroke-width:1}
+    .curve-a,.curve-b{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:3}
+    .curve-a{stroke:url(#lineCyan)}
+    .curve-b{stroke:url(#linePink)}
+    .area-glow{filter:url(#glow)}
+    .point{
+      filter:drop-shadow(0 0 8px rgba(120,224,255,.6));
+    }
+    .point.pink{
+      filter:drop-shadow(0 0 8px rgba(243,155,249,.68));
+    }
+    .price-note{
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .table-card{padding:14px 0 10px}
+    .table-head{
+      padding:0 14px 12px;
+      font-size:16px;
+      font-weight:700;
+      color:#eef2fb;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+    }
+    thead th{
+      color:#7f8799;
+      font-weight:700;
+      text-align:left;
+      padding:0 14px 10px;
+    }
+    tbody td{
+      padding:10px 14px;
+      border-top:1px solid rgba(255,255,255,.05);
+      color:#dfe4f1;
+      vertical-align:middle;
+    }
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+    .rank{color:#9aa1b2;width:28px}
+    .coin-name{display:flex;align-items:center;gap:10px;font-weight:700}
+    .coin-name .mini{
+      width:15px;height:15px;border-radius:50%;
+      background:linear-gradient(135deg,#73e8ff,#db8eff);
+      box-shadow:0 0 12px rgba(152,210,255,.22);
+      flex:0 0 auto;
+    }
+    .up{color:var(--green);font-weight:700}
+    .down{color:var(--red);font-weight:700}
+
+    .progress-track{
+      width:92px;height:4px;border-radius:999px;
+      background:#2b3140;overflow:hidden;position:relative;
+    }
+    .progress-track span{
+      display:block;height:100%;
+      background:linear-gradient(90deg, rgba(244,176,255,.96), rgba(101,221,255,.96));
+      border-radius:999px;
+    }
+
+    .side-card{padding:14px 14px 12px}
+    .side-title{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;margin-bottom:12px;
+      font-size:16px;font-weight:700;
+    }
+    .more{color:#666f84;font-size:20px;line-height:1}
+
+    .deposit-list{display:flex;flex-direction:column;gap:6px}
+    .deposit-item{
+      display:grid;
+      grid-template-columns:18px 1fr auto;
+      gap:12px;
+      padding:10px 0;
+      border-bottom:1px solid rgba(255,255,255,.05);
+      align-items:start;
+    }
+    .deposit-item:last-child{border-bottom:none}
+    .deposit-icon{
+      width:16px;height:16px;display:grid;place-items:center;
+      margin-top:2px;color:#cbd4e1;
+    }
+    .deposit-name{font-size:13px;font-weight:700}
+    .deposit-sub{font-size:11px;color:#7c8497;margin-top:2px}
+    .deposit-amt{text-align:right}
+    .deposit-amt strong{display:block;font-size:13px}
+    .deposit-amt span{font-size:11px;color:#7c8497}
+    .show-more{display:inline-block;margin-top:8px;color:#67ddff;font-size:12px;text-decoration:none;font-weight:700}
+
+    .asset-box{display:flex;flex-direction:column;gap:12px}
+    .crypto-card{
+      min-height:138px;
+      border-radius:14px;
+      position:relative;
+      overflow:hidden;
+      padding:16px 16px 14px;
+      color:#0f1218;
+      isolation:isolate;
+      box-shadow:0 15px 40px rgba(0,0,0,.26);
+    }
+    .crypto-card.top{
+      background:linear-gradient(135deg, #78e4ff 0%, #e8baf6 100%);
+    }
+    .crypto-card.bottom{
+      background:linear-gradient(135deg, #eee7ff 0%, #76dfff 100%);
+    }
+    .crypto-card::before,
+    .crypto-card::after{
+      content:"";
+      position:absolute;
+      inset:auto -18% -28% -18%;
+      height:90px;
+      border-radius:50%;
+      background:repeating-radial-gradient(circle at center, rgba(255,255,255,.0) 0 7px, rgba(35,52,75,.22) 7px 8px);
+      transform:rotate(-7deg);
+      opacity:.35;
+      z-index:-1;
+    }
+    .crypto-card::after{
+      inset:auto -14% 22% -10%;
+      transform:rotate(6deg);
+      opacity:.16;
+      height:60px;
+    }
+    .card-topline{
+      display:flex;align-items:center;justify-content:space-between;
+      color:rgba(15,18,24,.72);
+      font-size:12px;font-weight:700;
+    }
+    .brand-coin{
+      display:flex;align-items:center;gap:8px;
+      font-size:13px;font-weight:800;
+    }
+    .brand-coin .mini-icon{
+      width:18px;height:18px;border-radius:50%;
+      display:grid;place-items:center;
+      background:rgba(15,18,24,.12);
+      font-size:11px;
+    }
+    .wave-lines{
+      position:absolute;left:-10%;right:-10%;top:40px;height:76px;opacity:.55;pointer-events:none;
+    }
+    .wave-lines svg{width:100%;height:100%}
+    .asset-name{position:absolute;left:16px;bottom:38px;font-size:13px;color:rgba(15,18,24,.55)}
+    .asset-value{position:absolute;left:16px;bottom:12px;font-size:34px;font-weight:800;letter-spacing:-1px}
+    .asset-ticker{position:absolute;right:16px;bottom:16px;font-size:12px;font-weight:800;color:rgba(15,18,24,.55)}
+
+    .mobile-header{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px 16px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .menu-btn{
+      width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+      background:#10141c;color:#fff;display:grid;place-items:center;
+    }
+
+    @media (max-width: 1100px){
+      .content{grid-template-columns:1fr}
+      .right-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+    }
+
+    @media (max-width: 860px){
+      body{padding:0;background:#030408}
+      .frame{width:100%;min-height:100vh;border-radius:0}
+      .dashboard{grid-template-columns:1fr}
+      .sidebar{
+        position:fixed;
+        z-index:80;
+        top:0;left:0;bottom:0;
+        width:290px;
+        transform:translateX(-100%);
+        transition:.22s ease;
+        box-shadow:0 20px 50px rgba(0,0,0,.45);
+      }
+      .sidebar.open{transform:translateX(0)}
+      .sidebar-backdrop{
+        position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:70;display:none;
+      }
+      .sidebar-backdrop.show{display:block}
+      .main{grid-template-rows:auto 1fr}
+      .mobile-header{display:flex}
+      .topbar{
+        grid-template-columns:1fr;
+        gap:12px;
+        padding:14px 16px;
+      }
+      .hello{display:none}
+      .search{justify-self:stretch;max-width:none}
+      .top-actions{justify-self:start}
+      .balance-value{font-size:32px}
+    }
+
+    @media (max-width: 680px){
+      .right-col{grid-template-columns:1fr}
+      .section-head{flex-direction:column;align-items:flex-start}
+      .chart-wrap{padding:10px 8px 8px;min-height:300px}
+      .chart-svg{height:240px}
+      thead{display:none}
+      table, tbody, tr, td{display:block;width:100%}
+      tbody tr{padding:8px 0;border-top:1px solid rgba(255,255,255,.05)}
+      tbody td{border-top:none;padding:4px 14px}
+      tbody td::before{
+        content:attr(data-label);
+        display:inline-block;
+        width:92px;
+        color:#7f8799;
+        font-weight:700;
+      }
+      .coin-name{display:inline-flex}
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <div class="dashboard">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">Money lens</div>
+
+        <nav class="nav">
+          <a class="nav-item active" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="7" height="7" rx="1.5"></rect><rect x="14" y="4" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+            Dashboard
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v6h6"></path><path d="M10 13h6"></path><path d="M10 17h6"></path></svg>
+            Invoices
+            <span class="badge">3</span>
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 7 12 4l6 3v10l-6 3-6-3z"></path><path d="M6 7l6 3 6-3"></path><path d="M12 10v10"></path></svg>
+            Products
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 6h16v10H7l-3 3z"></path></svg>
+            Messages
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V22a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06A2 2 0 0 1 4.2 17l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 0 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.04 1.7 1.7 0 0 0-.34-1.87L4.25 7.06A2 2 0 0 1 7.08 4.2l.06.06a1.7 1.7 0 0 0 1.87.34H9.1A1.7 1.7 0 0 0 10.14 3H10a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09A1.7 1.7 0 0 0 21 10.14V10a2 2 0 0 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"></path></svg>
+            Settings
+          </a>
+          <a class="nav-item" href="#">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"></circle><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"></path><path d="M12 17h.01"></path></svg>
+            Help
+          </a>
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <a class="nav-item logout" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+          Log Out
+        </a>
+      </aside>
+
+      <main class="main">
+        <div class="mobile-header">
+          <div class="brand">Money lens</div>
+          <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
+          </button>
+        </div>
+
+        <header class="topbar">
+          <div class="hello">Hi David</div>
+
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <input type="text" placeholder="Search" />
+          </div>
+
+          <div class="top-actions">
+            <div class="notify" aria-label="notifications">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+              <span class="dot"></span>
+            </div>
+            <div class="profile">
+              <div class="avatar"></div>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8790a4" stroke-width="2"><path d="m7 10 5 5 5-5"></path></svg>
+            </div>
+          </div>
+        </header>
+
+        <section class="content">
+          <div class="left-col">
+            <div class="section-head">
+              <div>
+                <div class="balance-title">Total Balance</div>
+                <div class="balance-row">
+                  <div class="balance-value">0.97689522</div>
+                  <div class="pill-label">BTC</div>
+                </div>
+                <div class="balance-sub">$40,098.36</div>
+              </div>
+
+              <div class="tab-switch">
+                <button class="tab-btn active" type="button">Portfolio</button>
+                <button class="tab-btn" type="button">Funding</button>
+                <button class="tab-btn" type="button">Assets</button>
+                <button class="tab-btn" type="button">P2P</button>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="toolbar">
+                <div class="range-group">
+                  <button class="small-chip" type="button">1H</button>
+                  <button class="small-chip" type="button">1D</button>
+                  <button class="small-chip" type="button">3D</button>
+                  <button class="small-chip active" type="button">1W</button>
+                  <button class="small-chip" type="button">1M</button>
+                  <button class="small-chip" type="button" aria-label="calendar">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M3 10h18"></path></svg>
+                  </button>
+                </div>
+                <div class="coin-group">
+                  <div class="coin-chip"><span class="coin-dot btc"></span> BTC <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg></div>
+                  <div class="coin-chip"><span class="coin-dot eth"></span> ETH <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg></div>
+                </div>
+              </div>
+
+              <div class="chart-wrap">
+                <svg class="chart-svg" viewBox="0 0 760 280" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="lineCyan" x1="0" x2="1">
+                      <stop offset="0%" stop-color="#61e1ff"></stop>
+                      <stop offset="100%" stop-color="#22cfff"></stop>
+                    </linearGradient>
+                    <linearGradient id="linePink" x1="0" x2="1">
+                      <stop offset="0%" stop-color="#ffb8ff"></stop>
+                      <stop offset="100%" stop-color="#d97dff"></stop>
+                    </linearGradient>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+                      <feMerge>
+                        <feMergeNode in="blur"></feMergeNode>
+                        <feMergeNode in="SourceGraphic"></feMergeNode>
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  <g>
+                    <line class="grid-line" x1="60" y1="30" x2="740" y2="30"></line>
+                    <line class="grid-line" x1="60" y1="75" x2="740" y2="75"></line>
+                    <line class="grid-line" x1="60" y1="120" x2="740" y2="120"></line>
+                    <line class="grid-line" x1="60" y1="165" x2="740" y2="165"></line>
+                    <line class="grid-line" x1="60" y1="210" x2="740" y2="210"></line>
+                    <line class="grid-line" x1="60" y1="255" x2="740" y2="255"></line>
+                  </g>
+
+                  <g>
+                    <text class="axis-label" x="28" y="258">0</text>
+                    <text class="axis-label" x="18" y="214">$100</text>
+                    <text class="axis-label" x="18" y="169">$200</text>
+                    <text class="axis-label" x="18" y="124">$300</text>
+                    <text class="axis-label" x="18" y="79">$500</text>
+                    <text class="axis-label" x="18" y="34">$600</text>
+                  </g>
+
+                  <path class="curve-a area-glow" d="M60,220
+                    C95,215 90,70 120,88
+                    S175,175 210,130
+                    S275,8 320,75
+                    S385,120 425,85
+                    S480,255 525,165
+                    S590,65 640,105
+                    S700,205 740,95"></path>
+
+                  <path class="curve-b area-glow" d="M60,168
+                    C95,180 82,60 120,128
+                    S180,195 222,160
+                    S290,120 325,190
+                    S385,110 418,150
+                    S480,230 520,178
+                    S580,62 620,118
+                    S695,100 740,136"></path>
+
+                  <circle class="point" cx="354" cy="86" r="5" fill="#60e0ff"></circle>
+                  <circle class="point pink" cx="355" cy="146" r="5" fill="#f3a1ff"></circle>
+
+                  <text x="342" y="72" fill="#65dfff" class="price-note">+ $550</text>
+                  <text x="340" y="132" fill="#f3a1ff" class="price-note">+ $550</text>
+
+                  <g>
+                    <text class="axis-label" x="84" y="278">Mon</text>
+                    <text class="axis-label" x="178" y="278">Tue</text>
+                    <text class="axis-label" x="275" y="278">Wed</text>
+                    <text class="axis-label" x="372" y="278">Thu</text>
+                    <text class="axis-label" x="471" y="278">Fri</text>
+                    <text class="axis-label" x="568" y="278">Sat</text>
+                    <text class="axis-label" x="663" y="278">Sun</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            <div class="card table-card">
+              <div class="table-head">CoinMarketCap 100 Index Constituents</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Coin</th>
+                    <th>Price</th>
+                    <th>Trend</th>
+                    <th>Market Cap</th>
+                    <th>Coin Weight</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="rank" data-label="#">1</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Bitcoin BTC</span></td>
+                    <td data-label="Price">$394686.21</td>
+                    <td data-label="Trend"><span class="up">▲ 0.96%</span></td>
+                    <td data-label="Market Cap">$71812.05</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:39%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">2</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Polygon</span></td>
+                    <td data-label="Price">$437569.19</td>
+                    <td data-label="Trend"><span class="down">▼ 0.91%</span></td>
+                    <td data-label="Market Cap">$12553.9</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:74%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">3</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> XRP Ledger</span></td>
+                    <td data-label="Price">$71825403</td>
+                    <td data-label="Trend"><span class="up">▲ 0.72%</span></td>
+                    <td data-label="Market Cap">$60193.15</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:49%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">4</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Avalanche</span></td>
+                    <td data-label="Price">$301286.98</td>
+                    <td data-label="Trend"><span class="down">▼ 0.42%</span></td>
+                    <td data-label="Market Cap">$3388.82</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:53%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">5</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> USDT</span></td>
+                    <td data-label="Price">$101025.65</td>
+                    <td data-label="Trend"><span class="down">▼ 0.78%</span></td>
+                    <td data-label="Market Cap">$4761.65</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:57%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">6</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Solana</span></td>
+                    <td data-label="Price">$125546.96</td>
+                    <td data-label="Trend"><span class="down">▼ 0.92%</span></td>
+                    <td data-label="Market Cap">$1869.33</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:89%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">7</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Ethereum</span></td>
+                    <td data-label="Price">$601395.15</td>
+                    <td data-label="Trend"><span class="up">▲ 1.23%</span></td>
+                    <td data-label="Market Cap">$935.62</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:11%"></span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="rank" data-label="#">8</td>
+                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Cardano</span></td>
+                    <td data-label="Price">$336581.15</td>
+                    <td data-label="Trend"><span class="down">▼ 0.86%</span></td>
+                    <td data-label="Market Cap">$369.56</td>
+                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:29%"></span></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="right-col">
+            <div class="card side-card">
+              <div class="side-title">
+                <span>Recent deposits</span>
+                <span class="more">⋮</span>
+              </div>
+
+              <div class="deposit-list">
+                <div class="deposit-item">
+                  <div class="deposit-icon">₿</div>
+                  <div>
+                    <div class="deposit-name">Bitcoin</div>
+                    <div class="deposit-sub">Buy</div>
+                  </div>
+                  <div class="deposit-amt"><strong>+ $244.00</strong><span>Today 13:15 PM</span></div>
+                </div>
+                <div class="deposit-item">
+                  <div class="deposit-icon">◆</div>
+                  <div>
+                    <div class="deposit-name">Ethereum</div>
+                    <div class="deposit-sub">Received</div>
+                  </div>
+                  <div class="deposit-amt"><strong>+ 0.4213 ETH</strong><span>Today 11:18 PM</span></div>
+                </div>
+                <div class="deposit-item">
+                  <div class="deposit-icon">⬡</div>
+                  <div>
+                    <div class="deposit-name">Polygon</div>
+                    <div class="deposit-sub">Buy</div>
+                  </div>
+                  <div class="deposit-amt"><strong>+ $1,245</strong><span>Yesterday</span></div>
+                </div>
+                <div class="deposit-item">
+                  <div class="deposit-icon">✕</div>
+                  <div>
+                    <div class="deposit-name">XRP Ledger</div>
+                    <div class="deposit-sub">Received</div>
+                  </div>
+                  <div class="deposit-amt"><strong>+ 0,5686 XRP</strong><span>Yesterday</span></div>
+                </div>
+                <div class="deposit-item">
+                  <div class="deposit-icon">≋</div>
+                  <div>
+                    <div class="deposit-name">Solana</div>
+                    <div class="deposit-sub">Received</div>
+                  </div>
+                  <div class="deposit-amt"><strong>+ $244.00</strong><span>Yesterday</span></div>
+                </div>
+              </div>
+              <a class="show-more" href="#">Show more</a>
+            </div>
+
+            <div class="card side-card">
+              <div class="side-title"><span>Assets</span></div>
+              <div class="asset-box">
+                <div class="crypto-card top">
+                  <div class="card-topline">
+                    <div class="brand-coin"><span class="mini-icon">₿</span> Bitcoin</div>
+                    <div>Crypto card</div>
+                  </div>
+                  <div class="wave-lines">
+                    <svg viewBox="0 0 400 80" preserveAspectRatio="none">
+                      <path d="M0,58 C60,30 130,72 200,44 C260,20 320,74 400,30" fill="none" stroke="rgba(10,26,42,.26)" stroke-width="2.2"></path>
+                      <path d="M0,66 C70,36 130,80 210,48 C275,24 340,70 400,38" fill="none" stroke="rgba(10,26,42,.22)" stroke-width="1.8"></path>
+                      <path d="M0,46 C65,18 135,56 205,30 C280,6 336,62 400,18" fill="none" stroke="rgba(10,26,42,.18)" stroke-width="1.6"></path>
+                    </svg>
+                  </div>
+                  <div class="asset-name">Bitcoin</div>
+                  <div class="asset-value">6401,20</div>
+                  <div class="asset-ticker">BTC</div>
+                </div>
+
+                <div class="crypto-card bottom">
+                  <div class="card-topline">
+                    <div class="brand-coin"><span class="mini-icon">◆</span> Ethereum</div>
+                    <div>Crypto card</div>
+                  </div>
+                  <div class="asset-name">Bitcoin</div>
+                  <div class="asset-value">6401,20</div>
+                  <div class="asset-ticker">BTC</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Smartsupp Live Chat script -->
+  <script type="text/javascript">
+  var _smartsupp = _smartsupp || {};
+  _smartsupp.key = 'bf17dc4b07110cdfdfc72a377e70c50879c14cea';
+  window.smartsupp||(function(d) {
+   var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+   s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+   c.type='text/javascript';c.charset='utf-8';c.async=true;
+   c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+  })(document);
+  </script>
+
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+
+    if (menuBtn) {
+      menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        backdrop.classList.toggle('show');
+      });
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('show');
+      });
+    }
+  </script>
+</body>
+</html>
