@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Veloci Dashboard Switch</title>
+  <title>Veloci Dashboard Switch — Interactive</title>
   <style>
     :root{
-      --bg:#06070b;
+      --bg:#05070b;
       --panel:#111318;
-      --panel-2:#0d0f14;
-      --panel-3:#171a21;
-      --line:#20242c;
+      --panel-2:#0d1015;
+      --panel-3:#171b22;
+      --line:#20242d;
       --text:#f5f7fb;
       --muted:#8d93a5;
       --muted-2:#666d80;
@@ -23,7 +23,7 @@
       --chip:#1b1f27;
       --shadow:0 24px 60px rgba(0,0,0,.45);
       --radius:22px;
-      --sidebar-w:180px;
+      --sidebar-w:184px;
       --topbar-h:72px;
     }
 
@@ -41,6 +41,9 @@
       padding:18px;
       overflow-x:hidden;
     }
+
+    button,input,select{font:inherit}
+    button{cursor:pointer}
 
     .frame{
       width:min(1280px,100%);
@@ -73,7 +76,7 @@
     .brand{
       font-weight:700;
       letter-spacing:.2px;
-      font-size:24px;
+      font-size:22px;
       padding:10px 10px 4px;
     }
 
@@ -93,9 +96,11 @@
       padding:0 13px;
       color:#9ca3b5;
       font-size:14px;
+      background:transparent;
       text-decoration:none;
       transition:.2s ease;
       border:1px solid transparent;
+      width:100%;
     }
 
     .nav-item svg{width:18px;height:18px;opacity:.92;flex:0 0 auto}
@@ -132,8 +137,6 @@
       border-top:1px solid rgba(255,255,255,.08);
       margin:18px 10px 0;
     }
-
-    .logout{margin-top:4px}
 
     .main{
       display:grid;
@@ -193,25 +196,32 @@
       justify-self:end;
     }
 
-    .notify{
+    .notify,.mini-action{
       position:relative;
-      width:22px;height:22px;
+      width:34px;height:34px;
       display:grid;place-items:center;
       color:#b7bfd1;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.05);
+      background:rgba(255,255,255,.03);
     }
     .notify .dot{
       position:absolute;
-      top:1px;right:2px;
+      top:6px;right:8px;
       width:7px;height:7px;border-radius:50%;
       background:linear-gradient(135deg,var(--pink),#fff);
       box-shadow:0 0 10px rgba(243,155,249,.65);
     }
 
+    .profile-wrap{position:relative}
     .profile{
       display:flex;
       align-items:center;
       gap:8px;
-      padding-left:4px;
+      padding:4px 8px 4px 4px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.05);
+      background:rgba(255,255,255,.03);
     }
 
     .avatar{
@@ -240,6 +250,34 @@
       background:#0e1420;
       opacity:.65;
     }
+
+    .profile-menu{
+      position:absolute;
+      top:52px;
+      right:0;
+      min-width:180px;
+      background:#12161d;
+      border:1px solid rgba(255,255,255,.06);
+      border-radius:14px;
+      box-shadow:0 25px 60px rgba(0,0,0,.45);
+      padding:8px;
+      display:none;
+      z-index:20;
+    }
+    .profile-menu.open{display:block}
+    .profile-menu button{
+      width:100%;
+      height:38px;
+      display:flex;
+      align-items:center;
+      border:none;
+      background:transparent;
+      color:#d8dfec;
+      border-radius:10px;
+      padding:0 12px;
+      text-align:left;
+    }
+    .profile-menu button:hover{background:rgba(255,255,255,.05)}
 
     .content{
       padding:18px;
@@ -285,6 +323,10 @@
       flex-wrap:wrap;
     }
 
+    .tab-btn,.small-chip,.show-more,.linkish,.asset-switch,.metric-btn,.nav-item,.profile,.mini-action,.notify{
+      transition:.18s ease;
+    }
+
     .tab-btn{
       border:none;
       background:transparent;
@@ -294,7 +336,6 @@
       border-radius:8px;
       cursor:pointer;
       font-size:12px;
-      transition:.18s ease;
     }
     .tab-btn.active{
       background:linear-gradient(90deg, rgba(246,170,255,.96), rgba(104,222,255,.95));
@@ -331,8 +372,6 @@
       background:transparent;
       color:#9ea6ba;
       font-size:12px;
-      cursor:pointer;
-      transition:.18s ease;
     }
     .small-chip.active{
       background:linear-gradient(135deg, rgba(246,173,255,.96), rgba(104,224,255,.95));
@@ -379,16 +418,10 @@
     .curve-a{stroke:url(#lineCyan)}
     .curve-b{stroke:url(#linePink)}
     .area-glow{filter:url(#glow)}
-    .point{
-      filter:drop-shadow(0 0 8px rgba(120,224,255,.6));
-    }
-    .point.pink{
-      filter:drop-shadow(0 0 8px rgba(243,155,249,.68));
-    }
-    .price-note{
-      font-size:11px;
-      font-weight:700;
-    }
+    .point{filter:drop-shadow(0 0 8px rgba(120,224,255,.6));}
+    .point.pink{filter:drop-shadow(0 0 8px rgba(243,155,249,.68));}
+    .price-note{font-size:11px;font-weight:700}
+    .chart-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#8790a4;font-size:12px;margin-top:10px}
 
     .table-card{padding:14px 0 10px}
     .table-head{
@@ -396,146 +429,77 @@
       font-size:16px;
       font-weight:700;
       color:#eef2fb;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
     }
 
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-    }
-    thead th{
-      color:#7f8799;
-      font-weight:700;
-      text-align:left;
-      padding:0 14px 10px;
-    }
-    tbody td{
-      padding:10px 14px;
-      border-top:1px solid rgba(255,255,255,.05);
-      color:#dfe4f1;
-      vertical-align:middle;
-    }
-    tbody tr:hover{background:rgba(255,255,255,.02)}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead th{color:#7f8799;font-weight:700;text-align:left;padding:0 14px 10px}
+    tbody td{padding:10px 14px;border-top:1px solid rgba(255,255,255,.05);color:#dfe4f1;vertical-align:middle}
+    tbody tr{cursor:pointer}
+    tbody tr:hover, tbody tr.selected{background:rgba(255,255,255,.03)}
     .rank{color:#9aa1b2;width:28px}
     .coin-name{display:flex;align-items:center;gap:10px;font-weight:700}
-    .coin-name .mini{
-      width:15px;height:15px;border-radius:50%;
-      background:linear-gradient(135deg,#73e8ff,#db8eff);
-      box-shadow:0 0 12px rgba(152,210,255,.22);
-      flex:0 0 auto;
-    }
+    .coin-name .mini{width:15px;height:15px;border-radius:50%;background:linear-gradient(135deg,#73e8ff,#db8eff);box-shadow:0 0 12px rgba(152,210,255,.22);flex:0 0 auto}
     .up{color:var(--green);font-weight:700}
     .down{color:var(--red);font-weight:700}
 
-    .progress-track{
-      width:92px;height:4px;border-radius:999px;
-      background:#2b3140;overflow:hidden;position:relative;
-    }
-    .progress-track span{
-      display:block;height:100%;
-      background:linear-gradient(90deg, rgba(244,176,255,.96), rgba(101,221,255,.96));
-      border-radius:999px;
-    }
+    .progress-track{width:92px;height:4px;border-radius:999px;background:#2b3140;overflow:hidden;position:relative}
+    .progress-track span{display:block;height:100%;background:linear-gradient(90deg, rgba(244,176,255,.96), rgba(101,221,255,.96));border-radius:999px}
 
     .side-card{padding:14px 14px 12px}
-    .side-title{
-      display:flex;align-items:center;justify-content:space-between;
-      gap:10px;margin-bottom:12px;
-      font-size:16px;font-weight:700;
-    }
+    .side-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:16px;font-weight:700}
     .more{color:#666f84;font-size:20px;line-height:1}
 
     .deposit-list{display:flex;flex-direction:column;gap:6px}
-    .deposit-item{
-      display:grid;
-      grid-template-columns:18px 1fr auto;
-      gap:12px;
-      padding:10px 0;
-      border-bottom:1px solid rgba(255,255,255,.05);
-      align-items:start;
-    }
+    .deposit-item{display:grid;grid-template-columns:18px 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:start}
     .deposit-item:last-child{border-bottom:none}
-    .deposit-icon{
-      width:16px;height:16px;display:grid;place-items:center;
-      margin-top:2px;color:#cbd4e1;
-    }
+    .deposit-icon{width:16px;height:16px;display:grid;place-items:center;margin-top:2px;color:#cbd4e1}
     .deposit-name{font-size:13px;font-weight:700}
     .deposit-sub{font-size:11px;color:#7c8497;margin-top:2px}
     .deposit-amt{text-align:right}
     .deposit-amt strong{display:block;font-size:13px}
     .deposit-amt span{font-size:11px;color:#7c8497}
-    .show-more{display:inline-block;margin-top:8px;color:#67ddff;font-size:12px;text-decoration:none;font-weight:700}
+    .show-more,.linkish{display:inline-block;margin-top:8px;color:#67ddff;font-size:12px;text-decoration:none;font-weight:700;background:none;border:none;padding:0}
 
     .asset-box{display:flex;flex-direction:column;gap:12px}
-    .crypto-card{
-      min-height:138px;
-      border-radius:14px;
-      position:relative;
-      overflow:hidden;
-      padding:16px 16px 14px;
-      color:#0f1218;
-      isolation:isolate;
-      box-shadow:0 15px 40px rgba(0,0,0,.26);
-    }
-    .crypto-card.top{
-      background:linear-gradient(135deg, #78e4ff 0%, #e8baf6 100%);
-    }
-    .crypto-card.bottom{
-      background:linear-gradient(135deg, #eee7ff 0%, #76dfff 100%);
-    }
-    .crypto-card::before,
-    .crypto-card::after{
-      content:"";
-      position:absolute;
-      inset:auto -18% -28% -18%;
-      height:90px;
-      border-radius:50%;
-      background:repeating-radial-gradient(circle at center, rgba(255,255,255,.0) 0 7px, rgba(35,52,75,.22) 7px 8px);
-      transform:rotate(-7deg);
-      opacity:.35;
-      z-index:-1;
-    }
-    .crypto-card::after{
-      inset:auto -14% 22% -10%;
-      transform:rotate(6deg);
-      opacity:.16;
-      height:60px;
-    }
-    .card-topline{
-      display:flex;align-items:center;justify-content:space-between;
-      color:rgba(15,18,24,.72);
-      font-size:12px;font-weight:700;
-    }
-    .brand-coin{
-      display:flex;align-items:center;gap:8px;
-      font-size:13px;font-weight:800;
-    }
-    .brand-coin .mini-icon{
-      width:18px;height:18px;border-radius:50%;
-      display:grid;place-items:center;
-      background:rgba(15,18,24,.12);
-      font-size:11px;
-    }
-    .wave-lines{
-      position:absolute;left:-10%;right:-10%;top:40px;height:76px;opacity:.55;pointer-events:none;
-    }
+    .crypto-card{min-height:138px;border-radius:14px;position:relative;overflow:hidden;padding:16px 16px 14px;color:#0f1218;isolation:isolate;box-shadow:0 15px 40px rgba(0,0,0,.26);cursor:pointer;border:2px solid transparent}
+    .crypto-card.active{border-color:rgba(255,255,255,.5)}
+    .crypto-card.top{background:linear-gradient(135deg, #78e4ff 0%, #e8baf6 100%)}
+    .crypto-card.bottom{background:linear-gradient(135deg, #eee7ff 0%, #76dfff 100%)}
+    .crypto-card::before,.crypto-card::after{content:"";position:absolute;inset:auto -18% -28% -18%;height:90px;border-radius:50%;background:repeating-radial-gradient(circle at center, rgba(255,255,255,.0) 0 7px, rgba(35,52,75,.22) 7px 8px);transform:rotate(-7deg);opacity:.35;z-index:-1}
+    .crypto-card::after{inset:auto -14% 22% -10%;transform:rotate(6deg);opacity:.16;height:60px}
+    .card-topline{display:flex;align-items:center;justify-content:space-between;color:rgba(15,18,24,.72);font-size:12px;font-weight:700}
+    .brand-coin{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}
+    .brand-coin .mini-icon{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:rgba(15,18,24,.12);font-size:11px}
+    .wave-lines{position:absolute;left:-10%;right:-10%;top:40px;height:76px;opacity:.55;pointer-events:none}
     .wave-lines svg{width:100%;height:100%}
     .asset-name{position:absolute;left:16px;bottom:38px;font-size:13px;color:rgba(15,18,24,.55)}
     .asset-value{position:absolute;left:16px;bottom:12px;font-size:34px;font-weight:800;letter-spacing:-1px}
     .asset-ticker{position:absolute;right:16px;bottom:16px;font-size:12px;font-weight:800;color:rgba(15,18,24,.55)}
 
-    .mobile-header{
-      display:none;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:16px 16px 10px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .menu-btn{
-      width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
-      background:#10141c;color:#fff;display:grid;place-items:center;
-    }
+    .statusbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .metric-card{padding:14px;border-radius:14px;background:linear-gradient(180deg, rgba(25,28,36,.96), rgba(16,18,24,.96));border:1px solid rgba(255,255,255,.05)}
+    .metric-label{font-size:12px;color:#8f96a9;margin-bottom:8px}
+    .metric-value{font-size:24px;font-weight:800}
+    .metric-sub{margin-top:6px;color:#99a3b6;font-size:12px}
+
+    .panel{display:none}
+    .panel.active{display:block}
+
+    .empty-state{padding:60px 20px;text-align:center;color:#8f96a9}
+    .empty-state strong{display:block;color:#edf2fb;font-size:20px;margin-bottom:8px}
+
+    .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:10px}
+    .toast{min-width:260px;max-width:360px;padding:14px 16px;border-radius:14px;background:#12161d;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 50px rgba(0,0,0,.45);color:#ebf0fb}
+    .toast small{display:block;margin-top:4px;color:#94a0b6}
+
+    .sidebar-backdrop{display:none}
+
+    .mobile-header{display:none;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .menu-btn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#10141c;color:#fff;display:grid;place-items:center}
 
     @media (max-width: 1100px){
       .content{grid-template-columns:1fr}
@@ -546,31 +510,18 @@
       body{padding:0;background:#030408}
       .frame{width:100%;min-height:100vh;border-radius:0}
       .dashboard{grid-template-columns:1fr}
-      .sidebar{
-        position:fixed;
-        z-index:80;
-        top:0;left:0;bottom:0;
-        width:290px;
-        transform:translateX(-100%);
-        transition:.22s ease;
-        box-shadow:0 20px 50px rgba(0,0,0,.45);
-      }
+      .sidebar{position:fixed;z-index:80;top:0;left:0;bottom:0;width:290px;transform:translateX(-100%);transition:.22s ease;box-shadow:0 20px 50px rgba(0,0,0,.45)}
       .sidebar.open{transform:translateX(0)}
-      .sidebar-backdrop{
-        position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:70;display:none;
-      }
+      .sidebar-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:70;display:none}
       .sidebar-backdrop.show{display:block}
       .main{grid-template-rows:auto 1fr}
       .mobile-header{display:flex}
-      .topbar{
-        grid-template-columns:1fr;
-        gap:12px;
-        padding:14px 16px;
-      }
+      .topbar{grid-template-columns:1fr;gap:12px;padding:14px 16px}
       .hello{display:none}
       .search{justify-self:stretch;max-width:none}
       .top-actions{justify-self:start}
       .balance-value{font-size:32px}
+      .statusbar{grid-template-columns:1fr}
     }
 
     @media (max-width: 680px){
@@ -582,14 +533,7 @@
       table, tbody, tr, td{display:block;width:100%}
       tbody tr{padding:8px 0;border-top:1px solid rgba(255,255,255,.05)}
       tbody td{border-top:none;padding:4px 14px}
-      tbody td::before{
-        content:attr(data-label);
-        display:inline-block;
-        width:92px;
-        color:#7f8799;
-        font-weight:700;
-      }
-      .coin-name{display:inline-flex}
+      tbody td::before{content:attr(data-label);display:inline-block;width:92px;color:#7f8799;font-weight:700}
     }
   </style>
 </head>
@@ -600,354 +544,249 @@
       <aside class="sidebar" id="sidebar">
         <div class="brand">Money lens</div>
 
-        <nav class="nav">
-          <a class="nav-item active" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="7" height="7" rx="1.5"></rect><rect x="14" y="4" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+        <nav class="nav" id="navItems">
+          <button class="nav-item active" data-panel="dashboardPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>
             Dashboard
-          </a>
-          <a class="nav-item" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M7 3h7l5 5v13H7z"></path><path d="M14 3v6h6"></path><path d="M10 13h6"></path><path d="M10 17h6"></path></svg>
-            Invoices
-            <span class="badge">3</span>
-          </a>
-          <a class="nav-item" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 7 12 4l6 3v10l-6 3-6-3z"></path><path d="M6 7l6 3 6-3"></path><path d="M12 10v10"></path></svg>
+          </button>
+          <button class="nav-item" data-panel="invoicesPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>
+            Invoices <span class="badge">3</span>
+          </button>
+          <button class="nav-item" data-panel="productsPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3Z"/><path d="M12 12l8-4.5M12 12 4 7.5M12 12v9"/></svg>
             Products
-          </a>
-          <a class="nav-item" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 6h16v10H7l-3 3z"></path></svg>
+          </button>
+          <button class="nav-item" data-panel="messagesPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16v10H8l-4 4V6z"/></svg>
             Messages
-          </a>
-          <a class="nav-item" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V22a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1.04-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06A2 2 0 0 1 4.2 17l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 0 1 0-4h.09a1.7 1.7 0 0 0 1.56-1.04 1.7 1.7 0 0 0-.34-1.87L4.25 7.06A2 2 0 0 1 7.08 4.2l.06.06a1.7 1.7 0 0 0 1.87.34H9.1A1.7 1.7 0 0 0 10.14 3H10a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09A1.7 1.7 0 0 0 21 10.14V10a2 2 0 0 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"></path></svg>
+          </button>
+          <button class="nav-item" data-panel="settingsPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.13.32.2.66.2 1s-.07.68-.2 1c-.13.32-.33.61-.6.86-.26.25-.57.44-.9.56.33.12.64.31.9.56.27.25.47.54.6.86.13.32.2.66.2 1s-.07.68-.2 1z"/></svg>
             Settings
-          </a>
-          <a class="nav-item" href="#">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"></circle><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"></path><path d="M12 17h.01"></path></svg>
+          </button>
+          <button class="nav-item" data-panel="helpPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 5.8 1c-.36.97-1.28 1.37-2.08 1.87-.78.49-1.32 1.03-1.32 2.13"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg>
             Help
-          </a>
+          </button>
         </nav>
 
         <div class="sidebar-spacer"></div>
 
-        <a class="nav-item logout" href="#">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+        <button class="nav-item logout" id="logoutBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
           Log Out
-        </a>
+        </button>
       </aside>
 
       <main class="main">
         <div class="mobile-header">
-          <div class="brand">Money lens</div>
-          <button class="menu-btn" id="menuBtn" aria-label="Open menu">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M3 12h18"></path><path d="M3 18h18"></path></svg>
-          </button>
+          <button class="menu-btn" id="menuBtn">☰</button>
+          <div class="hello">Hi David</div>
+          <button class="menu-btn" id="mobileNotify">⌁</button>
         </div>
 
         <header class="topbar">
-          <div class="hello">Hi David</div>
+          <div class="hello" id="helloTitle">Hi David</div>
 
           <div class="search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-            <input type="text" placeholder="Search" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.4-3.4"></path></svg>
+            <input id="searchInput" type="text" placeholder="Search coin, asset, transaction..." />
           </div>
 
           <div class="top-actions">
-            <div class="notify" aria-label="notifications">
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+            <button class="notify" id="notifyBtn" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V10a6 6 0 1 0-12 0v4.2c0 .53-.21 1.04-.59 1.41L4 17h5"/><path d="M10 17a2 2 0 0 0 4 0"/></svg>
               <span class="dot"></span>
-            </div>
-            <div class="profile">
-              <div class="avatar"></div>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8790a4" stroke-width="2"><path d="m7 10 5 5 5-5"></path></svg>
+            </button>
+            <button class="mini-action" id="themePulse" aria-label="Refresh data">↻</button>
+            <div class="profile-wrap">
+              <button class="profile" id="profileBtn">
+                <div class="avatar"></div>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="profile-menu" id="profileMenu">
+                <button data-toast="Profile opened">Profile</button>
+                <button data-toast="Preferences opened">Preferences</button>
+                <button data-toast="Dashboard switch options will be added later">Dashboard switch</button>
+              </div>
             </div>
           </div>
         </header>
 
         <section class="content">
           <div class="left-col">
-            <div class="section-head">
-              <div>
-                <div class="balance-title">Total Balance</div>
-                <div class="balance-row">
-                  <div class="balance-value">0.97689522</div>
-                  <div class="pill-label">BTC</div>
+            <div id="dashboardPanel" class="panel active">
+              <div class="section-head">
+                <div>
+                  <div class="balance-title">Total Balance</div>
+                  <div class="balance-row">
+                    <div class="balance-value" id="balanceValue">0.97689522</div>
+                    <span class="pill-label" id="balanceTicker">BTC</span>
+                  </div>
+                  <div class="balance-sub" id="balanceSub">$40,098.36</div>
                 </div>
-                <div class="balance-sub">$40,098.36</div>
+
+                <div class="tab-switch" id="summaryTabs">
+                  <button class="tab-btn active" data-summary="portfolio">Portfolio</button>
+                  <button class="tab-btn" data-summary="funding">Funding</button>
+                  <button class="tab-btn" data-summary="assets">Assets</button>
+                  <button class="tab-btn" data-summary="p2p">P2P</button>
+                </div>
               </div>
 
-              <div class="tab-switch">
-                <button class="tab-btn active" type="button">Portfolio</button>
-                <button class="tab-btn" type="button">Funding</button>
-                <button class="tab-btn" type="button">Assets</button>
-                <button class="tab-btn" type="button">P2P</button>
+              <div class="statusbar" id="statusBar">
+                <div class="metric-card">
+                  <div class="metric-label">Weekly change</div>
+                  <div class="metric-value" id="weeklyChange">+12.84%</div>
+                  <div class="metric-sub">Portfolio is outperforming the baseline index</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Top asset</div>
+                  <div class="metric-value" id="topAsset">Bitcoin</div>
+                  <div class="metric-sub">Strongest contribution this week</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Available funding</div>
+                  <div class="metric-value" id="fundingValue">$18,400</div>
+                  <div class="metric-sub">Ready for allocation or withdrawal</div>
+                </div>
+              </div>
+
+              <div class="card chart-card" style="margin-top:14px">
+                <div class="toolbar">
+                  <div class="range-group" id="rangeButtons">
+                    <button class="small-chip" data-range="1H">1H</button>
+                    <button class="small-chip" data-range="1D">1D</button>
+                    <button class="small-chip" data-range="3D">3D</button>
+                    <button class="small-chip active" data-range="1W">1W</button>
+                    <button class="small-chip" data-range="1M">1M</button>
+                    <button class="small-chip ghost" id="calendarBtn">📅</button>
+                  </div>
+
+                  <div class="coin-group">
+                    <button class="coin-chip" data-focus="btc"><span class="coin-dot btc"></span> BTC</button>
+                    <button class="coin-chip" data-focus="eth"><span class="coin-dot eth"></span> ETH</button>
+                  </div>
+                </div>
+
+                <div class="chart-wrap">
+                  <svg class="chart-svg" id="chartSvg" viewBox="0 0 760 280" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="lineCyan" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#60dfff"/>
+                        <stop offset="100%" stop-color="#2fd0ff"/>
+                      </linearGradient>
+                      <linearGradient id="linePink" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#f4afff"/>
+                        <stop offset="100%" stop-color="#cf7cff"/>
+                      </linearGradient>
+                      <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    </defs>
+                    <g id="gridLayer"></g>
+                    <g id="axisLayer"></g>
+                    <path id="lineAglow" class="curve-a area-glow"></path>
+                    <path id="lineBglow" class="curve-b area-glow"></path>
+                    <path id="lineA" class="curve-a"></path>
+                    <path id="lineB" class="curve-b"></path>
+                    <g id="pointsLayer"></g>
+                  </svg>
+                  <div class="chart-caption">
+                    <span id="chartCaptionLeft">Weekly performance overview</span>
+                    <span id="chartCaptionRight">Comparing BTC and ETH flows</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card table-card">
+                <div class="table-head">
+                  <span>CoinMarketCap 100 Index Constituents</span>
+                  <button class="linkish" id="resetFilterBtn">Reset filter</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Coin</th>
+                      <th>Price</th>
+                      <th>Trend</th>
+                      <th>Market Cap</th>
+                      <th>Coin Weight</th>
+                    </tr>
+                  </thead>
+                  <tbody id="marketTableBody"></tbody>
+                </table>
               </div>
             </div>
 
-            <div class="card chart-card">
-              <div class="toolbar">
-                <div class="range-group">
-                  <button class="small-chip" type="button">1H</button>
-                  <button class="small-chip" type="button">1D</button>
-                  <button class="small-chip" type="button">3D</button>
-                  <button class="small-chip active" type="button">1W</button>
-                  <button class="small-chip" type="button">1M</button>
-                  <button class="small-chip" type="button" aria-label="calendar">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M3 10h18"></path></svg>
-                  </button>
+            <div id="invoicesPanel" class="panel">
+              <div class="card">
+                <div class="empty-state">
+                  <strong>Invoices dashboard</strong>
+                  This section is wired and clickable. You can replace this with your real invoice data later.
                 </div>
-                <div class="coin-group">
-                  <div class="coin-chip"><span class="coin-dot btc"></span> BTC <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg></div>
-                  <div class="coin-chip"><span class="coin-dot eth"></span> ETH <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg></div>
-                </div>
-              </div>
-
-              <div class="chart-wrap">
-                <svg class="chart-svg" viewBox="0 0 760 280" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="lineCyan" x1="0" x2="1">
-                      <stop offset="0%" stop-color="#61e1ff"></stop>
-                      <stop offset="100%" stop-color="#22cfff"></stop>
-                    </linearGradient>
-                    <linearGradient id="linePink" x1="0" x2="1">
-                      <stop offset="0%" stop-color="#ffb8ff"></stop>
-                      <stop offset="100%" stop-color="#d97dff"></stop>
-                    </linearGradient>
-                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
-                      <feMerge>
-                        <feMergeNode in="blur"></feMergeNode>
-                        <feMergeNode in="SourceGraphic"></feMergeNode>
-                      </feMerge>
-                    </filter>
-                  </defs>
-
-                  <g>
-                    <line class="grid-line" x1="60" y1="30" x2="740" y2="30"></line>
-                    <line class="grid-line" x1="60" y1="75" x2="740" y2="75"></line>
-                    <line class="grid-line" x1="60" y1="120" x2="740" y2="120"></line>
-                    <line class="grid-line" x1="60" y1="165" x2="740" y2="165"></line>
-                    <line class="grid-line" x1="60" y1="210" x2="740" y2="210"></line>
-                    <line class="grid-line" x1="60" y1="255" x2="740" y2="255"></line>
-                  </g>
-
-                  <g>
-                    <text class="axis-label" x="28" y="258">0</text>
-                    <text class="axis-label" x="18" y="214">$100</text>
-                    <text class="axis-label" x="18" y="169">$200</text>
-                    <text class="axis-label" x="18" y="124">$300</text>
-                    <text class="axis-label" x="18" y="79">$500</text>
-                    <text class="axis-label" x="18" y="34">$600</text>
-                  </g>
-
-                  <path class="curve-a area-glow" d="M60,220
-                    C95,215 90,70 120,88
-                    S175,175 210,130
-                    S275,8 320,75
-                    S385,120 425,85
-                    S480,255 525,165
-                    S590,65 640,105
-                    S700,205 740,95"></path>
-
-                  <path class="curve-b area-glow" d="M60,168
-                    C95,180 82,60 120,128
-                    S180,195 222,160
-                    S290,120 325,190
-                    S385,110 418,150
-                    S480,230 520,178
-                    S580,62 620,118
-                    S695,100 740,136"></path>
-
-                  <circle class="point" cx="354" cy="86" r="5" fill="#60e0ff"></circle>
-                  <circle class="point pink" cx="355" cy="146" r="5" fill="#f3a1ff"></circle>
-
-                  <text x="342" y="72" fill="#65dfff" class="price-note">+ $550</text>
-                  <text x="340" y="132" fill="#f3a1ff" class="price-note">+ $550</text>
-
-                  <g>
-                    <text class="axis-label" x="84" y="278">Mon</text>
-                    <text class="axis-label" x="178" y="278">Tue</text>
-                    <text class="axis-label" x="275" y="278">Wed</text>
-                    <text class="axis-label" x="372" y="278">Thu</text>
-                    <text class="axis-label" x="471" y="278">Fri</text>
-                    <text class="axis-label" x="568" y="278">Sat</text>
-                    <text class="axis-label" x="663" y="278">Sun</text>
-                  </g>
-                </svg>
               </div>
             </div>
 
-            <div class="card table-card">
-              <div class="table-head">CoinMarketCap 100 Index Constituents</div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Coin</th>
-                    <th>Price</th>
-                    <th>Trend</th>
-                    <th>Market Cap</th>
-                    <th>Coin Weight</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="rank" data-label="#">1</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Bitcoin BTC</span></td>
-                    <td data-label="Price">$394686.21</td>
-                    <td data-label="Trend"><span class="up">▲ 0.96%</span></td>
-                    <td data-label="Market Cap">$71812.05</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:39%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">2</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Polygon</span></td>
-                    <td data-label="Price">$437569.19</td>
-                    <td data-label="Trend"><span class="down">▼ 0.91%</span></td>
-                    <td data-label="Market Cap">$12553.9</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:74%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">3</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> XRP Ledger</span></td>
-                    <td data-label="Price">$71825403</td>
-                    <td data-label="Trend"><span class="up">▲ 0.72%</span></td>
-                    <td data-label="Market Cap">$60193.15</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:49%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">4</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Avalanche</span></td>
-                    <td data-label="Price">$301286.98</td>
-                    <td data-label="Trend"><span class="down">▼ 0.42%</span></td>
-                    <td data-label="Market Cap">$3388.82</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:53%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">5</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> USDT</span></td>
-                    <td data-label="Price">$101025.65</td>
-                    <td data-label="Trend"><span class="down">▼ 0.78%</span></td>
-                    <td data-label="Market Cap">$4761.65</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:57%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">6</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Solana</span></td>
-                    <td data-label="Price">$125546.96</td>
-                    <td data-label="Trend"><span class="down">▼ 0.92%</span></td>
-                    <td data-label="Market Cap">$1869.33</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:89%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">7</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Ethereum</span></td>
-                    <td data-label="Price">$601395.15</td>
-                    <td data-label="Trend"><span class="up">▲ 1.23%</span></td>
-                    <td data-label="Market Cap">$935.62</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:11%"></span></div></td>
-                  </tr>
-                  <tr>
-                    <td class="rank" data-label="#">8</td>
-                    <td data-label="Coin"><span class="coin-name"><span class="mini"></span> Cardano</span></td>
-                    <td data-label="Price">$336581.15</td>
-                    <td data-label="Trend"><span class="down">▼ 0.86%</span></td>
-                    <td data-label="Market Cap">$369.56</td>
-                    <td data-label="Coin Weight"><div class="progress-track"><span style="width:29%"></span></div></td>
-                  </tr>
-                </tbody>
-              </table>
+            <div id="productsPanel" class="panel">
+              <div class="card">
+                <div class="empty-state">
+                  <strong>Products dashboard</strong>
+                  Product panel is ready as part of the switchable dashboard shell.
+                </div>
+              </div>
+            </div>
+
+            <div id="messagesPanel" class="panel">
+              <div class="card">
+                <div class="empty-state">
+                  <strong>Messages center</strong>
+                  Message area is clickable and ready for your real chat or support feed.
+                </div>
+              </div>
+            </div>
+
+            <div id="settingsPanel" class="panel">
+              <div class="card">
+                <div class="empty-state">
+                  <strong>Settings area</strong>
+                  Settings panel shell is built and can later be connected to your real controls.
+                </div>
+              </div>
+            </div>
+
+            <div id="helpPanel" class="panel">
+              <div class="card">
+                <div class="empty-state">
+                  <strong>Help center</strong>
+                  Help panel is active and ready for FAQs, support links, or tutorials.
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="right-col">
+          <div class="right-col" id="dashboardSide">
             <div class="card side-card">
               <div class="side-title">
                 <span>Recent deposits</span>
-                <span class="more">⋮</span>
+                <button class="more" id="depositOptionsBtn" style="background:none;border:none;padding:0">⋮</button>
               </div>
 
-              <div class="deposit-list">
-                <div class="deposit-item">
-                  <div class="deposit-icon">₿</div>
-                  <div>
-                    <div class="deposit-name">Bitcoin</div>
-                    <div class="deposit-sub">Buy</div>
-                  </div>
-                  <div class="deposit-amt"><strong>+ $244.00</strong><span>Today 13:15 PM</span></div>
-                </div>
-                <div class="deposit-item">
-                  <div class="deposit-icon">◆</div>
-                  <div>
-                    <div class="deposit-name">Ethereum</div>
-                    <div class="deposit-sub">Received</div>
-                  </div>
-                  <div class="deposit-amt"><strong>+ 0.4213 ETH</strong><span>Today 11:18 PM</span></div>
-                </div>
-                <div class="deposit-item">
-                  <div class="deposit-icon">⬡</div>
-                  <div>
-                    <div class="deposit-name">Polygon</div>
-                    <div class="deposit-sub">Buy</div>
-                  </div>
-                  <div class="deposit-amt"><strong>+ $1,245</strong><span>Yesterday</span></div>
-                </div>
-                <div class="deposit-item">
-                  <div class="deposit-icon">✕</div>
-                  <div>
-                    <div class="deposit-name">XRP Ledger</div>
-                    <div class="deposit-sub">Received</div>
-                  </div>
-                  <div class="deposit-amt"><strong>+ 0,5686 XRP</strong><span>Yesterday</span></div>
-                </div>
-                <div class="deposit-item">
-                  <div class="deposit-icon">≋</div>
-                  <div>
-                    <div class="deposit-name">Solana</div>
-                    <div class="deposit-sub">Received</div>
-                  </div>
-                  <div class="deposit-amt"><strong>+ $244.00</strong><span>Yesterday</span></div>
-                </div>
-              </div>
-              <a class="show-more" href="#">Show more</a>
+              <div class="deposit-list" id="depositList"></div>
+              <button class="show-more" id="showMoreDeposits">Show more</button>
             </div>
 
             <div class="card side-card">
               <div class="side-title"><span>Assets</span></div>
-              <div class="asset-box">
-                <div class="crypto-card top">
-                  <div class="card-topline">
-                    <div class="brand-coin"><span class="mini-icon">₿</span> Bitcoin</div>
-                    <div>Crypto card</div>
-                  </div>
-                  <div class="wave-lines">
-                    <svg viewBox="0 0 400 80" preserveAspectRatio="none">
-                      <path d="M0,58 C60,30 130,72 200,44 C260,20 320,74 400,30" fill="none" stroke="rgba(10,26,42,.26)" stroke-width="2.2"></path>
-                      <path d="M0,66 C70,36 130,80 210,48 C275,24 340,70 400,38" fill="none" stroke="rgba(10,26,42,.22)" stroke-width="1.8"></path>
-                      <path d="M0,46 C65,18 135,56 205,30 C280,6 336,62 400,18" fill="none" stroke="rgba(10,26,42,.18)" stroke-width="1.6"></path>
-                    </svg>
-                  </div>
-                  <div class="asset-name">Bitcoin</div>
-                  <div class="asset-value">6401,20</div>
-                  <div class="asset-ticker">BTC</div>
-                </div>
-
-                <div class="crypto-card bottom">
-                  <div class="card-topline">
-                    <div class="brand-coin"><span class="mini-icon">◆</span> Ethereum</div>
-                    <div>Crypto card</div>
-                  </div>
-                  <div class="asset-name">Bitcoin</div>
-                  <div class="asset-value">6401,20</div>
-                  <div class="asset-ticker">BTC</div>
-                </div>
-              </div>
+              <div class="asset-box" id="assetBox"></div>
             </div>
           </div>
         </section>
       </main>
     </div>
   </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
 
   <!-- Smartsupp Live Chat script -->
   <script type="text/javascript">
@@ -962,23 +801,348 @@
   </script>
 
   <script>
+    const ui = {
+      summary: 'portfolio',
+      range: '1W',
+      focus: 'btc',
+      depositsLimit: 5,
+      selectedCoin: 'Bitcoin',
+      activePanel: 'dashboardPanel'
+    };
+
+    const datasets = {
+      '1H': {
+        labels:['09','10','11','12','13','14','15'],
+        a:[180,260,220,300,280,350,330],
+        b:[150,170,210,190,250,230,270],
+        balance:'0.82144012', fiat:'$32,184.10', caption:'Hourly portfolio activity'
+      },
+      '1D': {
+        labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        a:[160,300,420,360,500,410,470],
+        b:[210,330,270,350,290,380,340],
+        balance:'0.91478210', fiat:'$37,420.00', caption:'Daily portfolio activity'
+      },
+      '3D': {
+        labels:['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6','Day 7'],
+        a:[100,420,350,610,470,540,400],
+        b:[220,440,180,310,170,380,240],
+        balance:'0.94210338', fiat:'$39,220.85', caption:'3 day rolling comparison'
+      },
+      '1W': {
+        labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        a:[90,420,340,610,450,520,430],
+        b:[220,440,180,310,170,380,240],
+        balance:'0.97689522', fiat:'$40,098.36', caption:'Weekly performance overview'
+      },
+      '1M': {
+        labels:['W1','W2','W3','W4','W5','W6','W7'],
+        a:[280,350,300,480,430,590,640],
+        b:[190,260,310,280,360,420,390],
+        balance:'1.10428041', fiat:'$44,702.19', caption:'Monthly performance overview'
+      }
+    };
+
+    const marketRows = [
+      {coin:'Bitcoin', ticker:'BTC', price:'$394,686.21', trend:0.96, cap:'$71,812.05', weight:39},
+      {coin:'Polygon', ticker:'MATIC', price:'$437,569.19', trend:-0.91, cap:'$12,553.90', weight:74},
+      {coin:'XRP Ledger', ticker:'XRP', price:'$718,254.03', trend:0.72, cap:'$60,193.15', weight:49},
+      {coin:'Avalanche', ticker:'AVAX', price:'$301,286.98', trend:-0.42, cap:'$3,388.82', weight:53},
+      {coin:'USDT', ticker:'USDT', price:'$101,025.65', trend:-0.78, cap:'$4,761.65', weight:57},
+      {coin:'Solana', ticker:'SOL', price:'$125,546.96', trend:-0.92, cap:'$1,869.33', weight:89},
+      {coin:'Ethereum', ticker:'ETH', price:'$601,395.15', trend:1.23, cap:'$935.62', weight:11},
+      {coin:'Cardano', ticker:'ADA', price:'$336,581.15', trend:-0.86, cap:'$369.56', weight:29}
+    ];
+
+    const deposits = [
+      {icon:'₿', name:'Bitcoin', sub:'Buy', amount:'+ $244.00', time:'Today 13:15 PM'},
+      {icon:'◆', name:'Ethereum', sub:'Received', amount:'+ 0.4213 ETH', time:'Today 11:18 PM'},
+      {icon:'⬡', name:'Polygon', sub:'Buy', amount:'+ $1,245', time:'Yesterday'},
+      {icon:'✕', name:'XRP Ledger', sub:'Received', amount:'+ 0.5686 XRP', time:'Yesterday'},
+      {icon:'≋', name:'Solana', sub:'Received', amount:'+ $244.00', time:'Yesterday'},
+      {icon:'₮', name:'USDT', sub:'Funding', amount:'+ $8,000', time:'2 days ago'},
+      {icon:'◈', name:'Avalanche', sub:'Received', amount:'+ 18.4 AVAX', time:'2 days ago'}
+    ];
+
+    const assets = [
+      {name:'Bitcoin', symbol:'BTC', icon:'₿', value:'6401,20', className:'top'},
+      {name:'Ethereum', symbol:'ETH', icon:'◆', value:'4218,85', className:'bottom'}
+    ];
+
+    const summaryData = {
+      portfolio:{change:'+12.84%', top:'Bitcoin', funding:'$18,400', title:'Total Balance'},
+      funding:{change:'+6.40%', top:'USDT', funding:'$24,820', title:'Funding Balance'},
+      assets:{change:'+9.18%', top:'Ethereum', funding:'$13,600', title:'Asset Allocation'},
+      p2p:{change:'+4.72%', top:'Polygon', funding:'$6,250', title:'P2P Holdings'}
+    };
+
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
+    const searchInput = document.getElementById('searchInput');
+    const marketTableBody = document.getElementById('marketTableBody');
+    const depositList = document.getElementById('depositList');
+    const assetBox = document.getElementById('assetBox');
+    const toastWrap = document.getElementById('toastWrap');
+    const balanceValue = document.getElementById('balanceValue');
+    const balanceSub = document.getElementById('balanceSub');
+    const chartCaptionLeft = document.getElementById('chartCaptionLeft');
+    const chartCaptionRight = document.getElementById('chartCaptionRight');
+    const weeklyChange = document.getElementById('weeklyChange');
+    const topAsset = document.getElementById('topAsset');
+    const fundingValue = document.getElementById('fundingValue');
+    const helloTitle = document.getElementById('helloTitle');
 
-    if (menuBtn) {
-      menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        backdrop.classList.toggle('show');
-      });
+    function showToast(title, subtitle='Ready for hookup with real backend data.'){
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = '<strong>' + title + '</strong><small>' + subtitle + '</small>';
+      toastWrap.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; }, 2600);
+      setTimeout(() => toast.remove(), 3200);
     }
 
-    if (backdrop) {
-      backdrop.addEventListener('click', () => {
+    function toggleSidebar(forceClose=false){
+      if (forceClose) {
         sidebar.classList.remove('open');
         backdrop.classList.remove('show');
+        return;
+      }
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
+    }
+
+    function renderTable(filter=''){
+      const q = filter.trim().toLowerCase();
+      const rows = marketRows.filter(row => !q || row.coin.toLowerCase().includes(q) || row.ticker.toLowerCase().includes(q));
+      marketTableBody.innerHTML = rows.map((row, idx) => `
+        <tr data-coin="${row.coin}" class="${ui.selectedCoin === row.coin ? 'selected' : ''}">
+          <td class="rank" data-label="#">${idx + 1}</td>
+          <td data-label="Coin"><span class="coin-name"><span class="mini"></span> ${row.coin} ${row.ticker}</span></td>
+          <td data-label="Price">${row.price}</td>
+          <td data-label="Trend"><span class="${row.trend >= 0 ? 'up' : 'down'}">${row.trend >= 0 ? '▲' : '▼'} ${Math.abs(row.trend).toFixed(2)}%</span></td>
+          <td data-label="Market Cap">${row.cap}</td>
+          <td data-label="Coin Weight"><div class="progress-track"><span style="width:${row.weight}%"></span></div></td>
+        </tr>
+      `).join('') || `<tr><td colspan="6" style="padding:18px 14px;color:#8f96a9">No assets match your search.</td></tr>`;
+
+      marketTableBody.querySelectorAll('tr[data-coin]').forEach(row => {
+        row.addEventListener('click', () => {
+          ui.selectedCoin = row.dataset.coin;
+          renderTable(searchInput.value);
+          showToast(ui.selectedCoin + ' selected', 'Use this later to route users into asset details.');
+        });
       });
     }
+
+    function renderDeposits(){
+      depositList.innerHTML = deposits.slice(0, ui.depositsLimit).map(item => `
+        <button class="deposit-item" style="background:none;border:none;width:100%;text-align:left" data-deposit="${item.name}">
+          <div class="deposit-icon">${item.icon}</div>
+          <div>
+            <div class="deposit-name">${item.name}</div>
+            <div class="deposit-sub">${item.sub}</div>
+          </div>
+          <div class="deposit-amt"><strong>${item.amount}</strong><span>${item.time}</span></div>
+        </button>
+      `).join('');
+
+      depositList.querySelectorAll('[data-deposit]').forEach(btn => {
+        btn.addEventListener('click', () => showToast(btn.dataset.deposit + ' transaction opened', 'Hook this button to your real transaction details page later.'));
+      });
+    }
+
+    function renderAssets(){
+      assetBox.innerHTML = assets.map((asset, index) => `
+        <button class="crypto-card ${asset.className} ${index === 0 ? 'active' : ''}" data-asset="${asset.name}">
+          <div class="card-topline">
+            <div class="brand-coin"><span class="mini-icon">${asset.icon}</span> ${asset.name}</div>
+            <div>Crypto card</div>
+          </div>
+          <div class="wave-lines">
+            <svg viewBox="0 0 400 80" preserveAspectRatio="none">
+              <path d="M0,58 C60,30 130,72 200,44 C260,20 320,74 400,30" fill="none" stroke="rgba(10,26,42,.26)" stroke-width="2.2"></path>
+              <path d="M0,66 C70,36 130,80 210,48 C275,24 340,70 400,38" fill="none" stroke="rgba(10,26,42,.22)" stroke-width="1.8"></path>
+              <path d="M0,46 C65,18 135,56 205,30 C280,6 336,62 400,18" fill="none" stroke="rgba(10,26,42,.18)" stroke-width="1.6"></path>
+            </svg>
+          </div>
+          <div class="asset-name">${asset.name}</div>
+          <div class="asset-value">${asset.value}</div>
+          <div class="asset-ticker">${asset.symbol}</div>
+        </button>
+      `).join('');
+
+      assetBox.querySelectorAll('[data-asset]').forEach(card => {
+        card.addEventListener('click', () => {
+          assetBox.querySelectorAll('.crypto-card').forEach(x => x.classList.remove('active'));
+          card.classList.add('active');
+          ui.selectedCoin = card.dataset.asset;
+          renderTable(searchInput.value);
+          showToast(card.dataset.asset + ' card opened', 'Use this later for balance drilldown or asset page routing.');
+        });
+      });
+    }
+
+    function smoothPath(points) {
+      if (points.length < 2) return '';
+      let d = `M ${points[0][0]} ${points[0][1]}`;
+      for (let i = 0; i < points.length - 1; i++) {
+        const [x0, y0] = points[i];
+        const [x1, y1] = points[i + 1];
+        const xm = (x0 + x1) / 2;
+        d += ` C ${xm} ${y0}, ${xm} ${y1}, ${x1} ${y1}`;
+      }
+      return d;
+    }
+
+    function renderChart() {
+      const data = datasets[ui.range];
+      const svgW = 760;
+      const svgH = 280;
+      const left = 44;
+      const top = 10;
+      const bottom = 34;
+      const right = 16;
+      const innerW = svgW - left - right;
+      const innerH = svgH - top - bottom;
+      const maxVal = 700;
+      const labels = data.labels;
+      const lineA = data.a;
+      const lineB = data.b;
+      const count = labels.length;
+      const xStep = innerW / (count - 1);
+      const y = v => top + innerH - (v / maxVal) * innerH;
+      const x = i => left + xStep * i;
+
+      const aPts = lineA.map((v,i) => [x(i), y(v)]);
+      const bPts = lineB.map((v,i) => [x(i), y(v)]);
+
+      document.getElementById('lineA').setAttribute('d', smoothPath(aPts));
+      document.getElementById('lineAglow').setAttribute('d', smoothPath(aPts));
+      document.getElementById('lineB').setAttribute('d', smoothPath(bPts));
+      document.getElementById('lineBglow').setAttribute('d', smoothPath(bPts));
+
+      const gridLayer = document.getElementById('gridLayer');
+      const axisLayer = document.getElementById('axisLayer');
+      const pointsLayer = document.getElementById('pointsLayer');
+      gridLayer.innerHTML = '';
+      axisLayer.innerHTML = '';
+      pointsLayer.innerHTML = '';
+
+      [0,100,200,300,400,500,600].forEach(v => {
+        const yy = y(v);
+        gridLayer.innerHTML += `<line class="grid-line" x1="${left}" y1="${yy}" x2="${svgW-right}" y2="${yy}"></line>`;
+        axisLayer.innerHTML += `<text class="axis-label" x="6" y="${yy+4}">$${v}</text>`;
+      });
+
+      labels.forEach((label, i) => {
+        axisLayer.innerHTML += `<text class="axis-label" x="${x(i)}" y="${svgH-8}" text-anchor="middle">${label}</text>`;
+      });
+
+      const highlightIndex = Math.max(1, Math.floor(count / 2));
+      const aP = aPts[highlightIndex];
+      const bP = bPts[highlightIndex];
+      pointsLayer.innerHTML += `
+        <circle class="point" cx="${aP[0]}" cy="${aP[1]}" r="5" fill="#69e3ff"></circle>
+        <text class="price-note" x="${aP[0]+10}" y="${aP[1]-10}" fill="#69e3ff">+ $550</text>
+        <circle class="point pink" cx="${bP[0]}" cy="${bP[1]}" r="5" fill="#f4afff"></circle>
+        <text class="price-note" x="${bP[0]+10}" y="${bP[1]-10}" fill="#f4afff">+ $550</text>
+      `;
+
+      balanceValue.textContent = data.balance;
+      balanceSub.textContent = data.fiat;
+      chartCaptionLeft.textContent = data.caption;
+      chartCaptionRight.textContent = ui.focus === 'btc' ? 'Comparing BTC and ETH flows' : 'ETH is highlighted as the focus asset';
+    }
+
+    function applySummary(summary) {
+      ui.summary = summary;
+      const current = summaryData[summary];
+      document.querySelectorAll('[data-summary]').forEach(btn => btn.classList.toggle('active', btn.dataset.summary === summary));
+      document.querySelector('.balance-title').textContent = current.title;
+      weeklyChange.textContent = current.change;
+      topAsset.textContent = current.top;
+      fundingValue.textContent = current.funding;
+      showToast(summary.charAt(0).toUpperCase() + summary.slice(1) + ' tab selected', 'Later this can switch the real dashboard mode.');
+    }
+
+    function switchPanel(panelId, label) {
+      ui.activePanel = panelId;
+      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      const target = document.getElementById(panelId);
+      if (target) target.classList.add('active');
+      document.querySelectorAll('.nav-item[data-panel]').forEach(item => item.classList.toggle('active', item.dataset.panel === panelId));
+      document.getElementById('dashboardSide').style.display = panelId === 'dashboardPanel' ? '' : 'none';
+      helloTitle.textContent = panelId === 'dashboardPanel' ? 'Hi David' : label;
+      if (window.innerWidth <= 860) toggleSidebar(true);
+    }
+
+    menuBtn?.addEventListener('click', () => toggleSidebar());
+    backdrop?.addEventListener('click', () => toggleSidebar(true));
+
+    document.querySelectorAll('.nav-item[data-panel]').forEach(btn => {
+      btn.addEventListener('click', () => switchPanel(btn.dataset.panel, btn.textContent.trim()));
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => showToast('Logout clicked', 'Connect this to your real logout flow later.'));
+    document.getElementById('notifyBtn').addEventListener('click', () => showToast('Notifications opened', '3 new activities are ready to review.'));
+    document.getElementById('mobileNotify').addEventListener('click', () => showToast('Notifications opened', '3 new activities are ready to review.'));
+    document.getElementById('themePulse').addEventListener('click', () => { renderChart(); showToast('Dashboard refreshed', 'Visual metrics have been refreshed.'); });
+    document.getElementById('calendarBtn').addEventListener('click', () => showToast('Calendar clicked', 'Date picker can be connected later.'));
+    document.getElementById('depositOptionsBtn').addEventListener('click', () => showToast('Deposit options', 'Wire this to export, filter, or sort actions.'));
+
+    document.querySelectorAll('[data-summary]').forEach(btn => {
+      btn.addEventListener('click', () => applySummary(btn.dataset.summary));
+    });
+
+    document.querySelectorAll('[data-range]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ui.range = btn.dataset.range;
+        document.querySelectorAll('[data-range]').forEach(x => x.classList.toggle('active', x.dataset.range === ui.range));
+        renderChart();
+      });
+    });
+
+    document.querySelectorAll('[data-focus]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ui.focus = btn.dataset.focus;
+        showToast((ui.focus || '').toUpperCase() + ' focus selected', 'Use this later to change visible asset metrics.');
+        renderChart();
+      });
+    });
+
+    searchInput.addEventListener('input', () => renderTable(searchInput.value));
+    document.getElementById('resetFilterBtn').addEventListener('click', () => {
+      searchInput.value = '';
+      renderTable('');
+      showToast('Search reset', 'Full constituent list restored.');
+    });
+
+    document.getElementById('showMoreDeposits').addEventListener('click', () => {
+      ui.depositsLimit = ui.depositsLimit >= deposits.length ? 5 : deposits.length;
+      renderDeposits();
+      document.getElementById('showMoreDeposits').textContent = ui.depositsLimit >= deposits.length ? 'Show less' : 'Show more';
+    });
+
+    const profileBtn = document.getElementById('profileBtn');
+    const profileMenu = document.getElementById('profileMenu');
+    profileBtn.addEventListener('click', () => profileMenu.classList.toggle('open'));
+    document.addEventListener('click', (e) => {
+      if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+        profileMenu.classList.remove('open');
+      }
+    });
+    profileMenu.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        profileMenu.classList.remove('open');
+        showToast(btn.dataset.toast);
+      });
+    });
+
+    renderTable();
+    renderDeposits();
+    renderAssets();
+    renderChart();
   </script>
 </body>
 </html>
