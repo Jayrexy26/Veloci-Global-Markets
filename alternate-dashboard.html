@@ -3,787 +3,634 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Veloci Dashboard Switch — Interactive</title>
+  <title>Veloci Next Dashboard</title>
   <style>
     :root{
-      --bg:#05070b;
-      --panel:#111318;
-      --panel-2:#0d1015;
-      --panel-3:#171b22;
-      --line:#20242d;
-      --text:#f5f7fb;
-      --muted:#8d93a5;
-      --muted-2:#666d80;
-      --cyan:#62dbff;
-      --cyan-soft:#8be6ff;
-      --pink:#f39bf9;
-      --pink-2:#d87cff;
-      --green:#33d17a;
-      --red:#ff5f73;
-      --chip:#1b1f27;
-      --shadow:0 24px 60px rgba(0,0,0,.45);
-      --radius:22px;
-      --sidebar-w:184px;
-      --topbar-h:72px;
+      --bg:#060814;
+      --panel:#0e1221;
+      --panel-2:#12182b;
+      --soft:#181f36;
+      --line:rgba(255,255,255,.08);
+      --text:#eef3ff;
+      --muted:#97a3c4;
+      --cyan:#5cecff;
+      --violet:#8e7dff;
+      --pink:#ff72cf;
+      --green:#33e68a;
+      --red:#ff6b7b;
+      --gold:#ffd166;
+      --shadow:0 20px 60px rgba(0,0,0,.42);
+      --radius:24px;
+      --radius-sm:16px;
     }
 
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background:linear-gradient(135deg,#f08ae8 0%, #cfb4ff 30%, #b6dfff 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       color:var(--text);
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-      overflow-x:hidden;
-    }
-
-    button,input,select{font:inherit}
-    button{cursor:pointer}
-
-    .frame{
-      width:min(1280px,100%);
-      min-height:690px;
-      background:#000;
-      border-radius:18px;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(142,125,255,.18), transparent 24%),
+        radial-gradient(circle at 85% 10%, rgba(92,236,255,.18), transparent 26%),
+        radial-gradient(circle at 50% 85%, rgba(255,114,207,.12), transparent 28%),
+        linear-gradient(180deg, #03050d 0%, #070b17 100%);
       overflow:hidden;
-      box-shadow:0 35px 80px rgba(0,0,0,.35);
-      border:1px solid rgba(255,255,255,.06);
-      position:relative;
     }
 
-    .dashboard{
+    .shell{
       display:grid;
-      grid-template-columns:var(--sidebar-w) 1fr;
-      min-height:690px;
-      background:radial-gradient(circle at top right, rgba(118,225,255,.08), transparent 28%), #040507;
+      grid-template-columns: 92px 1fr 360px;
+      gap:18px;
+      height:100vh;
+      padding:18px;
+    }
+
+    .sidebar,
+    .main,
+    .rail{
+      background:linear-gradient(180deg, rgba(18,24,43,.95), rgba(9,12,24,.92));
+      border:1px solid var(--line);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(14px);
     }
 
     .sidebar{
-      padding:20px 14px 18px;
-      background:#020305;
-      border-right:1px solid rgba(146,164,255,.14);
+      border-radius:28px;
       display:flex;
       flex-direction:column;
-      gap:18px;
-      min-height:100%;
+      align-items:center;
+      padding:18px 12px;
+      gap:16px;
     }
 
     .brand{
-      font-weight:700;
-      letter-spacing:.2px;
-      font-size:22px;
-      padding:10px 10px 4px;
+      width:56px;height:56px;border-radius:18px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg, rgba(92,236,255,.25), rgba(142,125,255,.28) 55%, rgba(255,114,207,.18));
+      border:1px solid rgba(255,255,255,.09);
+      font-weight:800;
+      letter-spacing:.04em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(92,236,255,.12);
     }
 
     .nav{
       display:flex;
       flex-direction:column;
-      gap:8px;
-      margin-top:6px;
-    }
-
-    .nav-item{
-      height:46px;
-      border-radius:13px;
-      display:flex;
-      align-items:center;
       gap:12px;
-      padding:0 13px;
-      color:#9ca3b5;
-      font-size:14px;
-      background:transparent;
-      text-decoration:none;
-      transition:.2s ease;
-      border:1px solid transparent;
       width:100%;
-    }
-
-    .nav-item svg{width:18px;height:18px;opacity:.92;flex:0 0 auto}
-    .nav-item:hover{
-      background:rgba(255,255,255,.03);
-      color:#fff;
-      border-color:rgba(255,255,255,.05);
-    }
-
-    .nav-item.active{
-      background:linear-gradient(90deg, rgba(247,167,255,.95), rgba(102,220,255,.92));
-      color:#101217;
-      font-weight:700;
-      box-shadow:0 10px 30px rgba(126,219,255,.22);
-    }
-
-    .badge{
-      margin-left:auto;
-      min-width:20px;
-      height:20px;
-      padding:0 6px;
-      border-radius:999px;
-      display:inline-flex;
       align-items:center;
-      justify-content:center;
-      font-size:11px;
-      font-weight:700;
-      color:#03151f;
-      background:linear-gradient(135deg,#73e8ff,#00c7ff);
+      margin-top:8px;
     }
 
-    .sidebar-spacer{
-      flex:1;
-      border-top:1px solid rgba(255,255,255,.08);
-      margin:18px 10px 0;
+    .nav-btn, .side-bottom{
+      width:58px;height:58px;border-radius:18px;
+      border:1px solid transparent;
+      background:rgba(255,255,255,.02);
+      color:#d8def3;
+      cursor:pointer;
+      display:grid;place-items:center;
+      position:relative;
+      transition:transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
     }
+    .nav-btn:hover,.side-bottom:hover{transform:translateY(-2px);background:rgba(255,255,255,.05);border-color:var(--line)}
+    .nav-btn.active{
+      background:linear-gradient(135deg, rgba(92,236,255,.18), rgba(142,125,255,.2));
+      border-color:rgba(92,236,255,.3);
+      box-shadow:0 8px 30px rgba(92,236,255,.12), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .nav-btn.active::after{
+      content:"";
+      position:absolute;right:-6px;top:16px;bottom:16px;width:3px;border-radius:999px;
+      background:linear-gradient(180deg,var(--cyan),var(--violet),var(--pink));
+    }
+
+    .nav-label{
+      position:absolute;
+      left:72px;
+      white-space:nowrap;
+      background:#0e1325;
+      border:1px solid var(--line);
+      padding:8px 11px;
+      border-radius:12px;
+      font-size:12px;
+      color:#dfe6fb;
+      opacity:0;
+      pointer-events:none;
+      transform:translateX(-8px);
+      transition:all .18s ease;
+      z-index:20;
+      box-shadow:var(--shadow);
+    }
+    .nav-btn:hover .nav-label, .side-bottom:hover .nav-label{opacity:1;transform:translateX(0)}
+    .spacer{flex:1}
 
     .main{
-      display:grid;
-      grid-template-rows:var(--topbar-h) 1fr;
-      min-width:0;
+      border-radius:32px;
+      padding:18px;
+      overflow:auto;
     }
+    .main::-webkit-scrollbar,.rail::-webkit-scrollbar{width:8px}
+    .main::-webkit-scrollbar-thumb,.rail::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:999px}
 
     .topbar{
-      border-bottom:1px solid rgba(255,255,255,.07);
-      display:grid;
-      grid-template-columns:minmax(180px,1fr) minmax(280px,420px) auto;
+      display:flex;
       align-items:center;
-      gap:22px;
-      padding:0 18px 0 22px;
-      min-width:0;
+      gap:14px;
+      margin-bottom:18px;
     }
-
-    .hello{
-      font-size:18px;
-      color:#f2f5fb;
-      white-space:nowrap;
-    }
+    .greet h1{margin:0;font-size:30px;letter-spacing:-.03em}
+    .greet p{margin:4px 0 0;color:var(--muted);font-size:13px}
 
     .search{
-      position:relative;
-      max-width:420px;
-      width:100%;
-      justify-self:center;
+      margin-left:auto;
+      flex:0 1 340px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 14px;
+      height:52px;
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
+      border:1px solid var(--line);
     }
-
     .search input{
-      width:100%;
-      height:38px;
-      border:none;
-      outline:none;
-      border-radius:8px;
-      padding:0 14px 0 38px;
-      background:rgba(255,255,255,.06);
-      color:#fff;
-      font-size:13px;
-      border:1px solid rgba(255,255,255,.04);
+      width:100%;background:transparent;border:0;outline:0;color:var(--text);font-size:14px;
     }
-
-    .search svg{
-      position:absolute;
-      left:12px;
-      top:50%;
-      transform:translateY(-50%);
-      width:15px;height:15px;
-      color:#7d8698;
+    .icon-btn{
+      width:48px;height:48px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.03);
+      color:var(--text);cursor:pointer;display:grid;place-items:center;transition:all .2s ease;
     }
-
-    .top-actions{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      justify-self:end;
-    }
-
-    .notify,.mini-action{
-      position:relative;
-      width:34px;height:34px;
-      display:grid;place-items:center;
-      color:#b7bfd1;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.05);
-      background:rgba(255,255,255,.03);
-    }
-    .notify .dot{
-      position:absolute;
-      top:6px;right:8px;
-      width:7px;height:7px;border-radius:50%;
-      background:linear-gradient(135deg,var(--pink),#fff);
-      box-shadow:0 0 10px rgba(243,155,249,.65);
-    }
-
-    .profile-wrap{position:relative}
+    .icon-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.06)}
     .profile{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:4px 8px 4px 4px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.05);
-      background:rgba(255,255,255,.03);
+      display:flex;align-items:center;gap:12px;padding:6px 8px 6px 6px;border-radius:18px;border:1px solid var(--line);
+      background:rgba(255,255,255,.03);cursor:pointer;position:relative;
     }
-
     .avatar{
-      width:34px;height:34px;border-radius:50%;
-      background:radial-gradient(circle at 35% 30%, #ffc98d, #694738 50%, #0d111b 100%);
-      border:2px solid rgba(255,255,255,.06);
-      box-shadow:0 5px 16px rgba(0,0,0,.3);
-      position:relative;
-      overflow:hidden;
+      width:42px;height:42px;border-radius:14px;
+      background:linear-gradient(135deg,#1f2641,#12182b), linear-gradient(135deg,var(--cyan),var(--pink));
+      border:1px solid rgba(255,255,255,.09);
+      display:grid;place-items:center;font-weight:700;font-size:13px;
+      box-shadow:0 0 0 2px rgba(92,236,255,.08);
     }
-    .avatar::before{
-      content:"";
-      position:absolute;
-      inset:8px 8px auto 8px;
-      height:10px;
-      border-radius:50%;
-      background:#141923;
-      opacity:.55;
-    }
-    .avatar::after{
-      content:"";
-      position:absolute;
-      left:7px;right:7px;bottom:3px;
-      height:15px;
-      border-radius:10px 10px 14px 14px;
-      background:#0e1420;
-      opacity:.65;
-    }
-
     .profile-menu{
-      position:absolute;
-      top:52px;
-      right:0;
-      min-width:180px;
-      background:#12161d;
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:14px;
-      box-shadow:0 25px 60px rgba(0,0,0,.45);
-      padding:8px;
-      display:none;
-      z-index:20;
+      position:absolute;right:0;top:60px;width:220px;padding:10px;background:#0d1222;border:1px solid var(--line);border-radius:18px;
+      box-shadow:var(--shadow);display:none;z-index:50;
     }
-    .profile-menu.open{display:block}
-    .profile-menu button{
-      width:100%;
-      height:38px;
-      display:flex;
-      align-items:center;
-      border:none;
-      background:transparent;
-      color:#d8dfec;
-      border-radius:10px;
-      padding:0 12px;
-      text-align:left;
-    }
-    .profile-menu button:hover{background:rgba(255,255,255,.05)}
+    .profile.open .profile-menu{display:block}
+    .menu-item{padding:12px 14px;border-radius:14px;color:#dfe6fb;cursor:pointer;font-size:14px}
+    .menu-item:hover{background:rgba(255,255,255,.05)}
 
-    .content{
-      padding:18px;
+    .grid{
       display:grid;
-      grid-template-columns:minmax(0,1fr) 260px;
+      grid-template-columns: 1.45fr 1fr;
+      gap:18px;
+    }
+
+    .hero{
+      grid-column:1/-1;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(92,236,255,.1), transparent 25%),
+        radial-gradient(circle at 100% 100%, rgba(255,114,207,.12), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:26px;
+      padding:22px;
+      display:grid;
+      grid-template-columns: 1.3fr .7fr;
       gap:16px;
-      min-width:0;
+      overflow:hidden;
+      position:relative;
     }
-
-    .left-col,.right-col{min-width:0}
-    .left-col{display:flex;flex-direction:column;gap:14px}
-    .right-col{display:flex;flex-direction:column;gap:14px}
-
-    .section-head{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:16px;
-      margin-bottom:2px;
+    .hero::before{
+      content:"";
+      position:absolute;inset:auto -60px -60px auto;width:220px;height:220px;border-radius:50%;
+      background:radial-gradient(circle, rgba(92,236,255,.18), transparent 70%);
+      filter:blur(10px);
     }
-
-    .balance-title{font-size:13px;color:#c1c6d4;margin-bottom:2px}
-    .balance-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .balance-value{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1}
-    .pill-label{
-      height:24px;padding:0 8px;border-radius:6px;
-      background:rgba(255,255,255,.08);color:#a7afc2;
-      display:inline-flex;align-items:center;font-size:12px;font-weight:700;
-      border:1px solid rgba(255,255,255,.04)
+    .hero .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#a7b3d7}
+    .hero h2{margin:10px 0 8px;font-size:36px;letter-spacing:-.04em;max-width:680px;line-height:1.02}
+    .hero p{margin:0;color:#b2bedc;max-width:640px;line-height:1.6}
+    .cta-row{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+    .cta{
+      border:0;cursor:pointer;border-radius:16px;padding:14px 18px;font-weight:700;color:#06111a;
+      background:linear-gradient(135deg,var(--cyan),#b3f7ff);
+      box-shadow:0 10px 30px rgba(92,236,255,.18);
     }
-    .balance-sub{margin-top:8px;color:#b7bdd0;font-size:14px}
-
-    .tab-switch{
-      display:flex;
-      align-items:center;
-      gap:3px;
-      background:#11141b;
-      border-radius:10px;
-      padding:4px;
-      border:1px solid rgba(255,255,255,.05);
-      align-self:flex-start;
-      margin-top:2px;
-      flex-wrap:wrap;
+    .ghost{
+      color:#eaf2ff;background:rgba(255,255,255,.04);border:1px solid var(--line);
     }
-
-    .tab-btn,.small-chip,.show-more,.linkish,.asset-switch,.metric-btn,.nav-item,.profile,.mini-action,.notify{
-      transition:.18s ease;
+    .hero-stats{display:grid;gap:12px;align-content:center}
+    .mini-stack{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .mini{
+      padding:16px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+      min-height:96px;
     }
-
-    .tab-btn{
-      border:none;
-      background:transparent;
-      color:#b5bccd;
-      height:30px;
-      padding:0 12px;
-      border-radius:8px;
-      cursor:pointer;
-      font-size:12px;
-    }
-    .tab-btn.active{
-      background:linear-gradient(90deg, rgba(246,170,255,.96), rgba(104,222,255,.95));
-      color:#0f1219;
-      font-weight:800;
-    }
+    .mini .k{font-size:12px;color:#aab6d8}
+    .mini .v{margin-top:8px;font-size:24px;font-weight:800;letter-spacing:-.03em}
+    .mini .d{margin-top:6px;font-size:12px;color:#9debbf}
+    .mini .d.red{color:#ff9aa7}
 
     .card{
-      background:linear-gradient(180deg, rgba(25,28,36,.96), rgba(16,18,24,.96));
-      border:1px solid rgba(255,255,255,.05);
-      border-radius:14px;
-      box-shadow:var(--shadow);
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:18px;
+      position:relative;
       overflow:hidden;
     }
+    .card h3{margin:0;font-size:16px;letter-spacing:-.02em}
+    .sub{color:var(--muted);font-size:13px;margin-top:6px}
+    .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 
-    .chart-card{padding:16px}
-
-    .toolbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:12px;
-      flex-wrap:wrap;
+    .balance-card .amount{font-size:42px;letter-spacing:-.05em;font-weight:800;margin-top:8px}
+    .balance-card .fiat{margin-top:6px;color:#b9c4e2}
+    .range{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);background:rgba(255,255,255,.03);color:#dbe4fb;border-radius:13px;padding:10px 12px;cursor:pointer;font-size:12px;font-weight:700;
     }
+    .pill.active{background:linear-gradient(135deg, rgba(92,236,255,.18), rgba(142,125,255,.22));border-color:rgba(92,236,255,.25)}
 
-    .range-group,.coin-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-
-    .small-chip{
-      height:29px;
-      padding:0 11px;
-      border-radius:8px;
-      border:none;
-      background:transparent;
-      color:#9ea6ba;
-      font-size:12px;
-    }
-    .small-chip.active{
-      background:linear-gradient(135deg, rgba(246,173,255,.96), rgba(104,224,255,.95));
-      color:#0c1118;
-      font-weight:800;
-    }
-    .small-chip.ghost{
-      background:#262b36;
-      color:#c4c9d4;
-      border:1px solid rgba(255,255,255,.06)
-    }
-
-    .coin-chip{
-      height:30px;
-      padding:0 10px;
-      border-radius:8px;
-      background:#242935;
-      color:#cad0de;
+    .chart-wrap{margin-top:16px}
+    .chart{
+      width:100%;height:260px;display:block;border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
       border:1px solid rgba(255,255,255,.05);
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      font-weight:700;
+    }
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+    .legend span{display:flex;align-items:center;gap:8px;color:#d5def8;font-size:12px}
+    .dot{width:10px;height:10px;border-radius:50%}
+
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:14px 10px;text-align:left;font-size:13px;border-bottom:1px solid rgba(255,255,255,.05)}
+    .table th{color:#98a5c8;font-weight:600}
+    .table tr{cursor:pointer;transition:background .18s ease}
+    .table tr:hover{background:rgba(255,255,255,.03)}
+    .trend.up{color:var(--green)}
+    .trend.down{color:var(--red)}
+    .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+    .bar > i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+
+    .quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .qa{padding:16px;border-radius:20px;border:1px solid var(--line);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s ease}
+    .qa:hover{transform:translateY(-2px);background:rgba(255,255,255,.05)}
+    .qa strong{display:block;margin-top:12px;font-size:14px}
+    .qa small{display:block;margin-top:6px;color:var(--muted);line-height:1.4}
+
+    .rail{
+      border-radius:32px;
+      padding:18px;
+      overflow:auto;
+      display:flex;flex-direction:column;gap:18px;
+    }
+    .spotlight{
+      border-radius:24px;padding:18px;border:1px solid var(--line);
+      background:linear-gradient(135deg, rgba(92,236,255,.13), rgba(142,125,255,.14) 55%, rgba(255,114,207,.12));
+      position:relative;overflow:hidden;
+    }
+    .spotlight::after{
+      content:"";position:absolute;right:-20px;top:-20px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
+    }
+    .spotlight h3{font-size:20px;margin:6px 0 8px}
+    .spotlight p{margin:0;color:#ecf3ff;opacity:.84;line-height:1.55;font-size:13px}
+
+    .watchlist{display:grid;gap:12px}
+    .asset-row{
+      display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+      padding:14px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);cursor:pointer;transition:.2s ease;
+    }
+    .asset-row:hover{transform:translateY(-2px);background:rgba(255,255,255,.05)}
+    .coin{
+      width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:800;
+      background:linear-gradient(135deg, rgba(92,236,255,.18), rgba(142,125,255,.18));border:1px solid rgba(255,255,255,.08)
+    }
+    .asset-row strong{display:block;font-size:14px}
+    .asset-row small{display:block;color:var(--muted);margin-top:3px}
+
+    .news-list{display:grid;gap:12px}
+    .news{
+      padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);cursor:pointer;
+    }
+    .news:hover{background:rgba(255,255,255,.05)}
+    .news .meta{font-size:11px;color:#98a5c8;margin-bottom:7px;letter-spacing:.08em;text-transform:uppercase}
+    .news .title{font-size:14px;line-height:1.5;color:#eef3ff}
+
+    .progress-ring{display:grid;place-items:center;padding:10px 0 0}
+    .ring-wrap{position:relative;width:180px;height:180px}
+    .ring-wrap svg{transform:rotate(-90deg)}
+    .ring-center{
+      position:absolute;inset:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle, rgba(255,255,255,.06), rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.06);
+      text-align:center;
+    }
+    .ring-center strong{font-size:28px;display:block}
+    .ring-center span{font-size:12px;color:#aeb9d7}
+
+    .toast-wrap{position:fixed;right:24px;bottom:24px;display:grid;gap:10px;z-index:90}
+    .toast{
+      min-width:280px;max-width:360px;padding:14px 16px;border-radius:16px;background:#0f1528;border:1px solid var(--line);box-shadow:var(--shadow);
+      animation:slideIn .25s ease;
+    }
+    @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px}
+
+    @media (max-width: 1240px){
+      .shell{grid-template-columns:82px 1fr}
+      .rail{display:none}
+      .hero{grid-template-columns:1fr}
     }
 
-    .coin-dot{width:10px;height:10px;border-radius:50%}
-    .btc{background:linear-gradient(135deg,#65e1ff,#28cfff)}
-    .eth{background:linear-gradient(135deg,#f4afff,#ca7aff)}
-
-    .chart-wrap{
-      background:#141821;
-      border:1px solid rgba(255,255,255,.04);
-      border-radius:12px;
-      padding:10px 12px 8px;
-      position:relative;
-      min-height:350px;
-    }
-
-    .chart-svg{width:100%;height:280px;display:block}
-    .axis-label{fill:#62697c;font-size:11px;font-family:inherit}
-    .grid-line{stroke:rgba(255,255,255,.06);stroke-width:1}
-    .curve-a,.curve-b{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:3}
-    .curve-a{stroke:url(#lineCyan)}
-    .curve-b{stroke:url(#linePink)}
-    .area-glow{filter:url(#glow)}
-    .point{filter:drop-shadow(0 0 8px rgba(120,224,255,.6));}
-    .point.pink{filter:drop-shadow(0 0 8px rgba(243,155,249,.68));}
-    .price-note{font-size:11px;font-weight:700}
-    .chart-caption{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#8790a4;font-size:12px;margin-top:10px}
-
-    .table-card{padding:14px 0 10px}
-    .table-head{
-      padding:0 14px 12px;
-      font-size:16px;
-      font-weight:700;
-      color:#eef2fb;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    thead th{color:#7f8799;font-weight:700;text-align:left;padding:0 14px 10px}
-    tbody td{padding:10px 14px;border-top:1px solid rgba(255,255,255,.05);color:#dfe4f1;vertical-align:middle}
-    tbody tr{cursor:pointer}
-    tbody tr:hover, tbody tr.selected{background:rgba(255,255,255,.03)}
-    .rank{color:#9aa1b2;width:28px}
-    .coin-name{display:flex;align-items:center;gap:10px;font-weight:700}
-    .coin-name .mini{width:15px;height:15px;border-radius:50%;background:linear-gradient(135deg,#73e8ff,#db8eff);box-shadow:0 0 12px rgba(152,210,255,.22);flex:0 0 auto}
-    .up{color:var(--green);font-weight:700}
-    .down{color:var(--red);font-weight:700}
-
-    .progress-track{width:92px;height:4px;border-radius:999px;background:#2b3140;overflow:hidden;position:relative}
-    .progress-track span{display:block;height:100%;background:linear-gradient(90deg, rgba(244,176,255,.96), rgba(101,221,255,.96));border-radius:999px}
-
-    .side-card{padding:14px 14px 12px}
-    .side-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:16px;font-weight:700}
-    .more{color:#666f84;font-size:20px;line-height:1}
-
-    .deposit-list{display:flex;flex-direction:column;gap:6px}
-    .deposit-item{display:grid;grid-template-columns:18px 1fr auto;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:start}
-    .deposit-item:last-child{border-bottom:none}
-    .deposit-icon{width:16px;height:16px;display:grid;place-items:center;margin-top:2px;color:#cbd4e1}
-    .deposit-name{font-size:13px;font-weight:700}
-    .deposit-sub{font-size:11px;color:#7c8497;margin-top:2px}
-    .deposit-amt{text-align:right}
-    .deposit-amt strong{display:block;font-size:13px}
-    .deposit-amt span{font-size:11px;color:#7c8497}
-    .show-more,.linkish{display:inline-block;margin-top:8px;color:#67ddff;font-size:12px;text-decoration:none;font-weight:700;background:none;border:none;padding:0}
-
-    .asset-box{display:flex;flex-direction:column;gap:12px}
-    .crypto-card{min-height:138px;border-radius:14px;position:relative;overflow:hidden;padding:16px 16px 14px;color:#0f1218;isolation:isolate;box-shadow:0 15px 40px rgba(0,0,0,.26);cursor:pointer;border:2px solid transparent}
-    .crypto-card.active{border-color:rgba(255,255,255,.5)}
-    .crypto-card.top{background:linear-gradient(135deg, #78e4ff 0%, #e8baf6 100%)}
-    .crypto-card.bottom{background:linear-gradient(135deg, #eee7ff 0%, #76dfff 100%)}
-    .crypto-card::before,.crypto-card::after{content:"";position:absolute;inset:auto -18% -28% -18%;height:90px;border-radius:50%;background:repeating-radial-gradient(circle at center, rgba(255,255,255,.0) 0 7px, rgba(35,52,75,.22) 7px 8px);transform:rotate(-7deg);opacity:.35;z-index:-1}
-    .crypto-card::after{inset:auto -14% 22% -10%;transform:rotate(6deg);opacity:.16;height:60px}
-    .card-topline{display:flex;align-items:center;justify-content:space-between;color:rgba(15,18,24,.72);font-size:12px;font-weight:700}
-    .brand-coin{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800}
-    .brand-coin .mini-icon{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:rgba(15,18,24,.12);font-size:11px}
-    .wave-lines{position:absolute;left:-10%;right:-10%;top:40px;height:76px;opacity:.55;pointer-events:none}
-    .wave-lines svg{width:100%;height:100%}
-    .asset-name{position:absolute;left:16px;bottom:38px;font-size:13px;color:rgba(15,18,24,.55)}
-    .asset-value{position:absolute;left:16px;bottom:12px;font-size:34px;font-weight:800;letter-spacing:-1px}
-    .asset-ticker{position:absolute;right:16px;bottom:16px;font-size:12px;font-weight:800;color:rgba(15,18,24,.55)}
-
-    .statusbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-    .metric-card{padding:14px;border-radius:14px;background:linear-gradient(180deg, rgba(25,28,36,.96), rgba(16,18,24,.96));border:1px solid rgba(255,255,255,.05)}
-    .metric-label{font-size:12px;color:#8f96a9;margin-bottom:8px}
-    .metric-value{font-size:24px;font-weight:800}
-    .metric-sub{margin-top:6px;color:#99a3b6;font-size:12px}
-
-    .panel{display:none}
-    .panel.active{display:block}
-
-    .empty-state{padding:60px 20px;text-align:center;color:#8f96a9}
-    .empty-state strong{display:block;color:#edf2fb;font-size:20px;margin-bottom:8px}
-
-    .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:10px}
-    .toast{min-width:260px;max-width:360px;padding:14px 16px;border-radius:14px;background:#12161d;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 50px rgba(0,0,0,.45);color:#ebf0fb}
-    .toast small{display:block;margin-top:4px;color:#94a0b6}
-
-    .sidebar-backdrop{display:none}
-
-    .mobile-header{display:none;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06)}
-    .menu-btn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#10141c;color:#fff;display:grid;place-items:center}
-
-    @media (max-width: 1100px){
-      .content{grid-template-columns:1fr}
-      .right-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
-    }
-
-    @media (max-width: 860px){
-      body{padding:0;background:#030408}
-      .frame{width:100%;min-height:100vh;border-radius:0}
-      .dashboard{grid-template-columns:1fr}
-      .sidebar{position:fixed;z-index:80;top:0;left:0;bottom:0;width:290px;transform:translateX(-100%);transition:.22s ease;box-shadow:0 20px 50px rgba(0,0,0,.45)}
-      .sidebar.open{transform:translateX(0)}
-      .sidebar-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);z-index:70;display:none}
-      .sidebar-backdrop.show{display:block}
-      .main{grid-template-rows:auto 1fr}
-      .mobile-header{display:flex}
-      .topbar{grid-template-columns:1fr;gap:12px;padding:14px 16px}
-      .hello{display:none}
-      .search{justify-self:stretch;max-width:none}
-      .top-actions{justify-self:start}
-      .balance-value{font-size:32px}
-      .statusbar{grid-template-columns:1fr}
-    }
-
-    @media (max-width: 680px){
-      .right-col{grid-template-columns:1fr}
-      .section-head{flex-direction:column;align-items:flex-start}
-      .chart-wrap{padding:10px 8px 8px;min-height:300px}
-      .chart-svg{height:240px}
-      thead{display:none}
-      table, tbody, tr, td{display:block;width:100%}
-      tbody tr{padding:8px 0;border-top:1px solid rgba(255,255,255,.05)}
-      tbody td{border-top:none;padding:4px 14px}
-      tbody td::before{content:attr(data-label);display:inline-block;width:92px;color:#7f8799;font-weight:700}
+    @media (max-width: 820px){
+      body{overflow:auto}
+      .shell{display:block;height:auto;padding:12px}
+      .sidebar{
+        position:sticky;top:12px;z-index:20;flex-direction:row;width:100%;height:auto;padding:12px 10px;border-radius:24px;overflow:auto;margin-bottom:12px;
+      }
+      .nav{flex-direction:row;margin-top:0;width:auto}
+      .spacer{display:none}
+      .side-bottom{display:none}
+      .nav-label{display:none}
+      .main{border-radius:24px;padding:14px;overflow:visible}
+      .topbar{flex-wrap:wrap}
+      .search{order:3;flex:1 1 100%;margin-left:0}
+      .grid{grid-template-columns:1fr}
+      .quick-actions{grid-template-columns:1fr 1fr}
+      .hero h2{font-size:29px}
+      .mini-stack{grid-template-columns:1fr 1fr}
+      .balance-card .amount{font-size:34px}
     }
   </style>
 </head>
 <body>
-  <div class="frame">
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-    <div class="dashboard">
-      <aside class="sidebar" id="sidebar">
-        <div class="brand">Money lens</div>
-
-        <nav class="nav" id="navItems">
-          <button class="nav-item active" data-panel="dashboardPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>
-            Dashboard
-          </button>
-          <button class="nav-item" data-panel="invoicesPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h5"/><path d="M10 13h6M10 17h6"/></svg>
-            Invoices <span class="badge">3</span>
-          </button>
-          <button class="nav-item" data-panel="productsPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3Z"/><path d="M12 12l8-4.5M12 12 4 7.5M12 12v9"/></svg>
-            Products
-          </button>
-          <button class="nav-item" data-panel="messagesPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 6h16v10H8l-4 4V6z"/></svg>
-            Messages
-          </button>
-          <button class="nav-item" data-panel="settingsPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 8.5A3.5 3.5 0 1 0 12 15.5A3.5 3.5 0 1 0 12 8.5Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 .33 1A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.13.32.2.66.2 1s-.07.68-.2 1c-.13.32-.33.61-.6.86-.26.25-.57.44-.9.56.33.12.64.31.9.56.27.25.47.54.6.86.13.32.2.66.2 1s-.07.68-.2 1z"/></svg>
-            Settings
-          </button>
-          <button class="nav-item" data-panel="helpPanel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 1 1 5.8 1c-.36.97-1.28 1.37-2.08 1.87-.78.49-1.32 1.03-1.32 2.13"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg>
-            Help
-          </button>
-        </nav>
-
-        <div class="sidebar-spacer"></div>
-
-        <button class="nav-item logout" id="logoutBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          Log Out
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">VG</div>
+      <div class="nav">
+        <button class="nav-btn active" data-label="Overview">
+          <span>⌂</span><span class="nav-label">Overview</span>
         </button>
-      </aside>
+        <button class="nav-btn" data-label="Portfolio">
+          <span>◫</span><span class="nav-label">Portfolio</span>
+        </button>
+        <button class="nav-btn" data-label="Markets">
+          <span>◌</span><span class="nav-label">Markets</span>
+        </button>
+        <button class="nav-btn" data-label="Analytics">
+          <span>◒</span><span class="nav-label">Analytics</span>
+        </button>
+        <button class="nav-btn" data-label="Vault">
+          <span>⬒</span><span class="nav-label">Vault</span>
+        </button>
+      </div>
+      <div class="spacer"></div>
+      <button class="side-bottom" id="themePulseBtn">
+        ✦
+        <span class="nav-label">Pulse View</span>
+      </button>
+      <button class="side-bottom" id="logoutBtn">
+        ↩
+        <span class="nav-label">Log Out</span>
+      </button>
+    </aside>
 
-      <main class="main">
-        <div class="mobile-header">
-          <button class="menu-btn" id="menuBtn">☰</button>
-          <div class="hello">Hi David</div>
-          <button class="menu-btn" id="mobileNotify">⌁</button>
+    <main class="main">
+      <div class="topbar">
+        <div class="greet">
+          <h1>Welcome back, David</h1>
+          <p>Your dashboard now feels alive, fast, and premium.</p>
         </div>
 
-        <header class="topbar">
-          <div class="hello" id="helloTitle">Hi David</div>
+        <label class="search">
+          <span>⌕</span>
+          <input id="searchInput" type="text" placeholder="Search assets, activity, or insights" />
+        </label>
 
-          <div class="search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.4-3.4"></path></svg>
-            <input id="searchInput" type="text" placeholder="Search coin, asset, transaction..." />
+        <button class="icon-btn" id="alertBtn" title="Notifications">🔔</button>
+        <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
+
+        <div class="profile" id="profileBox">
+          <div class="avatar">DA</div>
+          <div>
+            <div style="font-size:14px;font-weight:700">David A.</div>
+            <div class="tiny muted">Verified user</div>
           </div>
-
-          <div class="top-actions">
-            <button class="notify" id="notifyBtn" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V10a6 6 0 1 0-12 0v4.2c0 .53-.21 1.04-.59 1.41L4 17h5"/><path d="M10 17a2 2 0 0 0 4 0"/></svg>
-              <span class="dot"></span>
-            </button>
-            <button class="mini-action" id="themePulse" aria-label="Refresh data">↻</button>
-            <div class="profile-wrap">
-              <button class="profile" id="profileBtn">
-                <div class="avatar"></div>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
-              </button>
-              <div class="profile-menu" id="profileMenu">
-                <button data-toast="Profile opened">Profile</button>
-                <button data-toast="Preferences opened">Preferences</button>
-                <button data-toast="Dashboard switch options will be added later">Dashboard switch</button>
-              </div>
-            </div>
+          <div style="margin-left:4px">▾</div>
+          <div class="profile-menu">
+            <div class="menu-item">My Profile</div>
+            <div class="menu-item">Account Security</div>
+            <div class="menu-item">Display Preferences</div>
+            <div class="menu-item">Sign Out</div>
           </div>
-        </header>
+        </div>
+      </div>
 
-        <section class="content">
-          <div class="left-col">
-            <div id="dashboardPanel" class="panel active">
-              <div class="section-head">
-                <div>
-                  <div class="balance-title">Total Balance</div>
-                  <div class="balance-row">
-                    <div class="balance-value" id="balanceValue">0.97689522</div>
-                    <span class="pill-label" id="balanceTicker">BTC</span>
-                  </div>
-                  <div class="balance-sub" id="balanceSub">$40,098.36</div>
-                </div>
-
-                <div class="tab-switch" id="summaryTabs">
-                  <button class="tab-btn active" data-summary="portfolio">Portfolio</button>
-                  <button class="tab-btn" data-summary="funding">Funding</button>
-                  <button class="tab-btn" data-summary="assets">Assets</button>
-                  <button class="tab-btn" data-summary="p2p">P2P</button>
-                </div>
-              </div>
-
-              <div class="statusbar" id="statusBar">
-                <div class="metric-card">
-                  <div class="metric-label">Weekly change</div>
-                  <div class="metric-value" id="weeklyChange">+12.84%</div>
-                  <div class="metric-sub">Portfolio is outperforming the baseline index</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">Top asset</div>
-                  <div class="metric-value" id="topAsset">Bitcoin</div>
-                  <div class="metric-sub">Strongest contribution this week</div>
-                </div>
-                <div class="metric-card">
-                  <div class="metric-label">Available funding</div>
-                  <div class="metric-value" id="fundingValue">$18,400</div>
-                  <div class="metric-sub">Ready for allocation or withdrawal</div>
-                </div>
-              </div>
-
-              <div class="card chart-card" style="margin-top:14px">
-                <div class="toolbar">
-                  <div class="range-group" id="rangeButtons">
-                    <button class="small-chip" data-range="1H">1H</button>
-                    <button class="small-chip" data-range="1D">1D</button>
-                    <button class="small-chip" data-range="3D">3D</button>
-                    <button class="small-chip active" data-range="1W">1W</button>
-                    <button class="small-chip" data-range="1M">1M</button>
-                    <button class="small-chip ghost" id="calendarBtn">📅</button>
-                  </div>
-
-                  <div class="coin-group">
-                    <button class="coin-chip" data-focus="btc"><span class="coin-dot btc"></span> BTC</button>
-                    <button class="coin-chip" data-focus="eth"><span class="coin-dot eth"></span> ETH</button>
-                  </div>
-                </div>
-
-                <div class="chart-wrap">
-                  <svg class="chart-svg" id="chartSvg" viewBox="0 0 760 280" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="lineCyan" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#60dfff"/>
-                        <stop offset="100%" stop-color="#2fd0ff"/>
-                      </linearGradient>
-                      <linearGradient id="linePink" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#f4afff"/>
-                        <stop offset="100%" stop-color="#cf7cff"/>
-                      </linearGradient>
-                      <filter id="glow"><feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                    </defs>
-                    <g id="gridLayer"></g>
-                    <g id="axisLayer"></g>
-                    <path id="lineAglow" class="curve-a area-glow"></path>
-                    <path id="lineBglow" class="curve-b area-glow"></path>
-                    <path id="lineA" class="curve-a"></path>
-                    <path id="lineB" class="curve-b"></path>
-                    <g id="pointsLayer"></g>
-                  </svg>
-                  <div class="chart-caption">
-                    <span id="chartCaptionLeft">Weekly performance overview</span>
-                    <span id="chartCaptionRight">Comparing BTC and ETH flows</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card table-card">
-                <div class="table-head">
-                  <span>CoinMarketCap 100 Index Constituents</span>
-                  <button class="linkish" id="resetFilterBtn">Reset filter</button>
-                </div>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Coin</th>
-                      <th>Price</th>
-                      <th>Trend</th>
-                      <th>Market Cap</th>
-                      <th>Coin Weight</th>
-                    </tr>
-                  </thead>
-                  <tbody id="marketTableBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <div id="invoicesPanel" class="panel">
-              <div class="card">
-                <div class="empty-state">
-                  <strong>Invoices dashboard</strong>
-                  This section is wired and clickable. You can replace this with your real invoice data later.
-                </div>
-              </div>
-            </div>
-
-            <div id="productsPanel" class="panel">
-              <div class="card">
-                <div class="empty-state">
-                  <strong>Products dashboard</strong>
-                  Product panel is ready as part of the switchable dashboard shell.
-                </div>
-              </div>
-            </div>
-
-            <div id="messagesPanel" class="panel">
-              <div class="card">
-                <div class="empty-state">
-                  <strong>Messages center</strong>
-                  Message area is clickable and ready for your real chat or support feed.
-                </div>
-              </div>
-            </div>
-
-            <div id="settingsPanel" class="panel">
-              <div class="card">
-                <div class="empty-state">
-                  <strong>Settings area</strong>
-                  Settings panel shell is built and can later be connected to your real controls.
-                </div>
-              </div>
-            </div>
-
-            <div id="helpPanel" class="panel">
-              <div class="card">
-                <div class="empty-state">
-                  <strong>Help center</strong>
-                  Help panel is active and ready for FAQs, support links, or tutorials.
-                </div>
-              </div>
+      <section class="grid">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">New generation experience</div>
+            <h2>Trade, track, and manage your capital from one cinematic control room.</h2>
+            <p>
+              This is a clean alternative dashboard concept built from scratch with a stronger identity, better motion, deeper contrast, and a more premium trading feel than the typical default layout.
+            </p>
+            <div class="cta-row">
+              <button class="cta" id="exploreBtn">Launch smart flow</button>
+              <button class="cta ghost" id="tourBtn">Take quick tour</button>
             </div>
           </div>
 
-          <div class="right-col" id="dashboardSide">
-            <div class="card side-card">
-              <div class="side-title">
-                <span>Recent deposits</span>
-                <button class="more" id="depositOptionsBtn" style="background:none;border:none;padding:0">⋮</button>
+          <div class="hero-stats">
+            <div class="mini-stack">
+              <div class="mini">
+                <div class="k">Net worth</div>
+                <div class="v" id="netWorthText">$148,420.12</div>
+                <div class="d">+12.6% this month</div>
               </div>
-
-              <div class="deposit-list" id="depositList"></div>
-              <button class="show-more" id="showMoreDeposits">Show more</button>
+              <div class="mini">
+                <div class="k">Active positions</div>
+                <div class="v">18</div>
+                <div class="d">6 opened today</div>
+              </div>
+              <div class="mini">
+                <div class="k">Profit ratio</div>
+                <div class="v">84.2%</div>
+                <div class="d">Above target zone</div>
+              </div>
+              <div class="mini">
+                <div class="k">Risk pulse</div>
+                <div class="v">Moderate</div>
+                <div class="d red">2 assets need review</div>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <div class="card side-card">
-              <div class="side-title"><span>Assets</span></div>
-              <div class="asset-box" id="assetBox"></div>
+        <section class="card balance-card">
+          <div class="card-head">
+            <div>
+              <h3>Total balance</h3>
+              <div class="sub">Live visualized performance stream</div>
+            </div>
+            <div class="range" id="rangeButtons">
+              <button class="pill" data-range="1D">1D</button>
+              <button class="pill" data-range="1W">1W</button>
+              <button class="pill active" data-range="1M">1M</button>
+              <button class="pill" data-range="3M">3M</button>
+              <button class="pill" data-range="1Y">1Y</button>
+            </div>
+          </div>
+
+          <div class="amount" id="balanceAmount">$94,288.56</div>
+          <div class="fiat">≈ 2.4318 BTC · diversified holdings across 7 assets</div>
+
+          <div class="chart-wrap">
+            <svg class="chart" viewBox="0 0 820 260" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="lineA" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#5cecff"/>
+                  <stop offset="100%" stop-color="#72a8ff"/>
+                </linearGradient>
+                <linearGradient id="lineB" x1="0" x2="1">
+                  <stop offset="0%" stop-color="#ff72cf"/>
+                  <stop offset="100%" stop-color="#9c7cff"/>
+                </linearGradient>
+                <linearGradient id="areaA" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(92,236,255,.4)" stop-opacity=".28"/>
+                  <stop offset="100%" stop-color="rgba(92,236,255,0)" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="areaB" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,114,207,.35)" stop-opacity=".22"/>
+                  <stop offset="100%" stop-color="rgba(255,114,207,0)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g opacity=".14" stroke="white">
+                <line x1="0" y1="40" x2="820" y2="40"></line>
+                <line x1="0" y1="90" x2="820" y2="90"></line>
+                <line x1="0" y1="140" x2="820" y2="140"></line>
+                <line x1="0" y1="190" x2="820" y2="190"></line>
+                <line x1="0" y1="240" x2="820" y2="240"></line>
+              </g>
+              <path id="areaPath1" fill="url(#areaA)" opacity=".7"></path>
+              <path id="areaPath2" fill="url(#areaB)" opacity=".6"></path>
+              <path id="linePath1" fill="none" stroke="url(#lineA)" stroke-width="4" stroke-linecap="round"></path>
+              <path id="linePath2" fill="none" stroke="url(#lineB)" stroke-width="4" stroke-linecap="round"></path>
+            </svg>
+            <div class="legend">
+              <span><i class="dot" style="background:var(--cyan)"></i> Performance stream</span>
+              <span><i class="dot" style="background:var(--pink)"></i> Holdings signal</span>
+              <span><i class="dot" style="background:var(--green)"></i> Portfolio is in a positive bias</span>
             </div>
           </div>
         </section>
-      </main>
-    </div>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h3>Quick actions</h3>
+              <div class="sub">One-tap movements for the most used flows</div>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <div class="qa" data-action="Deposit funds">
+              <div>⬇</div><strong>Deposit</strong><small>Add assets to your account with guided flow.</small>
+            </div>
+            <div class="qa" data-action="Send funds">
+              <div>⬆</div><strong>Withdraw</strong><small>Move funds out with smart verification.</small>
+            </div>
+            <div class="qa" data-action="Swap assets">
+              <div>⇄</div><strong>Swap</strong><small>Instantly rotate between supported assets.</small>
+            </div>
+            <div class="qa" data-action="Open insights">
+              <div>◎</div><strong>Insights</strong><small>See stronger narratives behind your numbers.</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" style="grid-column:1 / span 1;">
+          <div class="card-head">
+            <div>
+              <h3>Top movers</h3>
+              <div class="sub">Curated market pulse with weighted movement</div>
+            </div>
+          </div>
+          <div style="overflow:auto">
+            <table class="table" id="moversTable">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Price</th>
+                  <th>24H</th>
+                  <th>Allocation</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div>
+              <h3>Execution quality</h3>
+              <div class="sub">A visual progress ring for current strategy health</div>
+            </div>
+          </div>
+          <div class="progress-ring">
+            <div class="ring-wrap">
+              <svg width="180" height="180" viewBox="0 0 180 180">
+                <circle cx="90" cy="90" r="72" stroke="rgba(255,255,255,.07)" stroke-width="14" fill="none"></circle>
+                <circle id="ringMeter" cx="90" cy="90" r="72" stroke="url(#ringGrad)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="452" stroke-dashoffset="113"></circle>
+                <defs>
+                  <linearGradient id="ringGrad" x1="0" x2="1">
+                    <stop offset="0%" stop-color="#5cecff"></stop>
+                    <stop offset="50%" stop-color="#8e7dff"></stop>
+                    <stop offset="100%" stop-color="#ff72cf"></stop>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="ring-center">
+                <div>
+                  <strong id="ringScore">75%</strong>
+                  <span>System confidence</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sub" style="margin-top:12px;text-align:center">Your current dashboard pulse is healthy and trending upward.</div>
+        </section>
+      </section>
+    </main>
+
+    <aside class="rail">
+      <div class="spotlight">
+        <div class="eyebrow">Spotlight module</div>
+        <h3>Night mode, but luxury.</h3>
+        <p>This concept leans into stronger hierarchy, cleaner controls, and high-end motion so users feel like they switched into an elite trading cockpit.</p>
+      </div>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h3>Watchlist</h3>
+            <div class="sub">Tap any asset to preview action</div>
+          </div>
+        </div>
+        <div class="watchlist" id="watchlist"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <h3>Recent intelligence</h3>
+            <div class="sub">Clickable headlines for dashboard flavor</div>
+          </div>
+        </div>
+        <div class="news-list">
+          <div class="news"><div class="meta">Macro pulse</div><div class="title">Bitcoin volatility cools while alt liquidity concentrates in higher beta names.</div></div>
+          <div class="news"><div class="meta">Flow insight</div><div class="title">Stablecoin inflows suggest stronger participation ahead of the next session.</div></div>
+          <div class="news"><div class="meta">Portfolio idea</div><div class="title">Rotation into defensive majors may reduce drawdown while keeping upside exposure.</div></div>
+        </div>
+      </section>
+    </aside>
   </div>
 
   <div class="toast-wrap" id="toastWrap"></div>
@@ -801,348 +648,182 @@
   </script>
 
   <script>
-    const ui = {
-      summary: 'portfolio',
-      range: '1W',
-      focus: 'btc',
-      depositsLimit: 5,
-      selectedCoin: 'Bitcoin',
-      activePanel: 'dashboardPanel'
-    };
-
     const datasets = {
-      '1H': {
-        labels:['09','10','11','12','13','14','15'],
-        a:[180,260,220,300,280,350,330],
-        b:[150,170,210,190,250,230,270],
-        balance:'0.82144012', fiat:'$32,184.10', caption:'Hourly portfolio activity'
-      },
       '1D': {
-        labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-        a:[160,300,420,360,500,410,470],
-        b:[210,330,270,350,290,380,340],
-        balance:'0.91478210', fiat:'$37,420.00', caption:'Daily portfolio activity'
-      },
-      '3D': {
-        labels:['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6','Day 7'],
-        a:[100,420,350,610,470,540,400],
-        b:[220,440,180,310,170,380,240],
-        balance:'0.94210338', fiat:'$39,220.85', caption:'3 day rolling comparison'
+        balance: '$91,204.12',
+        netWorth: '$146,882.04',
+        confidence: 69,
+        a:[42,58,51,66,60,73,69,82,78,88,84,93],
+        b:[48,44,57,49,63,58,67,59,72,68,74,71]
       },
       '1W': {
-        labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-        a:[90,420,340,610,450,520,430],
-        b:[220,440,180,310,170,380,240],
-        balance:'0.97689522', fiat:'$40,098.36', caption:'Weekly performance overview'
+        balance: '$92,880.30',
+        netWorth: '$147,930.58',
+        confidence: 72,
+        a:[36,40,52,48,60,58,68,63,72,74,79,84],
+        b:[44,49,46,54,58,52,60,57,65,61,68,66]
       },
       '1M': {
-        labels:['W1','W2','W3','W4','W5','W6','W7'],
-        a:[280,350,300,480,430,590,640],
-        b:[190,260,310,280,360,420,390],
-        balance:'1.10428041', fiat:'$44,702.19', caption:'Monthly performance overview'
+        balance: '$94,288.56',
+        netWorth: '$148,420.12',
+        confidence: 75,
+        a:[30,44,40,58,66,55,62,48,70,64,72,69],
+        b:[38,50,35,41,46,37,52,43,48,66,57,63]
+      },
+      '3M': {
+        balance: '$99,761.14',
+        netWorth: '$154,018.77',
+        confidence: 81,
+        a:[24,31,38,45,49,55,60,64,71,76,82,90],
+        b:[29,35,33,44,40,47,52,50,61,58,67,72]
+      },
+      '1Y': {
+        balance: '$123,904.88',
+        netWorth: '$180,661.30',
+        confidence: 88,
+        a:[12,16,22,28,35,42,51,60,69,78,86,94],
+        b:[15,18,24,23,31,37,44,50,58,65,73,80]
       }
     };
 
-    const marketRows = [
-      {coin:'Bitcoin', ticker:'BTC', price:'$394,686.21', trend:0.96, cap:'$71,812.05', weight:39},
-      {coin:'Polygon', ticker:'MATIC', price:'$437,569.19', trend:-0.91, cap:'$12,553.90', weight:74},
-      {coin:'XRP Ledger', ticker:'XRP', price:'$718,254.03', trend:0.72, cap:'$60,193.15', weight:49},
-      {coin:'Avalanche', ticker:'AVAX', price:'$301,286.98', trend:-0.42, cap:'$3,388.82', weight:53},
-      {coin:'USDT', ticker:'USDT', price:'$101,025.65', trend:-0.78, cap:'$4,761.65', weight:57},
-      {coin:'Solana', ticker:'SOL', price:'$125,546.96', trend:-0.92, cap:'$1,869.33', weight:89},
-      {coin:'Ethereum', ticker:'ETH', price:'$601,395.15', trend:1.23, cap:'$935.62', weight:11},
-      {coin:'Cardano', ticker:'ADA', price:'$336,581.15', trend:-0.86, cap:'$369.56', weight:29}
+    const movers = [
+      {asset:'Bitcoin', symbol:'BTC', price:'$68,412.80', move:'+4.28%', up:true, weight:84},
+      {asset:'Ethereum', symbol:'ETH', price:'$3,552.24', move:'+2.17%', up:true, weight:72},
+      {asset:'Solana', symbol:'SOL', price:'$186.44', move:'+8.41%', up:true, weight:66},
+      {asset:'XRP', symbol:'XRP', price:'$0.72', move:'-1.12%', up:false, weight:38},
+      {asset:'BNB', symbol:'BNB', price:'$612.08', move:'+1.83%', up:true, weight:55},
+      {asset:'USDT', symbol:'USDT', price:'$1.00', move:'+0.02%', up:true, weight:91}
     ];
 
-    const deposits = [
-      {icon:'₿', name:'Bitcoin', sub:'Buy', amount:'+ $244.00', time:'Today 13:15 PM'},
-      {icon:'◆', name:'Ethereum', sub:'Received', amount:'+ 0.4213 ETH', time:'Today 11:18 PM'},
-      {icon:'⬡', name:'Polygon', sub:'Buy', amount:'+ $1,245', time:'Yesterday'},
-      {icon:'✕', name:'XRP Ledger', sub:'Received', amount:'+ 0.5686 XRP', time:'Yesterday'},
-      {icon:'≋', name:'Solana', sub:'Received', amount:'+ $244.00', time:'Yesterday'},
-      {icon:'₮', name:'USDT', sub:'Funding', amount:'+ $8,000', time:'2 days ago'},
-      {icon:'◈', name:'Avalanche', sub:'Received', amount:'+ 18.4 AVAX', time:'2 days ago'}
+    const watchlist = [
+      {icon:'₿', name:'Bitcoin', note:'Lead asset · bullish drift', value:'$68,412.80', move:'+4.28%', up:true},
+      {icon:'Ξ', name:'Ethereum', note:'Momentum rebuild', value:'$3,552.24', move:'+2.17%', up:true},
+      {icon:'◎', name:'Solana', note:'High beta runner', value:'$186.44', move:'+8.41%', up:true},
+      {icon:'✕', name:'XRP', note:'Cooling after rally', value:'$0.72', move:'-1.12%', up:false}
     ];
 
-    const assets = [
-      {name:'Bitcoin', symbol:'BTC', icon:'₿', value:'6401,20', className:'top'},
-      {name:'Ethereum', symbol:'ETH', icon:'◆', value:'4218,85', className:'bottom'}
-    ];
+    const tbody = document.querySelector('#moversTable tbody');
+    tbody.innerHTML = movers.map(row => `
+      <tr data-asset="${row.asset}">
+        <td><strong>${row.asset}</strong><div class="tiny muted">${row.symbol}</div></td>
+        <td>${row.price}</td>
+        <td class="trend ${row.up ? 'up':'down'}">${row.move}</td>
+        <td><div class="bar"><i style="width:${row.weight}%"></i></div></td>
+      </tr>
+    `).join('');
 
-    const summaryData = {
-      portfolio:{change:'+12.84%', top:'Bitcoin', funding:'$18,400', title:'Total Balance'},
-      funding:{change:'+6.40%', top:'USDT', funding:'$24,820', title:'Funding Balance'},
-      assets:{change:'+9.18%', top:'Ethereum', funding:'$13,600', title:'Asset Allocation'},
-      p2p:{change:'+4.72%', top:'Polygon', funding:'$6,250', title:'P2P Holdings'}
-    };
+    const watchWrap = document.getElementById('watchlist');
+    watchWrap.innerHTML = watchlist.map(row => `
+      <div class="asset-row" data-asset="${row.name}">
+        <div class="coin">${row.icon}</div>
+        <div><strong>${row.name}</strong><small>${row.note}</small></div>
+        <div style="text-align:right"><strong>${row.value}</strong><small class="${row.up ? 'trend up':'trend down'}">${row.move}</small></div>
+      </div>
+    `).join('');
 
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('sidebarBackdrop');
-    const searchInput = document.getElementById('searchInput');
-    const marketTableBody = document.getElementById('marketTableBody');
-    const depositList = document.getElementById('depositList');
-    const assetBox = document.getElementById('assetBox');
-    const toastWrap = document.getElementById('toastWrap');
-    const balanceValue = document.getElementById('balanceValue');
-    const balanceSub = document.getElementById('balanceSub');
-    const chartCaptionLeft = document.getElementById('chartCaptionLeft');
-    const chartCaptionRight = document.getElementById('chartCaptionRight');
-    const weeklyChange = document.getElementById('weeklyChange');
-    const topAsset = document.getElementById('topAsset');
-    const fundingValue = document.getElementById('fundingValue');
-    const helloTitle = document.getElementById('helloTitle');
-
-    function showToast(title, subtitle='Ready for hookup with real backend data.'){
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = '<strong>' + title + '</strong><small>' + subtitle + '</small>';
-      toastWrap.appendChild(toast);
-      setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(8px)'; }, 2600);
-      setTimeout(() => toast.remove(), 3200);
+    function showToast(message){
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = message;
+      wrap.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        el.style.transition = '.2s ease';
+        setTimeout(() => el.remove(), 220);
+      }, 2600);
     }
 
-    function toggleSidebar(forceClose=false){
-      if (forceClose) {
-        sidebar.classList.remove('open');
-        backdrop.classList.remove('show');
-        return;
-      }
-      sidebar.classList.toggle('open');
-      backdrop.classList.toggle('show');
+    function pointsToPath(arr, width, height, padding=18){
+      const max = Math.max(...arr);
+      const min = Math.min(...arr);
+      const step = (width - padding * 2) / (arr.length - 1);
+      const scaleY = v => height - padding - ((v - min) / (max - min || 1)) * (height - padding * 2);
+      return arr.map((v,i)=>`${i===0?'M':'L'} ${padding + i*step} ${scaleY(v)}`).join(' ');
     }
 
-    function renderTable(filter=''){
-      const q = filter.trim().toLowerCase();
-      const rows = marketRows.filter(row => !q || row.coin.toLowerCase().includes(q) || row.ticker.toLowerCase().includes(q));
-      marketTableBody.innerHTML = rows.map((row, idx) => `
-        <tr data-coin="${row.coin}" class="${ui.selectedCoin === row.coin ? 'selected' : ''}">
-          <td class="rank" data-label="#">${idx + 1}</td>
-          <td data-label="Coin"><span class="coin-name"><span class="mini"></span> ${row.coin} ${row.ticker}</span></td>
-          <td data-label="Price">${row.price}</td>
-          <td data-label="Trend"><span class="${row.trend >= 0 ? 'up' : 'down'}">${row.trend >= 0 ? '▲' : '▼'} ${Math.abs(row.trend).toFixed(2)}%</span></td>
-          <td data-label="Market Cap">${row.cap}</td>
-          <td data-label="Coin Weight"><div class="progress-track"><span style="width:${row.weight}%"></span></div></td>
-        </tr>
-      `).join('') || `<tr><td colspan="6" style="padding:18px 14px;color:#8f96a9">No assets match your search.</td></tr>`;
-
-      marketTableBody.querySelectorAll('tr[data-coin]').forEach(row => {
-        row.addEventListener('click', () => {
-          ui.selectedCoin = row.dataset.coin;
-          renderTable(searchInput.value);
-          showToast(ui.selectedCoin + ' selected', 'Use this later to route users into asset details.');
-        });
-      });
+    function pointsToArea(arr, width, height, padding=18){
+      const line = pointsToPath(arr,width,height,padding);
+      const step = (width - padding * 2) / (arr.length - 1);
+      return `${line} L ${padding + (arr.length-1)*step} ${height-padding} L ${padding} ${height-padding} Z`;
     }
 
-    function renderDeposits(){
-      depositList.innerHTML = deposits.slice(0, ui.depositsLimit).map(item => `
-        <button class="deposit-item" style="background:none;border:none;width:100%;text-align:left" data-deposit="${item.name}">
-          <div class="deposit-icon">${item.icon}</div>
-          <div>
-            <div class="deposit-name">${item.name}</div>
-            <div class="deposit-sub">${item.sub}</div>
-          </div>
-          <div class="deposit-amt"><strong>${item.amount}</strong><span>${item.time}</span></div>
-        </button>
-      `).join('');
+    function applyDataset(key){
+      const data = datasets[key];
+      document.getElementById('balanceAmount').textContent = data.balance;
+      document.getElementById('netWorthText').textContent = data.netWorth;
+      document.getElementById('ringScore').textContent = data.confidence + '%';
+      const full = 452;
+      document.getElementById('ringMeter').style.strokeDashoffset = String(full - (full * data.confidence / 100));
 
-      depositList.querySelectorAll('[data-deposit]').forEach(btn => {
-        btn.addEventListener('click', () => showToast(btn.dataset.deposit + ' transaction opened', 'Hook this button to your real transaction details page later.'));
-      });
+      const w=820,h=260;
+      document.getElementById('linePath1').setAttribute('d', pointsToPath(data.a,w,h));
+      document.getElementById('linePath2').setAttribute('d', pointsToPath(data.b,w,h));
+      document.getElementById('areaPath1').setAttribute('d', pointsToArea(data.a,w,h));
+      document.getElementById('areaPath2').setAttribute('d', pointsToArea(data.b,w,h));
     }
+    applyDataset('1M');
 
-    function renderAssets(){
-      assetBox.innerHTML = assets.map((asset, index) => `
-        <button class="crypto-card ${asset.className} ${index === 0 ? 'active' : ''}" data-asset="${asset.name}">
-          <div class="card-topline">
-            <div class="brand-coin"><span class="mini-icon">${asset.icon}</span> ${asset.name}</div>
-            <div>Crypto card</div>
-          </div>
-          <div class="wave-lines">
-            <svg viewBox="0 0 400 80" preserveAspectRatio="none">
-              <path d="M0,58 C60,30 130,72 200,44 C260,20 320,74 400,30" fill="none" stroke="rgba(10,26,42,.26)" stroke-width="2.2"></path>
-              <path d="M0,66 C70,36 130,80 210,48 C275,24 340,70 400,38" fill="none" stroke="rgba(10,26,42,.22)" stroke-width="1.8"></path>
-              <path d="M0,46 C65,18 135,56 205,30 C280,6 336,62 400,18" fill="none" stroke="rgba(10,26,42,.18)" stroke-width="1.6"></path>
-            </svg>
-          </div>
-          <div class="asset-name">${asset.name}</div>
-          <div class="asset-value">${asset.value}</div>
-          <div class="asset-ticker">${asset.symbol}</div>
-        </button>
-      `).join('');
-
-      assetBox.querySelectorAll('[data-asset]').forEach(card => {
-        card.addEventListener('click', () => {
-          assetBox.querySelectorAll('.crypto-card').forEach(x => x.classList.remove('active'));
-          card.classList.add('active');
-          ui.selectedCoin = card.dataset.asset;
-          renderTable(searchInput.value);
-          showToast(card.dataset.asset + ' card opened', 'Use this later for balance drilldown or asset page routing.');
-        });
-      });
-    }
-
-    function smoothPath(points) {
-      if (points.length < 2) return '';
-      let d = `M ${points[0][0]} ${points[0][1]}`;
-      for (let i = 0; i < points.length - 1; i++) {
-        const [x0, y0] = points[i];
-        const [x1, y1] = points[i + 1];
-        const xm = (x0 + x1) / 2;
-        d += ` C ${xm} ${y0}, ${xm} ${y1}, ${x1} ${y1}`;
-      }
-      return d;
-    }
-
-    function renderChart() {
-      const data = datasets[ui.range];
-      const svgW = 760;
-      const svgH = 280;
-      const left = 44;
-      const top = 10;
-      const bottom = 34;
-      const right = 16;
-      const innerW = svgW - left - right;
-      const innerH = svgH - top - bottom;
-      const maxVal = 700;
-      const labels = data.labels;
-      const lineA = data.a;
-      const lineB = data.b;
-      const count = labels.length;
-      const xStep = innerW / (count - 1);
-      const y = v => top + innerH - (v / maxVal) * innerH;
-      const x = i => left + xStep * i;
-
-      const aPts = lineA.map((v,i) => [x(i), y(v)]);
-      const bPts = lineB.map((v,i) => [x(i), y(v)]);
-
-      document.getElementById('lineA').setAttribute('d', smoothPath(aPts));
-      document.getElementById('lineAglow').setAttribute('d', smoothPath(aPts));
-      document.getElementById('lineB').setAttribute('d', smoothPath(bPts));
-      document.getElementById('lineBglow').setAttribute('d', smoothPath(bPts));
-
-      const gridLayer = document.getElementById('gridLayer');
-      const axisLayer = document.getElementById('axisLayer');
-      const pointsLayer = document.getElementById('pointsLayer');
-      gridLayer.innerHTML = '';
-      axisLayer.innerHTML = '';
-      pointsLayer.innerHTML = '';
-
-      [0,100,200,300,400,500,600].forEach(v => {
-        const yy = y(v);
-        gridLayer.innerHTML += `<line class="grid-line" x1="${left}" y1="${yy}" x2="${svgW-right}" y2="${yy}"></line>`;
-        axisLayer.innerHTML += `<text class="axis-label" x="6" y="${yy+4}">$${v}</text>`;
-      });
-
-      labels.forEach((label, i) => {
-        axisLayer.innerHTML += `<text class="axis-label" x="${x(i)}" y="${svgH-8}" text-anchor="middle">${label}</text>`;
-      });
-
-      const highlightIndex = Math.max(1, Math.floor(count / 2));
-      const aP = aPts[highlightIndex];
-      const bP = bPts[highlightIndex];
-      pointsLayer.innerHTML += `
-        <circle class="point" cx="${aP[0]}" cy="${aP[1]}" r="5" fill="#69e3ff"></circle>
-        <text class="price-note" x="${aP[0]+10}" y="${aP[1]-10}" fill="#69e3ff">+ $550</text>
-        <circle class="point pink" cx="${bP[0]}" cy="${bP[1]}" r="5" fill="#f4afff"></circle>
-        <text class="price-note" x="${bP[0]+10}" y="${bP[1]-10}" fill="#f4afff">+ $550</text>
-      `;
-
-      balanceValue.textContent = data.balance;
-      balanceSub.textContent = data.fiat;
-      chartCaptionLeft.textContent = data.caption;
-      chartCaptionRight.textContent = ui.focus === 'btc' ? 'Comparing BTC and ETH flows' : 'ETH is highlighted as the focus asset';
-    }
-
-    function applySummary(summary) {
-      ui.summary = summary;
-      const current = summaryData[summary];
-      document.querySelectorAll('[data-summary]').forEach(btn => btn.classList.toggle('active', btn.dataset.summary === summary));
-      document.querySelector('.balance-title').textContent = current.title;
-      weeklyChange.textContent = current.change;
-      topAsset.textContent = current.top;
-      fundingValue.textContent = current.funding;
-      showToast(summary.charAt(0).toUpperCase() + summary.slice(1) + ' tab selected', 'Later this can switch the real dashboard mode.');
-    }
-
-    function switchPanel(panelId, label) {
-      ui.activePanel = panelId;
-      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
-      const target = document.getElementById(panelId);
-      if (target) target.classList.add('active');
-      document.querySelectorAll('.nav-item[data-panel]').forEach(item => item.classList.toggle('active', item.dataset.panel === panelId));
-      document.getElementById('dashboardSide').style.display = panelId === 'dashboardPanel' ? '' : 'none';
-      helloTitle.textContent = panelId === 'dashboardPanel' ? 'Hi David' : label;
-      if (window.innerWidth <= 860) toggleSidebar(true);
-    }
-
-    menuBtn?.addEventListener('click', () => toggleSidebar());
-    backdrop?.addEventListener('click', () => toggleSidebar(true));
-
-    document.querySelectorAll('.nav-item[data-panel]').forEach(btn => {
-      btn.addEventListener('click', () => switchPanel(btn.dataset.panel, btn.textContent.trim()));
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', () => showToast('Logout clicked', 'Connect this to your real logout flow later.'));
-    document.getElementById('notifyBtn').addEventListener('click', () => showToast('Notifications opened', '3 new activities are ready to review.'));
-    document.getElementById('mobileNotify').addEventListener('click', () => showToast('Notifications opened', '3 new activities are ready to review.'));
-    document.getElementById('themePulse').addEventListener('click', () => { renderChart(); showToast('Dashboard refreshed', 'Visual metrics have been refreshed.'); });
-    document.getElementById('calendarBtn').addEventListener('click', () => showToast('Calendar clicked', 'Date picker can be connected later.'));
-    document.getElementById('depositOptionsBtn').addEventListener('click', () => showToast('Deposit options', 'Wire this to export, filter, or sort actions.'));
-
-    document.querySelectorAll('[data-summary]').forEach(btn => {
-      btn.addEventListener('click', () => applySummary(btn.dataset.summary));
-    });
-
-    document.querySelectorAll('[data-range]').forEach(btn => {
+    document.querySelectorAll('#rangeButtons .pill').forEach(btn => {
       btn.addEventListener('click', () => {
-        ui.range = btn.dataset.range;
-        document.querySelectorAll('[data-range]').forEach(x => x.classList.toggle('active', x.dataset.range === ui.range));
-        renderChart();
+        document.querySelectorAll('#rangeButtons .pill').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        applyDataset(btn.dataset.range);
+        showToast(`Switched chart range to ${btn.dataset.range}.`);
       });
     });
 
-    document.querySelectorAll('[data-focus]').forEach(btn => {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        ui.focus = btn.dataset.focus;
-        showToast((ui.focus || '').toUpperCase() + ' focus selected', 'Use this later to change visible asset metrics.');
-        renderChart();
+        document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        showToast(`${btn.dataset.label} view selected.`);
       });
     });
 
-    searchInput.addEventListener('input', () => renderTable(searchInput.value));
-    document.getElementById('resetFilterBtn').addEventListener('click', () => {
-      searchInput.value = '';
-      renderTable('');
-      showToast('Search reset', 'Full constituent list restored.');
+    document.querySelectorAll('.qa').forEach(item => {
+      item.addEventListener('click', () => showToast(item.dataset.action + ' is ready to be connected.'));
     });
 
-    document.getElementById('showMoreDeposits').addEventListener('click', () => {
-      ui.depositsLimit = ui.depositsLimit >= deposits.length ? 5 : deposits.length;
-      renderDeposits();
-      document.getElementById('showMoreDeposits').textContent = ui.depositsLimit >= deposits.length ? 'Show less' : 'Show more';
+    document.querySelectorAll('#moversTable tr, .asset-row, .news').forEach(el => {
+      el.addEventListener('click', () => showToast((el.dataset.asset || 'This module') + ' opened for preview.'));
     });
 
-    const profileBtn = document.getElementById('profileBtn');
-    const profileMenu = document.getElementById('profileMenu');
-    profileBtn.addEventListener('click', () => profileMenu.classList.toggle('open'));
-    document.addEventListener('click', (e) => {
-      if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
-        profileMenu.classList.remove('open');
-      }
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      const keys = Object.keys(datasets);
+      const current = document.querySelector('#rangeButtons .pill.active').dataset.range;
+      applyDataset(current);
+      showToast('Dashboard visuals refreshed.');
     });
-    profileMenu.querySelectorAll('button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        profileMenu.classList.remove('open');
-        showToast(btn.dataset.toast);
+
+    document.getElementById('alertBtn').addEventListener('click', () => showToast('No critical alerts right now.'));
+    document.getElementById('exploreBtn').addEventListener('click', () => showToast('Smart flow launched.'));
+    document.getElementById('tourBtn').addEventListener('click', () => showToast('Quick tour starts here.'));
+    document.getElementById('logoutBtn').addEventListener('click', () => showToast('Logout action can be wired later.'));
+    document.getElementById('themePulseBtn').addEventListener('click', () => {
+      document.body.style.filter = document.body.style.filter ? '' : 'saturate(1.08) contrast(1.04)';
+      showToast('Pulse view toggled.');
+    });
+
+    const profile = document.getElementById('profileBox');
+    profile.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profile.classList.toggle('open');
+    });
+    document.addEventListener('click', () => profile.classList.remove('open'));
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('#moversTable tbody tr').forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        tr.style.display = text.includes(q) ? '' : 'none';
+      });
+      document.querySelectorAll('.asset-row').forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
       });
     });
-
-    renderTable();
-    renderDeposits();
-    renderAssets();
-    renderChart();
   </script>
 </body>
 </html>
