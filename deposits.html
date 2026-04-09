@@ -1597,19 +1597,12 @@ function normalizeDepositAsset(v){
   return String(v||"").trim().toLowerCase();
 }
 function normalizeDepositNetwork(v){
-  const raw = String(v||"")
+  return String(v||"")
     .toLowerCase()
     .replace(/\(.*?\)/g, "")
     .replace(/network/g, "")
     .replace(/[^a-z0-9]/g, "")
     .trim();
-
-  if(!raw) return "";
-  if(raw === "btc" || raw.includes("bitcoin")) return "btc";
-  if(raw === "eth" || raw === "erc20" || raw.includes("ethereum")) return "erc20";
-  if(raw === "trc20" || raw.includes("tron")) return "trc20";
-  if(raw === "bep20" || raw.includes("bsc") || raw.includes("binancesmartchain")) return "bep20";
-  return raw;
 }
 async function loadDepositAddresses(){
   try{
@@ -1649,30 +1642,52 @@ function getCurrentDepNetwork(){ return document.getElementById("depNetwork").va
 
 async function renderDepositAddress(){
   const asset=getCurrentDepAsset();
-  const preferredNetwork=getPreferredNetworkForAsset(asset);
-  const selectedNetwork=getCurrentDepNetwork();
-  const effectiveNetwork = preferredNetwork || selectedNetwork;
+  let network=getCurrentDepNetwork();
 
-  if(document.getElementById("depNetwork") && document.getElementById("depNetwork").value !== effectiveNetwork){
-    document.getElementById("depNetwork").value = effectiveNetwork;
+  const assetNorm = normalizeDepositAsset(asset);
+  let networkNorm = normalizeDepositNetwork(network);
+
+  let found=depositAddresses.find(d =>
+    normalizeDepositAsset(d.asset)===assetNorm &&
+    normalizeDepositNetwork(d.network)===networkNorm
+  );
+
+  // Force USDT deposits to reflect the ERC20 wallet from the wallet page
+  if(assetNorm === "usdt"){
+    const erc20Wallet = depositAddresses.find(d => {
+      const dAsset = normalizeDepositAsset(d.asset);
+      const dNetworkRaw = String(d.network || "").toUpperCase();
+      const dNetwork = normalizeDepositNetwork(d.network);
+      return dAsset === "usdt" && (
+        dNetwork === "erc20" ||
+        dNetworkRaw.includes("ERC20") ||
+        dNetworkRaw.includes("ERC-20") ||
+        dNetworkRaw.includes("ETH")
+      );
+    });
+
+    if(erc20Wallet){
+      found = erc20Wallet;
+      network = "ERC20";
+      networkNorm = "erc20";
+
+      const depNetworkEl = document.getElementById("depNetwork");
+      if(depNetworkEl && depNetworkEl.value !== "ERC20"){
+        depNetworkEl.value = "ERC20";
+      }
+
+      const confNetworkEl = document.getElementById("confNetwork");
+      if(confNetworkEl && confNetworkEl.value !== "ERC20"){
+        confNetworkEl.value = "ERC20";
+      }
+    }
   }
 
   document.getElementById("assetLogoMini").innerHTML = assetLogo(asset);
   document.getElementById("assetNameMini").textContent = String(asset).toUpperCase();
-
-  const assetNorm = normalizeDepositAsset(asset);
-  const effectiveNetworkNorm = normalizeDepositNetwork(effectiveNetwork);
-  const foundExact = depositAddresses.find(d =>
-    normalizeDepositAsset(d.asset)===assetNorm &&
-    normalizeDepositNetwork(d.network)===effectiveNetworkNorm
-  );
-  const foundByAsset = depositAddresses.find(d => normalizeDepositAsset(d.asset)===assetNorm);
-  const found = foundExact || foundByAsset || null;
-
-  const shownNetwork = found?.network ? String(found.network).toUpperCase() : effectiveNetwork;
-  document.getElementById("networkNameMini").textContent = shownNetwork;
+  document.getElementById("networkNameMini").textContent = network;
   document.getElementById("warnAsset").textContent = String(asset).toUpperCase();
-  document.getElementById("warnNetwork").textContent = shownNetwork;
+  document.getElementById("warnNetwork").textContent = network;
 
   const addrEl=document.getElementById("depAddress");
   const statusEl=document.getElementById("addrStatus");
@@ -1681,7 +1696,7 @@ async function renderDepositAddress(){
   addrEl.innerText = address ? address : "No address configured";
   statusEl.innerText = address ? "Ready" : "Not configured";
 
-  await updateQR(address, asset, shownNetwork);
+  await updateQR(address, asset, network);
 }
 
 /* ============================================================
@@ -2092,69 +2107,31 @@ function setNativeSelect(id, value){
   el.dispatchEvent(new Event("change"));
 }
 
-const DEPOSIT_ASSETS = [
-  { value:"btc", label:"BTC (Bitcoin)", icon: assetLogo("btc"), search:"btc bitcoin", tag:"BTC" },
-  { value:"eth", label:"ETH (Ethereum)", icon: assetLogo("eth"), search:"eth ethereum", tag:"ETH" },
-  { value:"usdt", label:"USDT (Tether)", icon: assetLogo("usdt"), search:"usdt tether", tag:"USDT" }
-];
-const DEPOSIT_NETWORKS = [
-  { value:"BTC",  label:"BTC Network",  icon:`<span style="font-weight:1000">₿</span>`, search:"btc bitcoin network", tag:"BTC" },
-  { value:"ERC20",label:"ERC20 (Ethereum)", icon:`<span style="font-weight:1000">Ξ</span>`, search:"erc20 ethereum network eth", tag:"ERC20" },
-  { value:"TRC20",label:"TRC20 (Tron)", icon:`<span style="font-weight:1000">T</span>`, search:"trc20 tron network", tag:"TRC20" }
-];
+function mountPickers(){
+  const ASSETS = [
+    { value:"btc", label:"BTC (Bitcoin)", icon: assetLogo("btc"), search:"btc bitcoin", tag:"BTC" },
+    { value:"eth", label:"ETH (Ethereum)", icon: assetLogo("eth"), search:"eth ethereum", tag:"ETH" },
+    { value:"usdt", label:"USDT (Tether)", icon: assetLogo("usdt"), search:"usdt tether", tag:"USDT" }
+  ];
+  const NETWORKS = [
+    { value:"BTC",  label:"BTC Network",  icon:`<span style="font-weight:1000">₿</span>`, search:"btc bitcoin network", tag:"BTC" },
+    { value:"ERC20",label:"ERC20 (Ethereum)", icon:`<span style="font-weight:1000">Ξ</span>`, search:"erc20 ethereum network eth", tag:"ERC20" },
+    { value:"TRC20",label:"TRC20 (Tron)", icon:`<span style="font-weight:1000">T</span>`, search:"trc20 tron network", tag:"TRC20" }
+  ];
 
-function getPreferredNetworkForAsset(asset){
-  const a = String(asset||"").toLowerCase();
-  if(a === "btc") return "BTC";
-  if(a === "eth") return "ERC20";
-  if(a === "usdt") return "ERC20";
-  return "ERC20";
-}
-
-function getAllowedNetworksForAsset(asset){
-  const pref = getPreferredNetworkForAsset(asset);
-  return DEPOSIT_NETWORKS.filter(n => n.value === pref);
-}
-
-function remountDepositNetworkPickers(){
-  const depAsset = document.getElementById("depAsset")?.value || "btc";
-  const confAsset = document.getElementById("confAsset")?.value || depAsset;
-  const depNetworks = getAllowedNetworksForAsset(depAsset);
-  const confNetworks = getAllowedNetworksForAsset(confAsset);
-  const depCurrent = depNetworks.some(n => n.value === (document.getElementById("depNetwork")?.value || ""))
-    ? document.getElementById("depNetwork").value
-    : getPreferredNetworkForAsset(depAsset);
-  const confCurrent = confNetworks.some(n => n.value === (document.getElementById("confNetwork")?.value || ""))
-    ? document.getElementById("confNetwork").value
-    : getPreferredNetworkForAsset(confAsset);
-
-  if(document.getElementById("depNetwork")) document.getElementById("depNetwork").value = depCurrent;
-  if(document.getElementById("confNetwork")) document.getElementById("confNetwork").value = confCurrent;
-
-  mountLogoSelect("depNetworkPick", depNetworks, depCurrent, (opt)=>{
+  mountLogoSelect("depAssetPick", ASSETS, document.getElementById("depAsset").value, (opt)=>{
+    setNativeSelect("depAsset", opt.value);
+  });
+  mountLogoSelect("depNetworkPick", NETWORKS, document.getElementById("depNetwork").value, (opt)=>{
     setNativeSelect("depNetwork", opt.value);
   });
-  mountLogoSelect("confNetworkPick", confNetworks, confCurrent, (opt)=>{
+
+  mountLogoSelect("confAssetPick", ASSETS, document.getElementById("confAsset").value, (opt)=>{
+    document.getElementById("confAsset").value = opt.value;
+  });
+  mountLogoSelect("confNetworkPick", NETWORKS, document.getElementById("confNetwork").value, (opt)=>{
     document.getElementById("confNetwork").value = opt.value;
   });
-}
-
-function mountPickers(){
-  mountLogoSelect("depAssetPick", DEPOSIT_ASSETS, document.getElementById("depAsset").value, (opt)=>{
-    setNativeSelect("depAsset", opt.value);
-    const preferred = getPreferredNetworkForAsset(opt.value);
-    if(document.getElementById("depNetwork")) document.getElementById("depNetwork").value = preferred;
-    remountDepositNetworkPickers();
-    renderDepositAddress();
-  });
-
-  mountLogoSelect("confAssetPick", DEPOSIT_ASSETS, document.getElementById("confAsset").value, (opt)=>{
-    document.getElementById("confAsset").value = opt.value;
-    document.getElementById("confNetwork").value = getPreferredNetworkForAsset(opt.value);
-    remountDepositNetworkPickers();
-  });
-
-  remountDepositNetworkPickers();
 }
 
 /* ============================================================
