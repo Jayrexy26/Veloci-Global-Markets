@@ -659,81 +659,7 @@
    c.type='text/javascript';c.charset='utf-8';c.async=true;
    c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
   })(document);
-  
-/*
-function renderEmailHistory(){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = hist.map(function(h){
-  return '<tr>' +
-    '<td>' + h.to + '</td>' +
-    '<td>' + h.subject + '</td>' +
-    '<td class="ellipsisWide">' + h.message + '</td>' +
-    '<td>' + h.date + '</td>' +
-    '<td><button class="btnGhost" onclick="modalShow(\'Email Content\', this.dataset.msg)" data-msg="'+h.message.replace(/"/g,'&quot;')+'">View</button></td>' +
-  '</tr>';
-}
-*/).join("");
-}
-
-
-
-
-// ====== SERVER EMAIL HISTORY ======
-async function loadEmailHistory(){
-  try{
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET,
-        "x-admin-id": ADMIN_ID
-      },
-      body: JSON.stringify({ action: "get_email_logs" })
-    });
-
-    const data = await res.json();
-    if(!data.success) return;
-
-    renderEmailHistoryFromServer(data.data || []);
-
-  }catch(e){
-    console.log("Load email logs error:", e);
-  }
-}
-
-function renderEmailHistoryFromServer(logs){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-
-  if(!logs.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = logs.map(log => `
-    <tr>
-      <td>${log.recipient}</td>
-      <td>${log.subject}</td>
-      <td class="ellipsisWide">${log.message}</td>
-      <td>${new Date(log.created_at).toLocaleString()}</td>
-      <td>
-        <button class="btnGhost" onclick="modalShow('Email Content', decodeURIComponent(this.dataset.msg))" data-msg="${encodeURIComponent(log.message)}">View</button>
-      </td>
-    </tr>
-  `).join("");
-}
-
-// auto load when settings visible
-
-
-
-</script>
+  </script>
 
 </head>
 
@@ -1016,45 +942,6 @@ function renderEmailHistoryFromServer(logs){
                     <div class="cardTitle">📧 Manual Branded Email</div>
                     <div class="small" id="manualEmailStatus">Send branded user emails directly from admin.</div>
                   </div>
-
-              <!-- ✅ NEW: Email History Section (UI placeholder only) -->
-              <div class="card" style="margin-bottom:14px; border-radius:18px;">
-                <div class="cardHead">
-                  <div>
-                    <div class="cardTitle">📜 Sent Email History</div>
-                    <div class="small">History of branded emails sent will appear here (UI placeholder).</div>
-                  </div>
-                  <div class="rowTools">
-                    <button class="btnGhost" disabled>Refresh</button>
-                  </div>
-                </div>
-
-                <div class="small" style="margin-bottom:10px">
-                  This section will display sent emails, recipients, subjects, and timestamps once backend logging is connected.
-                </div>
-
-                <div class="tableWrap">
-                  <div class="tableScroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th style="width:260px">Recipient</th>
-                          <th style="width:260px">Subject</th>
-                          <th style="width:420px">Message Preview</th>
-                          <th style="width:180px">Date Sent</th>
-                          <th style="width:140px">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody id="emailHistoryRows">
-                        <tr>
-                          <td colspan="5" class="small">No history yet.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
                   <div class="rowTools">
                     <button class="btnPrimary" onclick="safeLoad(sendManualBrandedEmail)">Send Email</button>
                   </div>
@@ -2017,9 +1904,6 @@ async function connectFromLogin(){
 
   feed("CONNECTED as " + ADMIN_ID);
   refreshAll();
-
-  loadEmailHistory();
-
 }
 
 function lockConsole(){
@@ -3182,38 +3066,6 @@ async function sendManualBrandedEmail(){
   });
 
   feed("manual_email_send -> " + to);
-
-  // ✅ CLEAN EMAIL LOG (safe)
-  try {
-    const to = document.getElementById("manualEmailTo").value;
-    const subject = document.getElementById("manualEmailSubject").value;
-    const message = document.getElementById("manualEmailMessage").value;
-
-    if(to && subject && message){
-      const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-      hist.unshift({ to, subject, message, date: new Date().toLocaleString() });
-      localStorage.setItem("email_history", JSON.stringify(hist));
-    }
-
-    if(typeof renderEmailHistory === "function"){
-      renderEmailHistory();
-    }
-  } catch(e) {
-    console.log("Email history error:", e);
-  }
-
-
-
-  // EMAIL HISTORY LOG
-  try {
-    const to=document.getElementById('manualEmailTo').value;
-    const subject=document.getElementById('manualEmailSubject').value;
-    const message=document.getElementById('manualEmailMessage').value;
-    const hist=JSON.parse(localStorage.getItem('email_history')||'[]');
-    hist.unshift({to,subject,message,date:new Date().toLocaleString()});
-    localStorage.setItem('email_history',JSON.stringify(hist));
-    if(typeof renderEmailHistory==='function'){renderEmailHistory();}
-  } catch(e){console.log(e);}
 }
 
 
@@ -3928,80 +3780,6 @@ async function deleteTrade(id){
 
 
 attachScrollHandlers();
-
-/*
-function renderEmailHistory(){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = hist.map(function(h){
-  return '<tr>' +
-    '<td>' + h.to + '</td>' +
-    '<td>' + h.subject + '</td>' +
-    '<td class="ellipsisWide">' + h.message + '</td>' +
-    '<td>' + h.date + '</td>' +
-    '<td><button class="btnGhost" onclick="modalShow(\'Email Content\', this.dataset.msg)" data-msg="'+h.message.replace(/"/g,'&quot;')+'">View</button></td>' +
-  '</tr>';
-}
-*/).join("");
-}
-
-
-
-
-// ====== SERVER EMAIL HISTORY ======
-async function loadEmailHistory(){
-  try{
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET,
-        "x-admin-id": ADMIN_ID
-      },
-      body: JSON.stringify({ action: "get_email_logs" })
-    });
-
-    const data = await res.json();
-    if(!data.success) return;
-
-    renderEmailHistoryFromServer(data.data || []);
-
-  }catch(e){
-    console.log("Load email logs error:", e);
-  }
-}
-
-function renderEmailHistoryFromServer(logs){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-
-  if(!logs.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = logs.map(log => `
-    <tr>
-      <td>${log.recipient}</td>
-      <td>${log.subject}</td>
-      <td class="ellipsisWide">${log.message}</td>
-      <td>${new Date(log.created_at).toLocaleString()}</td>
-      <td>
-        <button class="btnGhost" onclick="modalShow('Email Content', decodeURIComponent(this.dataset.msg))" data-msg="${encodeURIComponent(log.message)}">View</button>
-      </td>
-    </tr>
-  `).join("");
-}
-
-// auto load when settings visible
-
-
-
 </script>
 
 </body>
