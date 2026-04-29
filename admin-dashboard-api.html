@@ -680,6 +680,57 @@ function renderEmailHistory(){
 }
 
 setTimeout(renderEmailHistory, 500);
+
+
+// ====== SERVER EMAIL HISTORY ======
+async function loadEmailHistory(){
+  try{
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action: "get_email_logs" })
+    });
+
+    const data = await res.json();
+    if(!data.success) return;
+
+    renderEmailHistoryFromServer(data.data || []);
+
+  }catch(e){
+    console.log("Load email logs error:", e);
+  }
+}
+
+function renderEmailHistoryFromServer(logs){
+  const tbody = document.getElementById("emailHistoryRows");
+  if(!tbody) return;
+
+  if(!logs.length){
+    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = logs.map(log => `
+    <tr>
+      <td>${log.recipient}</td>
+      <td>${log.subject}</td>
+      <td class="ellipsisWide">${log.message}</td>
+      <td>${new Date(log.created_at).toLocaleString()}</td>
+      <td>
+        <button class="btnGhost" onclick="modalShow('Email Content', this.dataset.msg)" data-msg="${log.message.replace(/"/g,'&quot;')}">View</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// auto load when settings visible
+setTimeout(loadEmailHistory, 1000);
+
+
 </script>
 
 </head>
@@ -3893,6 +3944,57 @@ function renderEmailHistory(){
 }
 
 setTimeout(renderEmailHistory, 500);
+
+
+// ====== SERVER EMAIL HISTORY ======
+async function loadEmailHistory(){
+  try{
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action: "get_email_logs" })
+    });
+
+    const data = await res.json();
+    if(!data.success) return;
+
+    renderEmailHistoryFromServer(data.data || []);
+
+  }catch(e){
+    console.log("Load email logs error:", e);
+  }
+}
+
+function renderEmailHistoryFromServer(logs){
+  const tbody = document.getElementById("emailHistoryRows");
+  if(!tbody) return;
+
+  if(!logs.length){
+    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = logs.map(log => `
+    <tr>
+      <td>${log.recipient}</td>
+      <td>${log.subject}</td>
+      <td class="ellipsisWide">${log.message}</td>
+      <td>${new Date(log.created_at).toLocaleString()}</td>
+      <td>
+        <button class="btnGhost" onclick="modalShow('Email Content', this.dataset.msg)" data-msg="${log.message.replace(/"/g,'&quot;')}">View</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+// auto load when settings visible
+setTimeout(loadEmailHistory, 1000);
+
+
 </script>
 
 </body>
