@@ -1519,7 +1519,7 @@ const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wa
 const SITE_CONTENT_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/site-content-api";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
 
-let ADMIN_SECRET = "VGM_ADMIN_2026_qazxswedcvfrtgbnhyuj";
+let ADMIN_SECRET = "";
 let ADMIN_ID = "admin";
 let ACTIVE_VIEW = "overview";
 let AUTO_REFRESH = false;
@@ -3863,6 +3863,55 @@ async function loadEmailHistory(){
   }
 }
 
+</script>
+
+
+<script>
+async function loadEmailHistory(){
+  try{
+    const res = await fetch(API_URL,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action:"email_logs_list" })
+    });
+
+    const json = await res.json();
+    console.log("EMAIL DATA:", json);
+
+    const rows = json?.data || [];
+    const tbody = document.getElementById("emailHistoryRows");
+
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="5">No email history</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const message = (r.message || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+      return `
+        <tr>
+          <td>${r.recipient || ""}</td>
+          <td>${r.subject || ""}</td>
+          <td>${message}</td>
+          <td>${new Date(r.created_at).toLocaleString()}</td>
+          <td>
+            <button onclick="alert(${JSON.stringify(r.message || "")})">
+              View
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+  }catch(e){
+    console.error("Email history error:", e);
+  }
+}
 </script>
 
 </body>
