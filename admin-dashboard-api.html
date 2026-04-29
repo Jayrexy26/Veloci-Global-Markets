@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -659,7 +660,48 @@
    c.type='text/javascript';c.charset='utf-8';c.async=true;
    c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
   })(document);
-  </script>
+  
+/* ✅ Email History System */
+let EMAIL_HISTORY = JSON.parse(localStorage.getItem("email_history") || "[]");
+
+function saveEmailToHistory(data){
+  EMAIL_HISTORY.unshift({
+    ...data,
+    time: new Date().toLocaleString()
+  });
+  localStorage.setItem("email_history", JSON.stringify(EMAIL_HISTORY.slice(0,100)));
+  renderEmailHistory();
+}
+
+function renderEmailHistory(){
+  const box = document.getElementById("emailHistoryBox");
+  if(!box) return;
+  if(!EMAIL_HISTORY.length){
+    box.innerHTML = '<div class="small">No emails sent yet.</div>';
+    return;
+  }
+  box.innerHTML = EMAIL_HISTORY.map(e => `
+    <div class="msgBox">
+      <div class="msgBoxHead">
+        <div class="msgLabel">EMAIL</div>
+        <div class="msgMeta">${e.to} • ${e.time}</div>
+        <button class="msgViewBtn" onclick="modalShow('Email Content', ${JSON.stringify("CONTENT_PLACEHOLDER")}.replace('CONTENT_PLACEHOLDER', e.message))">View</button>
+      </div>
+      <div class="msgText">
+        <strong>${e.subject || ''}</strong><br>
+        ${e.message.slice(0,200)}...
+      </div>
+    </div>
+  `).join("");
+}
+
+function clearEmailHistory(){
+  EMAIL_HISTORY = [];
+  localStorage.removeItem("email_history");
+  renderEmailHistory();
+}
+
+</script>
 
 </head>
 
@@ -892,8 +934,23 @@
                     </thead>
                     <tbody id="riskRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
 
@@ -968,8 +1025,23 @@
                     <input id="manualEmailButtonText" class="grow" placeholder="Button text (optional)">
                     <input id="manualEmailButtonUrl" class="grow" placeholder="Button URL (optional)">
                   </div>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <section id="view-users" class="card hidden">
@@ -998,8 +1070,23 @@
                     </thead>
                     <tbody id="userRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <section id="view-cryptoops" class="card hidden">
@@ -1031,8 +1118,23 @@
                     </thead>
                     <tbody id="cryptoOpsRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <section id="view-plans" class="card hidden">
@@ -1062,8 +1164,23 @@
                     </thead>
                     <tbody id="planRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <!-- ✅ UPDATED: Wallets uses wallet-api and includes preset list -->
@@ -1115,8 +1232,23 @@
                     </thead>
                     <tbody id="walletRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <!-- ✅ NEW: Wallet Links Queue -->
@@ -1157,8 +1289,23 @@
                     </thead>
                     <tbody id="walletLinkRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             
@@ -1200,8 +1347,23 @@
                     </thead>
                     <tbody id="pammRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
 <section id="view-notification" class="card hidden">
@@ -1233,8 +1395,23 @@
                     </thead>
                     <tbody id="notificationRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
 <section id="view-support" class="card hidden">
@@ -1263,8 +1440,23 @@
                     </thead>
                     <tbody id="supportRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <section id="view-deposits" class="card hidden">
@@ -1295,8 +1487,23 @@
                     </thead>
                     <tbody id="depRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
             <section id="view-withdrawals" class="card hidden">
@@ -1326,8 +1533,23 @@
                     </thead>
                     <tbody id="wdRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
             
             <section id="view-trades" class="card hidden">
@@ -1409,8 +1631,23 @@
                     </thead>
                     <tbody id="tradesRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
 <section id="view-kyc" class="card hidden">
@@ -1441,8 +1678,23 @@
                     </thead>
                     <tbody id="kycRows"></tbody>
                   </table>
+                
+              <!-- ✅ NEW: Email History -->
+              <div class="card" style="margin-bottom:14px; border-radius:18px;">
+                <div class="cardHead">
+                  <div>
+                    <div class="cardTitle">📜 Email History</div>
+                    <div class="small">View sent branded emails (latest first).</div>
+                  </div>
+                  <div class="rowTools">
+                    <button class="btnGhost" onclick="renderEmailHistory()">Refresh</button>
+                    <button class="btnErr" onclick="clearEmailHistory()">Clear</button>
+                  </div>
                 </div>
+
+                <div id="emailHistoryBox" style="display:grid; gap:10px; max-height:400px; overflow:auto;"></div>
               </div>
+
             </section>
 
           </div>
@@ -3014,6 +3266,12 @@ async function uploadHomepageTestimonialAvatar(idx, input){
 
 
 async function sendManualBrandedEmail(){
+  const to = document.getElementById('manualEmailTo').value;
+  const subject = document.getElementById('manualEmailSubject').value;
+  const message = document.getElementById('manualEmailMessage').value;
+  saveEmailToHistory({to, subject, message});
+
+async function _orig_sendManualBrandedEmail(){
   const statusEl = document.getElementById("manualEmailStatus");
   const to = String(document.getElementById("manualEmailTo")?.value || "").trim();
   const user_name = String(document.getElementById("manualEmailUserName")?.value || "").trim();
@@ -3780,6 +4038,47 @@ async function deleteTrade(id){
 
 
 attachScrollHandlers();
+
+/* ✅ Email History System */
+let EMAIL_HISTORY = JSON.parse(localStorage.getItem("email_history") || "[]");
+
+function saveEmailToHistory(data){
+  EMAIL_HISTORY.unshift({
+    ...data,
+    time: new Date().toLocaleString()
+  });
+  localStorage.setItem("email_history", JSON.stringify(EMAIL_HISTORY.slice(0,100)));
+  renderEmailHistory();
+}
+
+function renderEmailHistory(){
+  const box = document.getElementById("emailHistoryBox");
+  if(!box) return;
+  if(!EMAIL_HISTORY.length){
+    box.innerHTML = '<div class="small">No emails sent yet.</div>';
+    return;
+  }
+  box.innerHTML = EMAIL_HISTORY.map(e => `
+    <div class="msgBox">
+      <div class="msgBoxHead">
+        <div class="msgLabel">EMAIL</div>
+        <div class="msgMeta">${e.to} • ${e.time}</div>
+        <button class="msgViewBtn" onclick="modalShow('Email Content', ${JSON.stringify("CONTENT_PLACEHOLDER")}.replace('CONTENT_PLACEHOLDER', e.message))">View</button>
+      </div>
+      <div class="msgText">
+        <strong>${e.subject || ''}</strong><br>
+        ${e.message.slice(0,200)}...
+      </div>
+    </div>
+  `).join("");
+}
+
+function clearEmailHistory(){
+  EMAIL_HISTORY = [];
+  localStorage.removeItem("email_history");
+  renderEmailHistory();
+}
+
 </script>
 
 </body>
