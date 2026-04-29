@@ -660,14 +660,6 @@
    c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
   })(document);
   
-function // removed local render{
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
   tbody.innerHTML = hist.map(function(h){
   return '<tr>' +
     '<td>' + h.to + '</td>' +
@@ -782,7 +774,7 @@ function renderEmailHistoryFromServer(logs){
         <div style="height:12px;"></div>
 
         <div class="inline">
-          <button class="btnPrimary grow" onclick="connectFromLogin(); loadEmailHistory()">Enter Console</button>
+          <button class="btnPrimary grow" onclick="connectFromLogin()">Enter Console</button>
           <button class="btnGhost" onclick="clearLogin()">Clear</button>
         </div>
 
@@ -1988,14 +1980,27 @@ function clearLogin(){
   document.getElementById("loginHint").style.display = "none";
 }
 
-async function connectFromLogin(); loadEmailHistory(){
-  const sid = (document.getElementById("adminIdLogin").value || "").trim();
-  const ssec = (document.getElementById("adminSecretLogin").value || "").trim();
-  if(!ssec){
-    document.getElementById("loginHint").style.display = "inline-flex";
-    document.getElementById("loginHint").textContent = "Enter Admin Secret";
+async 
+function connectFromLogin(){
+  const id = document.getElementById("adminIdLogin").value.trim();
+  const secret = document.getElementById("adminSecretLogin").value.trim();
+
+  if(!id || !secret){
+    document.getElementById("loginHint").style.display = "block";
     return;
   }
+
+  ADMIN_ID = id;
+  ADMIN_SECRET = secret;
+
+  document.getElementById("subAdmin").innerText = "Operator • " + id;
+  document.getElementById("adminChip").innerText = "ADMIN: " + id;
+
+  document.getElementById("loginView").style.display = "none";
+  document.getElementById("appView").style.display = "block";
+
+  loadEmailHistory();
+}
 
   ADMIN_ID = sid || "admin";
   ADMIN_SECRET = ssec;
@@ -3191,7 +3196,7 @@ async function sendManualBrandedEmail(){
     }
 
     if(typeof renderEmailHistory === "function"){
-      // removed local render;
+      renderEmailHistory();
     }
   } catch(e) {
     console.log("Email history error:", e);
@@ -3207,7 +3212,7 @@ async function sendManualBrandedEmail(){
     const hist=JSON.parse(localStorage.getItem('email_history')||'[]');
     hist.unshift({to,subject,message,date:new Date().toLocaleString()});
     localStorage.setItem('email_history',JSON.stringify(hist));
-    if(typeof renderEmailHistory==='function'){// removed local render;}
+    if(typeof renderEmailHistory==='function'){renderEmailHistory();}
   } catch(e){console.log(e);}
 }
 
@@ -3924,14 +3929,6 @@ async function deleteTrade(id){
 
 attachScrollHandlers();
 
-function // removed local render{
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
   tbody.innerHTML = hist.map(function(h){
   return '<tr>' +
     '<td>' + h.to + '</td>' +
