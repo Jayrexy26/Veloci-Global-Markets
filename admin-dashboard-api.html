@@ -3866,6 +3866,62 @@ async function loadEmailHistory(){
   }
 }
 
+
+// ===== FIXED EMAIL HISTORY =====
+async function loadEmailHistory() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action: "email_logs_list" })
+    });
+
+    const json = await res.json();
+    console.log("EMAIL HISTORY RESPONSE:", json);
+
+    const tbody = document.getElementById("emailHistoryRows");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (!json.success || !Array.isArray(json.data)) {
+      tbody.innerHTML = `<tr><td colspan="5">No data returned</td></tr>`;
+      return;
+    }
+
+    json.data.forEach(row => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${row.recipient || ""}</td>
+        <td>${row.subject || ""}</td>
+        <td>${(row.message || "").substring(0, 80)}...</td>
+        <td>${new Date(row.created_at).toLocaleString()}</td>
+        <td>
+          <button onclick="modalOpen('Email Message', \`${(row.message || "").replace(/`/g, "")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("cnt-emailhistory").textContent = json.data.length;
+
+  } catch (err) {
+    console.error(err);
+    const tbody = document.getElementById("emailHistoryRows");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5">Error loading data</td></tr>`;
+    }
+  }
+}
+
 </script>
 
 
@@ -3915,6 +3971,62 @@ async function loadEmailHistory(){
     console.error("Email history error:", e);
   }
 }
+
+// ===== FIXED EMAIL HISTORY =====
+async function loadEmailHistory() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action: "email_logs_list" })
+    });
+
+    const json = await res.json();
+    console.log("EMAIL HISTORY RESPONSE:", json);
+
+    const tbody = document.getElementById("emailHistoryRows");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (!json.success || !Array.isArray(json.data)) {
+      tbody.innerHTML = `<tr><td colspan="5">No data returned</td></tr>`;
+      return;
+    }
+
+    json.data.forEach(row => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${row.recipient || ""}</td>
+        <td>${row.subject || ""}</td>
+        <td>${(row.message || "").substring(0, 80)}...</td>
+        <td>${new Date(row.created_at).toLocaleString()}</td>
+        <td>
+          <button onclick="modalOpen('Email Message', \`${(row.message || "").replace(/`/g, "")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("cnt-emailhistory").textContent = json.data.length;
+
+  } catch (err) {
+    console.error(err);
+    const tbody = document.getElementById("emailHistoryRows");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5">Error loading data</td></tr>`;
+    }
+  }
+}
+
 </script>
 
 </body>
