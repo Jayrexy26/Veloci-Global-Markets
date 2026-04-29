@@ -787,7 +787,7 @@ setTimeout(renderEmailHistory, 500);
           </div>
 
 
-          <div class="navBtn" id="nav-settings" onclick="switchView('settings')">
+          <div class="navBtn" id="nav-settings" onclick="switchView('settings'); setTimeout(renderEmailHistory, 200);">
             <div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div>
             <div class="countPill" id="cnt-settings">•</div>
           </div>
@@ -3118,7 +3118,33 @@ async function sendManualBrandedEmail(){
       subject: document.getElementById("manualEmailSubject").value,
       message: document.getElementById("manualEmailMessage").value,
       date: new Date().toLocaleString()
-    });
+    
+
+    // ✅ FORCE LOG AFTER SEND (guaranteed run)
+    try {
+      const to = document.getElementById("manualEmailTo").value;
+      const subject = document.getElementById("manualEmailSubject").value;
+      const message = document.getElementById("manualEmailMessage").value;
+
+      if(to && subject && message){
+        const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
+        hist.unshift({
+          to: to,
+          subject: subject,
+          message: message,
+          date: new Date().toLocaleString()
+        });
+        localStorage.setItem("email_history", JSON.stringify(hist));
+      }
+
+      if(typeof renderEmailHistory === "function"){
+        renderEmailHistory();
+      }
+    } catch(e){
+      console.log("Email history log error:", e);
+    }
+
+});
   }catch(e){}
 }
   if(!subject){
