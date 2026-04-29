@@ -660,26 +660,6 @@
    c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
   })(document);
   
-function renderEmailHistory(){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = hist.map(function(h){
-  return '<tr>' +
-    '<td>' + h.to + '</td>' +
-    '<td>' + h.subject + '</td>' +
-    '<td class="ellipsisWide">' + h.message + '</td>' +
-    '<td>' + h.date + '</td>' +
-    '<td><button class="btnGhost" onclick="modalShow(\'Email Content\', this.dataset.msg)" data-msg="'+h.message.replace(/"/g,'&quot;')+'">View</button></td>' +
-  '</tr>';
-}).join("");
-}
-
-setTimeout(renderEmailHistory, 500);
 
 
 // ====== SERVER EMAIL HISTORY ======
@@ -689,8 +669,8 @@ async function loadEmailHistory(){
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET,
-        "x-admin-id": ADMIN_ID
+        "x-admin-secret": localStorage.getItem("admin_secret") || "",
+        "x-admin-id": localStorage.getItem("admin_id") || ""
       },
       body: JSON.stringify({ action: "get_email_logs" })
     });
@@ -718,7 +698,7 @@ function renderEmailHistoryFromServer(logs){
     <tr>
       <td>${log.recipient}</td>
       <td>${log.subject}</td>
-      <td class="ellipsisWide">${log.message}</td>
+      <td class="ellipsisWide">${(log.message||"").substring(0,120)}...</td>
       <td>${new Date(log.created_at).toLocaleString()}</td>
       <td>
         <button class="btnGhost" onclick="modalShow('Email Content', decodeURIComponent(this.dataset.msg))" data-msg="${encodeURIComponent(log.message)}">View</button>
@@ -728,7 +708,7 @@ function renderEmailHistoryFromServer(logs){
 }
 
 // auto load when settings visible
-setTimeout(loadEmailHistory, 1000);
+
 
 
 </script>
@@ -3924,26 +3904,6 @@ async function deleteTrade(id){
 
 attachScrollHandlers();
 
-function renderEmailHistory(){
-  const tbody = document.getElementById("emailHistoryRows");
-  if(!tbody) return;
-  const hist = JSON.parse(localStorage.getItem("email_history") || "[]");
-  if(!hist.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="small">No history yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = hist.map(function(h){
-  return '<tr>' +
-    '<td>' + h.to + '</td>' +
-    '<td>' + h.subject + '</td>' +
-    '<td class="ellipsisWide">' + h.message + '</td>' +
-    '<td>' + h.date + '</td>' +
-    '<td><button class="btnGhost" onclick="modalShow(\'Email Content\', this.dataset.msg)" data-msg="'+h.message.replace(/"/g,'&quot;')+'">View</button></td>' +
-  '</tr>';
-}).join("");
-}
-
-setTimeout(renderEmailHistory, 500);
 
 
 // ====== SERVER EMAIL HISTORY ======
@@ -3953,8 +3913,8 @@ async function loadEmailHistory(){
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET,
-        "x-admin-id": ADMIN_ID
+        "x-admin-secret": localStorage.getItem("admin_secret") || "",
+        "x-admin-id": localStorage.getItem("admin_id") || ""
       },
       body: JSON.stringify({ action: "get_email_logs" })
     });
@@ -3982,7 +3942,7 @@ function renderEmailHistoryFromServer(logs){
     <tr>
       <td>${log.recipient}</td>
       <td>${log.subject}</td>
-      <td class="ellipsisWide">${log.message}</td>
+      <td class="ellipsisWide">${(log.message||"").substring(0,120)}...</td>
       <td>${new Date(log.created_at).toLocaleString()}</td>
       <td>
         <button class="btnGhost" onclick="modalShow('Email Content', decodeURIComponent(this.dataset.msg))" data-msg="${encodeURIComponent(log.message)}">View</button>
@@ -3992,7 +3952,7 @@ function renderEmailHistoryFromServer(logs){
 }
 
 // auto load when settings visible
-setTimeout(loadEmailHistory, 1000);
+
 
 
 </script>
