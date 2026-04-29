@@ -1655,6 +1655,9 @@ function closeSidebar(){
 }
 
 function switchView(view){
+  if(view === "emailhistory"){
+    setTimeout(()=>{ try{ loadEmailHistory(); }catch(e){} }, 50);
+  }
   ACTIVE_VIEW = view;
   document.getElementById("appView").setAttribute("data-view", view);
 
@@ -3838,7 +3841,7 @@ async function loadEmailHistory(){
       body: JSON.stringify({action:"email_logs_list"})
     });
     const json = await res.json();
-    const rows = json?.data || [];
+    const rows = json?.data || json?.data?.data || [];
     document.getElementById("cnt-emailhistory").textContent = rows.length;
 
     document.getElementById("emailHistoryRows").innerHTML = rows.map(r=>`
