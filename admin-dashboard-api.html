@@ -3832,43 +3832,17 @@ async function deleteTrade(id){
 
 attachScrollHandlerdlers();
 
+
 async function loadEmailHistory(){
-  const status = document.getElementById("emailHistoryStatus");
-  status.textContent = "Loading...";
-  try{
-    const res = await fetch(API_URL,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-admin-secret": ADMIN_SECRET,
-        "x-admin-id": ADMIN_ID
-      },
-      body: JSON.stringify({action:"email_logs_list"})
-    });
-    const json = await res.json();
-    const rows = json?.data || json?.data?.data || [];
-    document.getElementById("cnt-emailhistory").textContent = rows.length;
+  const rows = document.getElementById("emailHistoryRows");
 
-    document.getElementById("emailHistoryRows").innerHTML = rows.map(r=>`
-      <tr>
-        <td>${esc(r.recipient)}</td>
-        <td>${esc(r.subject)}</td>
-        <td class="ellipsisWide">${esc(r.message)}</td>
-        <td>${new Date(r.created_at).toLocaleString()}</td>
-        <td><button class="btnGhost" onclick="modalShow('Email', ${JSON.stringify("MESSAGE")} ); document.getElementById('modalBody').textContent=${JSON.stringify("")}+${JSON.stringify("")}+${"JSON.stringify(r.message)"}">View</button></td>
-      </tr>
-    `).join("");
-
-    status.textContent = "Loaded.";
-  }catch(e){
-    status.textContent = "Error loading.";
-    console.error(e);
+  if (!rows) {
+    console.error("emailHistoryRows not found");
+    return;
   }
-}
 
+  rows.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
 
-// ===== FIXED EMAIL HISTORY =====
-async function loadEmailHistory() {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -3880,18 +3854,102 @@ async function loadEmailHistory() {
       body: JSON.stringify({ action: "email_logs_list" })
     });
 
-    const json = await res.json();
-    console.log("EMAIL HISTORY RESPONSE:", json);
+    const data = await res.json();
 
-    const tbody = document.getElementById("emailHistoryRows");
-    if (!tbody) return;
+    console.log("EMAIL HISTORY RESPONSE:", data);
 
-    tbody.innerHTML = "";
-
-    if (!json.success || !Array.isArray(json.data)) {
-      tbody.innerHTML = `<tr><td colspan="5">No data returned</td></tr>`;
+    if (!data.success || !data.data || data.data.length === 0) {
+      rows.innerHTML = `<tr><td colspan="5">No email history found</td></tr>`;
       return;
     }
+
+    rows.innerHTML = "";
+
+    data.data.forEach(e => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td class="ellipsis">${e.to || "-"}</td>
+        <td class="ellipsis">${e.subject || "-"}</td>
+        <td class="ellipsisWide">${e.message || "-"}</td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td>
+          <button class="btnGhost" onclick="modalShow('Email', \`${(e.message || "").replace(/`/g,"\`")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      rows.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    rows.innerHTML = `<tr><td colspan="5">Error loading email history</td></tr>`;
+  }
+}
+
+}
+
+
+// ===== FIXED EMAIL HISTORY =====
+
+async function loadEmailHistory(){
+  const rows = document.getElementById("emailHistoryRows");
+
+  if (!rows) {
+    console.error("emailHistoryRows not found");
+    return;
+  }
+
+  rows.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET,
+        "x-admin-id": ADMIN_ID
+      },
+      body: JSON.stringify({ action: "email_logs_list" })
+    });
+
+    const data = await res.json();
+
+    console.log("EMAIL HISTORY RESPONSE:", data);
+
+    if (!data.success || !data.data || data.data.length === 0) {
+      rows.innerHTML = `<tr><td colspan="5">No email history found</td></tr>`;
+      return;
+    }
+
+    rows.innerHTML = "";
+
+    data.data.forEach(e => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td class="ellipsis">${e.to || "-"}</td>
+        <td class="ellipsis">${e.subject || "-"}</td>
+        <td class="ellipsisWide">${e.message || "-"}</td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td>
+          <button class="btnGhost" onclick="modalShow('Email', \`${(e.message || "").replace(/`/g,"\`")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      rows.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    rows.innerHTML = `<tr><td colspan="5">Error loading email history</td></tr>`;
+  }
+}
+
 
     json.data.forEach(row => {
       const tr = document.createElement("tr");
@@ -3926,28 +3984,63 @@ async function loadEmailHistory() {
 
 
 <script>
+
 async function loadEmailHistory(){
-  try{
-    const res = await fetch(API_URL,{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
+  const rows = document.getElementById("emailHistoryRows");
+
+  if (!rows) {
+    console.error("emailHistoryRows not found");
+    return;
+  }
+
+  rows.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
         "x-admin-secret": ADMIN_SECRET,
         "x-admin-id": ADMIN_ID
       },
-      body: JSON.stringify({ action:"email_logs_list" })
+      body: JSON.stringify({ action: "email_logs_list" })
     });
 
-    const json = await res.json();
-    console.log("EMAIL DATA:", json);
+    const data = await res.json();
 
-    const rows = json?.data || [];
-    const tbody = document.getElementById("emailHistoryRows");
+    console.log("EMAIL HISTORY RESPONSE:", data);
 
-    if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="5">No email history</td></tr>`;
+    if (!data.success || !data.data || data.data.length === 0) {
+      rows.innerHTML = `<tr><td colspan="5">No email history found</td></tr>`;
       return;
     }
+
+    rows.innerHTML = "";
+
+    data.data.forEach(e => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td class="ellipsis">${e.to || "-"}</td>
+        <td class="ellipsis">${e.subject || "-"}</td>
+        <td class="ellipsisWide">${e.message || "-"}</td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td>
+          <button class="btnGhost" onclick="modalShow('Email', \`${(e.message || "").replace(/`/g,"\`")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      rows.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    rows.innerHTML = `<tr><td colspan="5">Error loading email history</td></tr>`;
+  }
+}
+
 
     tbody.innerHTML = rows.map(r => {
       const message = (r.message || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -3973,7 +4066,17 @@ async function loadEmailHistory(){
 }
 
 // ===== FIXED EMAIL HISTORY =====
-async function loadEmailHistory() {
+
+async function loadEmailHistory(){
+  const rows = document.getElementById("emailHistoryRows");
+
+  if (!rows) {
+    console.error("emailHistoryRows not found");
+    return;
+  }
+
+  rows.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -3985,18 +4088,41 @@ async function loadEmailHistory() {
       body: JSON.stringify({ action: "email_logs_list" })
     });
 
-    const json = await res.json();
-    console.log("EMAIL HISTORY RESPONSE:", json);
+    const data = await res.json();
 
-    const tbody = document.getElementById("emailHistoryRows");
-    if (!tbody) return;
+    console.log("EMAIL HISTORY RESPONSE:", data);
 
-    tbody.innerHTML = "";
-
-    if (!json.success || !Array.isArray(json.data)) {
-      tbody.innerHTML = `<tr><td colspan="5">No data returned</td></tr>`;
+    if (!data.success || !data.data || data.data.length === 0) {
+      rows.innerHTML = `<tr><td colspan="5">No email history found</td></tr>`;
       return;
     }
+
+    rows.innerHTML = "";
+
+    data.data.forEach(e => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td class="ellipsis">${e.to || "-"}</td>
+        <td class="ellipsis">${e.subject || "-"}</td>
+        <td class="ellipsisWide">${e.message || "-"}</td>
+        <td>${new Date(e.created_at).toLocaleString()}</td>
+        <td>
+          <button class="btnGhost" onclick="modalShow('Email', \`${(e.message || "").replace(/`/g,"\`")}\`)">
+            View
+          </button>
+        </td>
+      `;
+
+      rows.appendChild(tr);
+    });
+
+  } catch (err) {
+    console.error(err);
+    rows.innerHTML = `<tr><td colspan="5">Error loading email history</td></tr>`;
+  }
+}
+
 
     json.data.forEach(row => {
       const tr = document.createElement("tr");
