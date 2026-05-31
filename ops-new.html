@@ -1,0 +1,2678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Veloci Global Markets OPS — Admin Control Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/favicon.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase.js"></script>
+  <style>
+    :root {
+      --accent: #f05a1a; --accent-dk: #d94d12;
+      --green: #22a06b; --red: #e60023; --gold: #f5a623; --blue: #1a5cff; --purple: #7c3aed;
+      --bg: #f4f6f9; --bg2: #ffffff; --text: #111; --muted: #666; --border: #e0e3e8;
+      --sidebar-w: 260px; --topbar-h: 64px;
+      --orange: #f05a1a; --orange-dk: #d94d12;
+      --white: #ffffff;
+      --blue-lt: #e8eeff; --green-lt: #e6f7ef; --purple-lt: #ede9fe;
+      --blue-dk: #1244cc;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: clip; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.6; overflow-x: clip; }
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+    ul { list-style: none; }
+    input, select, textarea { font-family: inherit; }
+
+    body.dark {
+      --bg: #0f1117; --bg2: #1a1d27; --white: #1a1d27; --text: #e8eaf0;
+      --muted: #8b90a0; --border: #2a2d3a; --blue-lt: #1a2444; --green-lt: #0d2b1e;
+      --purple-lt: #2d1f5e; color-scheme: dark;
+    }
+    body.dark .sidebar { background: #080b13; }
+    body.dark .topbar, body.dark .card, body.dark .modal,
+    body.dark .data-table thead th { background: #1a1d27; }
+    body.dark .field input, body.dark .field select, body.dark .field textarea { background: #0f1117; color: var(--text); }
+    body.dark .stat-card { background: #1a1d27; }
+    body.dark tbody tr:hover { background: #0f1117; }
+    body.dark .tab-btn:hover { background: #0f1117; }
+    body.dark .topbar__icon-btn { background: #0f1117; }
+    body.dark select option { background: #1a1d27; color: #e8eaf0; }
+    body.dark select { color-scheme: dark; }
+    body.dark .filter-bar__search, body.dark .filter-bar__select { background: #1a1d27; color: var(--text); }
+    body.dark .modal__head { background: #1a1d27; }
+
+    /* LAYOUT */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar-w); background: #0a0e1a; color: #fff;
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 200;
+      transition: transform 0.25s ease;
+    }
+    .sidebar__logo {
+      height: var(--topbar-h); display: flex; align-items: center; gap: 10px;
+      padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+    }
+    .sidebar__logo img { width: 32px; height: 32px; object-fit: contain; }
+    .sidebar__logo-badge {
+      background: var(--orange); color: #fff; font-size: 10px; font-weight: 800;
+      padding: 2px 7px; border-radius: 4px; letter-spacing: 0.08em;
+    }
+    .sidebar__logo-text { font-size: 15px; font-weight: 700; color: #fff; }
+    .sidebar__logo-sub { font-size: 10px; color: rgba(255,255,255,0.35); }
+    .sidebar__nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .sidebar__section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 14px 20px 5px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 20px; font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.6); cursor: pointer;
+      border: none; background: none; width: 100%; text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-item.active { background: rgba(240,90,26,0.18); color: #fff; border-left: 3px solid var(--orange); }
+    .nav-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; flex-shrink: 0; }
+    .nav-item__badge { margin-left: auto; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+    .badge-red { background: var(--red); color: #fff; }
+    .badge-orange { background: var(--gold); color: #fff; }
+    .badge-green { background: var(--green); color: #fff; }
+    .sidebar__footer {
+      padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar__avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .sidebar__user-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .sidebar__user-role { font-size: 10px; color: rgba(255,255,255,0.4); }
+    .sidebar__logout { margin-left: auto; background: none; border: none; color: rgba(255,255,255,0.35); padding: 4px; }
+    .sidebar__logout:hover { color: var(--red); }
+    .sidebar__logout svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+    /* MAIN */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
+
+    /* TOPBAR */
+    .topbar {
+      height: var(--topbar-h); background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; gap: 12px;
+      position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+    }
+    .topbar__title { font-size: 15px; font-weight: 700; }
+    .topbar__env { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 4px; background: rgba(240,90,26,0.1); color: var(--orange); letter-spacing: 0.08em; }
+    .topbar__right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .topbar__icon-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--bg); border: none; display: flex; align-items: center; justify-content: center; position: relative; transition: background 0.15s; }
+    .topbar__icon-btn:hover { background: var(--border); }
+    .topbar__icon-btn svg { width: 16px; height: 16px; fill: none; stroke: var(--text); stroke-width: 2; }
+    .topbar__avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+    .dark-toggle { width: 34px; height: 34px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+    .dark-toggle svg { width: 15px; height: 15px; fill: none; stroke: var(--text); stroke-width: 2; }
+
+    /* CONTENT */
+    .content { padding: 24px; flex: 1; min-width: 0; overflow-x: clip; }
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 12px; }
+    .page-header__title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+    .page-header__sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 7px; font-size: 13px; font-weight: 600; padding: 8px 16px; border: none; cursor: pointer; transition: background 0.15s, opacity 0.15s; white-space: nowrap; }
+    .btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+    .btn--primary { background: var(--orange); color: #fff; }
+    .btn--primary:hover { background: var(--orange-dk); }
+    .btn--blue { background: var(--blue); color: #fff; }
+    .btn--blue:hover { background: var(--blue-dk); }
+    .btn--green { background: var(--green); color: #fff; }
+    .btn--green:hover { opacity: 0.88; }
+    .btn--red { background: var(--red); color: #fff; }
+    .btn--red:hover { opacity: 0.88; }
+    .btn--outline { background: var(--white); color: var(--text); border: 1.5px solid var(--border); }
+    .btn--outline:hover { border-color: var(--orange); color: var(--orange); }
+    .btn--sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+    .btn--purple { background: var(--purple); color: #fff; }
+    .btn--gold { background: var(--gold); color: #fff; }
+    .limit-pill { padding: 6px 22px; border-radius: 20px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+    .limit-pill.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* STAT CARDS */
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 14px; margin-bottom: 22px; }
+    .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .stat-card__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .stat-card__label svg { width: 13px; height: 13px; fill: none; stroke-width: 2; }
+    .stat-card__value { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+    .stat-card__change { font-size: 12px; font-weight: 500; margin-top: 5px; }
+    .stat-card__change.up { color: var(--green); }
+    .stat-card__change.down { color: var(--red); }
+    .stat-card--orange { background: var(--orange); border-color: var(--orange); color: #fff; }
+    .stat-card--orange .stat-card__label { color: rgba(255,255,255,0.7); }
+    .stat-card--orange .stat-card__change { color: rgba(255,255,255,0.8); }
+    .stat-card--blue { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .stat-card--blue .stat-card__label { color: rgba(255,255,255,0.7); }
+    .stat-card--blue .stat-card__change { color: rgba(255,255,255,0.8); }
+    .stat-card--green { background: var(--green); border-color: var(--green); color: #fff; }
+    .stat-card--green .stat-card__label { color: rgba(255,255,255,0.7); }
+
+    /* CARD */
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .card__head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+    .card__title { font-size: 14px; font-weight: 700; }
+    .card__body { padding: 20px; }
+    .card__body--p0 { padding: 0; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; }
+    .tab-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--muted); background: none; border: none; cursor: pointer; transition: background 0.12s, color 0.12s; }
+    .tab-btn:hover { background: var(--bg); color: var(--text); }
+    .tab-btn.active { background: rgba(240,90,26,0.12); color: var(--orange); }
+
+    /* DATA TABLE */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    .data-table thead th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg); white-space: nowrap; }
+    .data-table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--bg); }
+
+    /* BADGE PILLS */
+    .badge-pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pill-green { background: var(--green-lt); color: var(--green); }
+    .pill-red { background: #fff0f0; color: var(--red); }
+    .pill-blue { background: var(--blue-lt); color: var(--blue); }
+    .pill-orange { background: rgba(240,90,26,0.12); color: var(--orange); }
+    .pill-purple { background: var(--purple-lt); color: var(--purple); }
+    .pill-grey { background: var(--bg); color: var(--muted); }
+    .pill-gold { background: rgba(245,166,35,0.15); color: var(--gold); }
+    body.dark .pill-red { background: rgba(230,0,35,0.15); }
+    body.dark .pill-grey { background: #2a2d3a; }
+
+    /* USER CELL */
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; }
+    .user-email { font-size: 11px; color: var(--muted); }
+    .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* FORMS */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field--full { grid-column: 1 / -1; }
+    .field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .field input, .field select, .field textarea { height: 40px; border: 1.5px solid var(--border); border-radius: 7px; padding: 0 12px; font-size: 13px; color: var(--text); background: var(--white); outline: none; transition: border-color 0.15s; }
+    .field textarea { height: auto; padding: 10px 12px; resize: vertical; min-height: 80px; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--orange); }
+    .field select { appearance: none; background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center; padding-right: 32px; }
+
+    /* TOGGLE */
+    .toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .toggle-wrap:last-child { border-bottom: none; }
+    .toggle-wrap__label { font-size: 13px; font-weight: 500; }
+    .toggle-wrap__sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 22px; cursor: pointer; transition: background 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--orange); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* PLAN OPTS */
+    .plan-opt { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .plan-opt:has(input:checked) { border-color: var(--orange); background: rgba(240,90,26,.06); }
+    .plan-opt input[type=radio] { accent-color: var(--orange); flex-shrink: 0; }
+    .plan-opt__name { font-size: 13px; font-weight: 700; flex: 1; }
+    .plan-opt__desc { font-size: 11.5px; color: var(--muted); }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--white); border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .modal--lg { max-width: 740px; }
+    .modal__head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--white); z-index: 1; }
+    .modal__title { font-size: 16px; font-weight: 700; }
+    .modal__close { background: none; border: none; color: var(--muted); padding: 4px; }
+    .modal__close:hover { color: var(--text); }
+    .modal__close svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+    .modal__body { padding: 22px; }
+    .modal__foot { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: var(--text); color: var(--white); padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(80px); opacity: 0; transition: transform 0.3s, opacity 0.3s; max-width: 360px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+    .toast svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2.5; flex-shrink: 0; }
+
+    /* PAGES */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ACTIVITY */
+    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .activity-text { font-size: 13px; flex: 1; line-height: 1.5; }
+    .activity-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+    /* GRIDS */
+    .dash-grid { display: grid; grid-template-columns: 1fr 340px; gap: 18px; }
+    .two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .filter-bar__search { height: 34px; border: 1.5px solid var(--border); border-radius: 7px; padding: 0 12px; font-size: 13px; outline: none; width: 220px; color: var(--text); background: var(--white); }
+    .filter-bar__select { height: 34px; border: 1.5px solid var(--border); border-radius: 7px; padding: 0 28px 0 12px; font-size: 13px; outline: none; min-width: 140px; color: var(--text); background: var(--white); appearance: none; }
+
+    /* SKELETON */
+    .skel { background: linear-gradient(90deg, var(--border) 25%, var(--bg) 50%, var(--border) 75%); background-size: 200% 100%; animation: skelAnim 1.3s infinite; border-radius: 6px; height: 14px; }
+    @keyframes skelAnim { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* PROGRESS BAR */
+    .progress-bar-wrap { background: var(--border); border-radius: 20px; height: 10px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 20px; background: var(--orange); transition: width 0.5s ease; }
+
+    /* SETTINGS TABS */
+    .settings-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 22px; overflow-x: auto; }
+    .stab { padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; white-space: nowrap; }
+    .stab.active { color: var(--orange); border-bottom-color: var(--orange); }
+    .stab-panel { display: none; }
+    .stab-panel.active { display: block; }
+
+    /* DEPOSIT ADDR ROW */
+    .addr-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .addr-row:last-child { border-bottom: none; }
+    .addr-label { font-size: 13px; font-weight: 600; }
+    .addr-sub { font-size: 11px; color: var(--muted); }
+
+    /* MARKET ROW */
+    .market-row { display: grid; grid-template-columns: 140px 60px 100px 100px 80px; gap: 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .market-row:last-child { border-bottom: none; }
+    .market-row input { height: 34px; border: 1.5px solid var(--border); border-radius: 7px; padding: 0 10px; font-size: 13px; outline: none; background: var(--white); color: var(--text); }
+    .market-row input:focus { border-color: var(--orange); }
+
+    /* DTI PANEL */
+    .dti-panel { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .dti-panel h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+    .direction-btns { display: flex; gap: 8px; }
+    .dir-btn { flex: 1; padding: 10px; border-radius: 7px; font-size: 13px; font-weight: 700; border: 2px solid var(--border); background: var(--white); color: var(--text); cursor: pointer; transition: all .15s; }
+    .dir-btn.buy.active { background: var(--green); color: #fff; border-color: var(--green); }
+    .dir-btn.sell.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+    /* REVIEW CARD */
+    .review-stars { color: var(--gold); font-size: 16px; }
+
+    @media (max-width: 1024px) {
+      .dash-grid { grid-template-columns: 1fr; }
+      .two-col-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid--3 { grid-template-columns: 1fr; }
+      .market-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__logo">
+      <img src="assets/vgm-logo.png" alt="VGM Logo" onerror="this.style.display='none'">
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="sidebar__logo-text">Veloci Global</span>
+          <span class="sidebar__logo-badge">OPS</span>
+        </div>
+        <div class="sidebar__logo-sub">Markets Admin</div>
+      </div>
+    </div>
+    <nav class="sidebar__nav" id="sidebarNav">
+      <div class="sidebar__section-label">Overview</div>
+      <button class="nav-item active" data-page="dashboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-page="live-activity">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Live Activity
+      </button>
+      <div class="sidebar__section-label">Users</div>
+      <button class="nav-item" data-page="user-management">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        User Management
+      </button>
+      <button class="nav-item" data-page="kyc">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        KYC / Verification
+        <span class="nav-item__badge badge-red" id="navBadgeKyc">0</span>
+      </button>
+      <button class="nav-item" data-page="trading-accounts">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Trading Accounts
+      </button>
+      <button class="nav-item" data-page="balances">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Balances &amp; P&amp;L
+      </button>
+      <div class="sidebar__section-label">Trading</div>
+      <button class="nav-item" data-page="open-positions">
+        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Open Positions
+      </button>
+      <button class="nav-item" data-page="profit-targets">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Profit Targets
+      </button>
+      <div class="sidebar__section-label">Finance</div>
+      <button class="nav-item" data-page="deposits">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        Deposits
+        <span class="nav-item__badge badge-orange" id="navBadgeDep">0</span>
+      </button>
+      <button class="nav-item" data-page="withdrawals">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        Withdrawals
+        <span class="nav-item__badge badge-red" id="navBadgeWd">0</span>
+      </button>
+      <button class="nav-item" data-page="all-transactions">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        All Transactions
+      </button>
+      <div class="sidebar__section-label">Comms</div>
+      <button class="nav-item" data-page="announcements">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Announcements
+      </button>
+      <button class="nav-item" data-page="email-users">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Users
+      </button>
+      <div class="sidebar__section-label">Config</div>
+      <button class="nav-item" data-page="markets-control">
+        <svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        Markets Control
+      </button>
+      <button class="nav-item" data-page="system-settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M17.66 17.66l-1.41-1.41M6.34 17.66l1.41-1.41"/></svg>
+        System Settings
+      </button>
+      <div class="sidebar__section-label">Logs</div>
+      <button class="nav-item" data-page="audit-log">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+        Audit Log
+      </button>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__avatar" id="sidebarAvatar">AD</div>
+      <div>
+        <div class="sidebar__user-name" id="sidebarName">Admin</div>
+        <div class="sidebar__user-role" id="sidebarRole">Administrator</div>
+      </div>
+      <button class="sidebar__logout" title="Sign Out" onclick="signOut()">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <div class="topbar__title" id="topbarTitle">Dashboard</div>
+        <div style="font-size:11px;color:var(--muted)" id="topbarSub">Overview &amp; stats</div>
+      </div>
+      <span class="topbar__env">ADMIN</span>
+      <div class="topbar__right">
+        <button class="dark-toggle topbar__icon-btn" onclick="toggleDark()" title="Toggle dark mode">
+          <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <div class="topbar__avatar" id="topbarAvatar">AD</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ==================== PAGE: DASHBOARD ==================== -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Dashboard</div>
+            <div class="page-header__sub">Real-time overview of platform activity</div>
+          </div>
+          <button class="btn btn--outline btn--sm" onclick="loadDashboard()">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+        <div class="stat-cards" id="dashStats">
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+          <div class="stat-card"><div class="skel" style="width:60%;margin-bottom:10px"></div><div class="skel" style="width:40%;height:24px"></div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card__head"><span class="card__title">Recent Registrations</span></div>
+            <div class="card__body--p0 table-wrap">
+              <table class="data-table">
+                <thead><tr><th>User</th><th>Type</th><th>Plan</th><th>Status</th><th>Joined</th></tr></thead>
+                <tbody id="dashRecentUsers"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card" style="overflow:hidden">
+            <div class="card__head"><span class="card__title">Recent Activity</span></div>
+            <div class="card__body" id="dashActivity" style="max-height:460px;overflow-y:auto">
+              <div style="text-align:center;color:var(--muted);padding:30px">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: LIVE ACTIVITY ==================== -->
+      <div class="page" id="page-live-activity">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Live Activity</div>
+            <div class="page-header__sub">Auto-refreshes every 30 seconds</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:12px;color:var(--muted)" id="liveLastRefresh"></span>
+            <button class="btn btn--outline btn--sm" onclick="loadLiveActivity()">Refresh Now</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body" id="liveActivityFeed">
+            <div style="text-align:center;color:var(--muted);padding:40px">Loading activity...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: USER MANAGEMENT ==================== -->
+      <div class="page" id="page-user-management">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">User Management</div>
+            <div class="page-header__sub">Manage all platform accounts</div>
+          </div>
+          <button class="btn btn--primary" onclick="openModal('modalAddUser')">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add User
+          </button>
+        </div>
+        <div class="card">
+          <div class="card__head">
+            <div class="tabs" id="userTabs">
+              <button class="tab-btn active" onclick="setUserTab('all',this)">All</button>
+              <button class="tab-btn" onclick="setUserTab('live',this)">Live</button>
+              <button class="tab-btn" onclick="setUserTab('demo',this)">Demo</button>
+              <button class="tab-btn" onclick="setUserTab('suspended',this)">Suspended</button>
+            </div>
+            <div class="filter-bar">
+              <input type="text" class="filter-bar__search" id="userSearch" placeholder="Search name / email..." oninput="renderUserTable()">
+            </div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Type</th><th>Plan</th><th>Balance</th><th>KYC</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="userTableBody"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: KYC ==================== -->
+      <div class="page" id="page-kyc">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">KYC / Verification</div>
+            <div class="page-header__sub">Review and action identity submissions</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head">
+            <div class="tabs" id="kycTabs">
+              <button class="tab-btn active" onclick="setKycTab('pending',this)">Pending</button>
+              <button class="tab-btn" onclick="setKycTab('approved',this)">Approved</button>
+              <button class="tab-btn" onclick="setKycTab('rejected',this)">Rejected</button>
+              <button class="tab-btn" onclick="setKycTab('all',this)">All</button>
+            </div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Doc Type</th><th>Country</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="kycTableBody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: TRADING ACCOUNTS ==================== -->
+      <div class="page" id="page-trading-accounts">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Trading Accounts</div>
+            <div class="page-header__sub">Account overview with position summaries</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head"><span class="card__title">All Accounts</span></div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Balance</th><th>Total P&amp;L</th><th>Open Positions</th><th>Plan</th><th>Type</th><th>Actions</th></tr></thead>
+              <tbody id="tradingAccountsBody"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: BALANCES ==================== -->
+      <div class="page" id="page-balances">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Balances &amp; P&amp;L</div>
+            <div class="page-header__sub">Full financial overview per account</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head"><span class="card__title">All Profiles</span></div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Balance</th><th>Total P&amp;L</th><th>Equity</th><th>Type</th><th>Plan</th></tr></thead>
+              <tbody id="balancesBody"><tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: OPEN POSITIONS ==================== -->
+      <div class="page" id="page-open-positions">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Open Positions</div>
+            <div class="page-header__sub">Manage and close active trades</div>
+          </div>
+        </div>
+
+        <!-- DTI PANEL -->
+        <div class="dti-panel">
+          <h3>Direct Trade Input (DTI)</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label>Select User</label>
+              <select id="dtiUser"><option value="">— Select User —</option></select>
+            </div>
+            <div class="field">
+              <label>Market Category</label>
+              <select id="dtiMarket" onchange="updateDtiPairs()">
+                <option value="crypto">Crypto</option>
+                <option value="forex">Forex</option>
+                <option value="stocks">Stocks</option>
+                <option value="indices">Indices</option>
+                <option value="commodities">Commodities</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Pair</label>
+              <select id="dtiPair"></select>
+            </div>
+            <div class="field">
+              <label>Size (lots)</label>
+              <input type="number" id="dtiSize" value="1.00" min="0.01" max="100" step="0.01">
+            </div>
+            <div class="field">
+              <label>P&amp;L Amount ($)</label>
+              <input type="number" id="dtiPnl" placeholder="e.g. 250.00 or -100.00">
+            </div>
+            <div class="field">
+              <label>Date/Time (optional)</label>
+              <input type="datetime-local" id="dtiDatetime">
+            </div>
+            <div class="field--full direction-btns" style="display:flex;gap:8px">
+              <button class="dir-btn buy active" id="dtiBuy" onclick="setDtiDir('buy')">BUY</button>
+              <button class="dir-btn sell" id="dtiSell" onclick="setDtiDir('sell')">SELL</button>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <button class="btn btn--primary" onclick="submitDTI()">Submit Trade</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__head"><span class="card__title">Open Positions</span></div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Ticket</th><th>User</th><th>Pair</th><th>Direction</th><th>Size</th><th>Open Price</th><th>P&amp;L</th><th>Status</th><th>Opened</th><th>Actions</th></tr></thead>
+              <tbody id="positionsBody"><tr><td colspan="10" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: PROFIT TARGETS ==================== -->
+      <div class="page" id="page-profit-targets">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Profit Targets</div>
+            <div class="page-header__sub">Per-user profit target tracking</div>
+          </div>
+        </div>
+        <div class="two-col-grid" style="margin-bottom:20px">
+          <div class="card" style="margin-bottom:0">
+            <div class="card__head"><span class="card__title">Select User</span></div>
+            <div class="card__body">
+              <div class="field">
+                <label>User</label>
+                <select id="ptUserSelect" onchange="loadProfitTarget()">
+                  <option value="">— Select User —</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0" id="ptSummaryCard">
+            <div class="card__head"><span class="card__title">Target Progress</span></div>
+            <div class="card__body" id="ptSummaryBody">
+              <div style="color:var(--muted);font-size:13px">Select a user to view their target.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="ptActionsCard" style="display:none">
+          <div class="card__head">
+            <span class="card__title">Target Details</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn--outline btn--sm" onclick="openSetTargetModal()">Set Target</button>
+              <button class="btn btn--primary btn--sm" onclick="openAddTradeModal()">Add Trade Entry</button>
+            </div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Amount</th><th>Note</th></tr></thead>
+              <tbody id="ptTradesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: DEPOSITS ==================== -->
+      <div class="page" id="page-deposits">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Deposits</div>
+            <div class="page-header__sub">Review and approve deposit requests</div>
+          </div>
+          <button class="btn btn--primary" onclick="openModal('modalManualDeposit')">Manual Deposit</button>
+        </div>
+        <div class="card">
+          <div class="card__head">
+            <div class="tabs" id="depTabs">
+              <button class="tab-btn active" onclick="setDepTab('pending',this)">Pending</button>
+              <button class="tab-btn" onclick="setDepTab('approved',this)">Approved</button>
+              <button class="tab-btn" onclick="setDepTab('rejected',this)">Rejected</button>
+              <button class="tab-btn" onclick="setDepTab('all',this)">All</button>
+            </div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Amount</th><th>Coin</th><th>Network</th><th>Method</th><th>Status</th><th>Proof</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="depositsBody"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: WITHDRAWALS ==================== -->
+      <div class="page" id="page-withdrawals">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Withdrawals</div>
+            <div class="page-header__sub">Review and approve withdrawal requests</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head">
+            <div class="tabs" id="wdTabs">
+              <button class="tab-btn active" onclick="setWdTab('pending',this)">Pending</button>
+              <button class="tab-btn" onclick="setWdTab('approved',this)">Approved</button>
+              <button class="tab-btn" onclick="setWdTab('rejected',this)">Rejected</button>
+              <button class="tab-btn" onclick="setWdTab('all',this)">All</button>
+            </div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Amount</th><th>Method</th><th>Destination</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="withdrawalsBody"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: ALL TRANSACTIONS ==================== -->
+      <div class="page" id="page-all-transactions">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">All Transactions</div>
+            <div class="page-header__sub">Read-only transaction history (last 200)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Coin</th><th>Status</th><th>Date</th><th>Note</th></tr></thead>
+              <tbody id="txBody"><tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: ANNOUNCEMENTS ==================== -->
+      <div class="page" id="page-announcements">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Announcements</div>
+            <div class="page-header__sub">Publish platform-wide messages</div>
+          </div>
+          <button class="btn btn--primary" onclick="openModal('modalAnnouncement');document.getElementById('annEditId').value='';">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Announcement
+          </button>
+        </div>
+        <div class="card">
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Title</th><th>Audience</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="annBody"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: EMAIL USERS ==================== -->
+      <div class="page" id="page-email-users">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Email Users</div>
+            <div class="page-header__sub">Send emails to user groups</div>
+          </div>
+        </div>
+        <div class="card" style="max-width:600px">
+          <div class="card__head"><span class="card__title">Compose Email</span></div>
+          <div class="card__body">
+            <div class="form-grid" style="grid-template-columns:1fr">
+              <div class="field">
+                <label>Recipient Group</label>
+                <select id="emailGroup">
+                  <option value="all">All Users</option>
+                  <option value="live_traders">Live Traders</option>
+                  <option value="demo_traders">Demo Traders</option>
+                  <option value="pending_kyc">Pending KYC</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Subject</label>
+                <input type="text" id="emailSubject" placeholder="Email subject...">
+              </div>
+              <div class="field">
+                <label>Body</label>
+                <textarea id="emailBody" rows="8" placeholder="Email content..."></textarea>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn btn--primary" onclick="sendEmail()">Send Email</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: MARKETS CONTROL ==================== -->
+      <div class="page" id="page-markets-control">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Markets Control</div>
+            <div class="page-header__sub">Enable/disable trading instruments</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__head"><span class="card__title">Instruments</span></div>
+          <div class="card__body" id="marketsBody">
+            <div style="display:grid;grid-template-columns:140px 70px 110px 110px 80px;gap:12px;padding:8px 0;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">
+              <span>Instrument</span><span>Enabled</span><span>Spread</span><span>Leverage</span><span></span>
+            </div>
+            <div id="marketsList">Loading...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: SYSTEM SETTINGS ==================== -->
+      <div class="page" id="page-system-settings">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">System Settings</div>
+            <div class="page-header__sub">Configure platform behaviour</div>
+          </div>
+        </div>
+        <div class="settings-tabs">
+          <button class="stab active" onclick="setStab('platform-info',this)">Platform Info</button>
+          <button class="stab" onclick="setStab('platform-toggles',this)">Platform Toggles</button>
+          <button class="stab" onclick="setStab('deposit-addresses',this)">Deposit Addresses</button>
+          <button class="stab" onclick="setStab('limits',this)">Limits</button>
+          <button class="stab" onclick="setStab('reviews',this)">Client Reviews</button>
+        </div>
+
+        <!-- Platform Info -->
+        <div class="stab-panel active" id="stab-platform-info">
+          <div class="card" style="max-width:560px">
+            <div class="card__head"><span class="card__title">Platform Information</span></div>
+            <div class="card__body">
+              <div class="form-grid" style="grid-template-columns:1fr">
+                <div class="field"><label>Platform Name</label><input type="text" id="setPlatformName" placeholder="Veloci Global Markets"></div>
+                <div class="field"><label>Support Email</label><input type="email" id="setSupportEmail" placeholder="support@velocigm.com"></div>
+                <div class="field"><label>Support Phone</label><input type="text" id="setSupportPhone" placeholder="+1 (800) 000-0000"></div>
+              </div>
+              <div style="margin-top:16px"><button class="btn btn--primary" onclick="savePlatformInfo()">Save Changes</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Platform Toggles -->
+        <div class="stab-panel" id="stab-platform-toggles">
+          <div class="card" style="max-width:600px">
+            <div class="card__head"><span class="card__title">Platform Toggles</span></div>
+            <div class="card__body" id="togglesBody">
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Registrations Open</div><div class="toggle-wrap__sub">Allow new user registrations</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togRegistrations" onchange="saveToggle('registrations_open',this)"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Live Trading Enabled</div><div class="toggle-wrap__sub">Allow live trading activity</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togLiveTrading" onchange="saveToggle('live_trading_enabled',this)"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Deposits Enabled</div><div class="toggle-wrap__sub">Allow users to submit deposit requests</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togDeposits" onchange="saveToggle('deposits_enabled',this)"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Withdrawals Restricted</div><div class="toggle-wrap__sub">Block withdrawal requests platform-wide</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togWithdrawals" onchange="saveToggle('withdrawals_enabled',this)"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Maintenance Mode</div><div class="toggle-wrap__sub">Show maintenance page to users</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togMaintenance" onchange="saveToggle('maintenance_mode',this)"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-wrap">
+                <div><div class="toggle-wrap__label">Bank Withdrawal Maintenance</div><div class="toggle-wrap__sub">Block bank withdrawal requests</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="togBankWd" onchange="saveToggle('bank_wd_maintenance_enabled',this)"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deposit Addresses -->
+        <div class="stab-panel" id="stab-deposit-addresses">
+          <div class="card">
+            <div class="card__head"><span class="card__title">Deposit Addresses</span><button class="btn btn--primary btn--sm" onclick="saveDepositAddresses()">Save All</button></div>
+            <div class="card__body" id="depositAddrBody">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Limits -->
+        <div class="stab-panel" id="stab-limits">
+          <div class="card" style="max-width:640px">
+            <div class="card__head"><span class="card__title">Deposit &amp; Withdrawal Limits</span></div>
+            <div class="card__body">
+              <div class="field" style="margin-bottom:16px">
+                <label>Mode</label>
+                <select id="limitsMode" onchange="renderLimitsMode()">
+                  <option value="global_deposit">Global Deposit</option>
+                  <option value="global_withdrawal">Global Withdrawal</option>
+                  <option value="per_user">Per User</option>
+                </select>
+              </div>
+              <div id="limitsForm"></div>
+            </div>
+          </div>
+          <div class="card" style="max-width:640px">
+            <div class="card__head"><span class="card__title">Active Limits Summary</span></div>
+            <div class="card__body--p0 table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Key</th><th>Value</th><th>Updated</th></tr></thead>
+                <tbody id="limitsSummaryBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reviews -->
+        <div class="stab-panel" id="stab-reviews">
+          <div class="page-header" style="margin-bottom:14px">
+            <span></span>
+            <button class="btn btn--primary btn--sm" onclick="openReviewModal()">Add Review</button>
+          </div>
+          <div class="card">
+            <div class="card__body--p0 table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Name</th><th>Role</th><th>Stars</th><th>Active</th><th>Sort</th><th>Actions</th></tr></thead>
+                <tbody id="reviewsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PAGE: AUDIT LOG ==================== -->
+      <div class="page" id="page-audit-log">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Audit Log</div>
+            <div class="page-header__sub">All admin actions — read-only</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Time</th></tr></thead>
+              <tbody id="auditBody"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Add User -->
+<div class="modal-overlay" id="modalAddUser" onclick="closeModalOutside(event,'modalAddUser')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Add New User</span>
+      <button class="modal__close" onclick="closeModal('modalAddUser')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid">
+        <div class="field"><label>First Name</label><input type="text" id="addFirstName" placeholder="John"></div>
+        <div class="field"><label>Last Name</label><input type="text" id="addLastName" placeholder="Doe"></div>
+        <div class="field field--full"><label>Email</label><input type="email" id="addEmail" placeholder="john@example.com"></div>
+        <div class="field"><label>Phone</label><input type="text" id="addPhone" placeholder="+1 555 000 0000"></div>
+        <div class="field"><label>Country</label><input type="text" id="addCountry" placeholder="United States"></div>
+        <div class="field"><label>Account Type</label>
+          <select id="addAccountType"><option value="live">Live</option><option value="demo">Demo</option></select>
+        </div>
+        <div class="field"><label>Plan</label>
+          <select id="addPlan"><option value="Starter">Starter</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option><option value="Elite">Elite</option></select>
+        </div>
+        <div class="field"><label>Initial Balance ($)</label><input type="number" id="addBalance" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalAddUser')">Cancel</button>
+      <button class="btn btn--primary" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User -->
+<div class="modal-overlay" id="modalEditUser" onclick="closeModalOutside(event,'modalEditUser')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Edit User</span>
+      <button class="modal__close" onclick="closeModal('modalEditUser')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="editUserId">
+      <div class="form-grid">
+        <div class="field"><label>First Name</label><input type="text" id="editFirstName"></div>
+        <div class="field"><label>Last Name</label><input type="text" id="editLastName"></div>
+        <div class="field field--full"><label>Email</label><input type="email" id="editEmail"></div>
+        <div class="field"><label>Phone</label><input type="text" id="editPhone"></div>
+        <div class="field"><label>Country</label><input type="text" id="editCountry"></div>
+        <div class="field"><label>Account Type</label>
+          <select id="editAccountType"><option value="live">Live</option><option value="demo">Demo</option></select>
+        </div>
+        <div class="field"><label>Plan</label>
+          <select id="editPlan"><option value="Starter">Starter</option><option value="Silver">Silver</option><option value="Gold">Gold</option><option value="Platinum">Platinum</option><option value="Elite">Elite</option></select>
+        </div>
+        <div class="field"><label>Status</label>
+          <select id="editStatus"><option value="active">Active</option><option value="suspended">Suspended</option><option value="pending">Pending</option><option value="banned">Banned</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalEditUser')">Cancel</button>
+      <button class="btn btn--primary" onclick="saveEditUser()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Credit/Debit -->
+<div class="modal-overlay" id="modalCreditDebit" onclick="closeModalOutside(event,'modalCreditDebit')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Credit / Debit Account</span>
+      <button class="modal__close" onclick="closeModal('modalCreditDebit')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="cdUserId">
+      <div class="form-grid">
+        <div class="field field--full">
+          <label>User</label>
+          <input type="text" id="cdUserDisplay" readonly style="background:var(--bg)">
+        </div>
+        <div class="field field--full"><label>Operation</label>
+          <select id="cdOperation">
+            <option value="credit">Credit Balance</option>
+            <option value="debit">Debit Balance</option>
+            <option value="set_pnl">Set Total P&L</option>
+          </select>
+        </div>
+        <div class="field field--full"><label>Amount ($)</label><input type="number" id="cdAmount" min="0" placeholder="0.00"></div>
+        <div class="field field--full"><label>Note</label><textarea id="cdNote" rows="2" placeholder="Reason for adjustment..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalCreditDebit')">Cancel</button>
+      <button class="btn btn--primary" onclick="applyCreditDebit()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upgrade Plan -->
+<div class="modal-overlay" id="modalUpgradePlan" onclick="closeModalOutside(event,'modalUpgradePlan')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Upgrade Plan</span>
+      <button class="modal__close" onclick="closeModal('modalUpgradePlan')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="upgUserId">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Select new plan for <strong id="upgUserName"></strong></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label class="plan-opt"><input type="radio" name="upgPlan" value="Starter"><span class="plan-opt__name">Starter</span><span class="plan-opt__desc">Entry level</span></label>
+        <label class="plan-opt"><input type="radio" name="upgPlan" value="Silver"><span class="plan-opt__name">Silver</span><span class="plan-opt__desc">Standard account</span></label>
+        <label class="plan-opt"><input type="radio" name="upgPlan" value="Gold"><span class="plan-opt__name">Gold</span><span class="plan-opt__desc">Advanced trading</span></label>
+        <label class="plan-opt"><input type="radio" name="upgPlan" value="Platinum"><span class="plan-opt__name">Platinum</span><span class="plan-opt__desc">Premium account</span></label>
+        <label class="plan-opt"><input type="radio" name="upgPlan" value="Elite"><span class="plan-opt__name">Elite</span><span class="plan-opt__desc">VIP access</span></label>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalUpgradePlan')">Cancel</button>
+      <button class="btn btn--primary" onclick="applyUpgradePlan()">Upgrade</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust Balance (Trading Accounts) -->
+<div class="modal-overlay" id="modalAdjustBalance" onclick="closeModalOutside(event,'modalAdjustBalance')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Adjust Balance</span>
+      <button class="modal__close" onclick="closeModal('modalAdjustBalance')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="adjUserId">
+      <div class="form-grid">
+        <div class="field field--full"><label>User</label><input type="text" id="adjUserDisplay" readonly style="background:var(--bg)"></div>
+        <div class="field field--full"><label>Operation</label>
+          <select id="adjOperation"><option value="credit">Credit</option><option value="debit">Debit</option></select>
+        </div>
+        <div class="field field--full"><label>Amount ($)</label><input type="number" id="adjAmount" min="0" placeholder="0.00"></div>
+        <div class="field field--full"><label>Note</label><textarea id="adjNote" rows="2" placeholder="Reason..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalAdjustBalance')">Cancel</button>
+      <button class="btn btn--primary" onclick="applyAdjustBalance()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- KYC View Docs -->
+<div class="modal-overlay" id="modalKycDocs" onclick="closeModalOutside(event,'modalKycDocs')">
+  <div class="modal modal--lg">
+    <div class="modal__head">
+      <span class="modal__title">KYC Documents</span>
+      <button class="modal__close" onclick="closeModal('modalKycDocs')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body" id="kycDocsBody">Loading...</div>
+    <div class="modal__foot" id="kycDocsActions"></div>
+  </div>
+</div>
+
+<!-- Reject KYC -->
+<div class="modal-overlay" id="modalKycReject" onclick="closeModalOutside(event,'modalKycReject')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Reject KYC Submission</span>
+      <button class="modal__close" onclick="closeModal('modalKycReject')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="kycRejectId">
+      <input type="hidden" id="kycRejectUserId">
+      <div class="field">
+        <label>Rejection Reason</label>
+        <textarea id="kycRejectReason" rows="4" placeholder="Explain why the submission is being rejected..."></textarea>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalKycReject')">Cancel</button>
+      <button class="btn btn--red" onclick="submitKycReject()">Reject Submission</button>
+    </div>
+  </div>
+</div>
+
+<!-- Announcement Create/Edit -->
+<div class="modal-overlay" id="modalAnnouncement" onclick="closeModalOutside(event,'modalAnnouncement')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Announcement</span>
+      <button class="modal__close" onclick="closeModal('modalAnnouncement')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="annEditId">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field"><label>Title</label><input type="text" id="annTitle" placeholder="Announcement title..."></div>
+        <div class="field"><label>Body</label><textarea id="annBody" rows="5" placeholder="Announcement content..."></textarea></div>
+        <div class="field"><label>Audience</label>
+          <select id="annAudience" onchange="toggleAnnSpecificUser()">
+            <option value="all">All Users</option>
+            <option value="live">Live Traders</option>
+            <option value="demo">Demo Traders</option>
+            <option value="specific">Specific User</option>
+          </select>
+        </div>
+        <div class="field" id="annSpecificUserField" style="display:none">
+          <label>Specific User</label>
+          <select id="annSpecificUser"><option value="">— Select User —</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalAnnouncement')">Cancel</button>
+      <button class="btn btn--primary" onclick="saveAnnouncement()">Publish</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual Deposit -->
+<div class="modal-overlay" id="modalManualDeposit" onclick="closeModalOutside(event,'modalManualDeposit')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Manual Deposit</span>
+      <button class="modal__close" onclick="closeModal('modalManualDeposit')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid">
+        <div class="field field--full"><label>User</label>
+          <select id="manualDepUser"><option value="">— Select User —</option></select>
+        </div>
+        <div class="field"><label>Amount ($)</label><input type="number" id="manualDepAmount" min="0" placeholder="0.00"></div>
+        <div class="field"><label>Method</label>
+          <select id="manualDepMethod"><option value="crypto">Crypto</option><option value="bank">Bank Transfer</option><option value="card">Card</option><option value="manual">Manual</option></select>
+        </div>
+        <div class="field field--full"><label>Note</label><textarea id="manualDepNote" rows="2" placeholder="Notes..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalManualDeposit')">Cancel</button>
+      <button class="btn btn--green" onclick="submitManualDeposit()">Approve &amp; Credit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profit Target: Set Target -->
+<div class="modal-overlay" id="modalSetTarget" onclick="closeModalOutside(event,'modalSetTarget')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Set Profit Target</span>
+      <button class="modal__close" onclick="closeModal('modalSetTarget')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid">
+        <div class="field"><label>Target Label</label><input type="text" id="ptTargetLabel" placeholder="e.g. Q1 Goal"></div>
+        <div class="field"><label>Target Amount ($)</label><input type="number" id="ptTargetAmount" min="0" placeholder="10000"></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalSetTarget')">Cancel</button>
+      <button class="btn btn--primary" onclick="saveProfitTarget()">Save Target</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profit Target: Add Trade -->
+<div class="modal-overlay" id="modalAddTrade" onclick="closeModalOutside(event,'modalAddTrade')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Add Trade Entry</span>
+      <button class="modal__close" onclick="closeModal('modalAddTrade')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid">
+        <div class="field field--full"><label>Amount ($)</label><input type="number" id="ptTradeAmount" placeholder="e.g. 500 or -200"></div>
+        <div class="field field--full"><label>Note</label><textarea id="ptTradeNote" rows="3" placeholder="Trade description..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalAddTrade')">Cancel</button>
+      <button class="btn btn--primary" onclick="submitTradeEntry()">Add Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal-overlay" id="modalReview" onclick="closeModalOutside(event,'modalReview')">
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title">Client Review</span>
+      <button class="modal__close" onclick="closeModal('modalReview')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="reviewEditId">
+      <div class="form-grid">
+        <div class="field"><label>Name</label><input type="text" id="reviewName" placeholder="Jane Doe"></div>
+        <div class="field"><label>Role</label><input type="text" id="reviewRole" placeholder="Trader"></div>
+        <div class="field field--full"><label>Review Body</label><textarea id="reviewBody" rows="4" placeholder="Review content..."></textarea></div>
+        <div class="field"><label>Stars (1-5)</label><input type="number" id="reviewStars" min="1" max="5" value="5"></div>
+        <div class="field"><label>Sort Order</label><input type="number" id="reviewSortOrder" min="0" value="0"></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modalReview')">Cancel</button>
+      <button class="btn btn--primary" onclick="saveReview()">Save Review</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================== GLOBALS ========================
+const db = window.SV_DB;
+let _adminUser = null;
+let _allUsers = [];
+let _userTab = 'all';
+let _kycTab = 'pending';
+let _depTab = 'pending';
+let _wdTab = 'pending';
+let _dtiDir = 'buy';
+let _currentPtUser = null;
+let _currentPtTarget = null;
+let _liveActivityInterval = null;
+
+const DTI_PAIRS = {
+  crypto: ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD','ADA/USD','DOGE/USD','AVAX/USD'],
+  forex: ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','NZD/USD','USD/CAD','EUR/GBP'],
+  stocks: ['AAPL','TSLA','AMZN','GOOGL','MSFT','META','NVDA','NFLX'],
+  indices: ['SP500','NASDAQ','DOW','FTSE100','DAX','NIKKEI225'],
+  commodities: ['GOLD','SILVER','OIL','NATGAS','WHEAT','COPPER']
+};
+
+const DEPOSIT_COIN_NETWORKS = [
+  {label:'Bitcoin', asset:'BTC', network:'Bitcoin'},
+  {label:'Bitcoin Lightning', asset:'BTC', network:'Lightning'},
+  {label:'Ethereum (ERC20)', asset:'ETH', network:'ERC20'},
+  {label:'USDT (ERC20)', asset:'USDT', network:'ERC20'},
+  {label:'USDT (TRC20)', asset:'USDT', network:'TRC20'},
+  {label:'USDT (BEP20)', asset:'USDT', network:'BEP20'},
+  {label:'BNB (BEP20)', asset:'BNB', network:'BEP20'},
+  {label:'Solana', asset:'SOL', network:'Solana'},
+  {label:'XRP', asset:'XRP', network:'XRP'},
+  {label:'Litecoin', asset:'LTC', network:'Litecoin'},
+  {label:'Dogecoin', asset:'DOGE', network:'Dogecoin'},
+];
+
+const DEFAULT_MARKETS = [
+  {instrument:'EUR/USD', enabled:true, spread:'0.2', leverage:'100'},
+  {instrument:'GBP/USD', enabled:true, spread:'0.3', leverage:'100'},
+  {instrument:'USD/JPY', enabled:true, spread:'0.2', leverage:'100'},
+  {instrument:'BTC/USD', enabled:true, spread:'50', leverage:'10'},
+  {instrument:'ETH/USD', enabled:true, spread:'10', leverage:'20'},
+  {instrument:'AAPL', enabled:true, spread:'0.5', leverage:'5'},
+  {instrument:'TSLA', enabled:true, spread:'0.5', leverage:'5'},
+  {instrument:'GOLD', enabled:true, spread:'0.5', leverage:'50'},
+  {instrument:'OIL', enabled:true, spread:'0.05', leverage:'50'},
+  {instrument:'SP500', enabled:true, spread:'1', leverage:'20'},
+];
+
+// ======================== UTILITIES ========================
+function fmtMoney(n) { return '$' + (parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(ts) { if(!ts) return '—'; const d=new Date(ts); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function initials(name) { return (name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toastMsg');
+  t.className = 'toast ' + type;
+  m.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function logAudit(action, target, details) {
+  try {
+    await db.from('audit_log').insert({
+      admin_id: _adminUser?.id,
+      admin_email: _adminUser?.email,
+      action, target, details,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) { console.warn('Audit log failed:', e); }
+}
+
+function avatarColor(str) {
+  const colors = ['#f05a1a','#1a5cff','#22a06b','#7c3aed','#e60023','#f5a623','#0ea5e9','#ec4899'];
+  let h = 0;
+  for (let c of (str||'?')) h = (h*31 + c.charCodeAt(0)) & 0xffffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+
+function userAvatar(u) {
+  const name = ((u.first_name||'') + ' ' + (u.last_name||'')).trim() || u.email || '?';
+  const ini = initials(name);
+  const col = avatarColor(name);
+  return `<div class="user-avatar" style="background:${col}">${ini}</div>`;
+}
+
+function kycBadge(s) {
+  const map = {none:'pill-grey',pending:'pill-orange',approved:'pill-green',verified:'pill-green',rejected:'pill-red'};
+  return `<span class="badge-pill ${map[s]||'pill-grey'}">${s||'none'}</span>`;
+}
+
+function statusBadge(s) {
+  const map = {active:'pill-green',suspended:'pill-orange',pending:'pill-blue',banned:'pill-red'};
+  return `<span class="badge-pill ${map[s]||'pill-grey'}">${s||'—'}</span>`;
+}
+
+function typeBadge(t) {
+  return `<span class="badge-pill ${t==='live'?'pill-green':'pill-blue'}">${t||'—'}</span>`;
+}
+
+function planBadge(p) {
+  const map = {Starter:'pill-grey',Silver:'pill-blue',Gold:'pill-gold',Platinum:'pill-purple',Elite:'pill-orange'};
+  return `<span class="badge-pill ${map[p]||'pill-grey'}">${p||'—'}</span>`;
+}
+
+function dirBadge(d) {
+  return `<span class="badge-pill ${d==='buy'?'pill-green':'pill-red'}">${(d||'').toUpperCase()}</span>`;
+}
+
+function buildUserName(u) {
+  const name = ((u.first_name||'') + ' ' + (u.last_name||'')).trim() || '—';
+  return `<div class="user-cell">${userAvatar(u)}<div><div class="user-name">${name}</div><div class="user-email">${u.email||'—'}</div></div></div>`;
+}
+
+// ======================== MODAL ========================
+function openModal(id) {
+  const o = document.getElementById(id);
+  if(o) { o.style.display='flex'; setTimeout(()=>o.classList.add('open'),10); }
+}
+function closeModal(id) {
+  const o = document.getElementById(id);
+  if(o) { o.classList.remove('open'); setTimeout(()=>o.style.display='none',200); }
+}
+function closeModalOutside(e, id) {
+  if(e.target.id === id) closeModal(id);
+}
+
+// ======================== DARK MODE ========================
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('vgm_ops_dark', document.body.classList.contains('dark') ? '1' : '');
+}
+if(localStorage.getItem('vgm_ops_dark')) document.body.classList.add('dark');
+
+// ======================== NAVIGATION ========================
+const PAGE_TITLES = {
+  'dashboard': ['Dashboard','Overview & stats'],
+  'live-activity': ['Live Activity','Real-time event feed'],
+  'user-management': ['User Management','Manage all platform accounts'],
+  'kyc': ['KYC / Verification','Review identity submissions'],
+  'trading-accounts': ['Trading Accounts','Account overview with positions'],
+  'balances': ['Balances & P&L','Full financial overview'],
+  'open-positions': ['Open Positions','Manage active trades'],
+  'profit-targets': ['Profit Targets','Per-user target tracking'],
+  'deposits': ['Deposits','Review deposit requests'],
+  'withdrawals': ['Withdrawals','Review withdrawal requests'],
+  'all-transactions': ['All Transactions','Transaction history'],
+  'announcements': ['Announcements','Platform-wide messages'],
+  'email-users': ['Email Users','Send emails to user groups'],
+  'markets-control': ['Markets Control','Enable/disable instruments'],
+  'system-settings': ['System Settings','Configure platform behaviour'],
+  'audit-log': ['Audit Log','Admin action history'],
+};
+
+const PAGE_LOADERS = {
+  'dashboard': loadDashboard,
+  'live-activity': () => { loadLiveActivity(); startLiveActivityInterval(); },
+  'user-management': loadUsers,
+  'kyc': loadKyc,
+  'trading-accounts': loadTradingAccounts,
+  'balances': loadBalances,
+  'open-positions': loadPositions,
+  'profit-targets': loadProfitTargetsPage,
+  'deposits': loadDeposits,
+  'withdrawals': loadWithdrawals,
+  'all-transactions': loadTransactions,
+  'announcements': loadAnnouncements,
+  'email-users': () => {},
+  'markets-control': loadMarkets,
+  'system-settings': loadSystemSettings,
+  'audit-log': loadAuditLog,
+};
+
+function navigate(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const p = document.getElementById('page-' + pageId);
+  if(p) p.classList.add('active');
+  const n = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+  if(n) n.classList.add('active');
+  const titles = PAGE_TITLES[pageId] || [pageId, ''];
+  document.getElementById('topbarTitle').textContent = titles[0];
+  document.getElementById('topbarSub').textContent = titles[1];
+  // Stop live interval if leaving live activity
+  if(pageId !== 'live-activity') stopLiveActivityInterval();
+  if(PAGE_LOADERS[pageId]) PAGE_LOADERS[pageId]();
+}
+
+document.getElementById('sidebarNav').addEventListener('click', e => {
+  const btn = e.target.closest('.nav-item');
+  if(btn && btn.dataset.page) navigate(btn.dataset.page);
+});
+
+// ======================== AUTH ========================
+async function initAuth() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'ops-login.html'; return; }
+  const { data: adminRow } = await db.from('admin_users').select('id,email,role').eq('id', session.user.id).maybeSingle();
+  if (!adminRow) { await db.auth.signOut(); window.location.href = 'ops-login.html'; return; }
+  _adminUser = adminRow;
+  const ini = initials(adminRow.email);
+  document.getElementById('sidebarAvatar').textContent = ini;
+  document.getElementById('topbarAvatar').textContent = ini;
+  document.getElementById('sidebarName').textContent = adminRow.email.split('@')[0];
+  document.getElementById('sidebarRole').textContent = adminRow.role || 'Admin';
+  await cacheAllUsers();
+  loadDashboard();
+  loadBadgeCounts();
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  window.location.href = 'ops-login.html';
+}
+
+async function cacheAllUsers() {
+  const { data } = await db.from('profiles').select('id,email,first_name,last_name,balance,total_pnl,account_type,status,plan,kyc_status,country,phone,created_at').order('first_name');
+  _allUsers = data || [];
+  populateUserDropdowns();
+}
+
+function populateUserDropdowns() {
+  const dropdownIds = ['dtiUser','ptUserSelect','annSpecificUser','manualDepUser'];
+  dropdownIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const firstOpt = el.options[0];
+    el.innerHTML = '';
+    if(firstOpt) el.appendChild(firstOpt);
+    _allUsers.forEach(u => {
+      const name = ((u.first_name||'') + ' ' + (u.last_name||'')).trim() || u.email;
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = name + ' (' + u.email + ')';
+      el.appendChild(opt);
+    });
+  });
+}
+
+async function loadBadgeCounts() {
+  const [{ count: kycCount }, { count: depCount }, { count: wdCount }] = await Promise.all([
+    db.from('kyc_submissions').select('id', {count:'exact',head:true}).eq('status','pending'),
+    db.from('deposit_requests').select('id', {count:'exact',head:true}).eq('status','pending'),
+    db.from('withdrawal_requests').select('id', {count:'exact',head:true}).eq('status','pending'),
+  ]);
+  const setBadge = (id, n) => {
+    const el = document.getElementById(id);
+    if(el) { el.textContent = n; el.style.display = n > 0 ? '' : 'none'; }
+  };
+  setBadge('navBadgeKyc', kycCount || 0);
+  setBadge('navBadgeDep', depCount || 0);
+  setBadge('navBadgeWd', wdCount || 0);
+}
+
+// ======================== DASHBOARD ========================
+async function loadDashboard() {
+  const [
+    { count: totalUsers },
+    { count: liveAccounts },
+    { data: balData },
+    { count: openPos },
+    { count: pendingDep },
+    { count: pendingWd },
+    { count: pendingKyc },
+    { data: recentUsers },
+    { data: activityData },
+  ] = await Promise.all([
+    db.from('profiles').select('id',{count:'exact',head:true}),
+    db.from('profiles').select('id',{count:'exact',head:true}).eq('account_type','live'),
+    db.from('profiles').select('balance'),
+    db.from('positions').select('id',{count:'exact',head:true}).eq('status','open'),
+    db.from('deposit_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+    db.from('withdrawal_requests').select('id',{count:'exact',head:true}).eq('status','pending'),
+    db.from('kyc_submissions').select('id',{count:'exact',head:true}).eq('status','pending'),
+    db.from('profiles').select('id,email,first_name,last_name,account_type,plan,status,created_at').order('created_at',{ascending:false}).limit(8),
+    db.from('audit_log').select('id,admin_email,action,target,created_at').order('created_at',{ascending:false}).limit(12),
+  ]);
+
+  const totalAUM = (balData||[]).reduce((s, r) => s + (parseFloat(r.balance)||0), 0);
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const { data: todayTx } = await db.from('transactions').select('amount').gte('created_at', todayStart.toISOString()).eq('type','deposit');
+  const todayVol = (todayTx||[]).reduce((s,r) => s+(parseFloat(r.amount)||0),0);
+
+  const stats = [
+    {label:'Total Users', value: totalUsers||0, col:''},
+    {label:'Live Accounts', value: liveAccounts||0, col:'stat-card--blue'},
+    {label:'Total AUM', value: fmtMoney(totalAUM), col:'stat-card--orange'},
+    {label:'Open Positions', value: openPos||0, col:''},
+    {label:'Pending Deposits', value: pendingDep||0, col: pendingDep > 0 ? 'stat-card--orange' : ''},
+    {label:'Pending Withdrawals', value: pendingWd||0, col: pendingWd > 0 ? '' : ''},
+    {label:'Pending KYC', value: pendingKyc||0, col:''},
+    {label:"Today's Volume", value: fmtMoney(todayVol), col:'stat-card--green'},
+  ];
+
+  document.getElementById('dashStats').innerHTML = stats.map(s =>
+    `<div class="stat-card ${s.col}"><div class="stat-card__label">${s.label}</div><div class="stat-card__value">${s.value}</div></div>`
+  ).join('');
+
+  const uBody = document.getElementById('dashRecentUsers');
+  uBody.innerHTML = (recentUsers||[]).map(u =>
+    `<tr><td>${buildUserName(u)}</td><td>${typeBadge(u.account_type)}</td><td>${planBadge(u.plan)}</td><td>${statusBadge(u.status)}</td><td>${fmtDate(u.created_at)}</td></tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No users</td></tr>';
+
+  const actFeed = document.getElementById('dashActivity');
+  actFeed.innerHTML = (activityData||[]).map(a =>
+    `<div class="activity-item"><div class="activity-dot" style="background:var(--orange)"></div><div class="activity-text"><strong>${a.action||'Action'}</strong> — ${a.target||'—'}<br><span style="color:var(--muted);font-size:11px">${a.admin_email||'system'}</span></div><div class="activity-time">${fmtDate(a.created_at)}</div></div>`
+  ).join('') || '<div style="color:var(--muted);text-align:center;padding:20px">No recent activity</div>';
+}
+
+// ======================== LIVE ACTIVITY ========================
+async function loadLiveActivity() {
+  const { data } = await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(50);
+  document.getElementById('liveLastRefresh').textContent = 'Refreshed: ' + new Date().toLocaleTimeString();
+  const feed = document.getElementById('liveActivityFeed');
+  feed.innerHTML = (data||[]).map(a => {
+    const colors = {login:'#1a5cff',deposit:'#22a06b',withdrawal:'#e60023',kyc:'#7c3aed',trade:'#f05a1a',update:'#f5a623'};
+    const col = Object.keys(colors).find(k => (a.action||'').toLowerCase().includes(k)) ? colors[Object.keys(colors).find(k => (a.action||'').toLowerCase().includes(k))] : '#666';
+    return `<div class="activity-item"><div class="activity-dot" style="background:${col}"></div><div class="activity-text"><strong>${a.action||'Action'}</strong> — <em>${a.target||'—'}</em><br><span style="font-size:11px;color:var(--muted)">${a.admin_email||'system'} · ${a.details||''}</span></div><div class="activity-time">${fmtDate(a.created_at)}</div></div>`;
+  }).join('') || '<div style="text-align:center;color:var(--muted);padding:40px">No activity recorded</div>';
+}
+
+function startLiveActivityInterval() {
+  stopLiveActivityInterval();
+  _liveActivityInterval = setInterval(loadLiveActivity, 30000);
+}
+function stopLiveActivityInterval() {
+  if(_liveActivityInterval) { clearInterval(_liveActivityInterval); _liveActivityInterval = null; }
+}
+
+// ======================== USER MANAGEMENT ========================
+async function loadUsers() {
+  const { data } = await db.from('profiles').select('*').order('created_at',{ascending:false});
+  _allUsers = data || [];
+  populateUserDropdowns();
+  renderUserTable();
+}
+
+function setUserTab(tab, el) {
+  _userTab = tab;
+  document.querySelectorAll('#userTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderUserTable();
+}
+
+function renderUserTable() {
+  const search = (document.getElementById('userSearch')?.value || '').toLowerCase();
+  let users = _allUsers;
+  if(_userTab === 'live') users = users.filter(u => u.account_type === 'live');
+  else if(_userTab === 'demo') users = users.filter(u => u.account_type === 'demo');
+  else if(_userTab === 'suspended') users = users.filter(u => u.status === 'suspended' || u.status === 'banned');
+  if(search) users = users.filter(u => {
+    const name = ((u.first_name||'') + ' ' + (u.last_name||'')).toLowerCase();
+    return name.includes(search) || (u.email||'').toLowerCase().includes(search);
+  });
+  const tbody = document.getElementById('userTableBody');
+  tbody.innerHTML = users.map(u =>
+    `<tr>
+      <td>${buildUserName(u)}</td>
+      <td>${typeBadge(u.account_type)}</td>
+      <td>${planBadge(u.plan)}</td>
+      <td>${fmtMoney(u.balance)}</td>
+      <td>${kycBadge(u.kyc_status)}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn--outline btn--sm" onclick='openEditUser(${JSON.stringify(u)})'>Edit</button>
+        <button class="btn btn--blue btn--sm" onclick='openCreditDebit("${u.id}","${((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email}")'>Credit/Debit</button>
+        <button class="btn btn--purple btn--sm" onclick='openUpgradePlan("${u.id}","${((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email}","${u.plan||''}")'>Plan</button>
+      </div></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No users found</td></tr>';
+}
+
+async function createUser() {
+  const first_name = document.getElementById('addFirstName').value.trim();
+  const last_name = document.getElementById('addLastName').value.trim();
+  const email = document.getElementById('addEmail').value.trim();
+  const phone = document.getElementById('addPhone').value.trim();
+  const country = document.getElementById('addCountry').value.trim();
+  const account_type = document.getElementById('addAccountType').value;
+  const plan = document.getElementById('addPlan').value;
+  const balance = parseFloat(document.getElementById('addBalance').value) || 0;
+  if(!email) return showToast('Email is required', 'error');
+
+  // Create auth user via admin signup workaround: insert profile directly with a generated ID
+  const { data: { user }, error: authErr } = await db.auth.admin ? db.auth.admin.createUser({email, password: Math.random().toString(36).slice(2) + 'A1!', email_confirm: true}) : {data:{user:null},error:{message:'no admin API'}};
+  let userId;
+  if(authErr || !user) {
+    // Fallback: insert profile with a UUID (user must exist in auth)
+    showToast('Note: Auth user creation requires service role. Creating profile entry.', 'error');
+    return;
+  }
+  userId = user.id;
+
+  const { error } = await db.from('profiles').upsert({id: userId, email, first_name, last_name, phone, country, account_type, plan, balance, status: 'active', kyc_status: 'none', created_at: new Date().toISOString()});
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('create_user', email, `${first_name} ${last_name} | ${account_type} | ${plan}`);
+  showToast('User created successfully');
+  closeModal('modalAddUser');
+  loadUsers();
+}
+
+function openEditUser(u) {
+  document.getElementById('editUserId').value = u.id;
+  document.getElementById('editFirstName').value = u.first_name || '';
+  document.getElementById('editLastName').value = u.last_name || '';
+  document.getElementById('editEmail').value = u.email || '';
+  document.getElementById('editPhone').value = u.phone || '';
+  document.getElementById('editCountry').value = u.country || '';
+  document.getElementById('editAccountType').value = u.account_type || 'live';
+  document.getElementById('editPlan').value = u.plan || 'Starter';
+  document.getElementById('editStatus').value = u.status || 'active';
+  openModal('modalEditUser');
+}
+
+async function saveEditUser() {
+  const id = document.getElementById('editUserId').value;
+  const updates = {
+    first_name: document.getElementById('editFirstName').value.trim(),
+    last_name: document.getElementById('editLastName').value.trim(),
+    email: document.getElementById('editEmail').value.trim(),
+    phone: document.getElementById('editPhone').value.trim(),
+    country: document.getElementById('editCountry').value.trim(),
+    account_type: document.getElementById('editAccountType').value,
+    plan: document.getElementById('editPlan').value,
+    status: document.getElementById('editStatus').value,
+  };
+  const { error } = await db.from('profiles').update(updates).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('edit_user', updates.email, JSON.stringify(updates));
+  showToast('User updated');
+  closeModal('modalEditUser');
+  loadUsers();
+}
+
+function openCreditDebit(userId, userName) {
+  document.getElementById('cdUserId').value = userId;
+  document.getElementById('cdUserDisplay').value = userName;
+  document.getElementById('cdAmount').value = '';
+  document.getElementById('cdNote').value = '';
+  openModal('modalCreditDebit');
+}
+
+async function applyCreditDebit() {
+  const userId = document.getElementById('cdUserId').value;
+  const op = document.getElementById('cdOperation').value;
+  const amount = parseFloat(document.getElementById('cdAmount').value);
+  const note = document.getElementById('cdNote').value;
+  if(!amount || amount <= 0) return showToast('Enter a valid amount', 'error');
+
+  const user = _allUsers.find(u => u.id === userId);
+  let updates = {};
+  if(op === 'credit') updates.balance = (parseFloat(user?.balance)||0) + amount;
+  else if(op === 'debit') updates.balance = Math.max(0, (parseFloat(user?.balance)||0) - amount);
+  else if(op === 'set_pnl') updates.total_pnl = amount;
+
+  const { error } = await db.from('profiles').update(updates).eq('id', userId);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit(op, user?.email||userId, `${fmtMoney(amount)} — ${note}`);
+  showToast('Balance updated');
+  closeModal('modalCreditDebit');
+  loadUsers();
+}
+
+function openUpgradePlan(userId, userName, currentPlan) {
+  document.getElementById('upgUserId').value = userId;
+  document.getElementById('upgUserName').textContent = userName;
+  document.querySelectorAll('input[name="upgPlan"]').forEach(r => r.checked = r.value === currentPlan);
+  openModal('modalUpgradePlan');
+}
+
+async function applyUpgradePlan() {
+  const userId = document.getElementById('upgUserId').value;
+  const plan = document.querySelector('input[name="upgPlan"]:checked')?.value;
+  if(!plan) return showToast('Select a plan', 'error');
+  const user = _allUsers.find(u => u.id === userId);
+  const { error } = await db.from('profiles').update({plan}).eq('id', userId);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await db.from('notifications').insert({user_id: userId, type:'plan_upgrade', title:'Plan Upgraded', message:`Your account has been upgraded to ${plan}.`, read:false, created_at:new Date().toISOString()});
+  await logAudit('upgrade_plan', user?.email||userId, plan);
+  showToast('Plan upgraded to ' + plan);
+  closeModal('modalUpgradePlan');
+  loadUsers();
+}
+
+// ======================== KYC ========================
+async function loadKyc() {
+  let q = db.from('kyc_submissions').select('*').order('created_at',{ascending:false});
+  if(_kycTab !== 'all') q = q.eq('status', _kycTab);
+  const { data } = await q;
+  renderKycTable(data||[]);
+}
+
+function setKycTab(tab, el) {
+  _kycTab = tab;
+  document.querySelectorAll('#kycTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  loadKyc();
+}
+
+function renderKycTable(rows) {
+  const tbody = document.getElementById('kycTableBody');
+  tbody.innerHTML = rows.map(r => {
+    const statusMap = {pending:'pill-orange',approved:'pill-green',rejected:'pill-red'};
+    const user = _allUsers.find(u => u.id === r.user_id);
+    const name = user ? ((user.first_name||'')+' '+(user.last_name||'')).trim()||r.user_email : r.user_email||'—';
+    return `<tr>
+      <td><div class="user-cell">${user?userAvatar(user):'<div class="user-avatar" style="background:#999">?</div>'}<div><div class="user-name">${name}</div><div class="user-email">${r.user_email||'—'}</div></div></div></td>
+      <td>${r.doc_type||'—'}</td>
+      <td>${r.country||'—'}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><span class="badge-pill ${statusMap[r.status]||'pill-grey'}">${r.status||'—'}</span></td>
+      <td><div class="row-actions">
+        <button class="btn btn--outline btn--sm" onclick='viewKycDocs(${JSON.stringify(r)})'>View Docs</button>
+        ${r.status==='pending' ? `<button class="btn btn--green btn--sm" onclick='approveKyc("${r.id}","${r.user_id}")'>Approve</button><button class="btn btn--red btn--sm" onclick='openKycReject("${r.id}","${r.user_id}")'>Reject</button>` : ''}
+      </div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No submissions</td></tr>';
+}
+
+async function viewKycDocs(r) {
+  document.getElementById('kycDocsBody').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Loading documents...</div>';
+  openModal('modalKycDocs');
+
+  const getUrl = async (path) => {
+    if(!path) return null;
+    const { data } = await db.storage.from('kyc-docs').createSignedUrl(path, 3600);
+    return data?.signedUrl;
+  };
+
+  const [front, back, selfie] = await Promise.all([
+    getUrl(r.front_url), getUrl(r.back_url), getUrl(r.selfie_url)
+  ]);
+
+  const imgCard = (label, url) => url ? `<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">${label}</div><a href="${url}" target="_blank"><img src="${url}" style="max-width:100%;border-radius:8px;border:1px solid var(--border)"></a></div>` : `<div style="margin-bottom:16px;color:var(--muted);font-size:13px">${label}: Not provided</div>`;
+
+  document.getElementById('kycDocsBody').innerHTML = `
+    <p style="font-size:13px;margin-bottom:16px"><strong>User:</strong> ${r.user_email||'—'} &nbsp;|&nbsp; <strong>Doc:</strong> ${r.doc_type||'—'} &nbsp;|&nbsp; <strong>Country:</strong> ${r.country||'—'}</p>
+    ${imgCard('Front ID', front)}
+    ${imgCard('Back ID', back)}
+    ${imgCard('Selfie', selfie)}
+  `;
+
+  const actDiv = document.getElementById('kycDocsActions');
+  actDiv.innerHTML = r.status === 'pending' ? `
+    <button class="btn btn--outline" onclick="closeModal('modalKycDocs')">Close</button>
+    <button class="btn btn--green" onclick='approveKyc("${r.id}","${r.user_id}");closeModal("modalKycDocs")'>Approve</button>
+    <button class="btn btn--red" onclick='closeModal("modalKycDocs");openKycReject("${r.id}","${r.user_id}")'>Reject</button>
+  ` : `<button class="btn btn--outline" onclick="closeModal('modalKycDocs')">Close</button>`;
+}
+
+async function approveKyc(id, userId) {
+  const { error } = await db.from('kyc_submissions').update({status:'approved'}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await db.from('profiles').update({kyc_status:'verified'}).eq('id', userId);
+  const user = _allUsers.find(u => u.id === userId);
+  await db.from('notifications').insert({user_id:userId, type:'kyc_approved', title:'KYC Approved', message:'Your identity verification has been approved.', read:false, created_at:new Date().toISOString()});
+  await logAudit('approve_kyc', user?.email||userId, id);
+  showToast('KYC approved');
+  loadKyc(); loadBadgeCounts();
+}
+
+function openKycReject(id, userId) {
+  document.getElementById('kycRejectId').value = id;
+  document.getElementById('kycRejectUserId').value = userId;
+  document.getElementById('kycRejectReason').value = '';
+  openModal('modalKycReject');
+}
+
+async function submitKycReject() {
+  const id = document.getElementById('kycRejectId').value;
+  const userId = document.getElementById('kycRejectUserId').value;
+  const reason = document.getElementById('kycRejectReason').value.trim();
+  if(!reason) return showToast('Enter a rejection reason', 'error');
+  const { error } = await db.from('kyc_submissions').update({status:'rejected', rejection_reason:reason}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await db.from('profiles').update({kyc_status:'rejected'}).eq('id', userId);
+  const user = _allUsers.find(u => u.id === userId);
+  await db.from('notifications').insert({user_id:userId, type:'kyc_rejected', title:'KYC Rejected', message:`Your KYC was rejected: ${reason}`, read:false, created_at:new Date().toISOString()});
+  await logAudit('reject_kyc', user?.email||userId, reason);
+  showToast('KYC rejected');
+  closeModal('modalKycReject');
+  loadKyc(); loadBadgeCounts();
+}
+
+// ======================== TRADING ACCOUNTS ========================
+async function loadTradingAccounts() {
+  const { data: profiles } = await db.from('profiles').select('*').order('created_at',{ascending:false});
+  const { data: positions } = await db.from('positions').select('user_id,status').eq('status','open');
+  const posMap = {};
+  (positions||[]).forEach(p => { posMap[p.user_id] = (posMap[p.user_id]||0)+1; });
+
+  const tbody = document.getElementById('tradingAccountsBody');
+  tbody.innerHTML = (profiles||[]).map(u =>
+    `<tr>
+      <td>${buildUserName(u)}</td>
+      <td>${fmtMoney(u.balance)}</td>
+      <td style="color:${(parseFloat(u.total_pnl)||0)>=0?'var(--green)':'var(--red)'}">${fmtMoney(u.total_pnl)}</td>
+      <td><span class="badge-pill pill-blue">${posMap[u.id]||0}</span></td>
+      <td>${planBadge(u.plan)}</td>
+      <td>${typeBadge(u.account_type)}</td>
+      <td><button class="btn btn--outline btn--sm" onclick='openAdjustBalance("${u.id}","${((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email}")'>Adjust</button></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No accounts</td></tr>';
+}
+
+function openAdjustBalance(userId, userName) {
+  document.getElementById('adjUserId').value = userId;
+  document.getElementById('adjUserDisplay').value = userName;
+  document.getElementById('adjAmount').value = '';
+  document.getElementById('adjNote').value = '';
+  openModal('modalAdjustBalance');
+}
+
+async function applyAdjustBalance() {
+  const userId = document.getElementById('adjUserId').value;
+  const op = document.getElementById('adjOperation').value;
+  const amount = parseFloat(document.getElementById('adjAmount').value);
+  const note = document.getElementById('adjNote').value;
+  if(!amount || amount <= 0) return showToast('Enter a valid amount', 'error');
+  const user = _allUsers.find(u => u.id === userId);
+  let newBalance;
+  if(op === 'credit') newBalance = (parseFloat(user?.balance)||0) + amount;
+  else newBalance = Math.max(0, (parseFloat(user?.balance)||0) - amount);
+  const { error } = await db.from('profiles').update({balance: newBalance}).eq('id', userId);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('adjust_balance', user?.email||userId, `${op} ${fmtMoney(amount)} — ${note}`);
+  showToast('Balance adjusted');
+  closeModal('modalAdjustBalance');
+  loadTradingAccounts();
+}
+
+// ======================== BALANCES ========================
+async function loadBalances() {
+  const { data } = await db.from('profiles').select('id,email,first_name,last_name,balance,total_pnl,account_type,plan').order('balance',{ascending:false});
+  const tbody = document.getElementById('balancesBody');
+  tbody.innerHTML = (data||[]).map(u => {
+    const equity = (parseFloat(u.balance)||0) + (parseFloat(u.total_pnl)||0);
+    return `<tr>
+      <td>${buildUserName(u)}</td>
+      <td>${fmtMoney(u.balance)}</td>
+      <td style="color:${(parseFloat(u.total_pnl)||0)>=0?'var(--green)':'var(--red)'}">${fmtMoney(u.total_pnl)}</td>
+      <td style="font-weight:700">${fmtMoney(equity)}</td>
+      <td>${typeBadge(u.account_type)}</td>
+      <td>${planBadge(u.plan)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No data</td></tr>';
+}
+
+// ======================== OPEN POSITIONS ========================
+async function loadPositions() {
+  const { data } = await db.from('positions').select('*').order('created_at',{ascending:false}).limit(200);
+  renderPositionsTable(data||[]);
+}
+
+function renderPositionsTable(rows) {
+  const tbody = document.getElementById('positionsBody');
+  tbody.innerHTML = rows.map(p => {
+    const user = _allUsers.find(u => u.id === p.user_id);
+    const userName = user ? ((user.first_name||'')+' '+(user.last_name||'')).trim()||user.email : p.user_id?.slice(0,8)+'…';
+    const pnlColor = (parseFloat(p.total_pnl)||0) >= 0 ? 'var(--green)' : 'var(--red)';
+    const statusPill = p.status==='open' ? 'pill-green' : 'pill-grey';
+    return `<tr>
+      <td><code style="font-size:11px">${p.ticket||p.id?.slice(0,8)}</code></td>
+      <td>${buildUserName(user||{email:userName, first_name:userName, last_name:''})}</td>
+      <td><strong>${p.pair||'—'}</strong></td>
+      <td>${dirBadge(p.direction)}</td>
+      <td>${p.size||'—'}</td>
+      <td>${p.open_price||'0.00'}</td>
+      <td style="color:${pnlColor};font-weight:600">${fmtMoney(p.total_pnl)}</td>
+      <td><span class="badge-pill ${statusPill}">${p.status||'—'}</span></td>
+      <td>${fmtDate(p.created_at)}</td>
+      <td>${p.status==='open' ? `<button class="btn btn--red btn--sm" onclick='forceClose("${p.id}","${p.user_id}")'>Close</button>` : '—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px">No positions</td></tr>';
+}
+
+async function forceClose(posId, userId) {
+  if(!confirm('Force close this position?')) return;
+  const { error } = await db.from('positions').update({status:'closed', closed_at: new Date().toISOString()}).eq('id', posId);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  const user = _allUsers.find(u => u.id === userId);
+  await logAudit('force_close_position', user?.email||userId, posId);
+  showToast('Position closed');
+  loadPositions();
+}
+
+function setDtiDir(dir) {
+  _dtiDir = dir;
+  document.getElementById('dtiBuy').classList.toggle('active', dir === 'buy');
+  document.getElementById('dtiSell').classList.toggle('active', dir === 'sell');
+}
+
+function updateDtiPairs() {
+  const market = document.getElementById('dtiMarket').value;
+  const pairSelect = document.getElementById('dtiPair');
+  pairSelect.innerHTML = DTI_PAIRS[market].map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+async function submitDTI() {
+  const userId = document.getElementById('dtiUser').value;
+  const pair = document.getElementById('dtiPair').value;
+  const size = parseFloat(document.getElementById('dtiSize').value) || 1;
+  const pnl = parseFloat(document.getElementById('dtiPnl').value) || 0;
+  const dtVal = document.getElementById('dtiDatetime').value;
+  const created_at = dtVal ? new Date(dtVal).toISOString() : new Date().toISOString();
+
+  if(!userId) return showToast('Select a user', 'error');
+  if(!pair) return showToast('Select a pair', 'error');
+
+  const ticket = 'TKT-' + Date.now().toString(36).toUpperCase();
+  const { error } = await db.from('positions').insert({
+    user_id: userId, ticket, pair, direction: _dtiDir,
+    size, open_price: 0, total_pnl: pnl,
+    status: 'closed', created_at, closed_at: new Date().toISOString()
+  });
+  if(error) return showToast('Error: ' + error.message, 'error');
+
+  // Update profile total_pnl
+  const user = _allUsers.find(u => u.id === userId);
+  const newPnl = (parseFloat(user?.total_pnl)||0) + pnl;
+  await db.from('profiles').update({total_pnl: newPnl}).eq('id', userId);
+  await logAudit('dti_trade', user?.email||userId, `${pair} ${_dtiDir} size:${size} pnl:${fmtMoney(pnl)}`);
+  showToast('Trade submitted');
+  loadPositions();
+}
+
+// ======================== PROFIT TARGETS ========================
+async function loadProfitTargetsPage() {
+  // Users already in dropdown via cacheAllUsers
+}
+
+async function loadProfitTarget() {
+  const userId = document.getElementById('ptUserSelect').value;
+  if(!userId) {
+    document.getElementById('ptSummaryBody').innerHTML = '<div style="color:var(--muted);font-size:13px">Select a user to view their target.</div>';
+    document.getElementById('ptActionsCard').style.display = 'none';
+    return;
+  }
+  _currentPtUser = userId;
+  const { data: target } = await db.from('profit_targets').select('*').eq('user_id', userId).eq('is_active', true).maybeSingle();
+  _currentPtTarget = target;
+
+  const user = _allUsers.find(u => u.id === userId);
+  const currentPnl = parseFloat(user?.total_pnl) || 0;
+
+  if(!target) {
+    document.getElementById('ptSummaryBody').innerHTML = `<div style="color:var(--muted);font-size:13px">No active target set.</div><div style="margin-top:12px"><button class="btn btn--primary btn--sm" onclick="openSetTargetModal()">Set Target</button></div>`;
+    document.getElementById('ptActionsCard').style.display = 'block';
+    document.getElementById('ptTradesBody').innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">No target set</td></tr>';
+    return;
+  }
+
+  const progress = target.target_amount > 0 ? Math.min(100, (currentPnl / target.target_amount) * 100) : 0;
+  document.getElementById('ptSummaryBody').innerHTML = `
+    <div style="margin-bottom:12px"><strong style="font-size:15px">${target.target_label||'Profit Target'}</strong></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span>Current P&L: <strong style="color:var(--green)">${fmtMoney(currentPnl)}</strong></span><span>Target: <strong>${fmtMoney(target.target_amount)}</strong></span></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+    <div style="text-align:right;font-size:12px;margin-top:5px;color:var(--muted)">${progress.toFixed(1)}% complete</div>
+  `;
+
+  document.getElementById('ptActionsCard').style.display = 'block';
+
+  const { data: trades } = await db.from('profit_target_trades').select('*').eq('target_id', target.id).order('created_at',{ascending:false});
+  document.getElementById('ptTradesBody').innerHTML = (trades||[]).map(t =>
+    `<tr><td>${fmtDate(t.created_at)}</td><td style="color:${(parseFloat(t.amount)||0)>=0?'var(--green)':'var(--red)'};font-weight:600">${fmtMoney(t.amount)}</td><td>${t.note||'—'}</td></tr>`
+  ).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">No entries</td></tr>';
+}
+
+function openSetTargetModal() {
+  document.getElementById('ptTargetLabel').value = _currentPtTarget?.target_label || '';
+  document.getElementById('ptTargetAmount').value = _currentPtTarget?.target_amount || '';
+  openModal('modalSetTarget');
+}
+
+async function saveProfitTarget() {
+  const label = document.getElementById('ptTargetLabel').value.trim();
+  const amount = parseFloat(document.getElementById('ptTargetAmount').value);
+  if(!_currentPtUser) return showToast('Select a user first', 'error');
+  if(!amount) return showToast('Enter target amount', 'error');
+
+  // Deactivate existing
+  await db.from('profit_targets').update({is_active: false}).eq('user_id', _currentPtUser).eq('is_active', true);
+
+  const { error } = await db.from('profit_targets').insert({user_id:_currentPtUser, target_label:label, target_amount:amount, is_active:true, created_at:new Date().toISOString()});
+  if(error) return showToast('Error: ' + error.message, 'error');
+  const user = _allUsers.find(u => u.id === _currentPtUser);
+  await logAudit('set_profit_target', user?.email||_currentPtUser, `${label} — ${fmtMoney(amount)}`);
+  showToast('Target set');
+  closeModal('modalSetTarget');
+  loadProfitTarget();
+}
+
+function openAddTradeModal() {
+  document.getElementById('ptTradeAmount').value = '';
+  document.getElementById('ptTradeNote').value = '';
+  openModal('modalAddTrade');
+}
+
+async function submitTradeEntry() {
+  const amount = parseFloat(document.getElementById('ptTradeAmount').value);
+  const note = document.getElementById('ptTradeNote').value.trim();
+  if(!_currentPtUser) return showToast('Select a user', 'error');
+  if(!_currentPtTarget) return showToast('Set a target first', 'error');
+
+  const { error } = await db.from('profit_target_trades').insert({target_id:_currentPtTarget.id, user_id:_currentPtUser, amount, note, created_at:new Date().toISOString()});
+  if(error) return showToast('Error: ' + error.message, 'error');
+
+  const user = _allUsers.find(u => u.id === _currentPtUser);
+  const newPnl = (parseFloat(user?.total_pnl)||0) + amount;
+  await db.from('profiles').update({total_pnl: newPnl}).eq('id', _currentPtUser);
+  await logAudit('profit_target_trade', user?.email||_currentPtUser, `${fmtMoney(amount)} — ${note}`);
+  showToast('Trade entry added');
+  closeModal('modalAddTrade');
+  loadProfitTarget();
+}
+
+// ======================== DEPOSITS ========================
+async function loadDeposits() {
+  let q = db.from('deposit_requests').select('*').order('created_at',{ascending:false});
+  if(_depTab !== 'all') q = q.eq('status', _depTab);
+  const { data } = await q;
+  renderDepositsTable(data||[]);
+}
+
+function setDepTab(tab, el) {
+  _depTab = tab;
+  document.querySelectorAll('#depTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  loadDeposits();
+}
+
+function renderDepositsTable(rows) {
+  const tbody = document.getElementById('depositsBody');
+  tbody.innerHTML = rows.map(r => {
+    const statusMap = {pending:'pill-orange',approved:'pill-green',rejected:'pill-red'};
+    const user = _allUsers.find(u => u.id === r.user_id);
+    return `<tr>
+      <td>${user ? buildUserName(user) : `<span>${r.user_email||'—'}</span>`}</td>
+      <td><strong>${fmtMoney(r.amount)}</strong></td>
+      <td>${r.coin||'—'}</td>
+      <td>${r.network||'—'}</td>
+      <td>${r.method||'—'}</td>
+      <td><span class="badge-pill ${statusMap[r.status]||'pill-grey'}">${r.status}</span></td>
+      <td>${r.proof_url ? `<a href="#" onclick='viewProof("${r.proof_url}")' style="color:var(--blue);font-size:12px">View</a>` : '—'}</td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><div class="row-actions">${r.status==='pending' ? `<button class="btn btn--green btn--sm" onclick='approveDeposit("${r.id}","${r.user_id}",${parseFloat(r.amount)||0},"${r.user_email||''}","${r.coin||''}","${r.method||''}")'>Approve</button><button class="btn btn--red btn--sm" onclick='rejectDeposit("${r.id}")'>Reject</button>` : '—'}</div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No deposits</td></tr>';
+}
+
+async function approveDeposit(id, userId, amount, userEmail, coin, method) {
+  if(!confirm(`Approve deposit of ${fmtMoney(amount)} for ${userEmail}?`)) return;
+  const { error } = await db.from('deposit_requests').update({status:'approved'}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+
+  const user = _allUsers.find(u => u.id === userId);
+  const newBal = (parseFloat(user?.balance)||0) + amount;
+  await db.from('profiles').update({balance: newBal}).eq('id', userId);
+  await db.from('transactions').insert({user_id:userId, type:'deposit', amount, coin, method, status:'completed', note:'Deposit approved', created_at:new Date().toISOString()});
+  await db.from('notifications').insert({user_id:userId, type:'deposit_approved', title:'Deposit Approved', message:`Your deposit of ${fmtMoney(amount)} has been approved and credited.`, read:false, created_at:new Date().toISOString()});
+  await logAudit('approve_deposit', userEmail, `${fmtMoney(amount)} ${coin}`);
+  showToast('Deposit approved and credited');
+  loadDeposits(); loadBadgeCounts(); cacheAllUsers();
+}
+
+async function rejectDeposit(id) {
+  if(!confirm('Reject this deposit request?')) return;
+  const { error } = await db.from('deposit_requests').update({status:'rejected'}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('reject_deposit', id, '');
+  showToast('Deposit rejected');
+  loadDeposits(); loadBadgeCounts();
+}
+
+async function viewProof(path) {
+  try {
+    const { data } = await db.storage.from('deposits').createSignedUrl(path, 3600);
+    if(data?.signedUrl) window.open(data.signedUrl, '_blank');
+    else showToast('Could not load proof image', 'error');
+  } catch(e) { window.open(path, '_blank'); }
+}
+
+async function submitManualDeposit() {
+  const userId = document.getElementById('manualDepUser').value;
+  const amount = parseFloat(document.getElementById('manualDepAmount').value);
+  const method = document.getElementById('manualDepMethod').value;
+  const note = document.getElementById('manualDepNote').value;
+  if(!userId) return showToast('Select a user', 'error');
+  if(!amount || amount <= 0) return showToast('Enter valid amount', 'error');
+
+  const user = _allUsers.find(u => u.id === userId);
+  const newBal = (parseFloat(user?.balance)||0) + amount;
+  await db.from('profiles').update({balance: newBal}).eq('id', userId);
+  await db.from('transactions').insert({user_id:userId, type:'deposit', amount, method, status:'completed', note: note||'Manual deposit by admin', created_at:new Date().toISOString()});
+  await db.from('notifications').insert({user_id:userId, type:'deposit_credited', title:'Balance Credited', message:`${fmtMoney(amount)} has been credited to your account.`, read:false, created_at:new Date().toISOString()});
+  await logAudit('manual_deposit', user?.email||userId, `${fmtMoney(amount)} via ${method} — ${note}`);
+  showToast('Manual deposit applied');
+  closeModal('modalManualDeposit');
+  cacheAllUsers();
+}
+
+// ======================== WITHDRAWALS ========================
+async function loadWithdrawals() {
+  let q = db.from('withdrawal_requests').select('*').order('created_at',{ascending:false});
+  if(_wdTab !== 'all') q = q.eq('status', _wdTab);
+  const { data } = await q;
+  renderWithdrawalsTable(data||[]);
+}
+
+function setWdTab(tab, el) {
+  _wdTab = tab;
+  document.querySelectorAll('#wdTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  loadWithdrawals();
+}
+
+function renderWithdrawalsTable(rows) {
+  const tbody = document.getElementById('withdrawalsBody');
+  tbody.innerHTML = rows.map(r => {
+    const statusMap = {pending:'pill-orange',approved:'pill-green',rejected:'pill-red'};
+    const user = _allUsers.find(u => u.id === r.user_id);
+    const dest = r.wallet || r.bank_details || '—';
+    return `<tr>
+      <td>${user ? buildUserName(user) : `<span>${r.user_email||'—'}</span>`}</td>
+      <td><strong>${fmtMoney(r.amount)}</strong></td>
+      <td>${r.method||'—'}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dest}</td>
+      <td><span class="badge-pill ${statusMap[r.status]||'pill-grey'}">${r.status}</span></td>
+      <td>${fmtDate(r.created_at)}</td>
+      <td><div class="row-actions">${r.status==='pending' ? `<button class="btn btn--green btn--sm" onclick='approveWithdrawal("${r.id}","${r.user_id}",${parseFloat(r.amount)||0},"${r.user_email||''}","${r.method||''}")'>Approve</button><button class="btn btn--red btn--sm" onclick='rejectWithdrawal("${r.id}","${r.user_id}",${parseFloat(r.amount)||0})'>Reject</button>` : '—'}</div></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No withdrawals</td></tr>';
+}
+
+async function approveWithdrawal(id, userId, amount, userEmail, method) {
+  if(!confirm(`Approve withdrawal of ${fmtMoney(amount)} for ${userEmail}?`)) return;
+  const { error } = await db.from('withdrawal_requests').update({status:'approved'}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await db.from('transactions').insert({user_id:userId, type:'withdrawal', amount, method, status:'completed', note:'Withdrawal approved', created_at:new Date().toISOString()});
+  await db.from('notifications').insert({user_id:userId, type:'withdrawal_approved', title:'Withdrawal Approved', message:`Your withdrawal of ${fmtMoney(amount)} has been approved.`, read:false, created_at:new Date().toISOString()});
+  await logAudit('approve_withdrawal', userEmail, `${fmtMoney(amount)} via ${method}`);
+  showToast('Withdrawal approved');
+  loadWithdrawals(); loadBadgeCounts();
+}
+
+async function rejectWithdrawal(id, userId, amount) {
+  if(!confirm('Reject this withdrawal and refund the balance?')) return;
+  const { error } = await db.from('withdrawal_requests').update({status:'rejected'}).eq('id', id);
+  if(error) return showToast('Error: ' + error.message, 'error');
+  const user = _allUsers.find(u => u.id === userId);
+  const newBal = (parseFloat(user?.balance)||0) + amount;
+  await db.from('profiles').update({balance: newBal}).eq('id', userId);
+  await db.from('notifications').insert({user_id:userId, type:'withdrawal_rejected', title:'Withdrawal Rejected', message:`Your withdrawal of ${fmtMoney(amount)} was rejected. Your balance has been refunded.`, read:false, created_at:new Date().toISOString()});
+  await logAudit('reject_withdrawal', user?.email||userId, `Refunded ${fmtMoney(amount)}`);
+  showToast('Withdrawal rejected and balance refunded');
+  loadWithdrawals(); loadBadgeCounts(); cacheAllUsers();
+}
+
+// ======================== ALL TRANSACTIONS ========================
+async function loadTransactions() {
+  const { data } = await db.from('transactions').select('*').order('created_at',{ascending:false}).limit(200);
+  const tbody = document.getElementById('txBody');
+  tbody.innerHTML = (data||[]).map(t => {
+    const user = _allUsers.find(u => u.id === t.user_id);
+    const typeColor = t.type === 'deposit' ? 'var(--green)' : 'var(--red)';
+    const statusMap = {pending:'pill-orange',completed:'pill-green',rejected:'pill-red'};
+    return `<tr>
+      <td>${user ? buildUserName(user) : `<span style="font-size:12px;color:var(--muted)">${t.user_id?.slice(0,8)}…</span>`}</td>
+      <td><span style="color:${typeColor};font-weight:700;text-transform:uppercase;font-size:11px">${t.type||'—'}</span></td>
+      <td style="font-weight:600">${fmtMoney(t.amount)}</td>
+      <td>${t.coin||'—'}</td>
+      <td><span class="badge-pill ${statusMap[t.status]||'pill-grey'}">${t.status||'—'}</span></td>
+      <td>${fmtDate(t.created_at)}</td>
+      <td style="font-size:12px;color:var(--muted)">${t.note||'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No transactions</td></tr>';
+}
+
+// ======================== ANNOUNCEMENTS ========================
+async function loadAnnouncements() {
+  const { data } = await db.from('announcements').select('*').order('created_at',{ascending:false});
+  const tbody = document.getElementById('annBody');
+  tbody.innerHTML = (data||[]).map(a =>
+    `<tr>
+      <td><strong>${a.title||'—'}</strong></td>
+      <td><span class="badge-pill pill-blue">${a.audience||'all'}</span></td>
+      <td><span class="badge-pill ${a.active ? 'pill-green' : 'pill-grey'}">${a.active ? 'Active' : 'Inactive'}</span></td>
+      <td>${fmtDate(a.created_at)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn--outline btn--sm" onclick='editAnnouncement(${JSON.stringify(a)})'>Edit</button>
+        <button class="btn btn--${a.active?'red':'green'} btn--sm" onclick='toggleAnnouncement("${a.id}",${!a.active})'>${a.active?'Disable':'Enable'}</button>
+        <button class="btn btn--red btn--sm" onclick='deleteAnnouncement("${a.id}")'>Delete</button>
+      </div></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">No announcements</td></tr>';
+}
+
+function editAnnouncement(a) {
+  document.getElementById('annEditId').value = a.id;
+  document.getElementById('annTitle').value = a.title || '';
+  document.getElementById('annBody').value = a.body || '';
+  document.getElementById('annAudience').value = a.specific_user_id ? 'specific' : (a.audience || 'all');
+  if(a.specific_user_id) {
+    document.getElementById('annSpecificUserField').style.display = 'block';
+    document.getElementById('annSpecificUser').value = a.specific_user_id;
+  } else {
+    document.getElementById('annSpecificUserField').style.display = 'none';
+  }
+  openModal('modalAnnouncement');
+}
+
+function toggleAnnSpecificUser() {
+  const audience = document.getElementById('annAudience').value;
+  document.getElementById('annSpecificUserField').style.display = audience === 'specific' ? 'block' : 'none';
+}
+
+async function saveAnnouncement() {
+  const editId = document.getElementById('annEditId').value;
+  const title = document.getElementById('annTitle').value.trim();
+  const body = document.getElementById('annBody').value.trim();
+  const audienceVal = document.getElementById('annAudience').value;
+  const specific_user_id = audienceVal === 'specific' ? document.getElementById('annSpecificUser').value : null;
+  const audience = specific_user_id ? 'specific' : audienceVal;
+
+  if(!title || !body) return showToast('Title and body required', 'error');
+
+  if(editId) {
+    const { error } = await db.from('announcements').update({title, body, audience, specific_user_id, active: true}).eq('id', editId);
+    if(error) return showToast('Error: ' + error.message, 'error');
+    await logAudit('edit_announcement', title, audience);
+    showToast('Announcement updated');
+  } else {
+    const { data: ann, error } = await db.from('announcements').insert({title, body, audience, specific_user_id, active: true, created_at: new Date().toISOString()}).select().single();
+    if(error) return showToast('Error: ' + error.message, 'error');
+
+    // Send notifications
+    let targetUsers = [];
+    if(specific_user_id) targetUsers = [{id: specific_user_id}];
+    else if(audience === 'live') targetUsers = _allUsers.filter(u => u.account_type === 'live');
+    else if(audience === 'demo') targetUsers = _allUsers.filter(u => u.account_type === 'demo');
+    else targetUsers = _allUsers;
+
+    if(targetUsers.length > 0) {
+      const notifs = targetUsers.map(u => ({user_id:u.id, type:'announcement', title, message:body, read:false, created_at:new Date().toISOString()}));
+      await db.from('notifications').insert(notifs);
+    }
+    await logAudit('create_announcement', title, `audience:${audience} notified:${targetUsers.length}`);
+    showToast('Announcement published');
+  }
+  closeModal('modalAnnouncement');
+  loadAnnouncements();
+}
+
+async function toggleAnnouncement(id, active) {
+  await db.from('announcements').update({active}).eq('id', id);
+  await logAudit('toggle_announcement', id, active ? 'enabled' : 'disabled');
+  showToast('Announcement ' + (active ? 'enabled' : 'disabled'));
+  loadAnnouncements();
+}
+
+async function deleteAnnouncement(id) {
+  if(!confirm('Delete this announcement?')) return;
+  await db.from('announcements').delete().eq('id', id);
+  await logAudit('delete_announcement', id, '');
+  showToast('Announcement deleted');
+  loadAnnouncements();
+}
+
+// ======================== EMAIL USERS ========================
+async function sendEmail() {
+  const group = document.getElementById('emailGroup').value;
+  const subject = document.getElementById('emailSubject').value.trim();
+  const body = document.getElementById('emailBody').value.trim();
+  if(!subject || !body) return showToast('Subject and body required', 'error');
+
+  const { error } = await db.from('email_queue').insert({
+    recipient_group: group, subject, body,
+    sent_by: _adminUser?.email, created_at: new Date().toISOString()
+  });
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('send_email', group, subject);
+  showToast('Email queued for delivery');
+  document.getElementById('emailSubject').value = '';
+  document.getElementById('emailBody').value = '';
+}
+
+// ======================== MARKETS CONTROL ========================
+async function loadMarkets() {
+  const { data } = await db.from('market_settings').select('*');
+  const marketData = {};
+  (data||[]).forEach(m => { marketData[m.instrument] = m; });
+
+  const list = document.getElementById('marketsList');
+  list.innerHTML = DEFAULT_MARKETS.map((m, i) => {
+    const saved = marketData[m.instrument] || m;
+    return `<div class="market-row" id="mrow-${i}">
+      <div><div style="font-size:13px;font-weight:600">${m.instrument}</div></div>
+      <label class="toggle-switch"><input type="checkbox" id="mEnabled-${i}" ${saved.enabled !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+      <input type="number" id="mSpread-${i}" value="${saved.spread||m.spread}" step="0.01" placeholder="Spread">
+      <input type="number" id="mLeverage-${i}" value="${saved.leverage||m.leverage}" step="1" placeholder="Leverage">
+      <button class="btn btn--primary btn--sm" onclick='saveMarket("${m.instrument}",${i})'>Save</button>
+    </div>`;
+  }).join('');
+}
+
+async function saveMarket(instrument, i) {
+  const enabled = document.getElementById(`mEnabled-${i}`).checked;
+  const spread = parseFloat(document.getElementById(`mSpread-${i}`).value);
+  const leverage = parseFloat(document.getElementById(`mLeverage-${i}`).value);
+  const { error } = await db.from('market_settings').upsert({instrument, enabled, spread, leverage});
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit('update_market', instrument, `enabled:${enabled} spread:${spread} leverage:${leverage}`);
+  showToast(`${instrument} saved`);
+}
+
+// ======================== SYSTEM SETTINGS ========================
+function setStab(tab, el) {
+  document.querySelectorAll('.stab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  document.getElementById('stab-' + tab).classList.add('active');
+  if(el) el.classList.add('active');
+}
+
+async function loadSystemSettings() {
+  const { data } = await db.from('system_settings').select('*');
+  const settings = {};
+  (data||[]).forEach(s => { settings[s.key] = s.value; });
+
+  // Platform info
+  if(settings.platform_name) document.getElementById('setPlatformName').value = settings.platform_name;
+  if(settings.support_email) document.getElementById('setSupportEmail').value = settings.support_email;
+  if(settings.support_phone) document.getElementById('setSupportPhone').value = settings.support_phone;
+
+  // Toggles
+  const togMap = {registrations_open:'togRegistrations', live_trading_enabled:'togLiveTrading', deposits_enabled:'togDeposits', withdrawals_enabled:'togWithdrawals', maintenance_mode:'togMaintenance', bank_wd_maintenance_enabled:'togBankWd'};
+  Object.entries(togMap).forEach(([key, elId]) => {
+    const el = document.getElementById(elId);
+    if(el) el.checked = settings[key] === 'true';
+  });
+
+  loadDepositAddresses(settings);
+  loadLimitsSummary();
+  loadReviews();
+  renderLimitsMode();
+}
+
+async function savePlatformInfo() {
+  const items = [
+    {key:'platform_name', value: document.getElementById('setPlatformName').value},
+    {key:'support_email', value: document.getElementById('setSupportEmail').value},
+    {key:'support_phone', value: document.getElementById('setSupportPhone').value},
+  ];
+  for(const item of items) {
+    await db.from('system_settings').upsert({key: item.key, value: item.value, updated_at: new Date().toISOString()});
+  }
+  await logAudit('update_platform_info', 'system_settings', '');
+  showToast('Platform info saved');
+}
+
+async function saveToggle(key, el) {
+  const value = el.checked ? 'true' : 'false';
+  await db.from('system_settings').upsert({key, value, updated_at: new Date().toISOString()});
+  await logAudit('toggle_setting', key, value);
+  showToast(`${key} set to ${value}`);
+}
+
+async function loadDepositAddresses(settings) {
+  const { data } = await db.from('deposit_addresses').select('*');
+  const addrMap = {};
+  (data||[]).forEach(a => { addrMap[`${a.asset}-${a.network}`] = a.address; });
+
+  document.getElementById('depositAddrBody').innerHTML = DEPOSIT_COIN_NETWORKS.map((c, i) =>
+    `<div class="addr-row">
+      <div><div class="addr-label">${c.label}</div><div class="addr-sub">${c.asset} · ${c.network}</div></div>
+      <input type="text" class="field" id="addr-${i}" style="height:36px;border:1.5px solid var(--border);border-radius:7px;padding:0 12px;font-size:13px;outline:none;background:var(--white);color:var(--text);width:100%" placeholder="Enter wallet address..." value="${addrMap[`${c.asset}-${c.network}`]||''}">
+    </div>`
+  ).join('');
+}
+
+async function saveDepositAddresses() {
+  const items = DEPOSIT_COIN_NETWORKS.map((c, i) => ({
+    asset: c.asset, network: c.network,
+    address: document.getElementById(`addr-${i}`)?.value || '',
+    updated_at: new Date().toISOString()
+  }));
+  for(const item of items) {
+    if(item.address) await db.from('deposit_addresses').upsert({asset:item.asset, network:item.network, address:item.address, updated_at:item.updated_at});
+  }
+  await logAudit('update_deposit_addresses', 'deposit_addresses', '');
+  showToast('Deposit addresses saved');
+}
+
+function renderLimitsMode() {
+  const mode = document.getElementById('limitsMode').value;
+  const form = document.getElementById('limitsForm');
+
+  if(mode === 'global_deposit' || mode === 'global_withdrawal') {
+    const prefix = mode === 'global_deposit' ? 'deposit' : 'withdrawal';
+    form.innerHTML = `
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="limit-pill active" id="pillMin" onclick="setPillMode('min')">Min</button>
+        <button class="limit-pill" id="pillMax" onclick="setPillMode('max')">Max</button>
+      </div>
+      <div class="field" style="max-width:300px">
+        <label id="limitAmtLabel">Minimum Amount ($)</label>
+        <input type="number" id="limitAmount" min="0" placeholder="0.00">
+      </div>
+      <div style="margin-top:14px"><button class="btn btn--primary" onclick="saveGlobalLimit('${prefix}')">Save Limit</button></div>
+    `;
+  } else {
+    form.innerHTML = `
+      <div class="form-grid" style="max-width:480px">
+        <div class="field field--full"><label>Select User</label>
+          <select id="limitUser"><option value="">— Select —</option>${_allUsers.map(u=>`<option value="${u.id}">${((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Type</label><select id="limitType"><option value="deposit">Deposit</option><option value="withdrawal">Withdrawal</option></select></div>
+        <div class="field"><label>Min Amount ($)</label><input type="number" id="limitMin" min="0" placeholder="0.00"></div>
+        <div class="field"><label>Max Amount ($)</label><input type="number" id="limitMax" min="0" placeholder="0.00"></div>
+      </div>
+      <div style="margin-top:14px"><button class="btn btn--primary" onclick="savePerUserLimit()">Save Limits</button></div>
+    `;
+  }
+}
+
+let _pillMode = 'min';
+function setPillMode(mode) {
+  _pillMode = mode;
+  document.getElementById('pillMin').classList.toggle('active', mode==='min');
+  document.getElementById('pillMax').classList.toggle('active', mode==='max');
+  document.getElementById('limitAmtLabel').textContent = (mode==='min'?'Minimum':'Maximum') + ' Amount ($)';
+}
+
+async function saveGlobalLimit(prefix) {
+  const amount = parseFloat(document.getElementById('limitAmount').value);
+  if(!amount) return showToast('Enter an amount', 'error');
+  const key = `${_pillMode}_${prefix}_amount`;
+  await db.from('system_settings').upsert({key, value: String(amount), updated_at: new Date().toISOString()});
+  await logAudit('set_limit', key, String(amount));
+  showToast('Limit saved');
+  loadLimitsSummary();
+}
+
+async function savePerUserLimit() {
+  const userId = document.getElementById('limitUser').value;
+  const type = document.getElementById('limitType').value;
+  const min = parseFloat(document.getElementById('limitMin').value);
+  const max = parseFloat(document.getElementById('limitMax').value);
+  if(!userId) return showToast('Select a user', 'error');
+  const updates = {};
+  if(type === 'deposit') { if(min) updates.min_deposit = min; if(max) updates.max_deposit = max; }
+  else { if(min) updates.min_withdrawal = min; if(max) updates.max_withdrawal = max; }
+  await db.from('profiles').update(updates).eq('id', userId);
+  const user = _allUsers.find(u => u.id === userId);
+  await logAudit('set_user_limit', user?.email||userId, JSON.stringify(updates));
+  showToast('User limits saved');
+  loadLimitsSummary();
+}
+
+async function loadLimitsSummary() {
+  const { data } = await db.from('system_settings').select('*').like('key', '%_amount');
+  const tbody = document.getElementById('limitsSummaryBody');
+  if(!tbody) return;
+  tbody.innerHTML = (data||[]).map(r => `<tr><td><code>${r.key}</code></td><td>${fmtMoney(r.value)}</td><td>${fmtDate(r.updated_at)}</td></tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">No limits set</td></tr>';
+}
+
+// ======================== REVIEWS ========================
+async function loadReviews() {
+  const { data } = await db.from('client_reviews').select('*').order('sort_order');
+  const tbody = document.getElementById('reviewsBody');
+  if(!tbody) return;
+  tbody.innerHTML = (data||[]).map(r =>
+    `<tr>
+      <td><strong>${r.name||'—'}</strong></td>
+      <td>${r.role||'—'}</td>
+      <td><span class="review-stars">${'★'.repeat(Math.min(5,r.stars||5))}</span></td>
+      <td><span class="badge-pill ${r.active?'pill-green':'pill-grey'}">${r.active?'Active':'Hidden'}</span></td>
+      <td>${r.sort_order||0}</td>
+      <td><div class="row-actions">
+        <button class="btn btn--outline btn--sm" onclick='editReview(${JSON.stringify(r)})'>Edit</button>
+        <button class="btn btn--${r.active?'red':'green'} btn--sm" onclick='toggleReview("${r.id}",${!r.active})'>${r.active?'Hide':'Show'}</button>
+        <button class="btn btn--red btn--sm" onclick='deleteReview("${r.id}")'>Delete</button>
+      </div></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No reviews</td></tr>';
+}
+
+function openReviewModal() {
+  document.getElementById('reviewEditId').value = '';
+  document.getElementById('reviewName').value = '';
+  document.getElementById('reviewRole').value = '';
+  document.getElementById('reviewBody').value = '';
+  document.getElementById('reviewStars').value = '5';
+  document.getElementById('reviewSortOrder').value = '0';
+  openModal('modalReview');
+}
+
+function editReview(r) {
+  document.getElementById('reviewEditId').value = r.id;
+  document.getElementById('reviewName').value = r.name || '';
+  document.getElementById('reviewRole').value = r.role || '';
+  document.getElementById('reviewBody').value = r.body || '';
+  document.getElementById('reviewStars').value = r.stars || 5;
+  document.getElementById('reviewSortOrder').value = r.sort_order || 0;
+  openModal('modalReview');
+}
+
+async function saveReview() {
+  const id = document.getElementById('reviewEditId').value;
+  const payload = {
+    name: document.getElementById('reviewName').value.trim(),
+    role: document.getElementById('reviewRole').value.trim(),
+    body: document.getElementById('reviewBody').value.trim(),
+    stars: parseInt(document.getElementById('reviewStars').value)||5,
+    sort_order: parseInt(document.getElementById('reviewSortOrder').value)||0,
+    active: true,
+  };
+  if(!payload.name || !payload.body) return showToast('Name and body required', 'error');
+  let error;
+  if(id) ({ error } = await db.from('client_reviews').update(payload).eq('id', id));
+  else ({ error } = await db.from('client_reviews').insert(payload));
+  if(error) return showToast('Error: ' + error.message, 'error');
+  await logAudit(id ? 'edit_review' : 'create_review', payload.name, '');
+  showToast('Review saved');
+  closeModal('modalReview');
+  loadReviews();
+}
+
+async function toggleReview(id, active) {
+  await db.from('client_reviews').update({active}).eq('id', id);
+  showToast('Review ' + (active ? 'shown' : 'hidden'));
+  loadReviews();
+}
+
+async function deleteReview(id) {
+  if(!confirm('Delete this review?')) return;
+  await db.from('client_reviews').delete().eq('id', id);
+  showToast('Review deleted');
+  loadReviews();
+}
+
+// ======================== AUDIT LOG ========================
+async function loadAuditLog() {
+  const { data } = await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(200);
+  const tbody = document.getElementById('auditBody');
+  tbody.innerHTML = (data||[]).map(a =>
+    `<tr>
+      <td><span style="font-size:12px">${a.admin_email||'system'}</span></td>
+      <td><strong>${a.action||'—'}</strong></td>
+      <td>${a.target||'—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.details||'—'}</td>
+      <td style="font-size:12px;white-space:nowrap">${fmtDate(a.created_at)}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">No audit entries</td></tr>';
+}
+
+// ======================== INIT DTI ========================
+function initDTI() {
+  updateDtiPairs();
+}
+
+// ======================== BOOT ========================
+initAuth().then(() => {
+  initDTI();
+}).catch(err => {
+  console.error('Init error:', err);
+  window.location.href = 'ops-login.html';
+});
+</script>
+</body>
+</html>
