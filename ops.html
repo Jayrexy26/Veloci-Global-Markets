@@ -1952,7 +1952,7 @@ window.saveDepositAddresses = async function() {
   const rows = DEP_ADDR_PAIRS.map(p => {
     const key  = p.coin + '-' + p.network;
     const addr = (document.getElementById('depaddr-' + key)?.value || '').trim();
-    return { coin: p.coin, network: p.network, address: addr, updated_at: new Date().toISOString() };
+    return { asset: p.coin, network: p.network, address: addr, updated_at: new Date().toISOString() };
   }).filter(r => r.address); // only save non-empty
   if (!rows.length) { showToast('Enter at least one address', 'error'); return; }
   const { error } = await db.from('deposit_addresses').upsert(rows, { onConflict: 'asset,network' });
@@ -2714,22 +2714,26 @@ window.renderBalancesLive = async function() {
 /* ── Positions ── */
 window.renderPositionsLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('positions').select('*').order('opened_at', { ascending:false }).limit(100);
+  const { data } = await db.from('positions').select('*').order('created_at', { ascending:false }).limit(100);
   const tbody = document.getElementById('positions-tbody');
   if (!tbody) return;
   if (!data?.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">No positions</td></tr>`; return; }
   tbody.innerHTML = data.map(p => {
-    const pnl = parseFloat(p.total_pnl||0);
+    const pnl = parseFloat(p.pnl||p.total_pnl||0);
+    const sym  = p.symbol || p.pair || '—';
+    const side = p.side   || p.direction || '—';
+    const lots = p.lots   || p.size || '—';
+    const sideClass = (side==='buy'||side==='long') ? 'pill-green' : 'pill-red';
     return `<tr>
       <td><code style="font-size:11px;">#${p.ticket||p.id.slice(0,6)}</code></td>
       <td>${userCell(p.user_id, p.user_email)}</td>
-      <td>${p.symbol||'—'}</td>
-      <td><span class="badge-pill ${p.side==='buy'?'pill-green':'pill-red'}">${p.side||'—'}</span></td>
-      <td>${p.lots||'—'}</td>
+      <td>${sym}</td>
+      <td><span class="badge-pill ${sideClass}">${side}</span></td>
+      <td>${lots}</td>
       <td>${p.open_price||'—'}</td>
       <td>${p.current_price||'—'}</td>
       <td style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</td>
-      <td>${fmtDate(p.opened_at)}</td>
+      <td>${fmtDate(p.opened_at||p.created_at)}</td>
       <td><button class="btn btn--sm btn--red" onclick="forceClosePosition('${p.id}')">Close</button></td>
     </tr>`;
   }).join('');
@@ -2795,10 +2799,10 @@ async function approveDeposit(id) {
     user_email: req.user_email,
     type:       'deposit',
     amount:     amount,
-    coin:       req.asset || null,
+    coin:       req.coin || req.asset || null,
     network:    req.network || null,
-    currency:   req.asset || req.currency || 'USDT',
-    note:       `Deposit approved — ${req.asset || 'Crypto'} ${req.network ? '(' + req.network + ')' : ''}`.trim(),
+    currency:   req.coin || req.asset || req.currency || 'USDT',
+    note:       `Deposit approved — ${req.coin || req.asset || 'Crypto'} ${req.network ? '(' + req.network + ')' : ''}`.trim(),
     status:     'completed',
     created_at: new Date().toISOString(),
   });
@@ -2909,12 +2913,15 @@ window.renderWithdrawalsLive = async function() {
   if (sub) sub.textContent = `${rows.filter(r=>r.status==='pending').length} pending`;
   if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No withdrawals</td></tr>`; return; }
   tbody.innerHTML = rows.map(w => {
-    const pill = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
+    const pill   = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
+    const method = w.method || w.destination_type || w.destination_name || '—';
+    const dest   = w.wallet || w.bank_details || w.destination_ref || '—';
+    const uEmail = w.user_email || '';
     return `<tr>
-      <td>${userCell(w.user_id, w.user_email)}</td>
+      <td>${userCell(w.user_id, uEmail)}</td>
       <td style="font-weight:700;">${fmtMoney(w.amount||0)}</td>
-      <td>${w.method||'—'}</td>
-      <td><code style="font-size:11px;">${(w.wallet||w.bank_details||'—').slice(0,20)}</code></td>
+      <td>${method}</td>
+      <td><code style="font-size:11px;">${dest.toString().slice(0,24)}</code></td>
       <td>${fmtDate(w.created_at)}</td>
       <td><span class="badge-pill ${pill}">${w.status||'pending'}</span></td>
       <td><div class="row-actions">
@@ -2925,12 +2932,20 @@ window.renderWithdrawalsLive = async function() {
 };
 async function approveWithdrawal(id) {
   const db = window.SV_DB; if (!db) return;
-  const { data: req } = await db.from('withdrawal_requests').select('user_id,amount').eq('id', id).maybeSingle();
-  await db.from('withdrawal_requests').update({ status:'approved' }).eq('id', id);
+  const { data: req } = await db.from('withdrawal_requests').select('*').eq('id', id).maybeSingle();
+  await db.from('withdrawal_requests').update({ status:'approved', reviewed_at: new Date().toISOString() }).eq('id', id);
   if (req?.user_id && req?.amount) {
-    await db.from('transactions')
-      .update({ status:'completed' })
-      .eq('withdrawal_request_id', id);
+    /* Write a completed withdrawal transaction */
+    await db.from('transactions').insert({
+      user_id: req.user_id,
+      type: 'withdrawal',
+      amount: parseFloat(req.amount),
+      method: req.destination_type || req.method || null,
+      wallet: req.destination_ref || req.wallet || null,
+      note: `Withdrawal approved — ${req.destination_name || req.destination_type || ''}`.trim(),
+      status: 'completed',
+      created_at: new Date().toISOString(),
+    }).then(null,()=>{});
     await db.from('notifications').insert({
       user_id: req.user_id,
       title:   'Withdrawal Approved',
@@ -2945,14 +2960,12 @@ async function approveWithdrawal(id) {
 async function rejectWithdrawal(id) {
   const db = window.SV_DB; if (!db) return;
   const { data: req } = await db.from('withdrawal_requests').select('user_id,amount').eq('id', id).maybeSingle();
-  await db.from('withdrawal_requests').update({ status:'rejected' }).eq('id', id);
+  await db.from('withdrawal_requests').update({ status:'rejected', reviewed_at: new Date().toISOString() }).eq('id', id);
   if (req?.user_id && req?.amount) {
+    /* Refund balance */
     const { data: prof } = await db.from('profiles').select('balance').eq('id', req.user_id).maybeSingle();
     const refunded = parseFloat(prof?.balance || 0) + parseFloat(req.amount);
     await db.from('profiles').update({ balance: refunded }).eq('id', req.user_id);
-    await db.from('transactions')
-      .update({ status:'rejected' })
-      .eq('withdrawal_request_id', id);
     await db.from('notifications').insert({
       user_id: req.user_id,
       title:   'Withdrawal Rejected',
@@ -3189,7 +3202,7 @@ window.renderAnnouncementsLive = renderAnnouncementsLive;
 
 window.opsToggleAnnouncement = async function(annId, enable) {
   const db = window.SV_DB; if (!db) return;
-  await db.from('announcements').update({ is_active: enable }).eq('id', annId);
+  await db.from('announcements').update({ is_active: enable, active: enable }).eq('id', annId);
   await db.from('notifications').update({ enabled: enable }).eq('announcement_id', annId);
   logAudit(enable ? 'ENABLE_ANNOUNCEMENT' : 'DISABLE_ANNOUNCEMENT', annId, `Popup ${enable ? 'enabled' : 'disabled'}`);
   showToast(`Popup ${enable ? 'enabled — users will see it' : 'disabled — users will no longer see it'}`, enable ? 'success' : 'error');
@@ -3266,9 +3279,10 @@ window.publishAnnouncement = async function() {
       showToast('Announcement updated', 'success');
     } else {
       const { data: annRow, error } = await db.from('announcements').insert({
-        title, body, type, audience,
+        title, body: body||null, type, audience,
         target_user_id: audience === 'specific' ? specificId : null,
-        is_active: true, sent_count: recipientIds.length,
+        message: body||null,
+        active: true, is_active: true, sent_count: recipientIds.length,
         created_by: _adminUser?.id || null,
         published_by: _adminUser?.email || null
       }).select('id').single();
@@ -3451,9 +3465,9 @@ window.dtiReset = function() {
 /* Shared helper: update profiles.total_pnl + write to profit_target_trades if user has active target */
 async function _syncTradeToBalance(db, userId, pnl, note) {
   /* 1. Increment profiles.total_pnl */
-  const { data: prof } = await db.from('profiles').select('pnl').eq('id', userId).single();
+  const { data: prof } = await db.from('profiles').select('total_pnl').eq('id', userId).single();
   const newPnl = (parseFloat(prof?.total_pnl) || 0) + pnl;
-  await db.from('profiles').update({ pnl: newPnl }).eq('id', userId);
+  await db.from('profiles').update({ total_pnl: newPnl }).eq('id', userId);
 
   /* 2. Write to profit_target_trades if user has an active target */
   const { data: targets } = await db.from('profit_targets')
@@ -3489,7 +3503,10 @@ window.dtiSubmit = async function() {
 
   const { error } = await db.from('positions').insert({
     user_id: userId, user_email: userEmail,
-    ticket: ticket.toString(), symbol: pair, side: dir, lots,
+    ticket: ticket.toString(),
+    pair, symbol: pair,
+    direction: dir, side: dir,
+    size: lots, lots,
     open_price: 0, current_price: 0, pnl,
     status: 'closed', opened_at: openedAt, closed_at: new Date().toISOString()
   });
@@ -3512,22 +3529,25 @@ window.loadUserTradeHistory = async function() {
   const cont   = document.getElementById('uth-content');
   if (!userId) { cont.innerHTML = `<div style="font-size:13px;color:var(--muted);">Select an account to view trade history.</div>`; return; }
   const { data } = await db.from('positions').select('*')
-    .eq('user_id', userId).order('opened_at', { ascending: false }).limit(50);
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
   if (!data?.length) { cont.innerHTML = `<div style="font-size:13px;color:var(--muted);">No trade history for this account.</div>`; return; }
   cont.innerHTML = `<div class="table-wrap" style="overflow-x:auto;">
     <table class="data-table">
       <thead><tr><th>Ticket</th><th>Pair</th><th>Dir</th><th>Lots</th><th>P&L</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody>
         ${data.map(p => {
-          const pnl = parseFloat(p.total_pnl||0);
+          const pnl  = parseFloat(p.pnl||p.total_pnl||0);
+          const sym  = p.symbol||p.pair||'—';
+          const side = p.side||p.direction||'buy';
+          const lots = p.lots||p.size||'—';
           return `<tr>
             <td><code style="font-size:11px;">#${p.ticket||p.id.slice(0,6)}</code></td>
-            <td>${p.symbol||'—'}</td>
-            <td><span class="badge-pill ${p.side==='buy'?'pill-green':'pill-red'}">${(p.side||'buy').toUpperCase()}</span></td>
-            <td>${p.lots||'—'}</td>
+            <td>${sym}</td>
+            <td><span class="badge-pill ${(side==='buy'||side==='long')?'pill-green':'pill-red'}">${side.toUpperCase()}</span></td>
+            <td>${lots}</td>
             <td style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}${fmtMoney(pnl)}</td>
             <td><span class="badge-pill ${p.status==='open'?'pill-blue':'pill-grey'}">${p.status||'closed'}</span></td>
-            <td style="font-size:11px;">${fmtDate(p.opened_at)}</td>
+            <td style="font-size:11px;">${fmtDate(p.opened_at||p.created_at)}</td>
             <td><button class="btn btn--sm btn--red" onclick="deleteTradeEntry('${p.id}')">Delete</button></td>
           </tr>`;
         }).join('')}
@@ -3545,8 +3565,8 @@ window.deleteTradeEntry = async function(id) {
   /* Recalculate pnl from remaining positions */
   if (pos?.user_id) {
     const { data: remaining } = await db.from('positions').select('pnl').eq('user_id', pos.user_id);
-    const newPnl = (remaining || []).reduce((s, r) => s + (parseFloat(r.total_pnl) || 0), 0);
-    await db.from('profiles').update({ pnl: newPnl }).eq('id', pos.user_id);
+    const newPnl = (remaining || []).reduce((s, r) => s + (parseFloat(r.pnl) || 0), 0);
+    await db.from('profiles').update({ total_pnl: newPnl }).eq('id', pos.user_id);
   }
   logAudit('delete_trade', id, 'admin delete');
   showToast('Trade deleted');
@@ -3665,7 +3685,10 @@ window.saveAddPosition = async function() {
 
   const { error } = await db.from('positions').insert({
     user_id: userId, user_email: userEmail,
-    ticket: ticket.toString(), symbol, side, lots,
+    ticket: ticket.toString(),
+    pair: symbol, symbol,
+    direction: side, side,
+    size: lots, lots,
     open_price: openPr, current_price: currPr, pnl,
     leverage, sl, tp, swap, comment,
     status: 'closed', opened_at: new Date().toISOString(), closed_at: new Date().toISOString()
