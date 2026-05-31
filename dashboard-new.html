@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Dashboard — Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<style>
+:root {
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#252b3d;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
+  --text:#eaecef; --sub:#848e9c; --muted:rgba(255,255,255,.06);
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px;}
+
+/* PAGE STRUCTURE */
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:32px;width:auto;}
+.hdr-logo-wrap span{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.hdr-search{flex:1;max-width:300px;margin-left:16px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-search svg{color:var(--sub);flex-shrink:0;}
+.hdr-search input{font-size:13px;flex:1;color:var(--text);}
+.hdr-search input::placeholder{color:var(--sub);}
+.hdr-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hicon-badge{position:absolute;top:3px;right:3px;background:var(--red);color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--s1);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dk));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;color:#fff;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:#0a0d1a;border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-logo{padding:16px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.sb-logo img{height:28px;width:auto;}
+.sb-logo-text{font-size:13px;font-weight:700;color:var(--text);}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-section-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(255,255,255,.25);text-transform:uppercase;padding:12px 16px 4px;display:flex;align-items:center;gap:8px;}
+.nav-section-label::after{content:'';flex:1;height:1px;background:var(--b);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.09);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-divider{height:1px;background:var(--b);margin:4px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);padding:8px;}
+.sb-signout{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;}
+.sb-signout:hover{background:rgba(246,70,93,.08);color:var(--red);}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);}
+.main::-webkit-scrollbar{width:4px;}
+.content{padding:20px;max-width:1200px;}
+
+/* WELCOME BANNER */
+.welcome-banner{background:linear-gradient(120deg,var(--s2) 0%,var(--s3) 60%,rgba(240,90,26,.15) 100%);border:1px solid var(--b);border-radius:14px;padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.welcome-banner::before{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(240,90,26,.14) 0%,transparent 70%);pointer-events:none;}
+.wb-left{}
+.wb-greeting{font-size:12.5px;color:var(--sub);margin-bottom:3px;}
+.wb-name{font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.wb-date{font-size:12px;color:var(--sub);}
+.wb-badges{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px;}
+.badge-live{background:rgba(14,203,129,.12);border:1px solid rgba(14,203,129,.3);color:var(--green);}
+.badge-demo{background:rgba(33,150,243,.12);border:1px solid rgba(33,150,243,.3);color:var(--blue);}
+.badge-plan-starter{background:rgba(132,142,156,.12);border:1px solid rgba(132,142,156,.3);color:var(--sub);}
+.badge-plan-silver{background:rgba(192,192,192,.12);border:1px solid rgba(192,192,192,.3);color:#c0c0c0;}
+.badge-plan-gold{background:rgba(240,185,11,.12);border:1px solid rgba(240,185,11,.3);color:var(--gold);}
+.badge-plan-platinum{background:rgba(33,150,243,.12);border:1px solid rgba(33,150,243,.3);color:var(--blue);}
+.badge-plan-elite{background:rgba(123,97,255,.12);border:1px solid rgba(123,97,255,.3);color:#7b61ff;}
+.wb-right{flex-shrink:0;text-align:right;}
+.wb-time{font-size:24px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.wb-tz{font-size:11px;color:var(--sub);margin-top:3px;}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--b2);}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 12px 12px;}
+.stat-card:nth-child(1)::after{background:linear-gradient(90deg,var(--accent),var(--accent-dk));}
+.stat-card:nth-child(2)::after{background:linear-gradient(90deg,var(--green),#09b672);}
+.stat-card:nth-child(3)::after{background:linear-gradient(90deg,var(--blue),#1565c0);}
+.sc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sc-label{font-size:12px;color:var(--sub);font-weight:500;display:flex;align-items:center;gap:6px;}
+.sc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.sc-icon-orange{background:rgba(240,90,26,.12);}
+.sc-icon-green{background:rgba(14,203,129,.12);}
+.sc-icon-blue{background:rgba(33,150,243,.12);}
+.sc-val{font-size:24px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px;}
+.sc-sub{font-size:11.5px;color:var(--sub);}
+.sc-toggle{background:none;border:none;color:var(--sub);cursor:pointer;padding:2px;display:flex;align-items:center;transition:color .15s;}
+.sc-toggle:hover{color:var(--text);}
+.pos-val{color:var(--green);}
+.neg-val{color:var(--red);}
+
+/* TWO COLUMN GRID */
+.two-col{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:20px;align-items:start;}
+
+/* SECTION CARD */
+.sec-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.sec-card:last-child{margin-bottom:0;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;border-bottom:1px solid var(--b);}
+.sec-title{font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;}
+.sec-link{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer;}
+.sec-link:hover{text-decoration:underline;}
+
+/* QUICK ACTIONS */
+.quick-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.qa-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;transition:all .15s;border:1px solid var(--b);color:var(--text);background:var(--s2);text-decoration:none;}
+.qa-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(240,90,26,.06);}
+.qa-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.qa-btn.primary:hover{background:var(--accent-dk);border-color:var(--accent-dk);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;padding:9px 16px;text-align:left;border-bottom:1px solid var(--b);}
+td{padding:11px 16px;font-size:13px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.empty-state{text-align:center;padding:32px 16px;color:var(--sub);font-size:13px;}
+.empty-state svg{margin:0 auto 10px;display:block;opacity:.4;}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+.chip-buy{background:rgba(14,203,129,.12);color:var(--green);}
+.chip-sell{background:rgba(246,70,93,.12);color:var(--red);}
+.chip-deposit,.chip-success,.chip-completed,.chip-verified,.chip-approved{background:rgba(14,203,129,.12);color:var(--green);}
+.chip-withdraw,.chip-withdrawal{background:rgba(240,90,26,.12);color:var(--accent);}
+.chip-pending{background:rgba(240,185,11,.12);color:var(--gold);}
+.chip-failed,.chip-rejected{background:rgba(246,70,93,.12);color:var(--red);}
+.chip-none,.chip-unverified{background:rgba(132,142,156,.12);color:var(--sub);}
+
+/* ACCOUNT STATUS CARD */
+.acct-status-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:16px;margin-bottom:16px;}
+.as-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.as-row:last-of-type{border-bottom:none;}
+.as-label{font-size:12px;color:var(--sub);}
+.as-val{font-size:13px;font-weight:600;color:var(--text);}
+.kyc-btn{display:flex;align-items:center;gap:6px;margin-top:12px;padding:9px 16px;border-radius:8px;background:rgba(240,90,26,.12);border:1px solid rgba(240,90,26,.25);color:var(--accent);font-size:13px;font-weight:600;width:100%;justify-content:center;transition:all .15s;text-decoration:none;}
+.kyc-btn:hover{background:rgba(240,90,26,.2);}
+
+/* ANNOUNCEMENTS */
+.ann-card{background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:14px 16px;margin:8px 16px;transition:border-color .15s;}
+.ann-card:last-child{margin-bottom:12px;}
+.ann-card:hover{border-color:rgba(240,90,26,.3);}
+.ann-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.ann-body{font-size:12px;color:var(--sub);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.ann-date{font-size:11px;color:rgba(255,255,255,.2);margin-top:6px;}
+
+/* TYPE ICONS */
+.type-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.type-icon-dep{background:rgba(14,203,129,.1);}
+.type-icon-wit{background:rgba(240,90,26,.1);}
+.type-icon-other{background:rgba(132,142,156,.1);}
+.type-cell{display:flex;align-items:center;gap:8px;}
+
+/* LOADING SKELETON */
+.skel{background:linear-gradient(90deg,var(--s3) 25%,var(--s4) 50%,var(--s3) 75%);background-size:200% 100%;animation:skel-anim 1.4s linear infinite;border-radius:4px;}
+@keyframes skel-anim{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* NOTIFICATION DOT */
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo-wrap">
+      <img src="assets/logo.png" alt="Veloci Global Markets" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+      <span style="display:none;align-items:center;gap:6px;font-size:14px;font-weight:800;color:var(--text);">VGM</span>
+    </div>
+    <div class="hdr-search">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search markets, assets…"/>
+    </div>
+    <div class="hdr-right">
+      <a href="notifications-new.html" class="hicon" id="notif-btn" title="Notifications">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="hicon-badge" id="notif-count" style="display:none">0</span>
+      </a>
+      <div class="hdr-avatar" id="hdr-avatar">?</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sb-logo">
+        <img src="assets/logo.png" alt="VGM" onerror="this.style.display='none'"/>
+        <span class="sb-logo-text">Veloci Global</span>
+      </div>
+      <div class="sb-nav">
+        <a href="dashboard-new.html" class="nav-item active">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="markets-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span>Markets</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="wallet-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span>Wallet</span>
+        </a>
+        <a href="deposit-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v14m-7-7 7 7 7-7"/><path d="M5 20h14"/></svg>
+          <span>Deposit</span>
+        </a>
+        <a href="withdraw-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22V8m7 7-7-7-7 7"/><path d="M5 4h14"/></svg>
+          <span>Withdraw</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="trades-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Trade History</span>
+        </a>
+        <a href="history-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Transactions</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="notifications-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Notifications</span>
+        </a>
+        <a href="settings-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Settings</span>
+        </a>
+        <a href="upgrade-new.html" class="nav-item">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>Upgrade</span>
+        </a>
+      </div>
+      <div class="sb-bottom">
+        <div class="sb-signout" onclick="signOut()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sign Out</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <div class="content">
+
+        <!-- 1. WELCOME BANNER -->
+        <div class="welcome-banner">
+          <div class="wb-left">
+            <div class="wb-greeting" id="wb-greeting">Good morning,</div>
+            <div class="wb-name" id="wb-name">Loading…</div>
+            <div class="wb-date" id="wb-date"></div>
+            <div class="wb-badges" id="wb-badges">
+              <span class="badge badge-live" id="acct-type-badge">LIVE</span>
+              <span class="badge badge-plan-starter" id="plan-badge">Starter</span>
+            </div>
+          </div>
+          <div class="wb-right">
+            <div class="wb-time" id="live-clock">--:--:--</div>
+            <div class="wb-tz">UTC</div>
+          </div>
+        </div>
+
+        <!-- 2. PORTFOLIO OVERVIEW -->
+        <div class="stat-row">
+          <!-- Balance -->
+          <div class="stat-card">
+            <div class="sc-header">
+              <span class="sc-label">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                Total Balance
+              </span>
+              <div class="sc-icon sc-icon-orange">
+                <svg width="15" height="15" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="sc-val" id="bal-display">$0.00</div>
+              <button class="sc-toggle" id="bal-toggle" onclick="toggleBalance()" title="Show/hide balance">
+                <svg id="eye-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="sc-sub">Trading account balance</div>
+          </div>
+          <!-- P&L -->
+          <div class="stat-card">
+            <div class="sc-header">
+              <span class="sc-label">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+                Total P&amp;L
+              </span>
+              <div class="sc-icon sc-icon-green">
+                <svg width="15" height="15" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              </div>
+            </div>
+            <div class="sc-val" id="pnl-display">$0.00</div>
+            <div class="sc-sub">Lifetime profit &amp; loss</div>
+          </div>
+          <!-- Open Positions -->
+          <div class="stat-card">
+            <div class="sc-header">
+              <span class="sc-label">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Open Positions
+              </span>
+              <div class="sc-icon sc-icon-blue">
+                <svg width="15" height="15" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+            </div>
+            <div class="sc-val" id="open-pos-display">0</div>
+            <div class="sc-sub">Active trades</div>
+          </div>
+        </div>
+
+        <!-- 3. QUICK ACTIONS -->
+        <div class="quick-actions">
+          <a href="deposit-new.html" class="qa-btn primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v14m-7-7 7 7 7-7"/><path d="M5 20h14"/></svg>
+            Deposit
+          </a>
+          <a href="withdraw-new.html" class="qa-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22V8m7 7-7-7-7 7"/><path d="M5 4h14"/></svg>
+            Withdraw
+          </a>
+          <a href="trades-new.html" class="qa-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Trade History
+          </a>
+          <a href="settings-new.html" class="qa-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </a>
+        </div>
+
+        <!-- TWO COLUMN: TABLES + ACCOUNT STATUS -->
+        <div class="two-col">
+          <!-- LEFT COLUMN -->
+          <div>
+
+            <!-- 5. RECENT TRADES -->
+            <div class="sec-card">
+              <div class="sec-head">
+                <span class="sec-title">
+                  <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  Recent Trades
+                </span>
+                <a href="trades-new.html" class="sec-link">View all</a>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Pair</th>
+                      <th>Direction</th>
+                      <th>Size</th>
+                      <th>P&amp;L</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trades-tbody">
+                    <tr><td colspan="5" class="empty-state">
+                      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                      Loading trades…
+                    </td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 6. RECENT TRANSACTIONS -->
+            <div class="sec-card">
+              <div class="sec-head">
+                <span class="sec-title">
+                  <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  Recent Transactions
+                </span>
+                <a href="history-new.html" class="sec-link">View all</a>
+              </div>
+              <div class="tbl-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Amount</th>
+                      <th>Coin</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="txn-tbody">
+                    <tr><td colspan="5" class="empty-state">
+                      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                      Loading transactions…
+                    </td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 7. ANNOUNCEMENTS -->
+            <div class="sec-card">
+              <div class="sec-head">
+                <span class="sec-title">
+                  <svg width="14" height="14" fill="none" stroke="var(--gold)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  Latest Announcements
+                </span>
+              </div>
+              <div id="announcements-list">
+                <div style="padding:24px 16px;text-align:center;color:var(--sub);font-size:13px;">Loading announcements…</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN: ACCOUNT STATUS -->
+          <div>
+            <!-- 4. ACCOUNT STATUS -->
+            <div class="sec-card" style="margin-bottom:16px;">
+              <div class="sec-head">
+                <span class="sec-title">
+                  <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Account Status
+                </span>
+              </div>
+              <div style="padding:12px 16px;">
+                <div class="as-row">
+                  <span class="as-label">KYC Status</span>
+                  <span id="kyc-chip" class="chip chip-none">None</span>
+                </div>
+                <div class="as-row">
+                  <span class="as-label">Plan</span>
+                  <span id="plan-chip" class="badge badge-plan-starter">Starter</span>
+                </div>
+                <div class="as-row">
+                  <span class="as-label">Account Type</span>
+                  <span class="as-val" id="acct-type-val">—</span>
+                </div>
+                <div class="as-row">
+                  <span class="as-label">Status</span>
+                  <span class="as-val" id="acct-status-val">—</span>
+                </div>
+                <div class="as-row">
+                  <span class="as-label">Member Since</span>
+                  <span class="as-val" id="member-since-val">—</span>
+                </div>
+                <div class="as-row" id="country-row" style="display:none;">
+                  <span class="as-label">Country</span>
+                  <span class="as-val" id="country-val">—</span>
+                </div>
+                <a href="settings-new.html#kyc" class="kyc-btn" id="kyc-cta" style="display:none;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  Complete KYC Verification
+                </a>
+              </div>
+            </div>
+
+            <!-- PROFILE CARD -->
+            <div class="sec-card">
+              <div class="sec-head">
+                <span class="sec-title">
+                  <svg width="14" height="14" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  Profile
+                </span>
+                <a href="settings-new.html" class="sec-link">Edit</a>
+              </div>
+              <div style="padding:16px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                  <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dk));display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0;" id="profile-avatar-large">?</div>
+                  <div>
+                    <div style="font-size:14px;font-weight:700;color:var(--text);" id="profile-fullname">—</div>
+                    <div style="font-size:12px;color:var(--sub);margin-top:2px;" id="profile-email">—</div>
+                  </div>
+                </div>
+                <div class="as-row">
+                  <span class="as-label">Phone</span>
+                  <span class="as-val" id="profile-phone">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const db = window.SV_DB;
+
+  // AUTH CHECK
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+  const uid = session.user.id;
+
+  // HELPERS
+  function fmtMoney(n) {
+    return '$' + (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(ts) {
+    return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function getInitials(first, last) {
+    return ((first||'')[0]||'') + ((last||'')[0]||'') || '?';
+  }
+
+  // BALANCE HIDE/SHOW
+  let balHidden = localStorage.getItem('vgm_hide_balance') === '1';
+  let currentBalance = 0;
+  let currentPnl = 0;
+
+  function toggleBalance() {
+    balHidden = !balHidden;
+    localStorage.setItem('vgm_hide_balance', balHidden ? '1' : '0');
+    renderBalance();
+  }
+  window.toggleBalance = toggleBalance;
+
+  function renderBalance() {
+    const balEl = document.getElementById('bal-display');
+    const eyeEl = document.getElementById('eye-icon');
+    if (balHidden) {
+      balEl.textContent = '••••••';
+      eyeEl.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+      balEl.textContent = fmtMoney(currentBalance);
+      eyeEl.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+  }
+
+  function renderPnl(val) {
+    const el = document.getElementById('pnl-display');
+    el.textContent = fmtMoney(val);
+    el.className = 'sc-val ' + (val >= 0 ? 'pos-val' : 'neg-val');
+  }
+
+  // GREETING
+  function setGreeting() {
+    const h = new Date().getUTCHours();
+    const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('wb-greeting').textContent = g + ',';
+    const now = new Date();
+    document.getElementById('wb-date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  }
+  setGreeting();
+
+  // LIVE CLOCK
+  function updateClock() {
+    const now = new Date();
+    const t = now.toUTCString().slice(17, 25);
+    document.getElementById('live-clock').textContent = t;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // KYC CHIP
+  function kycChip(status) {
+    const map = {
+      verified: ['chip-verified', 'Verified'],
+      approved: ['chip-approved', 'Approved'],
+      pending:  ['chip-pending',  'Pending'],
+      rejected: ['chip-rejected', 'Rejected'],
+    };
+    const [cls, label] = map[status] || ['chip-none', 'Not Submitted'];
+    return `<span class="chip ${cls}">${label}</span>`;
+  }
+
+  // PLAN BADGE CLASS
+  function planClass(plan) {
+    const map = {
+      starter: 'badge-plan-starter',
+      silver: 'badge-plan-silver',
+      gold: 'badge-plan-gold',
+      platinum: 'badge-plan-platinum',
+      elite: 'badge-plan-elite',
+    };
+    return map[(plan||'').toLowerCase()] || 'badge-plan-starter';
+  }
+
+  // FETCH PROFILE
+  const { data: profile } = await db.from('profiles').select('*').eq('id', uid).single();
+
+  if (profile) {
+    const firstName = profile.first_name || '';
+    const lastName  = profile.last_name  || '';
+    const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Trader';
+    const initials  = getInitials(firstName, lastName);
+    const plan      = (profile.plan || 'Starter');
+    const acctType  = (profile.account_type || 'LIVE').toUpperCase();
+    const kycStatus = (profile.kyc_status || 'none').toLowerCase();
+
+    document.getElementById('wb-name').textContent = fullName;
+    document.getElementById('hdr-avatar').textContent = initials;
+    document.getElementById('profile-avatar-large').textContent = initials;
+    document.getElementById('profile-fullname').textContent = fullName;
+    document.getElementById('profile-email').textContent = profile.email || session.user.email || '—';
+    document.getElementById('profile-phone').textContent = profile.phone || '—';
+
+    // account type badge
+    const atBadge = document.getElementById('acct-type-badge');
+    atBadge.textContent = acctType;
+    atBadge.className = 'badge ' + (acctType === 'DEMO' ? 'badge-demo' : 'badge-live');
+
+    // plan badge
+    const planBadge = document.getElementById('plan-badge');
+    planBadge.textContent = plan;
+    planBadge.className = 'badge ' + planClass(plan);
+
+    // account status card
+    document.getElementById('kyc-chip').outerHTML; // already in DOM
+    document.getElementById('kyc-chip').className = 'chip chip-' + kycStatus;
+    document.getElementById('kyc-chip').textContent = kycStatus === 'verified' ? 'Verified' : kycStatus === 'approved' ? 'Approved' : kycStatus === 'pending' ? 'Pending' : kycStatus === 'rejected' ? 'Rejected' : 'Not Submitted';
+
+    const planChip = document.getElementById('plan-chip');
+    planChip.textContent = plan;
+    planChip.className = 'badge ' + planClass(plan);
+
+    document.getElementById('acct-type-val').textContent = acctType;
+    document.getElementById('acct-status-val').textContent = profile.status ? profile.status.charAt(0).toUpperCase() + profile.status.slice(1) : '—';
+    document.getElementById('member-since-val').textContent = profile.created_at ? fmtDate(profile.created_at) : '—';
+    if (profile.country) {
+      document.getElementById('country-row').style.display = 'flex';
+      document.getElementById('country-val').textContent = profile.country;
+    }
+
+    if (kycStatus !== 'verified' && kycStatus !== 'approved') {
+      document.getElementById('kyc-cta').style.display = 'flex';
+    }
+
+    currentBalance = parseFloat(profile.balance) || 0;
+    currentPnl = parseFloat(profile.total_pnl) || 0;
+    renderBalance();
+    renderPnl(currentPnl);
+  }
+
+  // OPEN POSITIONS COUNT
+  const { count: openCount } = await db.from('positions').select('*', { count: 'exact', head: true })
+    .eq('user_id', uid).eq('status', 'open');
+  document.getElementById('open-pos-display').textContent = openCount || 0;
+
+  // RECENT TRADES
+  const { data: trades } = await db.from('positions').select('*')
+    .eq('user_id', uid).order('created_at', { ascending: false }).limit(5);
+
+  const tradesTbody = document.getElementById('trades-tbody');
+  if (!trades || trades.length === 0) {
+    tradesTbody.innerHTML = `<tr><td colspan="5" class="empty-state">
+      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      No trades yet.
+    </td></tr>`;
+  } else {
+    tradesTbody.innerHTML = trades.map(t => {
+      const pnl = parseFloat(t.total_pnl) || 0;
+      const pnlClass = pnl >= 0 ? 'pos-val' : 'neg-val';
+      const dir = (t.direction || '').toUpperCase();
+      const dirChip = dir === 'BUY' ? '<span class="chip chip-buy">BUY</span>' : '<span class="chip chip-sell">SELL</span>';
+      return `<tr>
+        <td style="font-weight:600;">${t.pair || '—'}</td>
+        <td>${dirChip}</td>
+        <td>${t.size != null ? t.size : '—'}</td>
+        <td class="${pnlClass}">${fmtMoney(pnl)}</td>
+        <td style="color:var(--sub);">${t.created_at ? fmtDate(t.created_at) : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // RECENT TRANSACTIONS
+  const { data: txns } = await db.from('transactions').select('*')
+    .eq('user_id', uid).order('created_at', { ascending: false }).limit(5);
+
+  const txnTbody = document.getElementById('txn-tbody');
+  if (!txns || txns.length === 0) {
+    txnTbody.innerHTML = `<tr><td colspan="5" class="empty-state">
+      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      No transactions yet.
+    </td></tr>`;
+  } else {
+    txnTbody.innerHTML = txns.map(tx => {
+      const type  = (tx.type || '').toLowerCase();
+      const isDeposit  = type.includes('deposit');
+      const isWithdraw = type.includes('withdraw');
+      const iconClass  = isDeposit ? 'type-icon-dep' : isWithdraw ? 'type-icon-wit' : 'type-icon-other';
+      const iconSvg    = isDeposit
+        ? '<svg width="13" height="13" fill="none" stroke="var(--green)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v14m-7-7 7 7 7-7"/><path d="M5 20h14"/></svg>'
+        : isWithdraw
+        ? '<svg width="13" height="13" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22V8m7 7-7-7-7 7"/><path d="M5 4h14"/></svg>'
+        : '<svg width="13" height="13" fill="none" stroke="var(--sub)" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
+      const statusLower = (tx.status || '').toLowerCase().replace(/\s+/g,'');
+      const chipClass   = 'chip-' + statusLower;
+      const amount = parseFloat(tx.amount) || 0;
+      return `<tr>
+        <td>
+          <div class="type-cell">
+            <div class="type-icon ${iconClass}">${iconSvg}</div>
+            <span style="text-transform:capitalize;font-weight:500;">${tx.type || '—'}</span>
+          </div>
+        </td>
+        <td style="font-weight:600;">${fmtMoney(amount)}</td>
+        <td style="color:var(--sub);">${tx.coin || tx.currency || '—'}</td>
+        <td><span class="chip ${chipClass}" style="text-transform:capitalize;">${tx.status || '—'}</span></td>
+        <td style="color:var(--sub);">${tx.created_at ? fmtDate(tx.created_at) : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ANNOUNCEMENTS
+  const { data: announcements } = await db.from('announcements').select('*')
+    .eq('active', true).order('created_at', { ascending: false }).limit(3);
+
+  const annList = document.getElementById('announcements-list');
+  if (!announcements || announcements.length === 0) {
+    annList.innerHTML = '<div style="padding:24px 16px;text-align:center;color:var(--sub);font-size:13px;">No announcements at this time.</div>';
+  } else {
+    annList.innerHTML = announcements.map(a => `
+      <div class="ann-card">
+        <div class="ann-title">${a.title || 'Announcement'}</div>
+        <div class="ann-body">${a.body || ''}</div>
+        <div class="ann-date">${a.created_at ? fmtDate(a.created_at) : ''}</div>
+      </div>
+    `).join('');
+  }
+
+  // NOTIFICATIONS COUNT
+  const { count: unreadCount } = await db.from('notifications').select('*', { count: 'exact', head: true })
+    .eq('user_id', uid).eq('read', false);
+  if (unreadCount && unreadCount > 0) {
+    const badge = document.getElementById('notif-count');
+    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    badge.style.display = 'flex';
+  }
+
+  // REALTIME: profile balance updates
+  db.channel('profile-changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+      const updated = payload.new;
+      if (updated) {
+        currentBalance = parseFloat(updated.balance) || 0;
+        currentPnl = parseFloat(updated.total_pnl) || 0;
+        renderBalance();
+        renderPnl(currentPnl);
+      }
+    })
+    .subscribe();
+
+})();
+
+function signOut() {
+  window.SV_DB.auth.signOut().then(() => window.location.href = 'login.html');
+}
+</script>
+</body>
+</html>
