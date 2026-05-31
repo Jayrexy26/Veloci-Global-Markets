@@ -1,0 +1,1033 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="/assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Settings — Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0b0f; --s1:#111318; --s2:#16191f; --s3:#1e2229; --s4:#252b35;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --green:#0ecb81; --red:#f6465d; --gold:#f0b90b;
+  --blue:#2196f3; --text:#eaecef; --sub:#848e9c; --muted:#2b3141;
+  --sidebar:200px; --header:60px;
+  --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:34px;width:auto;}
+.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:color .15s;}
+.hdr-hamburger:hover{color:var(--text);}
+.hdr-search{flex:1;max-width:320px;margin-left:8px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-search input{font-size:13px;flex:1;}
+.hdr-search input::placeholder{color:var(--sub);}
+.hdr-nav{display:flex;align-items:center;gap:2px;margin-left:16px;flex:1;}
+.hdr-nav-item{padding:6px 12px;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;border-radius:6px;transition:all .15s;white-space:nowrap;}
+.hdr-nav-item:hover{color:var(--text);background:var(--s3);}
+.hdr-drop{position:relative;}
+.hdr-drop-menu{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:6px;min-width:164px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:500;display:none;flex-direction:column;gap:2px;}
+.hdr-drop.open .hdr-drop-menu{display:flex;}
+.hdr-drop-item{padding:8px 12px;border-radius:6px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;text-decoration:none;display:block;transition:background .15s;}
+.hdr-drop-item:hover{background:var(--s3);}
+.hdr-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hicon-badge{position:absolute;top:3px;right:2px;background:var(--red);color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--s1);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:4px;}
+.theme-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.theme-btn:hover{background:var(--s3);color:var(--text);}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;position:relative;white-space:nowrap;border-left:2.5px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-item-label{flex:1;}
+.nav-item-chevron{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.nav-item.open .nav-item-chevron{transform:rotate(180deg);}
+.nav-item-badge{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,90,26,.18);color:var(--accent);flex-shrink:0;}
+.nav-sub{display:none;background:rgba(0,0,0,.1);}
+.nav-sub.open{display:block;}
+.nav-sub-item{display:flex;align-items:center;padding:7px 16px 7px 44px;font-size:12.5px;color:var(--sub);cursor:pointer;transition:all .15s;border-left:2.5px solid transparent;}
+.nav-sub-item:hover{color:var(--text);}
+.nav-sub-item.active{color:var(--accent);border-left-color:var(--accent);}
+.nav-divider{height:1px;background:var(--b);margin:6px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
+.sb-user{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .15s;}
+.sb-user:hover{background:rgba(255,255,255,.03);}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-uid{font-size:10.5px;color:var(--sub);margin-top:1px;}
+.sb-vip{display:inline-flex;align-items:center;background:rgba(240,185,11,.15);color:var(--gold);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:28px 32px;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* LIGHT THEME */
+body.light{
+  --bg:#f0f2f5; --s1:#ffffff; --s2:#f7f8fa; --s3:#eef0f3; --s4:#e4e7eb;
+  --b:rgba(0,0,0,.08); --b2:rgba(0,0,0,.14);
+  --text:#111827; --sub:#6b7280; --muted:#d1d5db;
+}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);}
+body.light input,body.light select{color:var(--text);}
+
+/* PAGE TITLE */
+.page-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:24px;}
+
+/* SETTINGS LAYOUT */
+.settings-layout{display:flex;gap:24px;align-items:flex-start;}
+
+/* SETTINGS LEFT NAV */
+.settings-nav{width:220px;flex-shrink:0;background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;}
+.sn-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;border-left:3px solid transparent;}
+.sn-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.sn-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.sn-item svg{width:15px;height:15px;flex-shrink:0;}
+.sn-divider{height:1px;background:var(--b);}
+
+/* SETTINGS CONTENT */
+.settings-content{flex:1;min-width:0;}
+.section-panel{display:none;}
+.section-panel.active{display:block;}
+
+/* SECTION TITLE */
+.sec-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.sec-sub{font-size:13px;color:var(--sub);margin-bottom:22px;}
+
+/* CARD */
+.set-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:24px;margin-bottom:16px;}
+
+/* AVATAR ROW */
+.avatar-row{display:flex;align-items:center;gap:18px;margin-bottom:24px;}
+.big-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;flex-shrink:0;}
+.avatar-info{flex:1;}
+.avatar-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.avatar-uid{font-size:12px;color:var(--sub);}
+.change-avatar-btn{padding:8px 16px;border:1.5px solid var(--b2);border-radius:8px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;}
+.change-avatar-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11.5px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;}
+.form-input-wrap{display:flex;align-items:center;gap:8px;background:var(--s2);border:1.5px solid var(--b);border-radius:10px;padding:0 12px;height:44px;transition:border-color .2s;}
+.form-input-wrap:focus-within{border-color:var(--accent);}
+.form-input-wrap.disabled{opacity:.6;cursor:not-allowed;}
+.form-input{flex:1;font-size:13.5px;height:100%;}
+.form-input::placeholder{color:var(--sub);}
+.form-select{flex:1;font-size:13.5px;height:100%;background:transparent;cursor:pointer;}
+.form-select option{background:var(--s2);color:var(--text);}
+.lock-icon{color:var(--sub);flex-shrink:0;}
+.phone-prefix{font-size:13px;color:var(--sub);padding-right:8px;border-right:1px solid var(--b);margin-right:4px;white-space:nowrap;}
+.save-btn{padding:11px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;}
+.save-btn:hover{background:#d94e10;}
+
+/* SECURITY ROWS */
+.security-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--b);gap:16px;}
+.security-row:last-child{border-bottom:none;padding-bottom:0;}
+.security-row:first-child{padding-top:0;}
+.sec-row-left{flex:1;}
+.sec-row-name{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.sec-row-desc{font-size:12px;color:var(--sub);}
+.badge-green{display:inline-flex;align-items:center;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;background:rgba(14,203,129,.12);color:var(--green);}
+.badge-gray{display:inline-flex;align-items:center;padding:2px 9px;border-radius:4px;font-size:11px;font-weight:700;background:var(--s3);color:var(--sub);}
+.sec-row-btn{padding:7px 16px;border:1.5px solid var(--b2);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.sec-row-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* LOGIN ACTIVITY TABLE */
+.login-table{width:100%;border-collapse:collapse;margin-top:4px;}
+.login-table th{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--sub);padding:9px 12px;text-align:left;background:var(--s2);border-bottom:1px solid var(--b);}
+.login-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12.5px;vertical-align:middle;}
+.login-table tr:last-child td{border-bottom:none;}
+.login-table tr:hover td{background:rgba(255,255,255,.02);}
+
+/* PREFERENCES */
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--b);}
+.pref-row:last-child{border-bottom:none;padding-bottom:0;}
+.pref-row:first-child{padding-top:0;}
+.pref-label{font-size:13.5px;font-weight:600;color:var(--text);}
+.pref-desc{font-size:12px;color:var(--sub);margin-top:2px;}
+.pref-right{flex-shrink:0;}
+.pref-select{padding:8px 12px;background:var(--s2);border:1.5px solid var(--b);border-radius:8px;font-size:13px;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;}
+.pref-select option{background:var(--s2);}
+
+/* THEME TOGGLE */
+.theme-toggle-row{display:flex;gap:6px;}
+.theme-opt{padding:8px 16px;border:1.5px solid var(--b);border-radius:8px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;}
+.theme-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(240,90,26,.08);}
+.theme-opt:hover:not(.active){border-color:var(--b2);color:var(--text);}
+
+/* RADIO BUTTONS */
+.radio-group{display:flex;gap:8px;flex-wrap:wrap;}
+.radio-opt{display:flex;align-items:center;gap:8px;padding:9px 16px;border:1.5px solid var(--b);border-radius:8px;cursor:pointer;transition:all .15s;}
+.radio-opt.active{border-color:var(--accent);background:rgba(240,90,26,.06);}
+.radio-opt:hover:not(.active){border-color:var(--b2);}
+.radio-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--sub);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.radio-opt.active .radio-dot{border-color:var(--accent);}
+.radio-dot-inner{width:6px;height:6px;border-radius:50%;background:var(--accent);display:none;}
+.radio-opt.active .radio-dot-inner{display:block;}
+.radio-label{font-size:13px;font-weight:600;color:var(--sub);}
+.radio-opt.active .radio-label{color:var(--text);}
+
+/* TOGGLE SWITCH */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--b);}
+.toggle-row:last-child{border-bottom:none;padding-bottom:0;}
+.toggle-row:first-child{padding-top:0;}
+.toggle-info{flex:1;}
+.toggle-title{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.toggle-desc{font-size:12px;color:var(--sub);}
+.toggle-switch{width:44px;height:24px;border-radius:12px;background:var(--s3);border:1.5px solid var(--b);position:relative;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.toggle-switch.on{background:var(--green);border-color:var(--green);}
+.toggle-switch::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .2s;}
+.toggle-switch.on::after{transform:translateX(20px);}
+
+/* API SECTION */
+.api-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;text-align:center;}
+.api-empty svg{opacity:.2;}
+.api-empty p{font-size:13px;color:var(--sub);max-width:320px;line-height:1.6;}
+.create-api-btn{padding:11px 24px;background:var(--accent);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.create-api-btn:hover{background:#d94e10;}
+.api-notice{display:flex;gap:10px;background:rgba(240,185,11,.07);border:1px solid rgba(240,185,11,.2);border-radius:10px;padding:14px 16px;margin-top:16px;}
+.api-notice-icon{flex-shrink:0;margin-top:1px;}
+.api-notice-text{font-size:12.5px;color:var(--sub);line-height:1.6;}
+.api-notice-text strong{color:var(--gold);}
+
+/* KYC PROGRESS */
+.kyc-steps{display:flex;align-items:flex-start;gap:0;margin-bottom:28px;position:relative;}
+.kyc-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.kyc-step-line{position:absolute;top:16px;left:50%;width:100%;height:2px;background:var(--b2);z-index:0;}
+.kyc-step:last-child .kyc-step-line{display:none;}
+.kyc-step-line.done{background:var(--green);}
+.kyc-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;z-index:1;flex-shrink:0;border:2px solid transparent;}
+.kyc-circle.done{background:var(--green);color:#fff;border-color:var(--green);}
+.kyc-circle.pending{background:rgba(240,185,11,.15);color:var(--gold);border-color:var(--gold);}
+.kyc-circle.idle{background:var(--s3);color:var(--sub);border-color:var(--b2);}
+.kyc-step-label{font-size:11.5px;font-weight:600;color:var(--sub);margin-top:8px;text-align:center;max-width:90px;}
+.kyc-step-label.done{color:var(--green);}
+.kyc-step-label.pending{color:var(--gold);}
+
+.kyc-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.kyc-level-card{background:var(--s2);border:1.5px solid var(--b);border-radius:12px;padding:16px;}
+.kyc-level-card.done{border-color:rgba(14,203,129,.3);}
+.kyc-level-card.active{border-color:rgba(240,185,11,.3);}
+.kyc-lv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.kyc-lv-name{font-size:13px;font-weight:700;color:var(--text);}
+.kyc-lv-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;}
+.kyc-lv-badge.done{background:rgba(14,203,129,.12);color:var(--green);}
+.kyc-lv-badge.active{background:rgba(240,185,11,.12);color:var(--gold);}
+.kyc-lv-row{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:5px;}
+.kyc-lv-val{font-size:12px;font-weight:600;color:var(--text);}
+
+
+@media(max-width:768px){.settings-layout{flex-direction:column;}.settings-nav{width:100%;}.form-grid{grid-template-columns:1fr;}.form-group.full{grid-column:auto;}.kyc-levels{grid-template-columns:1fr;}.set-card{padding:16px;}.security-row{flex-wrap:wrap;gap:8px;}.sec-row-btn{font-size:12px;padding:5px 12px;}}
+
+/* -- MOBILE (html.mob set synchronously before render) -- */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;}
+.sidebar-overlay.open{display:block;}
+.sb-logo-area{padding:0 16px;display:flex;align-items:center;border-bottom:1px solid var(--b);flex-shrink:0;}
+.sb-logo-area img{height:120px;width:auto;}
+html.mob .hdr-hamburger{margin-right:auto;}html.mob .hdr-logo-wrap{display:none !important;}
+html.mob .hdr-search{display:none !important;}
+html.mob .hdr-nav{display:none !important;}
+html.mob .sidebar{display:none !important;position:fixed;top:0;left:0;bottom:0;height:100%;width:var(--sidebar);z-index:200;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 24px rgba(0,0,0,.6);}
+html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
+html.mob .layout{display:block !important;overflow-y:auto;overflow-x:hidden;}
+html.mob .main{width:100% !important;padding:20px 16px;overflow-x:hidden;}
+html.mob .set-card{padding:16px;}
+html.mob .security-row{flex-wrap:wrap;gap:8px;}
+html.mob .sec-row-btn{font-size:12px;padding:5px 12px;}
+html.mob .settings-layout{flex-direction:column;}
+html.mob .settings-nav{width:100%;}</style>
+<script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
+</head>
+<body>
+<div class="page">
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo-wrap">
+    <a href="dashboard.html"><img src="assets/logo.png" alt="Veloci Global Markets"/></a>
+  </div>
+  <div class="hdr-hamburger" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+  <div class="hdr-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Search coins, pairs…"/>
+  </div>
+  <div class="hdr-nav">
+    <a class="hdr-nav-item" href="dashboard.html">Dashboard</a>
+    <div class="hdr-nav-item">Buy Crypto</div>
+    <a class="hdr-nav-item" href="markets.html">Markets</a>
+    <div class="hdr-nav-item hdr-drop" id="drop-trade" onclick="toggleDrop('drop-trade')">Trade ?<div class="hdr-drop-menu"><a class="hdr-drop-item" href="spot.html">Spot Trading</a><a class="hdr-drop-item" href="convert.html">Convert</a></div></div>
+    <div class="hdr-nav-item hdr-drop" id="drop-deriv" onclick="toggleDrop('drop-deriv')">Derivatives ?<div class="hdr-drop-menu"><a class="hdr-drop-item" href="usdt-perpetual.html">USDT Perpetual</a><a class="hdr-drop-item" href="inverse-perpetual.html">Inverse Perpetual</a><a class="hdr-drop-item" href="futures.html">Futures</a></div></div>
+    <div class="hdr-nav-item hdr-drop" id="drop-earn" onclick="toggleDrop('drop-earn')">Earn ?<div class="hdr-drop-menu"><a class="hdr-drop-item" href="#">Flexible Savings</a><a class="hdr-drop-item" href="#">Fixed Term</a><a class="hdr-drop-item" href="#">Staking</a></div></div>
+  </div>
+  <div class="hdr-right">
+    <div class="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">
+      <svg id="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </div>
+    <a class="hicon" href="notifications.html" title="Notifications">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      
+    </a>
+    <div class="hdr-avatar" id="hdr-avatar">S</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo-area">
+    <img src="assets/logo.png" alt="Veloci Global Markets"/>
+  </div>
+  <nav class="sb-nav">
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-item-label">Dashboard</span>
+    </a>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span class="nav-item-label">Buy Crypto</span><span class="nav-item-badge">SOON</span>
+    </div>
+    <a class="nav-item" href="markets.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-item-label">Markets</span>
+    </a>
+    <div class="nav-item" onclick="toggleSub(this,'trade-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <span class="nav-item-label">Trade</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="trade-sub">
+      <a class="nav-sub-item" href="spot.html">Spot</a>
+      <a class="nav-sub-item" href="convert.html">Convert</a>
+    </div>
+    <div class="nav-item" onclick="toggleSub(this,'deriv-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <span class="nav-item-label">Derivatives</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="deriv-sub">
+      <a class="nav-sub-item" href="usdt-perpetual.html" style="text-decoration:none;color:inherit;">USDT Perpetual</a>
+      <a class="nav-sub-item" href="inverse-perpetual.html" style="text-decoration:none;color:inherit;">Inverse Perpetual</a>
+      <a class="nav-sub-item" href="futures.html" style="text-decoration:none;color:inherit;">Futures</a>
+    </div>
+    <div class="nav-item" onclick="toggleSub(this,'earn-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0v10l5 3"/></svg>
+      <span class="nav-item-label">Earn</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="earn-sub">
+      <div class="nav-sub-item">Flexible Savings<span class="nav-item-badge">SOON</span></div>
+      <div class="nav-sub-item">Fixed Term<span class="nav-item-badge">SOON</span></div>
+      <div class="nav-sub-item">Staking<span class="nav-item-badge">SOON</span></div>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-item-label">Copy Trading</span>
+      <span class="nav-item-badge">SOON</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Finance</div>
+    <a class="nav-item" href="deposit.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v14"/><path d="M5 15l7 7 7-7"/><path d="M2 21h20"/></svg>
+      <span class="nav-item-label">Deposit</span>
+    </a>
+    <a class="nav-item" href="withdraw.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22V8"/><path d="M5 9l7-7 7 7"/><path d="M2 21h20"/></svg>
+      <span class="nav-item-label">Withdraw</span>
+    </a>
+    <a class="nav-item" href="wallet.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+      <span class="nav-item-label">Wallet</span>
+    </a>
+    <a class="nav-item" href="history.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span class="nav-item-label">Transaction History</span>
+    </a>
+    <a class="nav-item" href="trades.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <span class="nav-item-label">Trade History</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Account</div>
+    <a class="nav-item" href="settings.html#security" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="nav-item-label">Security</span>
+    </a>
+    <a class="nav-item" href="upgrade.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,11 12,6 7,11"/><polyline points="17,18 12,13 7,18"/></svg>
+      <span class="nav-item-label">Account Upgrade</span>
+    </a>
+    <a class="nav-item active" href="settings.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-item-label">Settings</span>
+    </a>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+      <span class="nav-item-label">Rewards Hub</span>
+      <span class="nav-item-badge">SOON</span>
+    </div>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">S</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sb-user-name">Veloci Global Markets User</div>
+        <div class="sb-user-uid" id="sb-user-uid">Loading…</div>
+      </div>
+    </div>
+    <div onclick="doSignOut()" style="display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;font-size:12.5px;color:var(--sub);transition:color .15s;border-top:1px solid var(--b);" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--sub)'">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-title">Settings</div>
+
+  <div class="settings-layout">
+
+    <!-- LEFT SETTINGS NAV -->
+    <div class="settings-nav">
+      <div class="sn-item active" data-section="profile" onclick="switchSection('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </div>
+      <div class="sn-divider"></div>
+      <div class="sn-item" data-section="security" onclick="switchSection('security')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Security
+      </div>
+      <div class="sn-divider"></div>
+      <div class="sn-item" data-section="preferences" onclick="switchSection('preferences')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        Preferences
+      </div>
+      <div class="sn-divider"></div>
+      <div class="sn-item" data-section="notifications" onclick="switchSection('notifications')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Notifications
+      </div>
+      <div class="sn-divider"></div>
+      <div class="sn-item" data-section="api" onclick="switchSection('api')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+        API Management
+      </div>
+      <div class="sn-divider"></div>
+      <div class="sn-item" data-section="kyc" onclick="switchSection('kyc')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Verification (KYC)
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS CONTENT -->
+    <div class="settings-content">
+
+      <!-- PROFILE SECTION -->
+      <div class="section-panel active" id="panel-profile">
+        <div class="sec-title">Profile</div>
+        <div class="sec-sub">Manage your personal information and display preferences.</div>
+
+        <div class="set-card">
+          <div class="avatar-row">
+            <div class="big-avatar" id="set-big-avatar">S</div>
+            <div class="avatar-info">
+              <div class="avatar-name" id="set-avatar-name">Veloci Global Markets User</div>
+              <div class="avatar-uid" id="set-avatar-uid"></div>
+            </div>
+            <button class="change-avatar-btn" onclick="document.getElementById('avatar-file-input').click()">Change Avatar</button>
+            <input type="file" id="avatar-file-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+          </div>
+
+          <div id="set-msg" style="display:none;border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:12px;"></div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <div class="form-label">First Name</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-fname" type="text" placeholder="First name" disabled/>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Last Name</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-lname" type="text" placeholder="Last name" disabled/>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Email Address</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-email" type="email" disabled/>
+                <div class="lock-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Phone Number</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-phone" type="tel" placeholder="" disabled/>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-label">Date of Birth</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-dob" type="date" disabled/>
+              </div>
+            </div>
+            <div class="form-group full">
+              <div class="form-label">Country of Residence</div>
+              <div class="form-input-wrap disabled">
+                <input class="form-input" id="set-country" type="text" disabled placeholder=""/>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECURITY SECTION -->
+      <div class="section-panel" id="panel-security">
+        <div class="sec-title">Security</div>
+        <div class="sec-sub">Manage your account security settings and authentication methods.</div>
+
+        <div class="set-card">
+          <div class="security-row">
+            <div class="sec-row-left">
+              <div class="sec-row-name">Google Authenticator (2FA)</div>
+              <div class="sec-row-desc">Time-based one-time passwords for login verification</div>
+            </div>
+            <span class="badge-green">Enabled</span>
+            <button class="sec-row-btn">Manage</button>
+          </div>
+          <div class="security-row">
+            <div class="sec-row-left">
+              <div class="sec-row-name">Email Two-Factor Authentication</div>
+              <div class="sec-row-desc">Receive a verification code by email on login</div>
+            </div>
+            <span class="badge-green">Enabled</span>
+            <button class="sec-row-btn">Manage</button>
+          </div>
+          <div class="security-row">
+            <div class="sec-row-left">
+              <div class="sec-row-name">Login Password</div>
+              <div class="sec-row-desc">Last changed: Never</div>
+            </div>
+            <button class="sec-row-btn">Change Password</button>
+          </div>
+          <div class="security-row">
+            <div class="sec-row-left">
+              <div class="sec-row-name">Anti-Phishing Code</div>
+              <div class="sec-row-desc">A personal code shown in all official Veloci Global Markets emails</div>
+            </div>
+            <span class="badge-gray">Not Set</span>
+            <button class="sec-row-btn">Set Code</button>
+          </div>
+        </div>
+
+        <div class="set-card">
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;">Recent Login Activity</div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 0;gap:10px;color:var(--sub);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style="font-size:13px;">No login history available</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREFERENCES SECTION -->
+      <div class="section-panel" id="panel-preferences">
+        <div class="sec-title">Preferences</div>
+        <div class="sec-sub">Customize your trading experience and display settings.</div>
+
+        <div class="set-card">
+          <div class="pref-row">
+            <div>
+              <div class="pref-label">Theme</div>
+              <div class="pref-desc">Choose between dark and light interface</div>
+            </div>
+            <div class="pref-right">
+              <div class="theme-toggle-row">
+                <div class="theme-opt" id="pref-dark" onclick="setThemePref('dark')">Dark</div>
+                <div class="theme-opt" id="pref-light" onclick="setThemePref('light')">Light</div>
+              </div>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div>
+              <div class="pref-label">Language</div>
+              <div class="pref-desc">Select your preferred language</div>
+            </div>
+            <div class="pref-right">
+              <select class="pref-select">
+                <option value="en" selected>English</option>
+                <option value="zh">中文 (Chinese)</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="ru">Русский</option>
+                <option value="pt">Português</option>
+              </select>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div>
+              <div class="pref-label">Currency Display</div>
+              <div class="pref-desc">Primary fiat currency for value display</div>
+            </div>
+            <div class="pref-right">
+              <select class="pref-select" disabled style="opacity:.55;cursor:not-allowed;">
+                <option value="usd" selected>USD — US Dollar</option>
+                <option value="eur">EUR — Euro</option>
+                <option value="gbp">GBP — British Pound</option>
+                <option value="jpy">JPY — Japanese Yen</option>
+                <option value="aud">AUD — Australian Dollar</option>
+                <option value="cad">CAD — Canadian Dollar</option>
+              </select>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div>
+              <div class="pref-label">Time Zone</div>
+              <div class="pref-desc">Display times in your local timezone</div>
+            </div>
+            <div class="pref-right">
+              <select class="pref-select">
+                <option value="utc">UTC +00:00</option>
+                <option value="est" selected>EST — UTC -05:00</option>
+                <option value="pst">PST — UTC -08:00</option>
+                <option value="gmt">GMT — UTC +00:00</option>
+                <option value="cet">CET — UTC +01:00</option>
+                <option value="ist">IST — UTC +05:30</option>
+                <option value="cst">CST — UTC +08:00</option>
+                <option value="jst">JST — UTC +09:00</option>
+                <option value="aest">AEST — UTC +10:00</option>
+              </select>
+            </div>
+          </div>
+          <div class="pref-row" style="border-bottom:none;padding-bottom:0;">
+            <div>
+              <div class="pref-label">Trading Layout</div>
+              <div class="pref-desc">Choose your default trading interface density</div>
+            </div>
+            <div class="pref-right">
+              <div class="radio-group" id="layout-radio" style="pointer-events:none;opacity:.55;">
+                <div class="radio-opt" data-val="compact">
+                  <div class="radio-dot"><div class="radio-dot-inner"></div></div>
+                  <span class="radio-label">Compact</span>
+                </div>
+                <div class="radio-opt active" data-val="standard">
+                  <div class="radio-dot"><div class="radio-dot-inner"></div></div>
+                  <span class="radio-label">Standard</span>
+                </div>
+                <div class="radio-opt" data-val="advanced">
+                  <div class="radio-dot"><div class="radio-dot-inner"></div></div>
+                  <span class="radio-label">Advanced</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS SECTION -->
+      <div class="section-panel" id="panel-notifications">
+        <div class="sec-title">Notification Preferences</div>
+        <div class="sec-sub">Control which notifications you receive from Veloci Global Markets.</div>
+
+        <div class="set-card">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Price Alerts</div>
+              <div class="toggle-desc">Notify when a tracked asset reaches your target price</div>
+            </div>
+            <div class="toggle-switch on" id="tog-price" onclick="toggleNotif('price')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Trade Confirmations</div>
+              <div class="toggle-desc">Notifications when your orders are filled or cancelled</div>
+            </div>
+            <div class="toggle-switch on" id="tog-trade" onclick="toggleNotif('trade')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Deposit / Withdrawal</div>
+              <div class="toggle-desc">Alerts for incoming deposits and outgoing withdrawals</div>
+            </div>
+            <div class="toggle-switch on" id="tog-depwit" onclick="toggleNotif('depwit')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Login Alerts</div>
+              <div class="toggle-desc">Security notifications for new logins to your account</div>
+            </div>
+            <div class="toggle-switch on" id="tog-login" onclick="toggleNotif('login')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Promotions</div>
+              <div class="toggle-desc">Bonus offers, trading competitions, and rewards</div>
+            </div>
+            <div class="toggle-switch" id="tog-promo" onclick="toggleNotif('promo')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Market Updates</div>
+              <div class="toggle-desc">Curated market news and significant price movements</div>
+            </div>
+            <div class="toggle-switch" id="tog-market" onclick="toggleNotif('market')"></div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-title">Newsletter</div>
+              <div class="toggle-desc">Weekly digest of platform updates and crypto insights</div>
+            </div>
+            <div class="toggle-switch" id="tog-newsletter" onclick="toggleNotif('newsletter')"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API MANAGEMENT SECTION -->
+      <div class="section-panel" id="panel-api">
+        <div class="sec-title">API Management</div>
+        <div class="sec-sub">Create and manage API keys to connect third-party applications.</div>
+
+        <div class="set-card">
+          <div class="api-empty">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <polyline points="16,18 22,12 16,6"/>
+              <polyline points="8,6 2,12 8,18"/>
+            </svg>
+            <p>No API keys created yet. Generate a key to connect Veloci Global Markets to external trading tools and bots.</p>
+            <button class="create-api-btn">Create API Key</button>
+          </div>
+
+          <div class="api-notice">
+            <div class="api-notice-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="api-notice-text">
+              <strong>API Security Notice:</strong> Never share your API secret key with anyone. Veloci Global Markets staff will never ask for your API credentials. Limit API key permissions to only what is required, and restrict access by IP address where possible. Immediately revoke any key you suspect has been compromised.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KYC SECTION -->
+      <div class="section-panel" id="panel-kyc">
+        <div class="sec-title">Identity Verification (KYC)</div>
+        <div class="sec-sub">Complete verification to unlock higher limits and full platform access.</div>
+
+        <!-- Steps -->
+        <div class="set-card">
+          <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:18px;">Verification Progress</div>
+          <div class="kyc-steps">
+            <div class="kyc-step">
+              <div class="kyc-step-line done"></div>
+              <div class="kyc-circle done">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+              </div>
+              <div class="kyc-step-label done">Identity Verification</div>
+            </div>
+            <div class="kyc-step">
+              <div class="kyc-step-line done"></div>
+              <div class="kyc-circle done">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20,6 9,17 4,12"/></svg>
+              </div>
+              <div class="kyc-step-label done">Address Verification</div>
+            </div>
+            <div class="kyc-step">
+              <div class="kyc-step-line"></div>
+              <div class="kyc-circle pending">3</div>
+              <div class="kyc-step-label pending">Advanced Verification</div>
+            </div>
+          </div>
+
+          <!-- Level Cards -->
+          <div class="kyc-levels">
+            <div class="kyc-level-card done">
+              <div class="kyc-lv-header">
+                <div class="kyc-lv-name">Level 1</div>
+                <span class="kyc-lv-badge done">Complete</span>
+              </div>
+              <div class="kyc-lv-row"><span>Daily Withdrawal</span><span class="kyc-lv-val">100 BTC</span></div>
+              <div class="kyc-lv-row"><span>Fiat Deposit</span><span class="kyc-lv-val">Enabled</span></div>
+              <div class="kyc-lv-row"><span>P2P Trading</span><span class="kyc-lv-val">Enabled</span></div>
+            </div>
+            <div class="kyc-level-card done">
+              <div class="kyc-lv-header">
+                <div class="kyc-lv-name">Level 2</div>
+                <span class="kyc-lv-badge done">Complete</span>
+              </div>
+              <div class="kyc-lv-row"><span>Daily Withdrawal</span><span class="kyc-lv-val">500 BTC</span></div>
+              <div class="kyc-lv-row"><span>Fiat Withdrawal</span><span class="kyc-lv-val">Enabled</span></div>
+              <div class="kyc-lv-row"><span>Margin Trading</span><span class="kyc-lv-val">Enabled</span></div>
+            </div>
+            <div class="kyc-level-card active">
+              <div class="kyc-lv-header">
+                <div class="kyc-lv-name">Level 3</div>
+                <span class="kyc-lv-badge active">In Progress</span>
+              </div>
+              <div class="kyc-lv-row"><span>Daily Withdrawal</span><span class="kyc-lv-val">Unlimited</span></div>
+              <div class="kyc-lv-row"><span>OTC Trading</span><span class="kyc-lv-val">Enabled</span></div>
+              <div class="kyc-lv-row"><span>Priority Support</span><span class="kyc-lv-val">Enabled</span></div>
+            </div>
+          </div>
+
+          <!-- Current Limits -->
+          <div style="background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:16px;">
+            <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:10px;">Your Current Limits (Level 2)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <div style="font-size:11px;color:var(--sub);margin-bottom:3px;">Daily Crypto Withdrawal</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);">500 BTC</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--sub);margin-bottom:3px;">Daily Fiat Withdrawal</div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);">$500,000 USD</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--sub);margin-bottom:3px;">Spot Trading</div>
+                <div style="font-size:14px;font-weight:700;color:var(--green);">Unrestricted</div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--sub);margin-bottom:3px;">Advanced Features</div>
+                <div style="font-size:14px;font-weight:700;color:var(--gold);">Pending L3</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <button class="save-btn">Continue Level 3 Verification</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-content -->
+  </div><!-- /settings-layout -->
+</main>
+</div>
+</div>
+
+<script>
+/* -- Theme -- */
+(function(){
+  const t = localStorage.getItem('sv_theme');
+  if(t === 'light') document.body.classList.add('light');
+  if(t === 'light'){
+    document.getElementById('theme-icon-dark').style.display='none';
+    document.getElementById('theme-icon-light').style.display='';
+  }
+  updateThemePrefBtns();
+})();
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('sv_theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  updateThemePrefBtns();
+}
+function updateThemePrefBtns(){
+  const isLight = document.body.classList.contains('light');
+  const darkBtn  = document.getElementById('pref-dark');
+  const lightBtn = document.getElementById('pref-light');
+  if(darkBtn && lightBtn){
+    darkBtn.classList.toggle('active', !isLight);
+    lightBtn.classList.toggle('active', isLight);
+  }
+}
+function setThemePref(mode){
+  const isLight = mode === 'light';
+  document.body.classList.toggle('light', isLight);
+  localStorage.setItem('sv_theme', mode);
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  updateThemePrefBtns();
+}
+
+/* -- Sidebar -- */
+function toggleSidebar(){if(document.documentElement.classList.contains('mob')){var open=document.getElementById('sidebar').classList.toggle('mob-open');var ov=document.getElementById('sb-overlay');if(ov)ov.classList.toggle('open',open);}else{var sb=document.getElementById('sidebar');sb.style.display=sb.style.display===''?'none':'';}}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('mob-open');var ov=document.getElementById('sb-overlay');if(ov)ov.classList.remove('open');}
+function toggleSub(el, subId){
+  const sub = document.getElementById(subId);
+  const isOpen = sub.classList.toggle('open');
+  el.classList.toggle('open', isOpen);
+}
+
+/* -- Settings sections -- */
+function switchSection(name){
+  // update left nav
+  document.querySelectorAll('.sn-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.section === name);
+  });
+  // show/hide panels
+  document.querySelectorAll('.section-panel').forEach(el => {
+    el.classList.toggle('active', el.id === 'panel-' + name);
+  });
+}
+
+/* -- Avatar upload -- */
+async function uploadAvatar(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const db  = window.SV_DB;
+  const uid = window._svUserId;
+  if (!db || !uid) return;
+
+  const msg = document.getElementById('set-msg');
+  const btn = document.querySelector('.change-avatar-btn');
+  const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+  const path = `${uid}/custom-avatar.${ext}`;
+
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  const { error: upErr } = await db.storage.from('kyc-docs').upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) {
+    btn.disabled = false; btn.textContent = 'Change Avatar';
+    msg.textContent = 'Upload failed: ' + upErr.message;
+    msg.style.cssText = 'display:block;background:rgba(246,70,93,.1);border:1px solid rgba(246,70,93,.3);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:12px;color:var(--red);';
+    return;
+  }
+
+  await db.from('kyc_submissions').update({ selfie_url: path }).eq('user_id', uid);
+
+  const { data: signed } = await db.storage.from('kyc-docs').createSignedUrl(path, 3600);
+  if (signed?.signedUrl) {
+    const imgHtml = `<img src="${signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    document.getElementById('set-big-avatar').innerHTML = imgHtml;
+    document.getElementById('sb-avatar').innerHTML      = imgHtml;
+    document.getElementById('hdr-avatar').innerHTML     = imgHtml;
+  }
+
+  btn.disabled = false; btn.textContent = 'Change Avatar';
+  msg.textContent = 'Avatar updated successfully.';
+  msg.style.cssText = 'display:block;background:rgba(14,203,129,.1);border:1px solid rgba(14,203,129,.3);border-radius:8px;padding:10px 14px;font-size:12.5px;margin-bottom:12px;color:var(--green);';
+  setTimeout(() => { msg.style.display = 'none'; }, 3000);
+  input.value = '';
+}
+
+/* -- Layout radio -- */
+function setLayout(val){
+  document.querySelectorAll('#layout-radio .radio-opt').forEach(el => {
+    el.classList.toggle('active', el.dataset.val === val);
+  });
+}
+
+// Hash-based section routing (e.g. settings.html#security)
+(function(){
+  const hash = location.hash.replace('#','');
+  if(hash) switchSection(hash);
+})();
+
+/* -- Notification toggles -- */
+function toggleNotif(key){
+  const el = document.getElementById('tog-' + key);
+  el.classList.toggle('on');
+}
+function toggleDrop(id){var el=document.getElementById(id);var was=el.classList.contains('open');document.querySelectorAll('.hdr-drop.open').forEach(function(d){d.classList.remove('open');});if(!was)el.classList.add('open');}
+document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))document.querySelectorAll('.hdr-drop.open').forEach(function(d){d.classList.remove('open');});});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script src="./maintenance-check.js"></script>n<script src="./platform-info.js"></script>
+<script>
+/* -- Auth guard + populate settings -- */
+(async () => {
+  const db = window.SV_DB;
+  if (!sessionStorage.getItem('sv_pin_ok')) { window.location.href = 'session.html'; return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login.html'; return; }
+
+  const user  = session.user;
+  const email = user.email || '';
+  window._svUserId = user.id;
+  window._svEmail  = email;
+
+  const { data: p } = await db.from('profiles')
+    .select('first_name,last_name,phone,country,plan,kyc_status,date_of_birth')
+    .eq('id', user.id).maybeSingle();
+
+  const firstName   = p?.first_name || '';
+  const lastName    = p?.last_name  || '';
+  const displayName = firstName ? [firstName, lastName].filter(Boolean).join(' ') : email.split('@')[0];
+  const initials    = displayName.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'SV';
+  const plan        = p?.plan || 'Standard';
+  const kycStatus   = p?.kyc_status || 'none';
+
+  /* Header & sidebar */
+  document.getElementById('hdr-avatar').textContent   = initials;
+  document.getElementById('sb-avatar').textContent    = initials;
+  document.getElementById('sb-user-name').textContent = displayName;
+  document.getElementById('sb-user-uid').textContent  = email;
+  const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
+  if (_kyc?.selfie_url) {
+    const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
+    if (_signed?.signedUrl) {
+      const _imgHtml = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      document.getElementById('sb-avatar').innerHTML       = _imgHtml;
+      document.getElementById('hdr-avatar').innerHTML      = _imgHtml;
+      document.getElementById('set-big-avatar').innerHTML  = _imgHtml;
+    }
+  }
+
+  /* Profile card */
+  if (!_kyc?.selfie_url) document.getElementById('set-big-avatar').textContent = initials;
+  document.getElementById('set-avatar-name').textContent = displayName;
+  document.getElementById('set-avatar-uid').innerHTML = email + ' &nbsp;<span class="sb-vip">' + plan + '</span>';
+
+  /* Form fields */
+  document.getElementById('set-fname').value   = firstName;
+  document.getElementById('set-lname').value   = lastName;
+  document.getElementById('set-email').value   = email;
+  document.getElementById('set-phone').value   = p?.phone         || '';
+  document.getElementById('set-dob').value     = p?.date_of_birth || '';
+
+  document.getElementById('set-country').value = p?.country || '';
+
+  initNotifPopup(db, user.id);
+})();
+
+async function doSignOut() {
+  sessionStorage.removeItem('sv_pin_ok');
+  await window.SV_DB.auth.signOut();
+  window.location.href = 'login.html';
+}
+</script>
+<script src="notif-popup.js"></script>
+</body>
+</html>
+
