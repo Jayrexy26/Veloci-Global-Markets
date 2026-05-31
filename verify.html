@@ -794,9 +794,9 @@ async function submitKYC() {
     const uid = _userId;
     const ext = f => f.name.split('.').pop().toLowerCase();
 
-    const frontPath = await uploadFile('kyc-docs', `${uid}/id-front.${ext(frontFile)}`, frontFile);
-    const backPath  = await uploadFile('kyc-docs', `${uid}/id-back.${ext(backFile)}`,   backFile);
-    const selfiePath= await uploadFile('kyc-docs', `${uid}/selfie.${ext(selfieFile)}`,  selfieFile);
+    const frontPath = await uploadFile('kyc-docs', `kyc/${uid}/id-front.${ext(frontFile)}`, frontFile);
+    const backPath  = await uploadFile('kyc-docs', `kyc/${uid}/id-back.${ext(backFile)}`,   backFile);
+    const selfiePath= await uploadFile('kyc-docs', `kyc/${uid}/selfie.${ext(selfieFile)}`,  selfieFile);
 
     // Upsert profile — ensures row exists for Google OAuth users who bypassed registration
     const profileData = {
@@ -820,10 +820,10 @@ async function submitKYC() {
 
     // Upsert KYC submission
     const { error: subErr } = await _db.from('kyc_submissions').upsert({
-      user_id:    uid,
-      user_email: _user.email,
-      doc_type:   docType,
-      country:    countryIssue,
+      user_id:       uid,
+      user_email:    _user.email,
+      document_type: docType,
+      country:       countryIssue,
       status:     'pending',
       front_url:  frontPath,
       back_url:   backPath,
