@@ -925,10 +925,11 @@ async function confirmDeposit() {
     const userId = session.user.id;
     const userEmail = session.user.email || '';
 
-    /* Upload proof to storage */
+    /* Upload proof to storage — path must start with userId to satisfy RLS */
     const ext = window._proofFile.name.split('.').pop() || 'jpg';
-    const storagePath = `payment-proofs/${userId}/${Date.now()}.${ext}`;
-    await db.storage.from('deposits').upload(storagePath, window._proofFile, { upsert: false });
+    const storagePath = `${userId}/${Date.now()}.${ext}`;
+    const { error: upErr } = await db.storage.from('deposits').upload(storagePath, window._proofFile, { upsert: false });
+    if (upErr) throw upErr;
 
     const depositAmount = parseFloat(document.getElementById('dep-amount-input')?.value) || 0;
 
