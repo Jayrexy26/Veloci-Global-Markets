@@ -434,7 +434,7 @@
         <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Markets Control
       </button>
-      <button class="nav-item" onclick="showPage('emails',this); emailPopulateUsers(); loadEmailHistory()">
+      <button class="nav-item" onclick="showPage('emails',this)">
         <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Email Users
       </button>
@@ -4080,6 +4080,7 @@ window.saveAddPTTrade = async function() {
 /* ── Email Users ── */
 const _VELOCI_EMAIL_API = 'https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api';
 let _emailHistory = [];
+let _emailUsers = [];
 
 async function _emailApiCall(action, payload) {
   payload = payload || {};
@@ -4100,14 +4101,12 @@ window.emailPopulateUsers = async function() {
   const db = window.SV_DB; if (!db) return;
   const sel = document.getElementById('email-recipient-sel');
   if (!sel) return;
-  let users = (_allUsers && _allUsers.length) ? _allUsers : [];
-  if (!users.length) {
-    const { data } = await db.from('profiles').select('*').order('created_at', { ascending: false });
-    users = data || [];
-    if (users.length) _allUsers = users;
+  if (!_emailUsers.length) {
+    const { data } = await db.from('profiles').select('id,email,first_name,last_name').order('email');
+    _emailUsers = data || [];
   }
   sel.innerHTML = '<option value="">&#8212; Select recipient &#8212;</option>';
-  users.forEach(function(u) {
+  _emailUsers.forEach(function(u) {
     const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
     const label = name ? (u.email + ' (' + name + ')') : u.email;
     const opt = document.createElement('option');
@@ -4172,6 +4171,20 @@ window.viewEmailModal = function(id) {
   document.getElementById('view-email-subject').textContent = email.subject;
   document.getElementById('view-email-frame').srcdoc = email.body_html;
   openModal('modal-view-email');
+};
+
+const _origEmailRenderAll = window.renderAll;
+window.renderAll = async function() {
+  await _origEmailRenderAll?.();
+  emailPopulateUsers();
+};
+const _origEmailShowPage = window.showPage || function(){};
+window.showPage = function(id, btn) {
+  _origEmailShowPage(id, btn);
+  if (id === 'emails') {
+    emailPopulateUsers();
+    loadEmailHistory();
+  }
 };
 
 /* ── Audit Log ── */
