@@ -688,12 +688,13 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   const txnP      = db.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(200);
   const wdP       = db.from('withdrawal_requests').select('id,destination_type,destination_name,destination_ref').eq('user_id', uid);
   const legacyWdP = db.from('withdrawals').select('id,amount,method,wallet_address,status,created_at').eq('user_email', email).order('created_at',{ascending:false}).limit(100);
+  const depReqP   = db.from('deposit_requests').select('id,amount,coin,network,status,created_at').eq('user_id', uid).order('created_at',{ascending:false}).limit(200);
   const profileP  = db.from('profiles').select('first_name,last_name').eq('id', uid).maybeSingle();
   const kycP      = db.from('kyc_submissions').select('selfie_url').eq('user_id', uid).maybeSingle();
 
   // Render transactions as soon as they (and withdrawal_requests) arrive
-  Promise.all([txnP, wdP, legacyWdP]).then(function(results) {
-    const txnRes = results[0], wdRes = results[1], legacyWdRes = results[2];
+  Promise.all([txnP, wdP, legacyWdP, depReqP]).then(function(results) {
+    const txnRes = results[0], wdRes = results[1], legacyWdRes = results[2], depReqRes = results[3];
     (wdRes.data || []).forEach(function(r) { WD_REQUESTS[r.id] = r; });
     (txnRes.data || []).forEach(function(t) {
       if (['trade_pnl','trade_loss'].includes(t.type)) return;
@@ -720,6 +721,30 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
         _raw:      t,
       });
     });
+    /* Load deposit_requests — pending/rejected deposits not yet in transactions */
+    const txnIds = new Set((txnRes.data||[]).map(t=>t.id));
+    (depReqRes.data || []).forEach(function(d) {
+      /* Skip if already represented as an approved transaction */
+      if (d.status === 'approved') return;
+      const amt = parseFloat(d.amount || 0);
+      const dt  = new Date(d.created_at || Date.now());
+      const net = (d.network||'').replace(/^TRC20$/i,'TRC-20').replace(/^ERC20$/i,'ERC-20').replace(/^BEP20$/i,'BEP-20');
+      TRANSACTIONS.push({
+        type:      'deposit',
+        asset:     d.coin || 'USDT',
+        assetName: net || 'Deposit',
+        network:   net,
+        wdMethod:  null,
+        amount:    Math.abs(amt),
+        price:     1,
+        status:    d.status || 'pending',
+        date:      dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+        time:      dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+        txid:      d.id?.slice(0,12) || '—',
+        _raw:      d,
+      });
+    });
+
     /* Also load legacy withdrawals from the withdrawals table */
     (legacyWdRes.data || []).forEach(function(w) {
       const amt = parseFloat(w.amount || 0);
