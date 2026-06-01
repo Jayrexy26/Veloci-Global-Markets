@@ -558,9 +558,11 @@ html.mob .settings-nav{width:100%;}</style>
 
         <div class="set-card">
           <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;">Recent Login Activity</div>
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 0;gap:10px;color:var(--sub);">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <div style="font-size:13px;">No login history available</div>
+          <div id="login-activity-wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 0;gap:10px;color:var(--sub);">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <div style="font-size:13px;">Loading…</div>
+            </div>
           </div>
         </div>
       </div>
@@ -963,7 +965,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
-<script src="./maintenance-check.js"></script>n<script>
+<script src="./maintenance-check.js"></script><script>
 /* -- Auth guard + populate settings -- */
 (async () => {
   const db = window.SV_DB;
@@ -1017,8 +1019,68 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 
   document.getElementById('set-country').value = p?.country || '';
 
+  /* Login activity */
+  loadLoginActivity(db, user.id);
+
   initNotifPopup(db, user.id);
 })();
+
+async function loadLoginActivity(db, userId) {
+  const wrap = document.getElementById('login-activity-wrap');
+  if (!wrap) return;
+  try {
+    const { data: rows } = await db.from('login_activity')
+      .select('ip_address,device_type,browser,os,location,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (!rows || rows.length === 0) {
+      wrap.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 0;gap:10px;color:var(--sub);">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <div style="font-size:13px;">No login history yet</div>
+      </div>`;
+      return;
+    }
+
+    const deviceIcon = t => {
+      if (t === 'Mobile')  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>`;
+      if (t === 'Tablet')  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></svg>`;
+      return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8,21 12,17 16,21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+    };
+
+    const fmtDate = s => {
+      const d = new Date(s);
+      return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+        + ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    };
+
+    wrap.innerHTML = `<table class="login-table">
+      <thead><tr>
+        <th>Device</th>
+        <th>Browser / OS</th>
+        <th>IP Address</th>
+        <th>Location</th>
+        <th>Date &amp; Time</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map((r, i) => `<tr>
+          <td style="display:flex;align-items:center;gap:7px;color:var(--text);">
+            <span style="color:var(--sub);">${deviceIcon(r.device_type)}</span>
+            ${r.device_type || '—'}
+            ${i === 0 ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(14,203,129,.12);color:var(--green);">Current</span>' : ''}
+          </td>
+          <td style="color:var(--sub);">${[r.browser, r.os].filter(Boolean).join(' / ') || '—'}</td>
+          <td style="font-family:monospace;font-size:12px;color:var(--sub);">${r.ip_address || '—'}</td>
+          <td style="color:var(--sub);">${r.location || '—'}</td>
+          <td style="color:var(--sub);white-space:nowrap;">${fmtDate(r.created_at)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch(e) {
+    wrap.innerHTML = '<div style="font-size:13px;color:var(--sub);padding:16px 0;">Could not load login activity.</div>';
+  }
+}
 
 async function doSignOut() {
   sessionStorage.removeItem('sv_pin_ok');

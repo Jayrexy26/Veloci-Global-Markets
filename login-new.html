@@ -273,6 +273,26 @@ async function doLogin() {
       return showErr(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
     }
 
+    /* Log login activity (fire-and-forget) */
+    try {
+      const ua = navigator.userAgent;
+      const isMobile = /Mobi|Android/i.test(ua);
+      const isTablet = /Tablet|iPad/i.test(ua);
+      const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+      const browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : /Opera|OPR/.test(ua) ? 'Opera' : 'Unknown';
+      const os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown';
+      let ipAddress = '', location = '';
+      try {
+        const geo = await fetch('https://ipwho.is/').then(r => r.json());
+        ipAddress = geo.ip || '';
+        location  = [geo.city, geo.country].filter(Boolean).join(', ');
+      } catch(_) {}
+      await window.SV_DB.from('login_activity').insert({
+        user_id: loginData.user.id, ip_address: ipAddress,
+        device_type: deviceType, browser, os, location
+      });
+    } catch(_) {}
+
     /* Ban check is handled by session-new.html — go straight there */
     sessionStorage.removeItem('sv_pin_ok');
     document.getElementById('loginSuccessModal').style.display = 'flex';
