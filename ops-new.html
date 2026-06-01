@@ -1507,6 +1507,25 @@
   </div>
 </div>
 
+<!-- Deposit Proof Modal -->
+<div class="modal-overlay" id="modal-dep-proof">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal__head">
+      <div class="modal__title">Payment Proof</div>
+      <button class="modal__close" onclick="closeModal('modal-dep-proof')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body" style="padding:16px;text-align:center;min-height:200px;display:flex;align-items:center;justify-content:center;">
+      <div id="dep-proof-loading" style="color:var(--muted);font-size:13px;">Loading…</div>
+      <img id="dep-proof-img" src="" alt="Payment proof" style="display:none;max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;" />
+      <iframe id="dep-proof-pdf" src="" style="display:none;width:100%;height:70vh;border:none;border-radius:8px;"></iframe>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modal-dep-proof')">Close</button>
+      <a id="dep-proof-dl" href="#" target="_blank" class="btn btn--primary" style="text-decoration:none;">Open in New Tab</a>
+    </div>
+  </div>
+</div>
+
 <!-- Withdrawal Detail Modal -->
 <div class="modal-overlay" id="modal-wd-detail">
   <div class="modal" style="max-width:540px;">
@@ -2846,9 +2865,33 @@ async function rejectDeposit(id) {
 }
 window.viewDepositProof = async function(storagePath) {
   const db = window.SV_DB; if (!db) return;
-  const { data, error } = await db.storage.from('deposits').createSignedUrl(storagePath, 120);
-  if (error || !data?.signedUrl) { showToast('Could not load proof: ' + (error?.message || 'unknown error'), 'error'); return; }
-  window.open(data.signedUrl, '_blank');
+
+  /* Reset modal state */
+  document.getElementById('dep-proof-loading').style.display = '';
+  document.getElementById('dep-proof-img').style.display  = 'none';
+  document.getElementById('dep-proof-pdf').style.display  = 'none';
+  document.getElementById('dep-proof-pdf').src = '';
+  document.getElementById('dep-proof-img').src = '';
+  openModal('modal-dep-proof');
+
+  const { data, error } = await db.storage.from('deposits').createSignedUrl(storagePath, 300);
+  if (error || !data?.signedUrl) {
+    document.getElementById('dep-proof-loading').textContent = 'Could not load proof: ' + (error?.message || 'not found');
+    return;
+  }
+
+  const url = data.signedUrl;
+  document.getElementById('dep-proof-dl').href = url;
+  document.getElementById('dep-proof-loading').style.display = 'none';
+
+  const isPdf = storagePath.toLowerCase().endsWith('.pdf');
+  if (isPdf) {
+    document.getElementById('dep-proof-pdf').src = url;
+    document.getElementById('dep-proof-pdf').style.display = '';
+  } else {
+    document.getElementById('dep-proof-img').src = url;
+    document.getElementById('dep-proof-img').style.display = '';
+  }
 };
 window.openManualDepositModal = function() {
   const sel = document.getElementById('md-user');
