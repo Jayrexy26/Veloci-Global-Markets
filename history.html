@@ -668,7 +668,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
-<script src="./maintenance-check.js"></script>n<script src="./platform-info.js"></script>
+<script src="./maintenance-check.js"></script><script src="./platform-info.js"></script>
 <script>
 (async function() {
   const db = window.SV_DB; if (!db) return;
@@ -686,16 +686,18 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   document.getElementById('sb-user-uid').textContent  = email;
 
   // Fire all queries in parallel immediately
-  const txnP     = db.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(200);
-  const wdP      = db.from('withdrawal_requests').select('id,wallet,bank_details,method').eq('user_id', uid);
-  const profileP = db.from('profiles').select('first_name,last_name').eq('id', uid).maybeSingle();
-  const kycP     = db.from('kyc_submissions').select('selfie_url').eq('user_id', uid).maybeSingle();
+  const txnP      = db.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(200);
+  const wdP       = db.from('withdrawal_requests').select('id,wallet,bank_details,method').eq('user_id', uid);
+  const legacyWdP = db.from('withdrawals').select('id,amount,method,wallet_address,status,created_at').eq('user_email', email).order('created_at',{ascending:false}).limit(100);
+  const profileP  = db.from('profiles').select('first_name,last_name').eq('id', uid).maybeSingle();
+  const kycP      = db.from('kyc_submissions').select('selfie_url').eq('user_id', uid).maybeSingle();
 
   // Render transactions as soon as they (and withdrawal_requests) arrive
-  Promise.all([txnP, wdP]).then(function(results) {
-    const txnRes = results[0], wdRes = results[1];
+  Promise.all([txnP, wdP, legacyWdP]).then(function(results) {
+    const txnRes = results[0], wdRes = results[1], legacyWdRes = results[2];
     (wdRes.data || []).forEach(function(r) { WD_REQUESTS[r.id] = r; });
     (txnRes.data || []).forEach(function(t) {
+      if (['trade_pnl','trade_loss'].includes(t.type)) return; // trade P&L — not shown in deposit/withdrawal history
       const amt = parseFloat(t.amount || 0);
       const dt  = new Date(t.created_at || Date.now());
       const isDeposit = t.type === 'deposit' || t.type === 'credit';
@@ -720,6 +722,28 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
         _raw:      t,
       });
     });
+    /* Also load legacy withdrawals from the withdrawals table */
+    (legacyWdRes.data || []).forEach(function(w) {
+      const amt = parseFloat(w.amount || 0);
+      const dt  = new Date(w.created_at || Date.now());
+      const isCrypto = (w.method || 'crypto') !== 'bank';
+      TRANSACTIONS.push({
+        type:      'withdrawal',
+        asset:     'USDT',
+        assetName: isCrypto ? 'Crypto' : 'Bank Transfer',
+        network:   isCrypto ? 'Crypto' : 'Bank',
+        wdMethod:  isCrypto ? 'Crypto' : 'Bank',
+        amount:    -Math.abs(amt),
+        price:     1,
+        status:    w.status || 'completed',
+        date:      dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+        time:      dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+        txid:      w.id?.slice(0,12) || '—',
+        _raw:      w,
+      });
+    });
+    /* Re-sort by date descending after merging */
+    TRANSACTIONS.sort(function(a,b){ return new Date(b._raw.created_at||0) - new Date(a._raw.created_at||0); });
     renderHistory();
     /* Apply URL filter param (e.g. ?filter=withdrawal from withdraw.html View All) */
     const urlFilter = new URLSearchParams(location.search).get('filter');
