@@ -1075,10 +1075,13 @@ function buildDetailsPanel(){
   document.getElementById('avail-sym').textContent = selCoin.sym;
   document.getElementById('amount-sym').textContent = selCoin.sym;
   /* Min */
-  const adminOverrides = _minWithdrawal > 0 && (_minWithdrawal / selCoin.price) > selNet.min;
-  document.getElementById('min-wd').textContent = adminOverrides
-    ? '$' + _minWithdrawal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD'
-    : selNet.min + ' ' + selCoin.sym;
+  if (_minWithdrawal > 0) {
+    const netMinUsd = (selNet.min || 0) * (selCoin.price || 1);
+    const effMinUsd = Math.max(_minWithdrawal, netMinUsd);
+    document.getElementById('min-wd').textContent = '$' + effMinUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD';
+  } else {
+    document.getElementById('min-wd').textContent = selNet.min + ' ' + selCoin.sym;
+  }
   /* Max */
   const maxWrap = document.getElementById('max-wd-wrap');
   if (_maxWithdrawal > 0) {
@@ -1622,7 +1625,11 @@ let _svUser    = null;
   if (selNet && selCoin) {
     if (_minWithdrawal > 0) {
       const minEl = document.getElementById('min-wd');
-      if (minEl) minEl.textContent = '$' + fmtBal(_minWithdrawal) + ' USD';
+      if (minEl) {
+        const netMinUsd2 = (selNet.min || 0) * (selCoin.price || 1);
+        const effMinUsd2 = Math.max(_minWithdrawal, netMinUsd2);
+        minEl.textContent = '$' + fmtBal(effMinUsd2) + ' USD';
+      }
     }
     const maxWrap = document.getElementById('max-wd-wrap');
     if (maxWrap) {
