@@ -2499,7 +2499,7 @@ window.saveUser = async function() {
 /* ── KYC ── */
 window.renderKYCLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('kyc_submissions').select('*').order('created_at', { ascending:false });
+  const { data } = await db.from('kyc_submissions').select('*').order('submitted_at', { ascending:false });
   const tbody = document.getElementById('kyc-tbody');
   if (!tbody) return;
   const rows = data || [];
@@ -2511,8 +2511,8 @@ window.renderKYCLive = async function() {
     const hasDocs = r.front_url || r.back_url || r.selfie_url;
     return `<tr>
       <td>${userCell(r.user_id, r.user_email)}</td>
-      <td>${fmtDate(r.created_at)}</td>
-      <td>${r.doc_type||'—'}</td>
+      <td>${fmtDate(r.submitted_at)}</td>
+      <td>${r.document_type||'—'}</td>
       <td>${r.country||'—'}</td>
       <td><span class="badge-pill ${pill}">${r.status||'pending'}</span></td>
       <td><div class="row-actions">
@@ -2550,9 +2550,9 @@ async function viewKYCDocs(subId) {
   _kycViewUid = sub.user_id;
 
   document.getElementById('kyc-modal-email').textContent   = sub.user_email || sub.user_id;
-  document.getElementById('kyc-modal-doctype').textContent = sub.doc_type  || '—';
+  document.getElementById('kyc-modal-doctype').textContent = sub.document_type  || '—';
   document.getElementById('kyc-modal-country').textContent = sub.country   || '—';
-  document.getElementById('kyc-modal-date').textContent    = fmtDate(sub.created_at);
+  document.getElementById('kyc-modal-date').textContent    = fmtDate(sub.submitted_at);
   document.getElementById('kyc-modal-status').textContent  = sub.status    || 'pending';
 
   /* show/hide action buttons based on current status */
