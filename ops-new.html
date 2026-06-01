@@ -434,7 +434,7 @@
         <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Markets Control
       </button>
-      <button class="nav-item" onclick="showPage('emails',this)">
+      <button class="nav-item" onclick="showPage('emails',this); emailPopulateUsers(); loadEmailHistory()">
         <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Email Users
       </button>
@@ -963,20 +963,66 @@
       <!-- EMAIL USERS -->
       <div class="page" id="page-emails">
         <div class="page-header">
-          <div><div class="page-header__title">Email Users</div><div class="page-header__sub">Send targeted emails to platform users</div></div>
-        </div>
-        <div class="card">
-          <div class="card__head"><div class="card__title">Compose Email</div></div>
-          <div class="card__body">
-            <div class="form-grid">
-              <div class="field"><label>To</label>
-                <select id="email-to"><option value="all">All Users</option><option value="live">Live Account Holders</option><option value="demo">Demo Users</option><option value="kyc-pending">KYC Pending</option></select>
-              </div>
-              <div class="field"><label>Subject</label><input type="text" id="email-subject" placeholder="Email subject"></div>
-              <div class="field field--full"><label>Body (HTML)</label><textarea id="email-body" rows="8" placeholder="Email content…"></textarea></div>
-            </div>
-            <button class="btn btn--primary" style="margin-top:16px;" onclick="sendEmail()">Send Email</button>
+          <div>
+            <div class="page-header__title">Email Users</div>
+            <div class="page-header__sub">Send branded emails directly to clients</div>
           </div>
+          <button class="btn btn--outline" title="Refresh" onclick="emailPopulateUsers(); loadEmailHistory()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:400px 1fr;gap:20px;align-items:start;">
+
+          <!-- Compose panel -->
+          <div class="card" style="position:sticky;top:24px;">
+            <div class="card__head">
+              <div class="card__title" style="display:flex;align-items:center;gap:8px;">
+                <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+                New Email
+              </div>
+            </div>
+            <div class="card__body" style="display:flex;flex-direction:column;gap:16px;">
+              <div class="field">
+                <label>To</label>
+                <select id="email-recipient-sel">
+                  <option value="">&#8212; Select recipient &#8212;</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Subject</label>
+                <input id="email-subject" type="text" placeholder="e.g. Important account update"
+                  style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Message</label>
+                <textarea id="email-body" rows="10" placeholder="Type your message here&#8230;"
+                  style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.6;"></textarea>
+              </div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:8px;">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.5;">Sent using the Veloci branded template with logo, your message, support contact and signature.</p>
+              </div>
+              <button id="email-send-btn" onclick="opsSendEmail()" class="btn btn--primary" style="width:100%;justify-content:center;padding:12px;">
+                Send Email
+              </button>
+            </div>
+          </div>
+
+          <!-- History panel -->
+          <div class="card">
+            <div class="card__head" style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="card__title">Sent History</div>
+              <button class="btn btn--outline btn--sm" onclick="loadEmailHistory()">Refresh</button>
+            </div>
+            <div class="card__body--p0 table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Recipient</th><th>Subject</th><th>Sent</th><th></th></tr></thead>
+                <tbody id="email-history-body">
+                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px;">Loading&hellip;</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1544,6 +1590,19 @@
   </div>
 </div>
 
+<!-- View Email Modal -->
+<div class="modal-overlay" id="modal-view-email">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal__head">
+      <div class="modal__title" id="view-email-subject">Email Preview</div>
+      <button class="modal__close" onclick="closeModal('modal-view-email')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body" style="padding:0;">
+      <iframe id="view-email-frame" srcdoc="" sandbox="allow-same-origin" style="width:100%;height:520px;border:none;border-radius:0 0 12px 12px;display:block;"></iframe>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
   <span id="toast-msg">Done</span>
@@ -1712,7 +1771,7 @@
   function applyAdjustment() { showToast('Auth loading…', 'error'); }
   function opsManualDeposit() { showToast('Auth loading…', 'error'); }
   function publishAnnouncement() { showToast('Auth loading…', 'error'); }
-  function sendEmail() { showToast('Auth loading…', 'error'); }
+  function sendEmail() { showToast('Use the Email Users page to send emails.', 'error'); }
   function savePlatformToggle(key, val) { showToast('Auth loading…', 'error'); }
   function saveSystemSettings() { showToast('Auth loading…', 'error'); }
   function saveDepositAddresses() { showToast('Auth loading…'); }
@@ -4016,6 +4075,97 @@ window.saveAddPTTrade = async function() {
   showToast('Trade entry added');
   closeModal('modal-add-pt-trade');
   renderProfitTargetsLive();
+};
+
+/* ── Email Users ── */
+const _VELOCI_EMAIL_API = 'https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api';
+let _emailHistory = [];
+
+async function _emailApiCall(action, payload) {
+  payload = payload || {};
+  const db = window.SV_DB;
+  const { data: { session } } = await db.auth.getSession();
+  const res = await fetch(_VELOCI_EMAIL_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (session && session.access_token ? session.access_token : ''),
+    },
+    body: JSON.stringify(Object.assign({ action: action }, payload)),
+  });
+  return res.json();
+}
+
+window.emailPopulateUsers = function() {
+  const sel = document.getElementById('email-recipient-sel');
+  if (!sel) return;
+  const users = _allUsers || [];
+  sel.innerHTML = '<option value="">&#8212; Select recipient &#8212;</option>';
+  users.forEach(function(u) {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
+    const label = name ? (u.email + ' (' + name + ')') : u.email;
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify({ id: u.id, email: u.email, name: name });
+    opt.textContent = label;
+    sel.appendChild(opt);
+  });
+};
+
+window.loadEmailHistory = async function() {
+  const tbody = document.getElementById('email-history-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">Loading&hellip;</td></tr>';
+  const data = await _emailApiCall('get_email_history');
+  _emailHistory = data.emails || [];
+  if (!_emailHistory.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px;">No emails sent yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _emailHistory.map(function(e) {
+    return '<tr>' +
+      '<td><div style="font-size:13px;color:var(--text);">' + e.recipient_email + '</div>' +
+      (e.recipient_name ? '<div style="font-size:11px;color:var(--muted);">' + e.recipient_name + '</div>' : '') + '</td>' +
+      '<td>' + e.subject + '</td>' +
+      '<td style="white-space:nowrap;">' + fmtDate(e.sent_at) + '</td>' +
+      '<td><button class="btn btn--sm btn--outline" onclick="viewEmailModal(\'' + e.id + '\')">View</button></td>' +
+    '</tr>';
+  }).join('');
+};
+
+window.opsSendEmail = async function() {
+  const sel = document.getElementById('email-recipient-sel');
+  const subject = document.getElementById('email-subject').value.trim();
+  const bodyText = document.getElementById('email-body').value.trim();
+  const btn = document.getElementById('email-send-btn');
+  if (!sel || !sel.value) { showToast('Please select a recipient', 'error'); return; }
+  if (!subject) { showToast('Subject is required', 'error'); return; }
+  if (!bodyText) { showToast('Message body is required', 'error'); return; }
+  let parsed;
+  try { parsed = JSON.parse(sel.value); } catch(e) { showToast('Invalid recipient', 'error'); return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const result = await _emailApiCall('send_email', {
+    recipient_email: parsed.email,
+    recipient_name: parsed.name || null,
+    recipient_user_id: parsed.id || null,
+    subject: subject,
+    body_text: bodyText,
+  });
+  btn.disabled = false; btn.textContent = 'Send Email';
+  if (result.error) { showToast('Error: ' + result.error, 'error'); return; }
+  showToast('Email sent successfully', 'success');
+  document.getElementById('email-subject').value = '';
+  document.getElementById('email-body').value = '';
+  document.getElementById('email-recipient-sel').value = '';
+  logAudit('SEND_EMAIL', parsed.email, subject);
+  loadEmailHistory();
+};
+
+window.viewEmailModal = function(id) {
+  const email = _emailHistory.find(function(e) { return e.id === id; });
+  if (!email) return;
+  document.getElementById('view-email-subject').textContent = email.subject;
+  document.getElementById('view-email-frame').srcdoc = email.body_html;
+  openModal('modal-view-email');
 };
 
 /* ── Audit Log ── */
