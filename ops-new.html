@@ -3451,11 +3451,22 @@ window.dtiReset = function() {
 /* Shared helper: update profiles.total_pnl + write to profit_target_trades if user has active target */
 async function _syncTradeToBalance(db, userId, pnl, note) {
   /* 1. Increment profiles.total_pnl */
-  const { data: prof } = await db.from('profiles').select('total_pnl').eq('id', userId).single();
+  const { data: prof } = await db.from('profiles').select('total_pnl,email').eq('id', userId).single();
   const newPnl = (parseFloat(prof?.total_pnl) || 0) + pnl;
   await db.from('profiles').update({ total_pnl: newPnl }).eq('id', userId);
 
-  /* 2. Write to profit_target_trades if user has an active target */
+  /* 2. Write transaction record so the performance chart can track it */
+  await db.from('transactions').insert({
+    user_id:    userId,
+    user_email: prof?.email || '',
+    type:       pnl >= 0 ? 'credit' : 'debit',
+    amount:     Math.abs(pnl),
+    currency:   'USD',
+    status:     'completed',
+    note:       note || 'Trade P&L',
+  });
+
+  /* 3. Write to profit_target_trades if user has an active target */
   const { data: targets } = await db.from('profit_targets')
     .select('id,target_amount').eq('user_id', userId).eq('is_active', true).limit(1);
   const target = targets?.[0];
