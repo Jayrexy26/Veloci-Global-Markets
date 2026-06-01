@@ -1250,6 +1250,8 @@ async function sha256(str){
 let _wdPin='';
 let _wdPinAttempts=0;
 const WD_PIN_MAX=3;
+let _wdCheckScheduled=false;
+let _wdSubmitting=false;
 
 function syncWdDots(){
   document.querySelectorAll('#wd-pin-dots .wd-pin-dot').forEach((d,i)=>{
@@ -1272,10 +1274,14 @@ function handleWdPin(key){
   else if(_wdPin.length<4) _wdPin+=key;
   syncWdDots();
   document.getElementById('wd-pin-error').textContent='';
-  if(_wdPin.length===4) setTimeout(checkWdPin,160);
+  if(_wdPin.length===4 && !_wdCheckScheduled){
+    _wdCheckScheduled=true;
+    setTimeout(checkWdPin,160);
+  }
 }
 
 async function checkWdPin(){
+  _wdCheckScheduled=false;
   /* Fetch fresh user so we never use a stale cached session that's missing the PIN */
   const { data: { user: freshUser } } = await window.SV_DB.auth.getUser();
   const stored = freshUser?.user_metadata?.trading_pin;
@@ -1310,8 +1316,10 @@ async function checkWdPin(){
 }
 
 async function doWithdraw(){
+  if (_wdSubmitting) return;
+  _wdSubmitting = true;
   const db = window.SV_DB;
-  if (!db || !_svUserId) return;
+  if (!db || !_svUserId) { _wdSubmitting=false; return; }
 
   if (currentModalType === 'crypto') {
     const amt  = parseFloat(document.getElementById('amount-input').value) || 0;
@@ -1329,7 +1337,7 @@ async function doWithdraw(){
       destination_ref:  addr + (memo ? ' | Memo: ' + memo : ''),
       status:           'pending',
     }).select('id').single();
-    if (wrErr) { showToastWd('Submission failed — please try again.', true); return; }
+    if (wrErr) { _wdSubmitting=false; showToastWd('Submission failed — please try again.', true); return; }
 
     const { error: txErr } = await db.from('transactions').insert({
       user_id:    _svUserId,
@@ -1342,7 +1350,7 @@ async function doWithdraw(){
       note:       `Crypto withdrawal — ${amt} ${selCoin.sym} via ${selNet.id}`,
       status:     'pending',
     });
-    if (txErr) { showToastWd('Submission failed — please try again.', true); return; }
+    if (txErr) { _wdSubmitting=false; showToastWd('Submission failed — please try again.', true); return; }
 
     /* Deduct from profiles.balance only (not pnl) */
     const { data: _p1 } = await db.from('profiles').select('balance').eq('id', _svUserId).maybeSingle();
@@ -1368,7 +1376,7 @@ async function doWithdraw(){
     const iban    = document.getElementById('bank-iban')?.value.trim() || '';
     const country = document.getElementById('bank-country').value;
     const ref     = document.getElementById('bank-ref')?.value.trim() || '';
-    if (amt <= 0) return;
+    if (amt <= 0) { _wdSubmitting=false; return; }
 
     const bankDetails = JSON.stringify({ holder, bankName:bkName, acct, swift, iban, country, ref, ccy });
     const fee = BANK_FEES[ccy] || 15;
@@ -1410,6 +1418,7 @@ async function doWithdraw(){
 
   await loadWdHistory();
   showWdSuccessBanner();
+  _wdSubmitting = false;
 }
 
 function showToastWd(msg, isErr=false){
