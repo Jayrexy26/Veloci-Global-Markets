@@ -1453,9 +1453,32 @@ async function loadWdHistory(){
   if (!db || !_svUserId) return;
   const tbody = document.getElementById('wd-hist-tbody');
   if (!tbody) return;
-  const { data } = await db.from('withdrawal_requests')
-    .select('*').eq('user_id', _svUserId).order('created_at', { ascending:false }).limit(10);
-  const rows = data || [];
+
+  const [{ data: newReqs }, { data: oldWds }] = await Promise.all([
+    db.from('withdrawal_requests').select('*').eq('user_id', _svUserId).order('created_at',{ascending:false}).limit(20),
+    _svEmail ? db.from('withdrawals').select('*').eq('user_email', _svEmail).order('created_at',{ascending:false}).limit(50) : Promise.resolve({data:[]})
+  ]);
+
+  /* Normalize withdrawal_requests */
+  const norm1 = (newReqs || []).map(w => ({
+    created_at: w.created_at,
+    amount:     w.amount,
+    method:     w.destination_type || 'crypto',
+    dest:       w.destination_name || w.destination_ref || '',
+    status:     w.status || 'pending',
+  }));
+
+  /* Normalize legacy withdrawals */
+  const norm2 = (oldWds || []).map(w => ({
+    created_at: w.created_at,
+    amount:     w.amount,
+    method:     w.method || 'crypto',
+    dest:       w.wallet_address || '',
+    status:     w.status || 'pending',
+  }));
+
+  const rows = [...norm1, ...norm2].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0,50);
+
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p>No withdrawal history</p></div></td></tr>`;
     return;
@@ -1463,8 +1486,9 @@ async function loadWdHistory(){
   const fmtD = s => new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
   const pill = s => s==='approved'?'#22c55e':s==='rejected'?'#ef4444':'#f59e0b';
   tbody.innerHTML = rows.map(w => {
-    const dest = w.method==='crypto' ? (w.wallet||'').split(' | ')[0].slice(0,18)+'—'
-      : (() => { try { return JSON.parse(w.bank_details).bankName || 'Bank'; } catch(e){ return 'Bank'; } })();
+    const dest = w.method==='crypto'
+      ? (w.dest||'—').slice(0,20) + (w.dest && w.dest.length>20 ? '…' : '')
+      : (w.dest || 'Bank Transfer');
     return `<tr>
       <td>${fmtD(w.created_at)}</td>
       <td style="font-weight:700;">$${parseFloat(w.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
@@ -1538,7 +1562,7 @@ let _svUser    = null;
   _svEmail   = user.email || '';
 
   const [{ data: profile }, { data: wdMinSetting }, { data: wdMaxSetting }, { data: bankMaintEnabled }, { data: bankMaintScope }, { data: wdEnabledRow }, { data: wdScopeRow }] = await Promise.all([
-    db.from('profiles').select('first_name,last_name,balance,pnl,min_withdrawal,max_withdrawal').eq('id', user.id).maybeSingle(),
+    db.from('profiles').select('first_name,last_name,balance,total_pnl').eq('id', user.id).maybeSingle(),
     db.from('system_settings').select('value').eq('key','min_withdrawal_amount').maybeSingle(),
     db.from('system_settings').select('value').eq('key','max_withdrawal_amount').maybeSingle(),
     db.from('system_settings').select('value').eq('key','bank_wd_maintenance_enabled').maybeSingle(),
