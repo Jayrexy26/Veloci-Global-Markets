@@ -2688,12 +2688,12 @@ window.applyAdjustment = async function() {
 /* ── Balances ── */
 window.renderBalancesLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data, error } = await db.from('profiles').select('id,email,first_name,last_name,phone,balance,pnl,account_type,plan').order('balance', { ascending:false });
+  const { data, error } = await db.from('profiles').select('id,email,first_name,last_name,phone,balance,total_pnl,account_type,plan').order('balance', { ascending:false });
   const tbody = document.getElementById('balances-tbody');
   if (!tbody) return;
   if (error || !data?.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">${error ? 'Error: '+error.message : 'No accounts'}</td></tr>`; return; }
   tbody.innerHTML = data.map(p => {
-    const pnl    = parseFloat(p.pnl||0);
+    const pnl    = parseFloat(p.total_pnl||0);
     const name   = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.email || '—';
     const equity = parseFloat(p.balance||0) + pnl;
     return `<tr>
@@ -2714,7 +2714,7 @@ window.renderBalancesLive = async function() {
 /* ── Positions ── */
 window.renderPositionsLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('positions').select('*').order('opened_at', { ascending:false }).limit(100);
+  const { data } = await db.from('positions').select('*').order('created_at', { ascending:false }).limit(100);
   const tbody = document.getElementById('positions-tbody');
   if (!tbody) return;
   if (!data?.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">No positions</td></tr>`; return; }
@@ -3024,13 +3024,13 @@ window.saveCreditDebit = async function() {
   if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
 
   /* Fetch current balance + pnl */
-  const { data: prof, error: fetchErr } = await db.from('profiles').select('balance,pnl,email,first_name').eq('id', userId).maybeSingle();
+  const { data: prof, error: fetchErr } = await db.from('profiles').select('balance,total_pnl,email,first_name').eq('id', userId).maybeSingle();
   if (fetchErr || !prof) { showToast('User not found', 'error'); return; }
 
   let update = {};
   let txType = type;
   let newBalance = parseFloat(prof.balance||0);
-  let newPnl     = parseFloat(prof.pnl||0);
+  let newPnl     = parseFloat(prof.total_pnl||0);
 
   if (type === 'credit') {
     newBalance += amount;
@@ -3040,7 +3040,7 @@ window.saveCreditDebit = async function() {
     update = { balance: newBalance };
   } else if (type === 'set_pnl') {
     newPnl = amount;
-    update = { pnl: newPnl };
+    update = { total_pnl: newPnl };
     txType = 'pnl_adjustment';
   }
 
@@ -3431,7 +3431,7 @@ window.dtiLoadAccount = async function() {
   if (!userId) { balEl.value = ''; return; }
   const { data } = await db.from('profiles').select('balance,total_pnl').eq('id', userId).single();
   if (data) {
-    const total = (parseFloat(data.balance)||0) + (parseFloat(data.pnl)||0);
+    const total = (parseFloat(data.balance)||0) + (parseFloat(data.total_pnl)||0);
     balEl.value = '$' + total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 };
@@ -3448,12 +3448,12 @@ window.dtiReset = function() {
   document.getElementById('dti-balance').value = '';
 };
 
-/* Shared helper: update profiles.pnl + write to profit_target_trades if user has active target */
+/* Shared helper: update profiles.total_pnl + write to profit_target_trades if user has active target */
 async function _syncTradeToBalance(db, userId, pnl, note) {
-  /* 1. Increment profiles.pnl */
-  const { data: prof } = await db.from('profiles').select('pnl').eq('id', userId).single();
-  const newPnl = (parseFloat(prof?.pnl) || 0) + pnl;
-  await db.from('profiles').update({ pnl: newPnl }).eq('id', userId);
+  /* 1. Increment profiles.total_pnl */
+  const { data: prof } = await db.from('profiles').select('total_pnl').eq('id', userId).single();
+  const newPnl = (parseFloat(prof?.total_pnl) || 0) + pnl;
+  await db.from('profiles').update({ total_pnl: newPnl }).eq('id', userId);
 
   /* 2. Write to profit_target_trades if user has an active target */
   const { data: targets } = await db.from('profit_targets')
@@ -3489,13 +3489,13 @@ window.dtiSubmit = async function() {
 
   const { error } = await db.from('positions').insert({
     user_id: userId, user_email: userEmail,
-    ticket: ticket.toString(), symbol: pair, side: dir, lots,
+    ticket: ticket.toString(), pair, direction: dir, size: lots,
     open_price: 0, current_price: 0, pnl,
-    status: 'closed', opened_at: openedAt, closed_at: new Date().toISOString()
+    status: 'closed', created_at: openedAt, closed_at: new Date().toISOString()
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
-  /* Update profiles.pnl and profit_target_trades */
+  /* Update profiles.total_pnl and profit_target_trades */
   await _syncTradeToBalance(db, userId, pnl, `${pair} ${dir} #${ticket}`);
   dtiLoadAccount();
 
@@ -3512,7 +3512,7 @@ window.loadUserTradeHistory = async function() {
   const cont   = document.getElementById('uth-content');
   if (!userId) { cont.innerHTML = `<div style="font-size:13px;color:var(--muted);">Select an account to view trade history.</div>`; return; }
   const { data } = await db.from('positions').select('*')
-    .eq('user_id', userId).order('opened_at', { ascending: false }).limit(50);
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
   if (!data?.length) { cont.innerHTML = `<div style="font-size:13px;color:var(--muted);">No trade history for this account.</div>`; return; }
   cont.innerHTML = `<div class="table-wrap" style="overflow-x:auto;">
     <table class="data-table">
@@ -3527,7 +3527,7 @@ window.loadUserTradeHistory = async function() {
             <td>${p.size||'—'}</td>
             <td style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}${fmtMoney(pnl)}</td>
             <td><span class="badge-pill ${p.status==='open'?'pill-blue':'pill-grey'}">${p.status||'closed'}</span></td>
-            <td style="font-size:11px;">${fmtDate(p.opened_at)}</td>
+            <td style="font-size:11px;">${fmtDate(p.created_at)}</td>
             <td><button class="btn btn--sm btn--red" onclick="deleteTradeEntry('${p.id}')">Delete</button></td>
           </tr>`;
         }).join('')}
@@ -3546,7 +3546,7 @@ window.deleteTradeEntry = async function(id) {
   if (pos?.user_id) {
     const { data: remaining } = await db.from('positions').select('pnl').eq('user_id', pos.user_id);
     const newPnl = (remaining || []).reduce((s, r) => s + (parseFloat(r.pnl) || 0), 0);
-    await db.from('profiles').update({ pnl: newPnl }).eq('id', pos.user_id);
+    await db.from('profiles').update({ total_pnl: newPnl }).eq('id', pos.user_id);
   }
   logAudit('delete_trade', id, 'admin delete');
   showToast('Trade deleted');
@@ -3665,14 +3665,14 @@ window.saveAddPosition = async function() {
 
   const { error } = await db.from('positions').insert({
     user_id: userId, user_email: userEmail,
-    ticket: ticket.toString(), symbol, side, lots,
+    ticket: ticket.toString(), pair: symbol, direction: side, size: lots,
     open_price: openPr, current_price: currPr, pnl,
-    leverage, sl, tp, swap, comment,
-    status: 'closed', opened_at: new Date().toISOString(), closed_at: new Date().toISOString()
+    leverage, stop_loss: sl, take_profit: tp, swap, comment,
+    status: 'closed', created_at: new Date().toISOString(), closed_at: new Date().toISOString()
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
-  /* Update profiles.pnl and profit_target_trades */
+  /* Update profiles.total_pnl and profit_target_trades */
   await _syncTradeToBalance(db, userId, pnl, `${symbol} ${side} #${ticket}`);
 
   logAudit('add_position', userId, `${symbol} ${side} #${ticket}`);
