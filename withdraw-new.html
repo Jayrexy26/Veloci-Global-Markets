@@ -1318,28 +1318,26 @@ async function doWithdraw(){
 
     const usdAmt = amt * selCoin.price;
 
-    /* Insert withdrawal_request first to get its ID, then link transaction to it */
     const { data: wrData, error: wrErr } = await db.from('withdrawal_requests').insert({
-      user_id:    _svUserId,
-      user_email: _svEmail,
-      amount:     usdAmt,
-      method:     'crypto',
-      wallet:     addr + (memo ? ' | Memo: ' + memo : ''),
-      status:     'pending',
+      user_id:          _svUserId,
+      amount:           usdAmt,
+      destination_type: 'crypto',
+      destination_name: `${amt} ${selCoin.sym}`,
+      destination_ref:  addr + (memo ? ' | Memo: ' + memo : ''),
+      status:           'pending',
     }).select('id').single();
     if (wrErr) { showToastWd('Submission failed — please try again.', true); return; }
 
     const { error: txErr } = await db.from('transactions').insert({
-      user_id:               _svUserId,
-      user_email:            _svEmail,
-      type:                  'withdrawal',
-      amount:                -usdAmt,
-      currency:              'USD',
-      coin:                  selCoin.sym,
-      network:               selNet.id,
-      note:                  `Crypto withdrawal — ${amt} ${selCoin.sym} via ${selNet.id}`,
-      status:                'pending',
-      withdrawal_request_id: wrData.id,
+      user_id:    _svUserId,
+      user_email: _svEmail,
+      type:       'withdrawal',
+      amount:     -usdAmt,
+      currency:   'USD',
+      coin:       selCoin.sym,
+      network:    selNet.id,
+      note:       `Crypto withdrawal — ${amt} ${selCoin.sym} via ${selNet.id}`,
+      status:     'pending',
     });
     if (txErr) { showToastWd('Submission failed — please try again.', true); return; }
 
@@ -1373,24 +1371,23 @@ async function doWithdraw(){
     const fee = BANK_FEES[ccy] || 15;
 
     const { data: wrData, error: wrErr } = await db.from('withdrawal_requests').insert({
-      user_id:      _svUserId,
-      user_email:   _svEmail,
-      amount:       amt,
-      method:       'bank',
-      bank_details: bankDetails,
-      status:       'pending',
+      user_id:          _svUserId,
+      amount:           amt,
+      destination_type: 'bank',
+      destination_name: bkName || holder,
+      destination_ref:  [acct, swift, iban].filter(Boolean).join(' | '),
+      status:           'pending',
     }).select('id').single();
     if (wrErr) { showToastWd('Submission failed — please try again.', true); return; }
 
     const { error: txErr } = await db.from('transactions').insert({
-      user_id:               _svUserId,
-      user_email:            _svEmail,
-      type:                  'withdrawal',
-      amount:                -amt,
-      currency:              ccy,
-      note:                  `Bank withdrawal — ${ccy} ${amt.toLocaleString()} to ${bkName}`,
-      status:                'pending',
-      withdrawal_request_id: wrData.id,
+      user_id:    _svUserId,
+      user_email: _svEmail,
+      type:       'withdrawal',
+      amount:     -amt,
+      currency:   ccy,
+      note:       `Bank withdrawal — ${ccy} ${amt.toLocaleString()} to ${bkName}`,
+      status:     'pending',
     });
     if (txErr) { showToastWd('Submission failed — please try again.', true); return; }
 
