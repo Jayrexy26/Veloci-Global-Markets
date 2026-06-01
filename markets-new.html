@@ -1,19 +1,20 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<link rel="icon" type="image/png" href="assets/favicon.png"/>
+<link rel="icon" type="image/png" href="/assets/favicon.png"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<title>Markets â€” Veloci Global Markets</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<title>Markets — Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#222d42;
+  --bg:#0a0b0f; --s1:#111318; --s2:#16191f; --s3:#1e2229; --s4:#252b35;
   --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
-  --accent:#f05a1a; --accent-dk:#d94d12;
-  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
-  --text:#eaecef; --sub:#848e9c;
-  --sidebar:220px; --header:60px;
+  --accent:#f05a1a; --green:#0ecb81; --red:#f6465d; --gold:#f0b90b;
+  --blue:#2196f3; --purple:#7b61ff;
+  --text:#eaecef; --sub:#848e9c; --muted:#2b3141;
+  --sidebar:200px; --header:60px;
+  --mono:'JetBrains Mono',monospace;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
@@ -22,14 +23,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
-
 .page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
 
-/* HEADER */
+/* -- HEADER -- */
 .hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
 .hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--b);}
 .hdr-logo-wrap img{height:34px;width:auto;}
-.hdr-search{flex:1;max-width:340px;margin-left:16px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:color .15s;}
+.hdr-hamburger:hover{color:var(--text);}
+.hdr-search{flex:1;max-width:360px;margin-left:12px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
 .hdr-search input{font-size:13px;flex:1;}
 .hdr-search input::placeholder{color:var(--sub);}
 .hdr-spacer{flex:1;}
@@ -37,491 +39,1087 @@ input{font-family:inherit;border:none;outline:none;background:none;color:var(--t
 .live-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding:4px 10px;background:var(--s2);border:1px solid var(--b);border-radius:6px;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
-.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;}
 .hicon:hover{background:var(--s3);color:var(--text);}
-.hicon-badge{position:absolute;top:3px;right:2px;background:var(--red);color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--s1);}
-.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;}
 
-/* LAYOUT */
+/* -- LAYOUT -- */
 .layout{display:flex;flex:1;overflow:hidden;}
 
-/* SIDEBAR */
+/* -- SIDEBAR -- */
 .sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
 .sidebar::-webkit-scrollbar{width:0;}
 .sb-nav{flex:1;padding:8px 0;}
-.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 16px 4px;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;}
 .nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
 .nav-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
 .nav-item svg{flex-shrink:0;width:16px;height:16px;}
 .nav-item-label{flex:1;}
+.nav-item-chevron{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.nav-item.open .nav-item-chevron{transform:rotate(180deg);}
 .nav-item-badge{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,90,26,.18);color:var(--accent);flex-shrink:0;}
+.nav-sub{display:none;background:rgba(0,0,0,.1);}
+.nav-sub.open{display:block;}
+.nav-sub-item{display:flex;align-items:center;padding:7px 16px 7px 44px;font-size:12.5px;color:var(--sub);cursor:pointer;transition:all .15s;border-left:2.5px solid transparent;}
+.nav-sub-item:hover{color:var(--text);}
+.nav-sub-item.active{color:var(--accent);border-left-color:var(--accent);}
 .nav-divider{height:1px;background:var(--b);margin:6px 0;}
 .sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
 .sb-user{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .15s;}
 .sb-user:hover{background:rgba(255,255,255,.03);}
 .sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
-.sb-user-info{flex:1;min-width:0;}
-.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.sb-user-email{font-size:10.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);}
+.sb-user-uid{font-size:10.5px;color:var(--sub);margin-top:1px;}
+.sb-vip{display:inline-flex;align-items:center;background:rgba(240,185,11,.15);color:var(--gold);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;}
 
-/* MAIN */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;}
-.main::-webkit-scrollbar{width:4px;}
+/* -- MAIN -- */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;}
 
-/* TICKER TAPE */
-.ticker-wrap{border-bottom:1px solid var(--b);flex-shrink:0;overflow:hidden;}
+/* -- MARKET TABS BAR -- */
+.market-tabs{
+  height:50px;flex-shrink:0;
+  background:var(--s1);border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 20px;gap:2px;overflow-x:auto;
+}
+.market-tabs::-webkit-scrollbar{height:0;}
+.mtab{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 14px;border-radius:7px;
+  font-size:13px;font-weight:500;color:var(--sub);
+  cursor:pointer;transition:all .15s;white-space:nowrap;border-bottom:2px solid transparent;
+  position:relative;
+}
+.mtab:hover{color:var(--text);background:var(--s3);}
+.mtab.on{color:var(--text);background:rgba(240,90,26,.09);border-bottom-color:var(--accent);}
+.mtab-icon{font-size:15px;line-height:1;}
+.mtab-count{font-size:10px;color:var(--sub);background:var(--s3);padding:1px 5px;border-radius:10px;font-weight:600;}
+.mtab.on .mtab-count{background:rgba(240,90,26,.2);color:var(--accent);}
+.mtab-divider{width:1px;height:22px;background:var(--b);margin:0 6px;flex-shrink:0;}
 
-/* MARKETS CONTENT */
-.markets-content{padding:20px 24px 40px;flex:1;}
-
-/* PAGE HEADER */
-.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;}
-.page-title{font-size:20px;font-weight:800;color:var(--text);}
-
-/* CATEGORY TABS */
-.cat-tabs{display:flex;gap:4px;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:4px;width:fit-content;margin-bottom:16px;flex-wrap:wrap;}
-.cat-tab{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;border:none;background:none;white-space:nowrap;}
-.cat-tab.active{background:var(--accent);color:#fff;}
-.cat-tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.05);}
-.cat-tab-icon{font-size:14px;}
-
-/* FILTER ROW */
-.filter-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-.sub-tabs{display:flex;gap:3px;}
-.sub-tab{padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;border:1.5px solid transparent;background:none;}
-.sub-tab.active{color:var(--text);background:var(--s3);border-color:var(--b2);}
-.sub-tab:hover:not(.active){color:var(--text);}
-.filter-search{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:34px;min-width:200px;}
-.filter-search input{font-size:12.5px;flex:1;}
-.filter-search input::placeholder{color:var(--sub);}
+/* -- FILTER + SEARCH BAR -- */
+.filter-bar{
+  height:46px;flex-shrink:0;
+  background:var(--s2);border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 20px;gap:8px;
+}
+.ftab{
+  padding:5px 14px;border-radius:6px;font-size:12.5px;font-weight:500;
+  color:var(--sub);cursor:pointer;transition:all .15s;
+}
+.ftab:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.ftab.on{color:var(--accent);background:rgba(240,90,26,.1);}
 .filter-spacer{flex:1;}
+.tbl-search{
+  display:flex;align-items:center;gap:7px;
+  background:var(--s1);border:1px solid var(--b);border-radius:7px;
+  padding:0 10px;height:30px;width:200px;
+}
+.tbl-search input{font-size:12.5px;flex:1;color:var(--text);}
+.tbl-search input::placeholder{color:var(--sub);}
+.refresh-btn{
+  display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;
+  font-size:12px;color:var(--sub);background:var(--s1);border:1px solid var(--b);
+  cursor:pointer;transition:all .15s;
+}
+.refresh-btn:hover{color:var(--text);border-color:var(--b2);}
 
-/* WIDGET CONTAINER */
-.widget-panel{display:none;}
-.widget-panel.active{display:block;}
-.tradingview-widget-container{border-radius:14px;overflow:hidden;border:1px solid var(--b);}
-.tradingview-widget-container iframe{display:block;}
+/* -- TABLE AREA -- */
+.tbl-wrap{flex:1;overflow-y:auto;overflow-x:auto;position:relative;}
+.tbl-wrap::-webkit-scrollbar{width:4px;height:4px;}
 
-/* LIGHT THEME */
-body.light{--bg:#f0f2f5;--s1:#fff;--s2:#f7f8fa;--s3:#eef0f3;--s4:#e4e7eb;--b:rgba(0,0,0,.08);--b2:rgba(0,0,0,.14);--text:#111827;--sub:#6b7280;}
-body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);}
+.mkt-table{width:100%;border-collapse:collapse;min-width:900px;}
+.mkt-table thead{position:sticky;top:0;z-index:10;}
+.mkt-table th{
+  background:var(--s1);
+  font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--sub);padding:10px 14px;text-align:left;
+  border-bottom:1px solid var(--b);white-space:nowrap;
+  cursor:pointer;user-select:none;
+}
+.mkt-table th:hover{color:var(--text);}
+.mkt-table th.sort-asc::after{content:' ?';font-size:9px;color:var(--accent);}
+.mkt-table th.sort-desc::after{content:' ?';font-size:9px;color:var(--accent);}
+.mkt-table th:first-child{padding-left:20px;width:44px;text-align:center;}
+.mkt-table th:last-child{text-align:right;padding-right:20px;}
+.mkt-table td{
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.035);
+  font-size:13px;vertical-align:middle;
+}
+.mkt-table tr:hover td{background:rgba(255,255,255,.025);}
+.mkt-table td:first-child{padding-left:20px;color:var(--sub);font-size:12px;text-align:center;}
+.mkt-table td:last-child{text-align:right;padding-right:20px;}
 
-@media(max-width:768px){
-  .markets-content{padding:12px 12px 40px;}
-  .cat-tabs{gap:2px;}
-  .cat-tab{padding:7px 10px;font-size:12px;}
+/* symbol cell */
+.sym-cell{display:flex;align-items:center;gap:10px;}
+.sym-icon{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.sym-name{font-size:13px;font-weight:600;color:var(--text);}
+.sym-desc{font-size:11px;color:var(--sub);margin-top:1px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sym-exchange{font-size:9.5px;color:var(--muted);background:var(--s3);padding:1px 4px;border-radius:3px;margin-top:2px;display:inline-block;}
+
+/* price cells */
+.price-val{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--text);}
+.chg-pos{color:var(--green);font-weight:600;font-family:'Inter',sans-serif;}
+.chg-neg{color:var(--red);font-weight:600;font-family:'Inter',sans-serif;}
+.chg-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:12px;font-weight:600;font-family:'Inter',sans-serif;
+  padding:3px 8px;border-radius:5px;
+}
+.chg-badge-pos{background:rgba(14,203,129,.12);color:var(--green);}
+.chg-badge-neg{background:rgba(246,70,93,.12);color:var(--red);}
+.vol-val{font-family:'Inter',sans-serif;font-size:12.5px;color:var(--text);}
+.mktcap-val{font-family:'Inter',sans-serif;font-size:12.5px;color:var(--sub);}
+
+/* day range bar */
+.range-wrap{width:80px;}
+.range-bar{height:4px;background:var(--s3);border-radius:2px;position:relative;margin-bottom:2px;}
+.range-fill{position:absolute;top:0;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--red),var(--green));}
+.range-dot{position:absolute;top:50%;width:6px;height:6px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 4px rgba(0,0,0,.4);}
+.range-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);}
+
+/* watchlist star */
+.star-btn{color:var(--muted);cursor:pointer;transition:color .15s;flex-shrink:0;}
+.star-btn:hover,.star-btn.on{color:var(--gold);}
+
+/* trade button */
+.trade-btn{
+  padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;
+  color:var(--accent);border:1px solid rgba(240,90,26,.3);
+  transition:all .15s;white-space:nowrap;
+}
+.trade-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* loading / error / empty */
+.tbl-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 20px;gap:12px;
+}
+.tbl-spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--s3);border-top-color:var(--accent);
+  animation:spin 0.9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.tbl-state-title{font-size:15px;font-weight:600;color:var(--text);}
+.tbl-state-sub{font-size:13px;color:var(--sub);text-align:center;max-width:400px;line-height:1.6;}
+.tbl-state-link{color:var(--accent);font-weight:600;cursor:pointer;}
+.tbl-state-link:hover{text-decoration:underline;}
+
+/* status bar */
+.status-bar{
+  height:32px;flex-shrink:0;
+  background:var(--s1);border-top:1px solid var(--b);
+  display:flex;align-items:center;padding:0 20px;gap:16px;
+  font-size:11.5px;color:var(--sub);
+}
+.sb-powered{display:flex;align-items:center;gap:5px;}
+.sb-powered svg{color:var(--accent);}
+.sb-count{color:var(--text);font-weight:600;}
+.sb-spacer{flex:1;}
+.sb-update{font-size:11px;}
+
+/* skeleton rows */
+.skel-row td{padding:13px 14px;}
+.skel{
+  display:inline-block;border-radius:4px;
+  background:linear-gradient(90deg,var(--s3) 25%,var(--s4) 50%,var(--s3) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s infinite;
+}
+@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+/* --- OVERFLOW GUARD --- */
+html,body{overflow-x:hidden;max-width:100%;}
+
+/* --- SIDEBAR OVERLAY --- */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;}
+.sidebar-overlay.open{display:block;}
+
+html.mob .sidebar{display:none !important;position:fixed;top:0;left:0;bottom:0;height:100%;width:var(--sidebar);z-index:200;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 24px rgba(0,0,0,.6);}
+html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
+html.mob .layout{display:block !important;height:calc(100vh - 60px) !important;overflow:hidden !important;}
+html.mob .main{width:100% !important;display:flex;flex-direction:column;height:100%;overflow:hidden;}
+html.mob .hdr{padding:0 10px 0 0;}
+.sb-logo-area{padding:0 16px;display:flex;align-items:center;border-bottom:1px solid var(--b);flex-shrink:0;}
+.sb-logo-area img{height:120px;width:auto;}
+html.mob .hdr-hamburger{margin-right:auto;}html.mob .hdr-logo-wrap{display:none !important;}
+html.mob .hdr-search{max-width:180px;}
+@media screen and (max-width:640px){
+  .hdr-search{display:none;}
+  .hdr-logo-wrap img{height:28px;}
+  /* Market tabs */
+  .market-tabs{padding:0 8px;height:auto;min-height:46px;overflow-x:auto;scrollbar-width:none;}
+  .market-tabs::-webkit-scrollbar{display:none;}
+  .mtab{padding:7px 10px;font-size:12px;flex-shrink:0;}
+  .mtab-divider{display:none;}
+  /* Filter bar */
+  .filter-bar{padding:0 8px;gap:4px;height:auto;min-height:42px;overflow-x:auto;}
+  .ftab{padding:5px 10px;font-size:12px;flex-shrink:0;white-space:nowrap;}
+  .tbl-search{width:140px;height:30px;}
+  .refresh-btn{padding:5px 8px;font-size:11px;flex-shrink:0;}
+  /* Table */
+  .mkt-table th:first-child,.mkt-table td:first-child{display:none;}
+  .mkt-table th:nth-child(5),.mkt-table td:nth-child(5),
+  .mkt-table th:nth-child(6),.mkt-table td:nth-child(6){display:none;}
+  .mkt-table th,.mkt-table td{padding:9px 8px;}
+  .sym-icon{width:28px;height:28px;font-size:11px;}
+  .sym-name{font-size:12.5px;}
+  .sym-desc{font-size:10.5px;max-width:110px;}
+  .sym-exchange{display:none;}
+  .price-val{font-size:12.5px;}
+  .chg-badge{font-size:11.5px;padding:2px 6px;}
+  .vol-val,.mktcap-val{font-size:11.5px;}
+  .status-bar{padding:0 10px;gap:8px;font-size:10.5px;}
+  .range-wrap{display:none;}
 }
 </style>
+<script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
 </head>
 <body>
 <div class="page">
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
 
-  <!-- HEADER -->
-  <header class="hdr">
-    <div class="hdr-logo-wrap">
-      <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
-    </div>
-    <div class="hdr-search">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" placeholder="Search markets..." id="market-search" oninput="handleSearch(this.value)"/>
-    </div>
-    <div class="hdr-spacer"></div>
-    <div class="hdr-right">
-      <div class="live-chip">
-        <div class="live-dot"></div>
-        <span>Live</span>
-      </div>
-      <a href="notifications-new.html" class="hicon" title="Notifications">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <span class="hicon-badge" id="hdr-notif-badge" style="display:none"></span>
-      </a>
-      <div class="hdr-avatar" id="hdr-avatar">?</div>
-    </div>
-  </header>
-
-  <div class="layout">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <nav class="sb-nav">
-        <a href="dashboard-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          <span class="nav-item-label">Dashboard</span>
-        </a>
-        <a href="markets-new.html" class="nav-item active">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span class="nav-item-label">Markets</span>
-        </a>
-        <a href="wallet-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-          <span class="nav-item-label">Wallet</span>
-        </a>
-        <a href="deposit-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v14M5 9l7 7 7-7"/><path d="M3 21h18"/></svg>
-          <span class="nav-item-label">Deposit</span>
-        </a>
-        <a href="withdraw-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V8M5 15l7-7 7 7"/><path d="M3 3h18"/></svg>
-          <span class="nav-item-label">Withdraw</span>
-        </a>
-        <div class="nav-divider"></div>
-        <a href="trades-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><polyline points="15 7 20 12 15 17"/></svg>
-          <span class="nav-item-label">Trade History</span>
-        </a>
-        <a href="history-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span class="nav-item-label">Transactions</span>
-        </a>
-        <a href="notifications-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="nav-item-label">Notifications</span>
-        </a>
-        <div class="nav-divider"></div>
-        <a href="spot-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span class="nav-item-label">Spot</span>
-        </a>
-        <a href="futures-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          <span class="nav-item-label">Futures</span>
-        </a>
-        <a href="usdt-perpetual-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
-          <span class="nav-item-label">USDT Perp</span>
-        </a>
-        <a href="inverse-perpetual-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
-          <span class="nav-item-label">Inverse Perp</span>
-        </a>
-        <a href="convert-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-          <span class="nav-item-label">Convert</span>
-        </a>
-        <a href="sponsorship-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span class="nav-item-label">Sponsorship</span>
-        </a>
-        <div class="nav-divider"></div>
-        <a href="settings-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span class="nav-item-label">Settings</span>
-        </a>
-        <a href="upgrade-new.html" class="nav-item">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span class="nav-item-label">Upgrade</span>
-          <span class="nav-item-badge">PRO</span>
-        </a>
-      </nav>
-      <div class="sb-bottom">
-        <div class="sb-user" onclick="signOut()">
-          <div class="sb-avatar" id="sb-avatar">?</div>
-          <div class="sb-user-info">
-            <div class="sb-user-name" id="sb-name">Loading...</div>
-            <div class="sb-user-email" id="sb-email"></div>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main">
-
-      <!-- TICKER TAPE -->
-      <div class="ticker-wrap">
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-          {"symbols":[{"proName":"FOREXCOM:SPXUSD","title":"S&P 500"},{"proName":"FOREXCOM:NSXUSD","title":"Nasdaq 100"},{"proName":"FX:EURUSD"},{"proName":"BINANCE:BTCUSDT","title":"Bitcoin"},{"proName":"BINANCE:ETHUSDT","title":"Ethereum"},{"proName":"BINANCE:SOLUSDT","title":"Solana"},{"proName":"COMEX:GC1!","title":"Gold"},{"proName":"NYMEX:CL1!","title":"Crude Oil"}],"showSymbolLogo":true,"colorTheme":"dark","isTransparent":true,"displayMode":"adaptive","locale":"en"}
-          </script>
-        </div>
-      </div>
-
-      <!-- MARKETS CONTENT -->
-      <div class="markets-content">
-
-        <!-- PAGE HEADER -->
-        <div class="page-hdr">
-          <div class="page-title">Markets Overview</div>
-        </div>
-
-        <!-- CATEGORY TABS -->
-        <div class="cat-tabs">
-          <button class="cat-tab active" data-cat="crypto" onclick="setCategory('crypto',this)">
-            <span class="cat-tab-icon">&#8383;</span> Crypto
-          </button>
-          <a class="cat-tab" href="markets/forex-new.html">
-            <span class="cat-tab-icon">&#128178;</span> Forex
-          </a>
-          <a class="cat-tab" href="markets/shares-new.html">
-            <span class="cat-tab-icon">&#128200;</span> Stocks
-          </a>
-          <a class="cat-tab" href="markets/indices-new.html">
-            <span class="cat-tab-icon">&#127760;</span> Indices
-          </a>
-          <button class="cat-tab" data-cat="commodities" onclick="setCategory('commodities',this)">
-            <span class="cat-tab-icon">&#127919;</span> Commodities
-          </button>
-          <a class="cat-tab" href="markets/etfs-new.html">
-            <span class="cat-tab-icon">&#128202;</span> ETFs
-          </a>
-          <a class="cat-tab" href="markets/bonds-new.html">
-            <span class="cat-tab-icon">&#128196;</span> Bonds
-          </a>
-        </div>
-
-        <!-- FILTER ROW -->
-        <div class="filter-row">
-          <div class="sub-tabs">
-            <button class="sub-tab active" onclick="setSubFilter('all',this)">All</button>
-            <button class="sub-tab" onclick="setSubFilter('gainers',this)">Gainers</button>
-            <button class="sub-tab" onclick="setSubFilter('losers',this)">Losers</button>
-            <button class="sub-tab" onclick="setSubFilter('watchlist',this)">Watchlist</button>
-          </div>
-          <div class="filter-spacer"></div>
-        </div>
-
-        <!-- WIDGET PANELS -->
-        <div id="panel-crypto" class="widget-panel active">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-              "colorTheme":"dark",
-              "dateRange":"12M",
-              "showChart":true,
-              "locale":"en",
-              "width":"100%",
-              "height":"660",
-              "largeChartUrl":"",
-              "isTransparent":false,
-              "showSymbolLogo":true,
-              "showFloatingTooltip":false,
-              "plotLineColorGrowing":"rgba(41,98,255,1)",
-              "plotLineColorFalling":"rgba(41,98,255,1)",
-              "gridLineColor":"rgba(240,243,250,0)",
-              "scaleFontColor":"rgba(106,109,120,1)",
-              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
-              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
-              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
-              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
-              "symbolActiveColor":"rgba(41,98,255,0.12)",
-              "tabs":[
-                {"title":"Crypto","symbols":[{"s":"BINANCE:BTCUSDT","d":"Bitcoin"},{"s":"BINANCE:ETHUSDT","d":"Ethereum"},{"s":"BINANCE:BNBUSDT","d":"BNB"},{"s":"BINANCE:SOLUSDT","d":"Solana"},{"s":"BINANCE:XRPUSDT","d":"XRP"},{"s":"BINANCE:ADAUSDT","d":"Cardano"},{"s":"BINANCE:DOTUSDT","d":"Polkadot"},{"s":"BINANCE:AVAXUSDT","d":"Avalanche"}],"originalTitle":"Crypto"}
-              ]
-            }
-            </script>
-          </div>
-        </div>
-
-        <div id="panel-forex" class="widget-panel">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-              "colorTheme":"dark",
-              "dateRange":"12M",
-              "showChart":true,
-              "locale":"en",
-              "width":"100%",
-              "height":"660",
-              "largeChartUrl":"",
-              "isTransparent":false,
-              "showSymbolLogo":true,
-              "showFloatingTooltip":false,
-              "plotLineColorGrowing":"rgba(41,98,255,1)",
-              "plotLineColorFalling":"rgba(41,98,255,1)",
-              "gridLineColor":"rgba(240,243,250,0)",
-              "scaleFontColor":"rgba(106,109,120,1)",
-              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
-              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
-              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
-              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
-              "symbolActiveColor":"rgba(41,98,255,0.12)",
-              "tabs":[
-                {"title":"Forex","symbols":[{"s":"FX:EURUSD","d":"EUR/USD"},{"s":"FX:GBPUSD","d":"GBP/USD"},{"s":"FX:USDJPY","d":"USD/JPY"},{"s":"FX:AUDUSD","d":"AUD/USD"},{"s":"FX:USDCAD","d":"USD/CAD"},{"s":"FX:USDCHF","d":"USD/CHF"},{"s":"FX:NZDUSD","d":"NZD/USD"},{"s":"FX:EURGBP","d":"EUR/GBP"}],"originalTitle":"Forex"}
-              ]
-            }
-            </script>
-          </div>
-        </div>
-
-        <div id="panel-stocks" class="widget-panel">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-              "colorTheme":"dark",
-              "dateRange":"12M",
-              "showChart":true,
-              "locale":"en",
-              "width":"100%",
-              "height":"660",
-              "largeChartUrl":"",
-              "isTransparent":false,
-              "showSymbolLogo":true,
-              "showFloatingTooltip":false,
-              "plotLineColorGrowing":"rgba(41,98,255,1)",
-              "plotLineColorFalling":"rgba(41,98,255,1)",
-              "gridLineColor":"rgba(240,243,250,0)",
-              "scaleFontColor":"rgba(106,109,120,1)",
-              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
-              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
-              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
-              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
-              "symbolActiveColor":"rgba(41,98,255,0.12)",
-              "tabs":[
-                {"title":"Stocks","symbols":[{"s":"NASDAQ:AAPL","d":"Apple"},{"s":"NASDAQ:TSLA","d":"Tesla"},{"s":"NASDAQ:MSFT","d":"Microsoft"},{"s":"NYSE:JPM","d":"JPMorgan"},{"s":"NYSE:GS","d":"Goldman Sachs"},{"s":"NASDAQ:GOOGL","d":"Alphabet"},{"s":"NASDAQ:AMZN","d":"Amazon"},{"s":"NASDAQ:NVDA","d":"NVIDIA"}],"originalTitle":"Stocks"}
-              ]
-            }
-            </script>
-          </div>
-        </div>
-
-        <div id="panel-indices" class="widget-panel">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-              "colorTheme":"dark",
-              "dateRange":"12M",
-              "showChart":true,
-              "locale":"en",
-              "width":"100%",
-              "height":"660",
-              "largeChartUrl":"",
-              "isTransparent":false,
-              "showSymbolLogo":true,
-              "showFloatingTooltip":false,
-              "plotLineColorGrowing":"rgba(41,98,255,1)",
-              "plotLineColorFalling":"rgba(41,98,255,1)",
-              "gridLineColor":"rgba(240,243,250,0)",
-              "scaleFontColor":"rgba(106,109,120,1)",
-              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
-              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
-              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
-              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
-              "symbolActiveColor":"rgba(41,98,255,0.12)",
-              "tabs":[
-                {"title":"Indices","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"FOREXCOM:NSXUSD","d":"NASDAQ 100"},{"s":"FOREXCOM:DJI","d":"Dow Jones"},{"s":"INDEX:DEU40","d":"DAX 40"},{"s":"SPREADEX:UK100","d":"FTSE 100"},{"s":"INDEX:NKY","d":"Nikkei 225"}],"originalTitle":"Indices"}
-              ]
-            }
-            </script>
-          </div>
-        </div>
-
-        <div id="panel-commodities" class="widget-panel">
-          <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-            {
-              "colorTheme":"dark",
-              "dateRange":"12M",
-              "showChart":true,
-              "locale":"en",
-              "width":"100%",
-              "height":"660",
-              "largeChartUrl":"",
-              "isTransparent":false,
-              "showSymbolLogo":true,
-              "showFloatingTooltip":false,
-              "plotLineColorGrowing":"rgba(41,98,255,1)",
-              "plotLineColorFalling":"rgba(41,98,255,1)",
-              "gridLineColor":"rgba(240,243,250,0)",
-              "scaleFontColor":"rgba(106,109,120,1)",
-              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
-              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
-              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
-              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
-              "symbolActiveColor":"rgba(41,98,255,0.12)",
-              "tabs":[
-                {"title":"Commodities","symbols":[{"s":"COMEX:GC1!","d":"Gold"},{"s":"NYMEX:CL1!","d":"Crude Oil"},{"s":"COMEX:SI1!","d":"Silver"},{"s":"NYMEX:NG1!","d":"Natural Gas"},{"s":"CBOT:ZC1!","d":"Corn"},{"s":"CBOT:ZW1!","d":"Wheat"}],"originalTitle":"Commodities"}
-              ]
-            }
-            </script>
-          </div>
-        </div>
-
-      </div><!-- /markets-content -->
-    </main>
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo-wrap">
+    <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
   </div>
+  <div class="hdr-hamburger" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+  <div class="hdr-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Search symbol, name…" id="hdr-search-input" oninput="onSearch(this.value)"/>
+  </div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-right">
+    <div class="live-chip" id="live-chip">
+      <span class="live-dot"></span>
+      <span id="live-txt">Connecting…</span>
+    </div>
+    <div class="hicon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+    <div class="hdr-avatar" id="hdr-avatar" onclick="window.location='dashboard-new.html'">S</div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo-area">
+    <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+  </div>
+  <nav class="sb-nav">
+    <a class="nav-item" href="dashboard-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-item-label">Dashboard</span>
+    </a>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span class="nav-item-label">Buy Crypto</span><span class="nav-item-badge">SOON</span>
+    </div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-item-label">Markets</span>
+    </div>
+    <div class="nav-item" onclick="toggleSub(this,'trade-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <span class="nav-item-label">Trade</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="trade-sub">
+      <a class="nav-sub-item" href="spot-new.html">Spot</a>
+      <a class="nav-sub-item" href="convert-new.html">Convert</a>
+    </div>
+    <div class="nav-item" onclick="toggleSub(this,'deriv-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <span class="nav-item-label">Derivatives</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="deriv-sub">
+      <a class="nav-sub-item" href="usdt-perpetual-new.html" style="text-decoration:none;color:inherit;">USDT Perpetual</a>
+      <a class="nav-sub-item" href="inverse-perpetual-new.html" style="text-decoration:none;color:inherit;">Inverse Perpetual</a>
+      <a class="nav-sub-item" href="futures-new.html" style="text-decoration:none;color:inherit;">Futures</a>
+    </div>
+    <div class="nav-item" onclick="toggleSub(this,'earn-sub')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 0v10l5 3"/></svg>
+      <span class="nav-item-label">Earn</span>
+      <svg class="nav-item-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+    <div class="nav-sub" id="earn-sub">
+      <div class="nav-sub-item">Flexible Savings<span class="nav-item-badge">SOON</span></div>
+      <div class="nav-sub-item">Fixed Term<span class="nav-item-badge">SOON</span></div>
+      <div class="nav-sub-item">Staking<span class="nav-item-badge">SOON</span></div>
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-item-label">Copy Trading</span>
+      <span class="nav-item-badge">SOON</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Finance</div>
+    <a class="nav-item" href="deposit-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="nav-item-label">Deposit</span>
+    </a>
+    <a class="nav-item" href="withdraw-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="nav-item-label">Withdraw</span>
+    </a>
+    <a class="nav-item" href="wallet-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+      <span class="nav-item-label">Wallet</span>
+    </a>
+    <a class="nav-item" href="history-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span class="nav-item-label">Transaction History</span>
+    </a>
+    <a class="nav-item" href="trades-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <span class="nav-item-label">Trade History</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Account</div>
+    <a class="nav-item" href="settings.html#security" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="nav-item-label">Security</span>
+    </a>
+    <a class="nav-item" href="upgrade-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,11 12,6 7,11"/><polyline points="17,18 12,13 7,18"/></svg>
+      <span class="nav-item-label">Account Upgrade</span>
+    </a>
+    <a class="nav-item" href="settings-new.html" style="text-decoration:none;color:inherit;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-item-label">Settings</span>
+    </a>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+      <span class="nav-item-label">Rewards Hub</span>
+      <span class="nav-item-badge">SOON</span>
+    </div>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">S</div>
+      <div>
+        <div class="sb-user-name" id="sb-user-name">Loading…</div>
+        <div class="sb-user-uid" id="sb-user-uid"></div>
+      </div>
+    </div>
+    <button onclick="doSignOut()" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:13px;color:var(--red);background:none;border:none;border-top:1px solid var(--b);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(246,70,93,.06)'" onmouseout="this.style.background='none'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- Market Category Tabs -->
+  <div class="market-tabs">
+    <div class="mtab on" data-market="crypto" onclick="switchMarket('crypto',this)">
+      <span class="mtab-icon">🪙</span> Crypto
+      <span class="mtab-count" id="count-crypto"></span>
+    </div>
+    <div class="mtab" data-market="forex" onclick="switchMarket('forex',this)">
+      <span class="mtab-icon">💱</span> Forex
+      <span class="mtab-count" id="count-forex"></span>
+    </div>
+    <div class="mtab" data-market="stocks" onclick="switchMarket('stocks',this)">
+      <span class="mtab-icon">📊</span> Stocks
+      <span class="mtab-count" id="count-stocks"></span>
+    </div>
+    <div class="mtab" data-market="indices" onclick="switchMarket('indices',this)">
+      <span class="mtab-icon">📈</span> Indices
+      <span class="mtab-count" id="count-indices"></span>
+    </div>
+    <div class="mtab" data-market="commodities" onclick="switchMarket('commodities',this)">
+      <span class="mtab-icon">⚡</span> Commodities
+      <span class="mtab-count" id="count-commodities"></span>
+    </div>
+    <div class="mtab" data-market="etf" onclick="switchMarket('etf',this)">
+      <span class="mtab-icon">🏦</span> ETFs
+      <span class="mtab-count" id="count-etf"></span>
+    </div>
+  </div>
+
+  <!-- Filter + Search Bar -->
+  <div class="filter-bar">
+    <div class="ftab on" data-filter="all" onclick="applyFilter('all',this)">All</div>
+    <div class="ftab" data-filter="gainers" onclick="applyFilter('gainers',this)">
+      <span style="color:var(--green);">📈</span> Gainers
+    </div>
+    <div class="ftab" data-filter="losers" onclick="applyFilter('losers',this)">
+      <span style="color:var(--red);">📉</span> Losers
+    </div>
+    <div class="ftab" data-filter="volume" onclick="applyFilter('volume',this)">🔥 Volume</div>
+    <div class="filter-spacer"></div>
+    <div class="tbl-search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Filter by name or symbol…" id="tbl-search-input" oninput="onSearch(this.value)"/>
+    </div>
+    <button class="refresh-btn" onclick="manualRefresh()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <table class="mkt-table">
+      <thead><tr id="tbl-head"></tr></thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="sb-powered">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"/></svg>
+      Data sourced from <strong style="color:var(--text);margin-left:3px;">TradingView</strong>
+    </div>
+    <span>|</span>
+    <span>Showing <span class="sb-count" id="sb-count">…</span> instruments</span>
+    <div class="sb-spacer"></div>
+    <div class="sb-update">Auto-refresh every 30s &nbsp;•&nbsp; Last update: <span id="sb-time">—</span></div>
+  </div>
+
+</main>
+</div>
 </div>
 
+<script>
+/* -------------------------------------------------------
+   TRADINGVIEW SCREENER CONFIG
+   POST https://scanner.tradingview.com/{market}/scan
+   ------------------------------------------------------- */
+const TV_BASE = 'https://scanner.tradingview.com';
+
+const MARKET_DEFS = {
+  crypto: {
+    url:     `${TV_BASE}/crypto/scan`,
+    label:   'Crypto',
+    cols:    ['name','description','close','change','change_abs','volume','market_cap_calc','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,vol:5,cap:6,high:7,low:8},
+    body:    {
+      sort:    {sortBy:'market_cap_calc',sortOrder:'desc'},
+      range:   [0, 100]
+    },
+    headers: ['#','Name','Price','24H %','24H Change','24H High','24H Low','Volume','Mkt Cap',''],
+  },
+  forex: {
+    url:     `${TV_BASE}/forex/scan`,
+    label:   'Forex',
+    cols:    ['name','description','close','change','change_abs','bid','ask','volume','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,bid:5,ask:6,vol:7,high:8,low:9,cap:-1},
+    body:    {
+      sort:  {sortBy:'volume',sortOrder:'desc'},
+      range: [0, 80]
+    },
+    headers: ['#','Pair','Price','24H %','24H Change','Bid','Ask','High','Low','Volume',''],
+  },
+  stocks: {
+    url:     `${TV_BASE}/america/scan`,
+    label:   'Stocks',
+    cols:    ['name','description','close','change','change_abs','volume','market_cap_basic','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,vol:5,cap:6,high:7,low:8},
+    body:    {
+      filter: [
+        {left:'market_cap_basic',operation:'greater',right:1000000000},
+        {left:'is_primary',operation:'equal',right:true}
+      ],
+      sort:  {sortBy:'market_cap_basic',sortOrder:'desc'},
+      range: [0, 80]
+    },
+    headers: ['#','Company','Price','24H %','24H Change','Volume','Mkt Cap','High','Low',''],
+  },
+  indices: {
+    url:     `${TV_BASE}/global/scan`,
+    label:   'Indices',
+    cols:    ['name','description','close','change','change_abs','volume','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,vol:5,high:6,low:7,cap:-1},
+    body:    {
+      symbols: {tickers:[
+        'FOREXCOM:SPXUSD','FOREXCOM:NSXUSD','CURRENCYCOM:US30',
+        'INDEX:NKY','INDEX:DAX','INDEX:FTSE','FOREXCOM:EU50USD',
+        'INDEX:HSI','INDEX:CAC40','CURRENCYCOM:AU200',
+        'INDEX:SENSEX','CURRENCYCOM:CN50','INDEX:TAIEX',
+        'INDEX:KOSPI','INDEX:STI','INDEX:BVSP','INDEX:MXX',
+        'INDEX:IBEX35','INDEX:FTSEMIB','INDEX:SMI'
+      ]},
+      columns: ['name','description','close','change','change_abs','volume','high','low'],
+    },
+    headers: ['#','Index','Price','24H %','24H Change','Volume','24H High','24H Low',''],
+  },
+  commodities: {
+    url:     `${TV_BASE}/global/scan`,
+    label:   'Commodities',
+    cols:    ['name','description','close','change','change_abs','volume','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,vol:5,high:6,low:7,cap:-1},
+    body:    {
+      symbols: {tickers:[
+        'COMEX:GC1!','NYMEX:CL1!','COMEX:SI1!','NYMEX:NG1!',
+        'CBOT:C1!','CBOT:W1!','CBOT:S1!','COMEX:HG1!',
+        'NYMEX:RB1!','NYMEX:HO1!','NYMEX:PL1!','COMEX:PA1!',
+        'NYMEX:BZ1!','CBOT:BO1!','ICE:CC1!','ICE:KC1!',
+        'ICE:CT1!','ICE:SB1!'
+      ]},
+      columns: ['name','description','close','change','change_abs','volume','high','low'],
+    },
+    headers: ['#','Commodity','Price','24H %','24H Change','Volume','High','Low',''],
+  },
+  etf: {
+    url:     `${TV_BASE}/america/scan`,
+    label:   'ETFs',
+    cols:    ['name','description','close','change','change_abs','volume','market_cap_basic','high','low'],
+    ci:      {name:0,desc:1,price:2,pct:3,abs:4,vol:5,cap:6,high:7,low:8},
+    body:    {
+      filter: [
+        {left:'typespecs',operation:'has',right:['etf']},
+        {left:'volume',operation:'greater',right:500000}
+      ],
+      sort:  {sortBy:'volume',sortOrder:'desc'},
+      range: [0, 80]
+    },
+    headers: ['#','ETF','Price','24H %','24H Change','Volume','AUM','High','Low',''],
+  }
+};
+
+/* -------------------------------------------------------
+   STATE
+   ------------------------------------------------------- */
+let currentMarket  = 'crypto';
+let currentFilter  = 'all';
+let searchQuery    = '';
+let rawData        = {};   // market -> full data array
+let sortCol        = null;
+let sortDir        = 'desc';
+let refreshTimer   = null;
+let watchlist      = new Set(JSON.parse(localStorage.getItem('sv_watchlist') || '[]'));
+
+/* -------------------------------------------------------
+   FORMATTERS
+   ------------------------------------------------------- */
+function fmtPrice(p) {
+  if(p == null || isNaN(p)) return '—';
+  p = +p;
+  if(p >= 10000) return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p >= 100)   return p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p >= 1)     return p.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4});
+  if(p >= 0.01)  return p.toFixed(5);
+  return p.toFixed(8);
+}
+function fmtCompact(n) {
+  if(n == null || isNaN(n)) return '—';
+  n = +n;
+  if(n >= 1e12) return (n/1e12).toFixed(2)+'T';
+  if(n >= 1e9)  return (n/1e9).toFixed(2)+'B';
+  if(n >= 1e6)  return (n/1e6).toFixed(2)+'M';
+  if(n >= 1e3)  return (n/1e3).toFixed(2)+'K';
+  return n.toFixed(2);
+}
+function fmtPct(v) {
+  if(v == null || isNaN(v)) return '—';
+  const n = +v, sign = n >= 0 ? '+' : '';
+  return `${sign}${n.toFixed(2)}%`;
+}
+function fmtAbs(v) {
+  if(v == null || isNaN(v)) return '—';
+  const n = +v, sign = n >= 0 ? '+' : '';
+  return `${sign}${fmtPrice(Math.abs(n))}`;
+}
+
+/* -------------------------------------------------------
+   SYMBOL COLOR HASH
+   ------------------------------------------------------- */
+const ICON_COLORS = [
+  '#f05a1a','#f7931a','#627eea','#9945ff','#00aae4','#f0b90b',
+  '#0ecb81','#2196f3','#e91e63','#9c27b0','#00bcd4','#4caf50',
+  '#ff5722','#795548','#607d8b','#3f51b5',
+];
+function symColor(sym) {
+  let h = 0;
+  for(let i=0;i<sym.length;i++) h=(h*31+sym.charCodeAt(i))&0x7fffffff;
+  return ICON_COLORS[h % ICON_COLORS.length];
+}
+function symInitials(name) {
+  const clean = (name||'').replace(/[^A-Z0-9]/gi,'');
+  return clean.slice(0,2).toUpperCase() || '??';
+}
+function isDark(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return (r*299+g*587+b*114)/1000 < 140;
+}
+
+/* -- LOGO HELPERS -- */
+function cryptoBase(name) {
+  const n = (name||'').toUpperCase().trim();
+  for (const q of ['USDT','USDC','BUSD','TUSD','DAI','USD','BTC','ETH','BNB']) {
+    if (n.endsWith(q) && n.length > q.length) return n.slice(0, -q.length);
+  }
+  return n.slice(0, 6);
+}
+function iconFallback(el) {
+  const div = document.createElement('div');
+  div.className = 'sym-icon';
+  div.style.cssText = `background:${el.dataset.bg};color:${el.dataset.txt}`;
+  div.textContent = el.dataset.init;
+  el.parentNode.replaceChild(div, el);
+}
+const CURRENCY_FLAG = {
+  EUR:'eu',GBP:'gb',USD:'us',JPY:'jp',CHF:'ch',CAD:'ca',AUD:'au',
+  NZD:'nz',SEK:'se',NOK:'no',DKK:'dk',SGD:'sg',HKD:'hk',CNH:'cn',
+  CNY:'cn',MXN:'mx',ZAR:'za',TRY:'tr',PLN:'pl',CZK:'cz',HUF:'hu',
+  KRW:'kr',INR:'in',BRL:'br',THB:'th',SAR:'sa',AED:'ae',
+};
+const INDEX_FLAG = {
+  'TVC:SPX':'us','TVC:NDX':'us','TVC:DJI':'us','TVC:RUT':'us',
+  'TVC:NI225':'jp','TVC:DAX':'de','TVC:FTSE':'gb','TVC:SX5E':'eu',
+  'TVC:HSI':'hk','TVC:CAC40':'fr','TVC:ASX200':'au',
+  'TVC:SENSEX':'in','TVC:SHCOMP':'cn','TVC:KOSPI':'kr',
+  'TVC:STI':'sg','TVC:IBOV':'br','TVC:MXX':'mx',
+  'TVC:IBEX35':'es','TVC:FTSEMIB':'it','TVC:SMI':'ch',
+};
+const COMMODITY_SLUG = {
+  'COMEX:GC1!':   'gold',
+  'COMEX:SI1!':   'silver',
+  'NYMEX:CL1!':   'crude-oil',
+  'ICEEUR:BRN1!': 'crude-oil',
+  'NYMEX:NG1!':   'natural-gas',
+  'NYMEX:RB1!':   'crude-oil',
+  'NYMEX:HO1!':   'crude-oil',
+  'CBOT:W1!':     'wheat',
+  'ICEUS:KC1!':   'coffee',
+};
+function tvSlug(desc) {
+  return (desc||'')
+    .toLowerCase()
+    .replace(/\.com\b/g,'')
+    .replace(/['']/g,'')
+    .replace(/&/g,'')
+    .replace(/\b(incorporated|inc|corporation|corp|limited|ltd|llc|plc|co|company|group|holdings?|international|technologies|technology|systems|solutions|services|trust|fund|class\s[a-z]|the)\b\.?/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/-+/g,'-')
+    .replace(/^-+|-+$/g,'');
+}
+function buildIcon(mkt, rowS, rowName, rowDesc, base, bg, txt, init) {
+  const img = (src, alt, style) =>
+    `<img class="sym-icon" src="${src}" onerror="iconFallback(this)" data-bg="${bg}" data-txt="${txt}" data-init="${init}" alt="${alt}" style="${style}">`;
+  const TV = 'https://s3-symbol-logo.tradingview.com';
+
+  if (mkt === 'crypto') {
+    const cb = cryptoBase(rowName || base).toLowerCase();
+    return img(`https://cdn.jsdelivr.net/npm/cryptocurrency-icons/32/color/${cb}.png`, cb, 'object-fit:contain;background:transparent;');
+  }
+  if (mkt === 'forex') {
+    const cc = CURRENCY_FLAG[(rowName||base).toUpperCase().slice(0,3)];
+    if (cc) return img(`https://flagcdn.com/32x24/${cc}.png`, cc, 'object-fit:cover;border-radius:4px;');
+  }
+  if (mkt === 'indices') {
+    const cc = INDEX_FLAG[rowS];
+    if (cc) return img(`https://flagcdn.com/32x24/${cc}.png`, cc, 'object-fit:cover;border-radius:4px;');
+  }
+  if (mkt === 'stocks') {
+    const slug = tvSlug(rowDesc || rowName || base);
+    if (slug) return img(`${TV}/${slug}--big.svg`, slug, 'object-fit:contain;background:#fff;padding:3px;');
+  }
+  if (mkt === 'etf') {
+    const provider = (rowDesc||'').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g,'');
+    if (provider) return img(`${TV}/${provider}--big.svg`, provider, 'object-fit:contain;background:#fff;padding:3px;');
+  }
+  if (mkt === 'commodities') {
+    const slug = COMMODITY_SLUG[rowS];
+    if (slug) return img(`${TV}/${slug}--big.svg`, slug, 'object-fit:contain;background:#fff;padding:3px;');
+  }
+  return `<div class="sym-icon" style="background:${bg};color:${txt};">${init}</div>`;
+}
+
+/* -------------------------------------------------------
+   FETCH FROM TRADINGVIEW SCREENER
+   ------------------------------------------------------- */
+async function fetchMarket(mkt) {
+  const def = MARKET_DEFS[mkt];
+
+  const res = await fetch(`/api/markets?market=${mkt}`);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  // TradingView scanner response: { count: N, data: [{s:"EXCH:SYM", d:[...values]}] }
+  const rows = (json.data || []).map(item => {
+    const d = item.d || [];
+    const ci = def.ci;
+    return {
+      s:     item.s || '',
+      name:  d[ci.name]  ?? '',
+      desc:  d[ci.desc]  ?? '',
+      price: d[ci.price] ?? null,
+      pct:   d[ci.pct]   ?? null,
+      abs:   d[ci.abs]   ?? null,
+      vol:   d[ci.vol]   ?? null,
+      cap:   ci.cap >= 0 ? (d[ci.cap] ?? null) : null,
+      high:  d[ci.high]  ?? null,
+      low:   d[ci.low]   ?? null,
+      bid:   ci.bid != null ? (d[ci.bid] ?? null) : null,
+      ask:   ci.ask != null ? (d[ci.ask] ?? null) : null,
+    };
+  });
+  return rows;
+}
+
+async function fetchAndRender(mkt, showSkeleton=true) {
+  if(showSkeleton) showLoading();
+  try {
+    const data = await fetchMarket(mkt);
+    rawData[mkt] = data;
+    // update count badge
+    const countEl = document.getElementById(`count-${mkt}`);
+    if(countEl) countEl.textContent = data.length;
+    setLiveStatus(true);
+    renderTable();
+  } catch(err) {
+    console.error(`TradingView fetch [${mkt}]:`, err);
+    setLiveStatus(false);
+    showError(err);
+  }
+}
+
+/* -------------------------------------------------------
+   RENDER
+   ------------------------------------------------------- */
+function renderTable() {
+  const def  = MARKET_DEFS[currentMarket];
+  const data = rawData[currentMarket] || [];
+
+  // Apply filter
+  let rows = [...data];
+  if(currentFilter === 'gainers') rows = rows.filter(r => r.pct > 0).sort((a,b)=>(b.pct||0)-(a.pct||0));
+  else if(currentFilter === 'losers')  rows = rows.filter(r => r.pct < 0).sort((a,b)=>(a.pct||0)-(b.pct||0));
+  else if(currentFilter === 'volume') rows = [...rows].sort((a,b)=>(b.vol||0)-(a.vol||0));
+
+  // Apply search
+  if(searchQuery) {
+    const q = searchQuery.toLowerCase();
+    rows = rows.filter(r =>
+      (r.name||'').toLowerCase().includes(q) ||
+      (r.desc||'').toLowerCase().includes(q) ||
+      (r.s||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Apply sort
+  if(sortCol != null) {
+    const key = ['price','pct','abs','vol','cap','high','low'][sortCol] || 'price';
+    rows.sort((a,b) => {
+      const av = a[key] ?? -Infinity, bv = b[key] ?? -Infinity;
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+  }
+
+  // Render header
+  const headRow = document.getElementById('tbl-head');
+  headRow.innerHTML = def.headers.map((h, i) => {
+    if(!h) return '<th></th>';
+    const cls = sortCol === i ? (sortDir==='asc'?'sort-asc':'sort-desc') : '';
+    return `<th class="${cls}" onclick="sortBy(${i})">${h}</th>`;
+  }).join('');
+
+  // Render body
+  const tbody = document.getElementById('tbl-body');
+  if(!rows.length) {
+    const span = def.headers.length;
+    tbody.innerHTML = `<tr><td colspan="${span}"><div class="tbl-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div class="tbl-state-title">No results found</div>
+      <div class="tbl-state-sub">Try clearing your search filter or switching to a different market category.</div>
+    </div></td></tr>`;
+    document.getElementById('sb-count').textContent = '0';
+    return;
+  }
+
+  document.getElementById('sb-count').textContent = rows.length;
+
+  tbody.innerHTML = rows.map((row, idx) => {
+    const exchange = (row.s||'').split(':')[0] || '';
+    const base = (row.s||'').split(':')[1] || row.name || '';
+    const up   = (row.pct||0) >= 0;
+    const bg   = symColor(row.name || base);
+    const txt  = isDark(bg) ? '#fff' : '#111';
+    const init = symInitials(row.name || base);
+    const wl   = watchlist.has(row.s);
+
+    // Day range bar position
+    const rangeHtml = (row.high && row.low && row.price && row.high !== row.low) ? (() => {
+      const pos = Math.max(0, Math.min(100, ((row.price - row.low) / (row.high - row.low)) * 100));
+      return `<div class="range-wrap">
+        <div class="range-bar">
+          <div class="range-fill" style="width:${pos}%"></div>
+          <div class="range-dot" style="left:${pos}%"></div>
+        </div>
+        <div class="range-labels"><span>${fmtPrice(row.low)}</span><span>${fmtPrice(row.high)}</span></div>
+      </div>`;
+    })() : '<span style="color:var(--muted);font-size:11px;">—</span>';
+
+    // Build cells based on market type
+    let extraCells = '';
+    if(currentMarket === 'forex') {
+      extraCells = `
+        <td><span class="price-val">${fmtPrice(row.bid)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.ask)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.high)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.low)}</span></td>
+        <td><span class="vol-val">${fmtCompact(row.vol)}</span></td>
+      `;
+    } else if(['indices','commodities'].includes(currentMarket)) {
+      extraCells = `
+        <td><span class="vol-val">${fmtCompact(row.vol)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.high)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.low)}</span></td>
+      `;
+    } else {
+      extraCells = `
+        <td><span class="vol-val">${fmtCompact(row.vol)}</span></td>
+        <td><span class="mktcap-val">${fmtCompact(row.cap)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.high)}</span></td>
+        <td><span class="price-val">${fmtPrice(row.low)}</span></td>
+      `;
+    }
+
+    return `<tr>
+      <td>${idx+1}</td>
+      <td>
+        <div class="sym-cell">
+          <svg class="star-btn ${wl?'on':''}" width="14" height="14" viewBox="0 0 24 24" fill="${wl?'var(--gold)':'none'}" stroke="${wl?'var(--gold)':'var(--muted)'}" stroke-width="2" stroke-linecap="round" onclick="toggleWatchlist('${row.s}',this)"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/></svg>
+          ${buildIcon(currentMarket, row.s, row.name, row.desc, base, bg, txt, init)}
+          <div>
+            <div class="sym-name">${row.name||base}</div>
+            <div class="sym-desc">${row.desc||''}</div>
+            ${exchange?`<span class="sym-exchange">${exchange}</span>`:''}
+          </div>
+        </div>
+      </td>
+      <td><span class="price-val">${fmtPrice(row.price)}</span></td>
+      <td>
+        <span class="chg-badge ${up?'chg-badge-pos':'chg-badge-neg'}">
+          ${up?'?':'?'} ${Math.abs(row.pct||0).toFixed(2)}%
+        </span>
+      </td>
+      <td><span class="${up?'chg-pos':'chg-neg'}">${fmtAbs(row.abs)}</span></td>
+      ${extraCells}
+      <td>${rangeHtml}</td>
+      <td><button class="trade-btn">Trade</button></td>
+    </tr>`;
+  }).join('');
+
+  // Update timestamp
+  const now = new Date();
+  document.getElementById('sb-time').textContent =
+    now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+/* -------------------------------------------------------
+   SKELETON / ERROR STATES
+   ------------------------------------------------------- */
+function showLoading() {
+  const def = MARKET_DEFS[currentMarket];
+  // Render header immediately
+  const headRow = document.getElementById('tbl-head');
+  headRow.innerHTML = def.headers.map(h => `<th>${h}</th>`).join('');
+  // Skeleton rows
+  const span = def.headers.length;
+  const skelRow = `<tr class="skel-row">
+    ${Array.from({length:span}).map((_,i) => {
+      if(i===1) return `<td><div class="sym-cell"><div class="skel" style="width:28px;height:28px;border-radius:50%;"></div><div><div class="skel" style="width:80px;height:13px;margin-bottom:5px;"></div><div class="skel" style="width:130px;height:11px;"></div></div></div></td>`;
+      return `<td><div class="skel" style="width:${[20,0,70,70,50,80,80,80,60,50][i]||60}px;height:13px;"></div></td>`;
+    }).join('')}
+  </tr>`;
+  document.getElementById('tbl-body').innerHTML = Array(12).fill(skelRow).join('');
+}
+
+function showError(err) {
+  const def = MARKET_DEFS[currentMarket];
+  const span = def.headers.length;
+  document.getElementById('tbl-body').innerHTML = `<tr><td colspan="${span}"><div class="tbl-state">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="tbl-state-title" style="color:var(--red);">Unable to fetch market data</div>
+    <div class="tbl-state-sub">
+      Could not reach the market data server. Please check your connection and try again.<br/><br/>
+      <span class="tbl-state-link" onclick="manualRefresh()">Try again</span>
+    </div>
+  </div></td></tr>`;
+}
+
+/* -------------------------------------------------------
+   UI CONTROLS
+   ------------------------------------------------------- */
+function switchMarket(mkt, el) {
+  currentMarket = mkt;
+  currentFilter = 'all';
+  sortCol = null;
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('on'));
+  document.querySelector('.ftab[data-filter="all"]').classList.add('on');
+
+  if(rawData[mkt]) {
+    renderTable();
+  } else {
+    fetchAndRender(mkt, true);
+  }
+
+  // Pre-fetch all markets in the background after first switch
+  prefetchAll();
+}
+
+function applyFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderTable();
+}
+
+function onSearch(val) {
+  searchQuery = val.trim();
+  // sync both search inputs
+  const hi = document.getElementById('hdr-search-input');
+  const ti = document.getElementById('tbl-search-input');
+  if(hi && hi.value !== val) hi.value = val;
+  if(ti && ti.value !== val) ti.value = val;
+  renderTable();
+}
+
+function sortBy(colIdx) {
+  if(sortCol === colIdx) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = colIdx; sortDir = 'desc'; }
+  renderTable();
+}
+
+function manualRefresh() {
+  rawData[currentMarket] = undefined;
+  fetchAndRender(currentMarket, true);
+}
+
+function toggleWatchlist(sym, el) {
+  if(watchlist.has(sym)) {
+    watchlist.delete(sym);
+    el.setAttribute('fill','none');
+    el.setAttribute('stroke','var(--muted)');
+    el.classList.remove('on');
+  } else {
+    watchlist.add(sym);
+    el.setAttribute('fill','var(--gold)');
+    el.setAttribute('stroke','var(--gold)');
+    el.classList.add('on');
+  }
+  localStorage.setItem('sv_watchlist', JSON.stringify([...watchlist]));
+}
+
+function setLiveStatus(ok) {
+  const chip = document.getElementById('live-chip');
+  const txt  = document.getElementById('live-txt');
+  chip.querySelector('.live-dot').style.background = ok ? 'var(--green)' : 'var(--red)';
+  txt.textContent = ok ? 'Live — TradingView' : 'Reconnecting…';
+}
+
+/* -------------------------------------------------------
+   BACKGROUND PRE-FETCH
+   ------------------------------------------------------- */
+function prefetchAll() {
+  Object.keys(MARKET_DEFS).forEach(mkt => {
+    if(mkt !== currentMarket && !rawData[mkt]) {
+      fetchMarket(mkt).then(data => {
+        rawData[mkt] = data;
+        const el = document.getElementById(`count-${mkt}`);
+        if(el) el.textContent = data.length;
+      }).catch(()=>{});
+    }
+  });
+}
+
+/* -------------------------------------------------------
+   AUTO REFRESH (30s)
+   ------------------------------------------------------- */
+function startAutoRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    fetchAndRender(currentMarket, false);
+  }, 30000);
+}
+
+/* -------------------------------------------------------
+   SIDEBAR TOGGLE & NAV SUBS
+   ------------------------------------------------------- */
+function toggleSidebar(){
+  if(window.innerWidth<=960){
+    const open=document.getElementById('sidebar').classList.toggle('mob-open');
+    document.getElementById('sb-overlay').classList.toggle('open',open);
+  }else{
+    const sb=document.getElementById('sidebar');
+    const open=sb.classList.toggle('sb-collapsed');
+    sb.style.width=open?'0':'var(--sidebar)';
+  }
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+function toggleSub(el, subId) {
+  const sub = document.getElementById(subId);
+  if(!sub) return;
+  const open = sub.classList.contains('open');
+  sub.classList.toggle('open', !open);
+  el.classList.toggle('open', !open);
+}
+
+/* -------------------------------------------------------
+   INIT
+   ------------------------------------------------------- */
+window.addEventListener('load', async () => {
+  showLoading();
+  await fetchAndRender('crypto', false);
+  startAutoRefresh();
+  // Pre-fetch all other markets silently
+  setTimeout(prefetchAll, 1000);
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
 <script>
-const db = window.SV_DB;
-let uid = null;
-let currentCategory = 'crypto';
-let currentSubFilter = 'all';
-let watchlist = JSON.parse(localStorage.getItem('vgm-watchlist')||'[]');
-
-function setCategory(cat, el){
-  currentCategory = cat;
-  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.widget-panel').forEach(p=>p.classList.remove('active'));
-  const panel = document.getElementById('panel-'+cat);
-  if(panel) panel.classList.add('active');
-}
-
-function setSubFilter(f, el){
-  currentSubFilter = f;
-  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  // Watchlist sub-filter: highlight note
-  if(f === 'watchlist'){
-    showToast('Watchlist filter â€” add symbols to your watchlist by starring them in any widget.','success');
+(async()=>{
+  const db=window.SV_DB;
+  if(!sessionStorage.getItem("sv_pin_ok")){window.location.href="session-new.html";return;}
+  const{data:{session}}=await db.auth.getSession();
+  if(!session){window.location.href="login-new.html";return;}
+  const user = session.user;
+  const email = user.email || '';
+  const { data: profile } = await db.from('profiles').select('first_name,last_name').eq('id', user.id).maybeSingle();
+  const firstName = profile?.first_name || '';
+  const displayName = firstName ? [firstName, profile.last_name].filter(Boolean).join(' ') : email.split('@')[0];
+  const initials = displayName.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'SV';
+  document.getElementById('sb-avatar').textContent    = initials;
+  document.getElementById('sb-user-name').textContent = displayName;
+  document.getElementById('sb-user-uid').textContent  = email;
+  const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
+  if (_kyc?.selfie_url) {
+    const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
+    if (_signed?.signedUrl) {
+      document.getElementById('sb-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      document.getElementById('hdr-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    }
   }
+})();
+async function doSignOut() {
+  sessionStorage.removeItem('sv_pin_ok');
+  await window.SV_DB.auth.signOut();
+  window.location.href = 'login-new.html';
 }
-
-function handleSearch(val){
-  // The TradingView widget handles its own search internally.
-  // For user feedback, show a hint if they type something.
-  if(val.length > 1){
-    // No-op: TradingView Market Overview has built-in search within each widget
-  }
-}
-
-function showToast(msg,type='success'){
-  const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;right:24px;background:'+(type==='success'?'#0ecb81':'#f6465d')+';color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:340px;line-height:1.4;';
-  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),4000);
-}
-
-async function init(){
-  const {data:{session}} = await db.auth.getSession();
-  if(!session){window.location.href='login.html';return;}
-  uid = session.user.id;
-
-  const {data:p} = await db.from('profiles').select('first_name,last_name').eq('id',uid).single();
-  if(p){
-    const initials = ((p.first_name||'')[0]||'') + ((p.last_name||'')[0]||'') || '?';
-    document.getElementById('hdr-avatar').textContent = initials;
-    document.getElementById('sb-avatar').textContent = initials;
-    document.getElementById('sb-name').textContent = [p.first_name,p.last_name].filter(Boolean).join(' ') || 'User';
-  }
-  document.getElementById('sb-email').textContent = session.user.email || '';
-
-  // Unread notifications badge
-  const {count} = await db.from('notifications').select('*',{count:'exact',head:true}).eq('user_id',uid).eq('read',false);
-  if(count > 0){
-    const badge = document.getElementById('hdr-notif-badge');
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.style.display = 'flex';
-  }
-
-  // Apply saved theme
-  if(localStorage.getItem('vgm-theme')==='light') document.body.classList.add('light');
-}
-
-async function signOut(){
-  await db.auth.signOut();
-  window.location.href='login.html';
-}
-
-init();
 </script>
+<script src="notif-popup.js"></script>
+<script>(async()=>{try{const db=window.SV_DB;if(!db)return;const{data:{session}}=await db.auth.getSession();if(session)initNotifPopup(db,session.user.id);}catch(_){}})();</script>
 </body>
 </html>
 

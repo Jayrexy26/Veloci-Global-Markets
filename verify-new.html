@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Verify Identity — Veloci Global Markets</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0b0f; --s1:#111318; --s2:#16191f; --s3:#1e2229;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.12);
+  --accent:#f05a1a; --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#3b82f6;
+  --text:#eaecef; --sub:#848e9c; --muted:#3a4156;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.6;}
+
+/* ── Auth loading screen ── */
+#sv-loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;}
+.al-glow{position:absolute;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(240,90,26,.09) 0%,transparent 70%);pointer-events:none;animation:alPulse 3s ease-in-out infinite;}
+@keyframes alPulse{0%,100%{transform:scale(1);opacity:.7;}50%{transform:scale(1.12);opacity:1;}}
+.al-logo{height:66px;width:auto;position:relative;z-index:1;animation:alFade .55s cubic-bezier(.4,0,.2,1) both;}
+.al-brand{font-size:14px;font-weight:600;color:var(--sub);letter-spacing:.12em;text-transform:uppercase;margin-top:13px;margin-bottom:40px;position:relative;z-index:1;animation:alFade .55s .08s cubic-bezier(.4,0,.2,1) both;}
+.al-bar-track{width:190px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;position:relative;z-index:1;animation:alFade .4s .16s cubic-bezier(.4,0,.2,1) both;}
+.al-bar{height:100%;width:40%;background:linear-gradient(90deg,transparent 0%,var(--accent) 50%,transparent 100%);border-radius:2px;animation:alSweep 1.5s ease-in-out infinite;}
+@keyframes alSweep{0%{transform:translateX(-100%);}100%{transform:translateX(350%);}}
+.al-status{font-size:12px;color:var(--sub);margin-top:16px;letter-spacing:.04em;position:relative;z-index:1;animation:alFade .4s .24s cubic-bezier(.4,0,.2,1) both;}
+@keyframes alFade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Page shell ── */
+#sv-verify-page{display:none;min-height:100vh;padding:40px 16px 60px;}
+
+/* ── Topbar ── */
+.topbar{width:100%;max-width:640px;margin:0 auto 40px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-logo{height:34px;width:auto;}
+.topbar-signout{
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;font-family:'Inter',sans-serif;
+  color:var(--sub);background:none;
+  border:1.5px solid var(--b2);border-radius:20px;
+  padding:6px 14px;cursor:pointer;
+  transition:border-color .15s,color .15s;
+}
+.topbar-signout:hover{border-color:var(--accent);color:var(--accent);}
+.topbar-signout svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;}
+
+/* ── Card ── */
+.card{
+  width:100%;max-width:560px;margin:0 auto;
+  background:var(--s1);border:1px solid var(--b);
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 4px 32px rgba(0,0,0,.45);
+}
+
+/* ── Status header ── */
+.status-header{
+  padding:36px 36px 28px;text-align:center;
+  border-bottom:1px solid var(--b);
+}
+.status-icon{
+  width:72px;height:72px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+}
+.status-icon--pending  {background:rgba(240,176,11,.1);}
+.status-icon--rejected {background:rgba(246,70,93,.1);}
+.status-icon--verified {background:rgba(14,203,129,.1);}
+.status-icon--action   {background:rgba(240,90,26,.1);}
+.status-icon svg{width:34px;height:34px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.status-icon--pending  svg{stroke:var(--gold);}
+.status-icon--rejected svg{stroke:var(--red);}
+.status-icon--verified svg{stroke:var(--green);}
+.status-icon--action   svg{stroke:var(--accent);}
+.status-title{font-size:21px;font-weight:700;margin-bottom:8px;}
+.status-sub{font-size:13.5px;color:var(--sub);max-width:360px;margin:0 auto;line-height:1.7;}
+
+/* ── User strip ── */
+.user-strip{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 28px;border-bottom:1px solid var(--b);
+  background:var(--s2);
+}
+.user-avatar{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--accent);display:flex;align-items:center;
+  justify-content:center;font-size:15px;font-weight:700;
+  color:#fff;flex-shrink:0;
+}
+.user-name {font-size:14px;font-weight:600;}
+.user-email{font-size:12px;color:var(--sub);}
+.kyc-badge{
+  margin-left:auto;padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+}
+.kyc-badge--pending {background:rgba(240,176,11,.12);color:#d4a017;}
+.kyc-badge--rejected{background:rgba(246,70,93,.12);color:var(--red);}
+.kyc-badge--verified{background:rgba(14,203,129,.12);color:var(--green);}
+.kyc-badge--action  {background:rgba(240,90,26,.12);color:var(--accent);}
+
+/* ── Card body ── */
+.card-body{padding:28px;}
+
+/* ── Steps ── */
+.step-list{display:flex;flex-direction:column;gap:10px;margin-bottom:22px;}
+.step-item{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:13px 16px;border-radius:10px;
+  border:1px solid var(--b);background:var(--s2);
+}
+.step-dot{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;
+}
+.step-dot--done   {background:rgba(14,203,129,.15);color:var(--green);}
+.step-dot--active {background:rgba(240,176,11,.15);color:var(--gold);}
+.step-dot--waiting{background:rgba(255,255,255,.05);color:var(--sub);}
+.step-dot svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;}
+.step-label{font-size:13px;font-weight:600;margin-bottom:2px;}
+.step-sub  {font-size:12px;color:var(--sub);}
+
+/* ── Info box ── */
+.info-box{
+  background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.18);
+  border-radius:10px;padding:14px 16px;
+  font-size:13px;color:rgba(147,197,253,1);line-height:1.65;
+  margin-bottom:22px;
+}
+.info-box--red{
+  background:rgba(246,70,93,.06);border-color:rgba(246,70,93,.18);
+  color:rgba(252,165,165,1);
+}
+.info-box--orange{
+  background:rgba(240,90,26,.06);border-color:rgba(240,90,26,.18);
+  color:rgba(253,186,116,1);
+}
+.info-box strong{font-weight:600;color:var(--text);}
+
+/* ── Poll row ── */
+.poll-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--sub);margin-bottom:4px;}
+.poll-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.8);}}
+
+/* ── Form section ── */
+.form-section{display:none;}
+.form-section.visible{display:block;}
+.form-section-title{font-size:14px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--b);}
+
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label{font-size:12px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.3px;}
+
+/* Country searchable dropdown */
+.country-wrap{position:relative;}
+.country-inp{
+  width:100%;height:44px;
+  background:var(--s2);border:1.5px solid var(--b2);
+  border-radius:8px;padding:0 36px 0 12px;
+  font-size:13px;color:var(--text);outline:none;
+  font-family:'Inter',sans-serif;cursor:pointer;
+  transition:border-color .18s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.country-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,90,26,.1);}
+.country-inp::placeholder{color:var(--sub);}
+.country-inp-arrow{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  pointer-events:none;transition:transform .2s;
+}
+.country-wrap.open .country-inp-arrow{transform:translateY(-50%) rotate(180deg);}
+.country-dd{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:var(--s2);border:1.5px solid var(--b2);
+  border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.5);
+  z-index:300;display:none;overflow:hidden;
+}
+.country-wrap.open .country-dd{display:block;}
+.country-dd-search{
+  padding:10px 12px;border-bottom:1px solid var(--b);
+  position:sticky;top:0;background:var(--s2);
+}
+.country-dd-search input{
+  width:100%;height:34px;border:1.5px solid var(--b2);
+  border-radius:7px;padding:0 10px;font-size:13px;
+  outline:none;color:var(--text);background:var(--s3);
+  font-family:'Inter',sans-serif;
+  transition:border-color .15s;
+}
+.country-dd-search input:focus{border-color:var(--accent);}
+.country-dd-search input::placeholder{color:var(--sub);}
+.country-list{max-height:200px;overflow-y:auto;}
+.country-list::-webkit-scrollbar{width:4px;}
+.country-list::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.c-opt{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;cursor:pointer;
+  font-size:13px;color:var(--text);
+  transition:background .1s;
+}
+.c-opt:hover{background:var(--s3);}
+.c-opt-flag{font-size:17px;line-height:1;flex-shrink:0;}
+.c-opt-name{flex:1;}
+.c-opt-dial{font-size:12px;color:var(--sub);flex-shrink:0;}
+.c-no-result{padding:14px;font-size:13px;color:var(--sub);text-align:center;}
+
+/* Text / tel input */
+.field-input{
+  height:44px;border:1.5px solid var(--b2);border-radius:8px;
+  padding:0 14px;font-size:13px;font-family:'Inter',sans-serif;
+  color:var(--text);width:100%;outline:none;background:var(--s2);
+  transition:border-color .18s;
+}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,90,26,.1);}
+.field-input::placeholder{color:var(--sub);}
+.field-input:disabled{color:var(--sub);cursor:not-allowed;}
+
+/* Phone wrap */
+.phone-wrap{
+  display:flex;border:1.5px solid var(--b2);border-radius:8px;
+  overflow:hidden;background:var(--s2);
+  transition:border-color .18s;
+}
+.phone-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,90,26,.1);}
+.phone-prefix{
+  display:none;align-items:center;gap:5px;
+  padding:0 10px 0 12px;
+  background:var(--s3);border-right:1.5px solid var(--b2);
+  font-size:13px;font-weight:600;color:var(--text);
+  flex-shrink:0;white-space:nowrap;
+}
+.phone-num{
+  flex:1;height:44px;border:none;
+  padding:0 12px;font-size:13px;color:var(--text);
+  background:transparent;outline:none;
+  font-family:'Inter',sans-serif;
+}
+.phone-num:disabled{color:var(--sub);cursor:not-allowed;}
+.phone-num::placeholder{color:var(--sub);}
+
+/* Select field */
+.field-select{
+  height:44px;border:1.5px solid var(--b2);border-radius:8px;
+  padding:0 12px;font-size:13px;font-family:'Inter',sans-serif;
+  color:var(--text);background:var(--s2);outline:none;appearance:none;
+  width:100%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23848e9c' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+  transition:border-color .18s;
+}
+.field-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(240,90,26,.1);}
+.field-select option{background:var(--s2);}
+
+/* Upload grid */
+.upload-hint{font-size:11px;color:var(--sub);margin-bottom:8px;line-height:1.6;}
+.upload-hint strong{color:var(--text);}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+.upload-box{
+  border:2px dashed rgba(255,255,255,.1);border-radius:10px;
+  padding:18px 10px;text-align:center;cursor:pointer;
+  background:var(--s2);
+  transition:border-color .18s,background .18s;
+  position:relative;
+}
+.upload-box:hover{border-color:rgba(240,90,26,.45);background:rgba(240,90,26,.04);}
+.upload-box.has-file{border-color:rgba(14,203,129,.4);border-style:solid;}
+.upload-box svg{width:24px;height:24px;fill:none;stroke:var(--sub);stroke-width:1.5;display:block;margin:0 auto 6px;}
+.upload-box-label{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:2px;}
+.upload-box-sub  {font-size:10px;color:var(--muted);}
+.upload-box-chosen{font-size:10px;color:var(--green);margin-top:5px;word-break:break-all;}
+.upload-check-dot{
+  position:absolute;top:7px;right:7px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--green);display:none;
+  align-items:center;justify-content:center;
+}
+.upload-check-dot svg{width:10px;height:10px;fill:none;stroke:#fff;stroke-width:3;}
+
+/* Error banner */
+.form-error{
+  background:rgba(246,70,93,.08);border:1px solid rgba(246,70,93,.2);
+  border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--red);
+  margin-bottom:14px;display:none;
+}
+
+/* Submit btn */
+.btn-primary{
+  width:100%;height:48px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:28px;
+  font-size:15px;font-weight:600;letter-spacing:.2px;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .15s,transform .1s;
+}
+.btn-primary:hover{opacity:.88;}
+.btn-primary:active{transform:scale(.98);}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.btn-primary svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
+
+/* ── Card footer ── */
+.card-footer{
+  padding:18px 28px;border-top:1px solid var(--b);
+  display:flex;align-items:center;justify-content:center;gap:20px;
+  font-size:12px;color:var(--sub);
+}
+.card-footer a{color:var(--accent);}
+.card-footer a:hover{text-decoration:underline;}
+
+/* ── Redirect overlay ── */
+.redirect-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(4px);
+  z-index:999;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;color:var(--text);text-align:center;
+}
+.redirect-overlay.visible{display:flex;}
+.redirect-overlay-icon{
+  width:64px;height:64px;background:rgba(14,203,129,.15);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+}
+.redirect-overlay-icon svg{width:30px;height:30px;fill:none;stroke:var(--green);stroke-width:2.5;stroke-linecap:round;}
+.redirect-overlay-title{font-size:20px;font-weight:700;}
+.redirect-overlay-sub{font-size:14px;color:var(--sub);}
+
+/* ── Mobile ── */
+@media(max-width:480px){
+  #sv-verify-page{padding:24px 12px 48px;}
+  .status-header{padding:28px 20px 22px;}
+  .card-body{padding:20px;}
+  .upload-grid{grid-template-columns:1fr 1fr;}
+  .user-strip{padding:16px 20px;}
+}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<div id="sv-loading">
+  <div class="al-glow"></div>
+  <img class="al-logo" src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+  <div class="al-brand">Veloci Global Markets</div>
+  <div class="al-bar-track"><div class="al-bar"></div></div>
+  <div class="al-status">Loading your account…</div>
+</div>
+
+<div id="sv-verify-page">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <img class="topbar-logo" src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+    <button class="topbar-signout" id="signout-btn">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign out
+    </button>
+  </div>
+
+  <!-- Card -->
+  <div class="card">
+
+    <!-- Status header -->
+    <div class="status-header">
+      <div class="status-icon status-icon--pending" id="status-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="status-title" id="status-title">Verification in Progress</div>
+      <div class="status-sub" id="status-sub">Your identity documents are being reviewed by our compliance team. This usually takes 1–2 business days.</div>
+    </div>
+
+    <!-- User strip -->
+    <div class="user-strip">
+      <div class="user-avatar" id="user-avatar">—</div>
+      <div>
+        <div class="user-name"  id="user-name">Loading…</div>
+        <div class="user-email" id="user-email"></div>
+      </div>
+      <span class="kyc-badge kyc-badge--pending" id="kyc-badge">Pending</span>
+    </div>
+
+    <!-- Card body -->
+    <div class="card-body">
+
+      <!-- Progress steps -->
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-dot step-dot--done">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="step-label">Account Created</div>
+            <div class="step-sub">Your Veloci account has been set up</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot step-dot--done" id="step-docs-dot">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div>
+            <div class="step-label" id="step-docs-label">Documents Submitted</div>
+            <div class="step-sub"   id="step-docs-sub">Your identity documents have been uploaded</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot step-dot--active" id="step-review-dot">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="step-label" id="step-review-label">Compliance Review</div>
+            <div class="step-sub"   id="step-review-sub">Our team is verifying your identity</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-dot step-dot--waiting">4</div>
+          <div>
+            <div class="step-label">Full Dashboard Access</div>
+            <div class="step-sub">Deposit, trade, and access all features</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info box -->
+      <div class="info-box" id="info-box">
+        <strong>What happens next?</strong><br>
+        Our compliance team reviews documents Monday–Friday, 9am–6pm GMT. You will receive an email once your account is approved. You can close this page and come back later — your progress is saved.
+      </div>
+
+      <!-- Poll indicator -->
+      <div class="poll-row" id="poll-row">
+        <div class="poll-dot"></div>
+        <span id="poll-label">Checking status automatically…</span>
+      </div>
+
+      <!-- Form section (shown for OAuth users or rejected) -->
+      <div class="form-section" id="form-section">
+        <div class="form-section-title" id="form-section-title">Submit Your Documents</div>
+        <div class="form-error" id="form-error"></div>
+
+        <div class="field" id="field-residence">
+          <label>Country of Residence</label>
+          <div class="country-wrap" id="res-country-wrap">
+            <input type="text" class="country-inp" id="res-country-inp"
+              placeholder="Select your country…" autocomplete="off" readonly/>
+            <svg class="country-inp-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none">
+              <path d="M1 1l5 5 5-5" stroke="#848e9c" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="country-dd" id="res-country-dd">
+              <div class="country-dd-search">
+                <input type="text" id="res-country-search" placeholder="Search country or dial code…"/>
+              </div>
+              <div class="country-list" id="res-country-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" id="field-phone">
+          <label>Phone Number</label>
+          <div class="phone-wrap">
+            <div class="phone-prefix" id="res-phone-prefix">
+              <span id="res-pf-flag"></span>
+              <span id="res-pf-dial"></span>
+            </div>
+            <input class="phone-num" id="res-phone-num" type="tel"
+              placeholder="Select a country first" disabled/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Date of Birth</label>
+          <input type="date" class="field-input" id="dob-input"
+            max="" placeholder="YYYY-MM-DD"/>
+        </div>
+
+        <div class="field">
+          <label>Identity Document Type</label>
+          <select class="field-select" id="doc-type">
+            <option value="" disabled selected>Select document type…</option>
+            <option value="national_id">National ID Card</option>
+            <option value="passport">Passport</option>
+            <option value="drivers_license">Driver's Licence</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Country of Issue</label>
+          <div class="country-wrap" id="issue-country-wrap">
+            <input type="text" class="country-inp" id="issue-country-inp"
+              placeholder="Select your country…" autocomplete="off" readonly/>
+            <svg class="country-inp-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none">
+              <path d="M1 1l5 5 5-5" stroke="#848e9c" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div class="country-dd" id="issue-country-dd">
+              <div class="country-dd-search">
+                <input type="text" id="issue-country-search" placeholder="Search country…"/>
+              </div>
+              <div class="country-list" id="issue-country-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="upload-hint">
+          <strong>No back side?</strong> If your document (e.g. passport) only has one side, upload the front image again in the ID Back slot.
+        </p>
+        <div class="upload-grid">
+          <div class="upload-box" id="box-front" onclick="document.getElementById('file-front').click()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="upload-box-label">ID Front</div>
+            <div class="upload-box-sub">Passport / ID card</div>
+            <div class="upload-box-chosen" id="lbl-front"></div>
+            <div class="upload-check-dot" id="chk-front"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <input type="file" id="file-front" accept="image/*,.pdf" style="display:none" onchange="markFile(this,'lbl-front','box-front','chk-front')"/>
+          </div>
+          <div class="upload-box" id="box-back" onclick="document.getElementById('file-back').click()">
+            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <div class="upload-box-label">ID Back</div>
+            <div class="upload-box-sub">Reverse side</div>
+            <div class="upload-box-chosen" id="lbl-back"></div>
+            <div class="upload-check-dot" id="chk-back"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <input type="file" id="file-back" accept="image/*,.pdf" style="display:none" onchange="markFile(this,'lbl-back','box-back','chk-back')"/>
+          </div>
+          <div class="upload-box" id="box-selfie" onclick="document.getElementById('file-selfie').click()">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <div class="upload-box-label">Selfie</div>
+            <div class="upload-box-sub">Face clearly visible</div>
+            <div class="upload-box-chosen" id="lbl-selfie"></div>
+            <div class="upload-check-dot" id="chk-selfie"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <input type="file" id="file-selfie" accept="image/*" style="display:none" onchange="markFile(this,'lbl-selfie','box-selfie','chk-selfie')"/>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="submit-btn" onclick="submitKYC()">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Submit Documents
+        </button>
+        <div id="submit-msg" style="text-align:center;font-size:13px;margin-top:12px;color:var(--sub);"></div>
+      </div>
+
+    </div><!-- /card-body -->
+
+    <div class="card-footer">
+      <span>Need help? <a href="mailto:support@velociglobal.pro" data-sv-href="support_email">Contact support</a></span>
+    </div>
+
+  </div><!-- /card -->
+
+</div><!-- /sv-verify-page -->
+
+<!-- Redirect overlay -->
+<div class="redirect-overlay" id="redirect-overlay">
+  <div class="redirect-overlay-icon">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <div class="redirect-overlay-title">Verification Approved!</div>
+  <div class="redirect-overlay-sub">Taking you to your dashboard…</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script>
+const SS_KEY = 'sv_pin_ok';
+let _db = null, _user = null, _userId = null, _pollTimer = null;
+let _needsContactInfo = false;
+let _selectedResidence = null;
+let _selectedIssue = null;
+
+/* ── Country + dial data (shared with register.html) ── */
+const COUNTRIES_DATA = [
+  {name:'Afghanistan',flag:'🇦🇫',dial:'+93'},{name:'Albania',flag:'🇦🇱',dial:'+355'},
+  {name:'Algeria',flag:'🇩🇿',dial:'+213'},{name:'Angola',flag:'🇦🇴',dial:'+244'},
+  {name:'Argentina',flag:'🇦🇷',dial:'+54'},{name:'Armenia',flag:'🇦🇲',dial:'+374'},
+  {name:'Australia',flag:'🇦🇺',dial:'+61'},{name:'Austria',flag:'🇦🇹',dial:'+43'},
+  {name:'Azerbaijan',flag:'🇦🇿',dial:'+994'},{name:'Bahrain',flag:'🇧🇭',dial:'+973'},
+  {name:'Bangladesh',flag:'🇧🇩',dial:'+880'},{name:'Belarus',flag:'🇧🇾',dial:'+375'},
+  {name:'Belgium',flag:'🇧🇪',dial:'+32'},{name:'Benin',flag:'🇧🇯',dial:'+229'},
+  {name:'Bolivia',flag:'🇧🇴',dial:'+591'},{name:'Bosnia and Herzegovina',flag:'🇧🇦',dial:'+387'},
+  {name:'Botswana',flag:'🇧🇼',dial:'+267'},{name:'Brazil',flag:'🇧🇷',dial:'+55'},
+  {name:'Brunei',flag:'🇧🇳',dial:'+673'},{name:'Bulgaria',flag:'🇧🇬',dial:'+359'},
+  {name:'Burkina Faso',flag:'🇧🇫',dial:'+226'},{name:'Burundi',flag:'🇧🇮',dial:'+257'},
+  {name:'Cambodia',flag:'🇰🇭',dial:'+855'},{name:'Cameroon',flag:'🇨🇲',dial:'+237'},
+  {name:'Canada',flag:'🇨🇦',dial:'+1'},{name:'Chad',flag:'🇹🇩',dial:'+235'},
+  {name:'Chile',flag:'🇨🇱',dial:'+56'},{name:'China',flag:'🇨🇳',dial:'+86'},
+  {name:'Colombia',flag:'🇨🇴',dial:'+57'},{name:'Congo',flag:'🇨🇬',dial:'+242'},
+  {name:'Costa Rica',flag:'🇨🇷',dial:'+506'},{name:"Côte d'Ivoire",flag:'🇨🇮',dial:'+225'},
+  {name:'Croatia',flag:'🇭🇷',dial:'+385'},{name:'Cuba',flag:'🇨🇺',dial:'+53'},
+  {name:'Cyprus',flag:'🇨🇾',dial:'+357'},{name:'Czech Republic',flag:'🇨🇿',dial:'+420'},
+  {name:'DR Congo',flag:'🇨🇩',dial:'+243'},{name:'Denmark',flag:'🇩🇰',dial:'+45'},
+  {name:'Dominican Republic',flag:'🇩🇴',dial:'+1'},{name:'Ecuador',flag:'🇪🇨',dial:'+593'},
+  {name:'Egypt',flag:'🇪🇬',dial:'+20'},{name:'El Salvador',flag:'🇸🇻',dial:'+503'},
+  {name:'Eritrea',flag:'🇪🇷',dial:'+291'},{name:'Eswatini',flag:'🇸🇿',dial:'+268'},
+  {name:'Ethiopia',flag:'🇪🇹',dial:'+251'},{name:'Finland',flag:'🇫🇮',dial:'+358'},
+  {name:'France',flag:'🇫🇷',dial:'+33'},{name:'Gabon',flag:'🇬🇦',dial:'+241'},
+  {name:'Gambia',flag:'🇬🇲',dial:'+220'},{name:'Georgia',flag:'🇬🇪',dial:'+995'},
+  {name:'Germany',flag:'🇩🇪',dial:'+49'},{name:'Ghana',flag:'🇬🇭',dial:'+233'},
+  {name:'Greece',flag:'🇬🇷',dial:'+30'},{name:'Guatemala',flag:'🇬🇹',dial:'+502'},
+  {name:'Guinea',flag:'🇬🇳',dial:'+224'},{name:'Honduras',flag:'🇭🇳',dial:'+504'},
+  {name:'Hong Kong',flag:'🇭🇰',dial:'+852'},{name:'Hungary',flag:'🇭🇺',dial:'+36'},
+  {name:'Iceland',flag:'🇮🇸',dial:'+354'},{name:'India',flag:'🇮🇳',dial:'+91'},
+  {name:'Indonesia',flag:'🇮🇩',dial:'+62'},{name:'Iran',flag:'🇮🇷',dial:'+98'},
+  {name:'Iraq',flag:'🇮🇶',dial:'+964'},{name:'Ireland',flag:'🇮🇪',dial:'+353'},
+  {name:'Israel',flag:'🇮🇱',dial:'+972'},{name:'Italy',flag:'🇮🇹',dial:'+39'},
+  {name:'Jamaica',flag:'🇯🇲',dial:'+1'},{name:'Japan',flag:'🇯🇵',dial:'+81'},
+  {name:'Jordan',flag:'🇯🇴',dial:'+962'},{name:'Kazakhstan',flag:'🇰🇿',dial:'+7'},
+  {name:'Kenya',flag:'🇰🇪',dial:'+254'},{name:'Kuwait',flag:'🇰🇼',dial:'+965'},
+  {name:'Laos',flag:'🇱🇦',dial:'+856'},{name:'Latvia',flag:'🇱🇻',dial:'+371'},
+  {name:'Lebanon',flag:'🇱🇧',dial:'+961'},{name:'Lesotho',flag:'🇱🇸',dial:'+266'},
+  {name:'Liberia',flag:'🇱🇷',dial:'+231'},{name:'Libya',flag:'🇱🇾',dial:'+218'},
+  {name:'Lithuania',flag:'🇱🇹',dial:'+370'},{name:'Luxembourg',flag:'🇱🇺',dial:'+352'},
+  {name:'Madagascar',flag:'🇲🇬',dial:'+261'},{name:'Malawi',flag:'🇲🇼',dial:'+265'},
+  {name:'Malaysia',flag:'🇲🇾',dial:'+60'},{name:'Maldives',flag:'🇲🇻',dial:'+960'},
+  {name:'Mali',flag:'🇲🇱',dial:'+223'},{name:'Malta',flag:'🇲🇹',dial:'+356'},
+  {name:'Mauritania',flag:'🇲🇷',dial:'+222'},{name:'Mauritius',flag:'🇲🇺',dial:'+230'},
+  {name:'Mexico',flag:'🇲🇽',dial:'+52'},{name:'Moldova',flag:'🇲🇩',dial:'+373'},
+  {name:'Mongolia',flag:'🇲🇳',dial:'+976'},{name:'Montenegro',flag:'🇲🇪',dial:'+382'},
+  {name:'Morocco',flag:'🇲🇦',dial:'+212'},{name:'Mozambique',flag:'🇲🇿',dial:'+258'},
+  {name:'Myanmar',flag:'🇲🇲',dial:'+95'},{name:'Namibia',flag:'🇳🇦',dial:'+264'},
+  {name:'Nepal',flag:'🇳🇵',dial:'+977'},{name:'Netherlands',flag:'🇳🇱',dial:'+31'},
+  {name:'New Zealand',flag:'🇳🇿',dial:'+64'},{name:'Nicaragua',flag:'🇳🇮',dial:'+505'},
+  {name:'Niger',flag:'🇳🇪',dial:'+227'},{name:'Nigeria',flag:'🇳🇬',dial:'+234'},
+  {name:'North Macedonia',flag:'🇲🇰',dial:'+389'},{name:'Norway',flag:'🇳🇴',dial:'+47'},
+  {name:'Oman',flag:'🇴🇲',dial:'+968'},{name:'Pakistan',flag:'🇵🇰',dial:'+92'},
+  {name:'Panama',flag:'🇵🇦',dial:'+507'},{name:'Papua New Guinea',flag:'🇵🇬',dial:'+675'},
+  {name:'Paraguay',flag:'🇵🇾',dial:'+595'},{name:'Peru',flag:'🇵🇪',dial:'+51'},
+  {name:'Philippines',flag:'🇵🇭',dial:'+63'},{name:'Poland',flag:'🇵🇱',dial:'+48'},
+  {name:'Portugal',flag:'🇵🇹',dial:'+351'},{name:'Qatar',flag:'🇶🇦',dial:'+974'},
+  {name:'Romania',flag:'🇷🇴',dial:'+40'},{name:'Russia',flag:'🇷🇺',dial:'+7'},
+  {name:'Rwanda',flag:'🇷🇼',dial:'+250'},{name:'Saudi Arabia',flag:'🇸🇦',dial:'+966'},
+  {name:'Senegal',flag:'🇸🇳',dial:'+221'},{name:'Serbia',flag:'🇷🇸',dial:'+381'},
+  {name:'Sierra Leone',flag:'🇸🇱',dial:'+232'},{name:'Singapore',flag:'🇸🇬',dial:'+65'},
+  {name:'Slovakia',flag:'🇸🇰',dial:'+421'},{name:'Slovenia',flag:'🇸🇮',dial:'+386'},
+  {name:'Somalia',flag:'🇸🇴',dial:'+252'},{name:'South Africa',flag:'🇿🇦',dial:'+27'},
+  {name:'South Korea',flag:'🇰🇷',dial:'+82'},{name:'South Sudan',flag:'🇸🇸',dial:'+211'},
+  {name:'Spain',flag:'🇪🇸',dial:'+34'},{name:'Sri Lanka',flag:'🇱🇰',dial:'+94'},
+  {name:'Sudan',flag:'🇸🇩',dial:'+249'},{name:'Sweden',flag:'🇸🇪',dial:'+46'},
+  {name:'Switzerland',flag:'🇨🇭',dial:'+41'},{name:'Syria',flag:'🇸🇾',dial:'+963'},
+  {name:'Taiwan',flag:'🇹🇼',dial:'+886'},{name:'Tanzania',flag:'🇹🇿',dial:'+255'},
+  {name:'Thailand',flag:'🇹🇭',dial:'+66'},{name:'Togo',flag:'🇹🇬',dial:'+228'},
+  {name:'Tunisia',flag:'🇹🇳',dial:'+216'},{name:'Turkey',flag:'🇹🇷',dial:'+90'},
+  {name:'Uganda',flag:'🇺🇬',dial:'+256'},{name:'Ukraine',flag:'🇺🇦',dial:'+380'},
+  {name:'United Arab Emirates',flag:'🇦🇪',dial:'+971'},{name:'United Kingdom',flag:'🇬🇧',dial:'+44'},
+  {name:'United States',flag:'🇺🇸',dial:'+1'},{name:'Uruguay',flag:'🇺🇾',dial:'+598'},
+  {name:'Uzbekistan',flag:'🇺🇿',dial:'+998'},{name:'Venezuela',flag:'🇻🇪',dial:'+58'},
+  {name:'Vietnam',flag:'🇻🇳',dial:'+84'},{name:'Yemen',flag:'🇾🇪',dial:'+967'},
+  {name:'Zambia',flag:'🇿🇲',dial:'+260'},{name:'Zimbabwe',flag:'🇿🇼',dial:'+263'}
+];
+
+/* ── Residence country dropdown (with phone unlock) ── */
+function renderResCountryList(q) {
+  const query = (q || '').trim().toLowerCase();
+  const filtered = query
+    ? COUNTRIES_DATA.filter(c => c.name.toLowerCase().includes(query) || c.dial.includes(query))
+    : COUNTRIES_DATA;
+  const list = document.getElementById('res-country-list');
+  list.innerHTML = filtered.length
+    ? filtered.map(c =>
+        `<div class="c-opt" data-name="${c.name}" data-flag="${c.flag}" data-dial="${c.dial}">
+          <span class="c-opt-flag">${c.flag}</span>
+          <span class="c-opt-name">${c.name}</span>
+          <span class="c-opt-dial">${c.dial}</span>
+        </div>`).join('')
+    : '<div class="c-no-result">No countries found</div>';
+  list.querySelectorAll('.c-opt').forEach(el => {
+    el.addEventListener('click', () => selectResCountry(el.dataset));
+  });
+}
+
+function selectResCountry({ name, flag, dial }) {
+  _selectedResidence = { name, flag, dial };
+  document.getElementById('res-country-inp').value = `${flag}  ${name}`;
+  document.getElementById('res-pf-flag').textContent = flag;
+  document.getElementById('res-pf-dial').textContent = dial;
+  document.getElementById('res-phone-prefix').style.display = 'flex';
+  const ph = document.getElementById('res-phone-num');
+  ph.disabled = false; ph.placeholder = 'Enter number'; ph.focus();
+  closeResCountryDropdown();
+}
+
+function openResCountryDropdown() {
+  document.getElementById('res-country-wrap').classList.add('open');
+  document.getElementById('res-country-search').value = '';
+  renderResCountryList('');
+  document.getElementById('res-country-search').focus();
+}
+function closeResCountryDropdown() {
+  document.getElementById('res-country-wrap').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('res-country-wrap').contains(e.target)) closeResCountryDropdown();
+  if (!document.getElementById('issue-country-wrap').contains(e.target)) closeIssueCountryDropdown();
+});
+document.getElementById('res-country-inp').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('res-country-wrap').classList.contains('open') ? closeResCountryDropdown() : openResCountryDropdown();
+});
+document.getElementById('res-country-search').addEventListener('input', function(){ renderResCountryList(this.value); });
+document.getElementById('res-country-dd').addEventListener('click', e => e.stopPropagation());
+
+/* ── Issue country dropdown (no phone) ── */
+function renderIssueCountryList(q) {
+  const query = (q || '').trim().toLowerCase();
+  const filtered = query
+    ? COUNTRIES_DATA.filter(c => c.name.toLowerCase().includes(query))
+    : COUNTRIES_DATA;
+  const list = document.getElementById('issue-country-list');
+  list.innerHTML = filtered.length
+    ? filtered.map(c =>
+        `<div class="c-opt" data-name="${c.name}" data-flag="${c.flag}">
+          <span class="c-opt-flag">${c.flag}</span>
+          <span class="c-opt-name">${c.name}</span>
+        </div>`).join('')
+    : '<div class="c-no-result">No countries found</div>';
+  list.querySelectorAll('.c-opt').forEach(el => {
+    el.addEventListener('click', () => selectIssueCountry(el.dataset));
+  });
+}
+
+function selectIssueCountry({ name, flag }) {
+  _selectedIssue = { name, flag };
+  document.getElementById('issue-country-inp').value = `${flag}  ${name}`;
+  closeIssueCountryDropdown();
+}
+
+function openIssueCountryDropdown() {
+  document.getElementById('issue-country-wrap').classList.add('open');
+  document.getElementById('issue-country-search').value = '';
+  renderIssueCountryList('');
+  document.getElementById('issue-country-search').focus();
+}
+function closeIssueCountryDropdown() {
+  document.getElementById('issue-country-wrap').classList.remove('open');
+}
+
+document.getElementById('issue-country-inp').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('issue-country-wrap').classList.contains('open') ? closeIssueCountryDropdown() : openIssueCountryDropdown();
+});
+document.getElementById('issue-country-search').addEventListener('input', function(){ renderIssueCountryList(this.value); });
+document.getElementById('issue-country-dd').addEventListener('click', e => e.stopPropagation());
+
+/* Initial render */
+renderResCountryList('');
+renderIssueCountryList('');
+
+/* ── File mark ── */
+function markFile(input, lblId, boxId, chkId) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { alert('File too large — max 10MB.'); input.value = ''; return; }
+  document.getElementById(lblId).textContent = '✓ ' + file.name;
+  document.getElementById(boxId).classList.add('has-file');
+  const chk = document.getElementById(chkId);
+  chk.style.display = 'flex';
+}
+
+/* ── Upload to storage ── */
+async function uploadFile(bucket, path, file) {
+  const { data, error } = await _db.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw new Error('Upload failed: ' + error.message);
+  return data.path;
+}
+
+/* ── Submit ── */
+async function submitKYC() {
+  const btn = document.getElementById('submit-btn');
+  const msg = document.getElementById('submit-msg');
+  const errEl = document.getElementById('form-error');
+  errEl.style.display = 'none';
+  msg.textContent = '';
+
+  const residence    = _selectedResidence?.name || '';
+  const phoneNum     = document.getElementById('res-phone-num').value.trim();
+  const dob          = document.getElementById('dob-input').value;
+  const docType      = document.getElementById('doc-type').value;
+  const countryIssue = _selectedIssue?.name || '';
+  const frontFile    = document.getElementById('file-front').files[0];
+  const backFile     = document.getElementById('file-back').files[0];
+  const selfieFile   = document.getElementById('file-selfie').files[0];
+
+  if (_needsContactInfo && !residence)   return showErr('Please select your country of residence.');
+  if (_needsContactInfo && !phoneNum)    return showErr('Please enter your phone number.');
+  if (!dob)           return showErr('Please enter your date of birth.');
+  if (!docType)       return showErr('Please select a document type.');
+  if (!countryIssue)  return showErr('Please select your country of issue.');
+  if (!frontFile)     return showErr('Please upload the front of your document.');
+  if (!backFile)      return showErr('Please upload the back of your document.');
+  if (!selfieFile)    return showErr('Please upload your selfie.');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span>Uploading…</span>';
+
+  try {
+    const uid = _userId;
+    const ext = f => f.name.split('.').pop().toLowerCase();
+
+    const frontPath = await uploadFile('kyc-docs', `${uid}/id-front.${ext(frontFile)}`, frontFile);
+    const backPath  = await uploadFile('kyc-docs', `${uid}/id-back.${ext(backFile)}`,   backFile);
+    const selfiePath= await uploadFile('kyc-docs', `${uid}/selfie.${ext(selfieFile)}`,  selfieFile);
+
+    // Upsert profile — ensures row exists for Google OAuth users who bypassed registration
+    const profileData = {
+      id:             uid,
+      email:          _user.email,
+      kyc_status:     'pending',
+      date_of_birth:  dob,
+    };
+    if (_needsContactInfo) {
+      profileData.phone   = (_selectedResidence?.dial || '') + phoneNum;
+      profileData.country = residence;
+      const googleName = _user.user_metadata?.full_name || _user.user_metadata?.name || '';
+      if (googleName) {
+        const parts = googleName.trim().split(' ');
+        profileData.first_name = parts[0] || '';
+        profileData.last_name  = parts.slice(1).join(' ') || '';
+      }
+    }
+    const { error: profErr } = await _db.from('profiles').upsert(profileData, { onConflict: 'id' });
+    if (profErr) throw new Error(profErr.message);
+
+    // Upsert KYC submission
+    const { error: subErr } = await _db.from('kyc_submissions').upsert({
+      user_id:    uid,
+      user_email: _user.email,
+      doc_type:   docType,
+      country:    countryIssue,
+      status:     'pending',
+      front_url:  frontPath,
+      back_url:   backPath,
+      selfie_url: selfiePath,
+      rejection_reason: null
+    }, { onConflict: 'user_id' });
+    if (subErr) throw new Error(subErr.message);
+
+    applyStatus('pending');
+    startPolling();
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Submit Documents';
+    showErr(e.message || 'Upload failed. Please check your connection and try again.');
+  }
+
+  function showErr(m) {
+    errEl.textContent = m; errEl.style.display = 'block';
+  }
+}
+
+/* ── Status helpers ── */
+function applyStatus(status) {
+  const icon        = document.getElementById('status-icon');
+  const title       = document.getElementById('status-title');
+  const sub         = document.getElementById('status-sub');
+  const badge       = document.getElementById('kyc-badge');
+  const infoBox     = document.getElementById('info-box');
+  const reviewDot   = document.getElementById('step-review-dot');
+  const reviewLabel = document.getElementById('step-review-label');
+  const reviewSub   = document.getElementById('step-review-sub');
+  const formSection = document.getElementById('form-section');
+  const pollRow     = document.getElementById('poll-row');
+
+  if (status === 'rejected') {
+    icon.className = 'status-icon status-icon--rejected';
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+    title.textContent = 'Documents Not Accepted';
+    sub.textContent   = 'We could not verify your identity with the documents provided. Please re-submit clearer copies below.';
+    badge.className   = 'kyc-badge kyc-badge--rejected'; badge.textContent = 'Rejected';
+    infoBox.className = 'info-box info-box--red';
+    infoBox.innerHTML = '<strong>Why was my KYC rejected?</strong><br>Common reasons include blurry images, expired documents, or photos that don\'t clearly show your full name and date of birth. Ensure images are well-lit and all text is legible.';
+    reviewDot.className = 'step-dot step-dot--waiting';
+    reviewDot.innerHTML = '✕';
+    reviewLabel.textContent = 'Documents Rejected';
+    reviewSub.textContent   = 'Please re-submit your documents using the form below';
+    document.getElementById('form-section-title').textContent = 'Re-submit Your Documents';
+    document.getElementById('submit-btn').innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Re-submit Documents';
+    formSection.classList.add('visible');
+    pollRow.style.display = 'none';
+  } else {
+    icon.className = 'status-icon status-icon--pending';
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+    title.textContent = 'Verification in Progress';
+    sub.textContent   = 'Your identity documents are being reviewed by our compliance team. This usually takes 1–2 business days.';
+    badge.className   = 'kyc-badge kyc-badge--pending'; badge.textContent = 'Pending';
+    infoBox.className = 'info-box';
+    infoBox.innerHTML = '<strong>What happens next?</strong><br>Our compliance team reviews documents Monday–Friday, 9am–6pm GMT. You will receive an email once your account is approved. You can close this page and come back later — your progress is saved.';
+    reviewDot.className = 'step-dot step-dot--active';
+    reviewDot.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+    reviewLabel.textContent = 'Compliance Review';
+    reviewSub.textContent   = 'Our team is verifying your identity';
+    formSection.classList.remove('visible');
+    pollRow.style.display = '';
+  }
+}
+
+function applyNoSubmission(needsContactInfo) {
+  const icon          = document.getElementById('status-icon');
+  const title         = document.getElementById('status-title');
+  const sub           = document.getElementById('status-sub');
+  const badge         = document.getElementById('kyc-badge');
+  const infoBox       = document.getElementById('info-box');
+  const stepDocsDot   = document.getElementById('step-docs-dot');
+  const stepDocsLabel = document.getElementById('step-docs-label');
+  const stepDocsSub   = document.getElementById('step-docs-sub');
+  const reviewDot     = document.getElementById('step-review-dot');
+  const reviewLabel   = document.getElementById('step-review-label');
+  const reviewSub     = document.getElementById('step-review-sub');
+  const formSection   = document.getElementById('form-section');
+  const pollRow       = document.getElementById('poll-row');
+
+  icon.className = 'status-icon status-icon--action';
+  icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>';
+  title.textContent = 'Complete Your Verification';
+  sub.textContent   = 'Upload your identity documents to unlock full access to your Veloci account.';
+  badge.className   = 'kyc-badge kyc-badge--action'; badge.textContent = 'Action Required';
+  infoBox.className = 'info-box info-box--orange';
+  infoBox.innerHTML = '<strong>Why do we need this?</strong><br>KYC verification is required by financial regulations. It keeps your account safe and ensures compliance with international trading standards.';
+
+  stepDocsDot.className = 'step-dot step-dot--active';
+  stepDocsDot.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  stepDocsLabel.textContent = 'Submit Documents';
+  stepDocsSub.textContent   = 'Upload your ID and selfie below';
+
+  reviewDot.className   = 'step-dot step-dot--waiting'; reviewDot.textContent = '3';
+  reviewLabel.textContent = 'Compliance Review';
+  reviewSub.textContent   = 'Our team will review once documents are submitted';
+
+  // Hide country/phone fields if user already has them
+  if (!needsContactInfo) {
+    document.getElementById('field-residence').style.display = 'none';
+    document.getElementById('field-phone').style.display     = 'none';
+  }
+
+  formSection.classList.add('visible');
+  pollRow.style.display = 'none';
+}
+
+/* ── Polling ── */
+function startPolling() {
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    try {
+      const { data } = await _db.from('profiles').select('kyc_status').eq('id', _userId).maybeSingle();
+      if (data?.kyc_status === 'verified') { clearInterval(_pollTimer); showApproved(); }
+      else if (data?.kyc_status === 'rejected') { clearInterval(_pollTimer); applyStatus('rejected'); }
+    } catch(_) {}
+    const lbl = document.getElementById('poll-label');
+    if (lbl) lbl.textContent = `Checking status… (last checked ${new Date().toLocaleTimeString('en-US',{timeStyle:'short'})})`;
+  }, 30000);
+}
+
+function showApproved() {
+  document.getElementById('redirect-overlay').classList.add('visible');
+  setTimeout(() => window.location.href = 'dashboard-new.html', 2500);
+}
+
+/* ── Sign out ── */
+document.getElementById('signout-btn').onclick = async () => {
+  clearInterval(_pollTimer);
+  sessionStorage.removeItem(SS_KEY);
+  await window.SV_DB.auth.signOut();
+  window.location.href = 'login-new.html';
+};
+
+/* ── Init ── */
+(async () => {
+  if (!sessionStorage.getItem(SS_KEY)) { window.location.href = 'session-new.html'; return; }
+
+  _db = window.SV_DB;
+  const { data: { session } } = await _db.auth.getSession();
+  if (!session) { window.location.href = 'login-new.html'; return; }
+  _user   = session.user;
+  _userId = session.user.id;
+
+  // Fetch profile + submission
+  const [{ data: prof }, { data: sub }] = await Promise.all([
+    _db.from('profiles').select('first_name,last_name,email,kyc_status,country,phone,date_of_birth').eq('id', _userId).maybeSingle(),
+    _db.from('kyc_submissions').select('id,status').eq('user_id', _userId).order('created_at', { ascending: false }).limit(1)
+  ]);
+
+  // User strip — fall back to Google metadata for OAuth users
+  const fn   = prof?.first_name || '';
+  const ln   = prof?.last_name  || '';
+  const googleName = _user.user_metadata?.full_name || _user.user_metadata?.name || '';
+  const name = [fn, ln].filter(Boolean).join(' ') || googleName || _user.email;
+  const nameParts = name.split(' ').filter(Boolean);
+  const initials = nameParts.length >= 2
+    ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+    : (name[0] || '?').toUpperCase();
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-name').textContent   = name;
+  document.getElementById('user-email').textContent  = prof?.email || _user.email || '';
+
+  // Pre-fill phone + DOB if already on profile
+  if (prof?.phone) document.getElementById('res-phone-num').value = prof.phone;
+  if (prof?.date_of_birth) document.getElementById('dob-input').value = prof.date_of_birth;
+
+  // Max DOB = 18 years ago
+  const maxDob = new Date();
+  maxDob.setFullYear(maxDob.getFullYear() - 18);
+  document.getElementById('dob-input').max = maxDob.toISOString().split('T')[0];
+
+  _needsContactInfo = !prof?.phone;
+
+  const kycStatus    = prof?.kyc_status || null;
+  const subStatus    = sub?.[0]?.status || null;
+  const hasSubmission = !!(sub && sub.length > 0);
+
+  // kyc_submissions.status is the ground truth for rejection —
+  // guards against profiles.kyc_status not being updated (e.g. admin RLS failure)
+  const isRejected = subStatus === 'rejected' || kycStatus === 'rejected';
+  const isVerified = kycStatus === 'verified' && !isRejected;
+
+  document.getElementById('sv-loading').style.display   = 'none';
+  document.getElementById('sv-verify-page').style.display = 'block';
+
+  if (isVerified) {
+    showApproved();
+  } else if (!hasSubmission) {
+    applyNoSubmission(_needsContactInfo);
+  } else if (isRejected) {
+    applyStatus('rejected');
+  } else {
+    applyStatus('pending');
+    startPolling();
+  }
+})();
+</script>
+</body>
+</html>

@@ -2,495 +2,321 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<link rel="icon" type="image/png" href="../assets/favicon.png"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<title>Commodities Markets — Veloci Global Markets</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Trade Commodities — Veloci Global Markets</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../supabase.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#252b3d;
-  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
-  --accent:#f05a1a; --accent-dk:#d94d12;
-  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
-  --text:#eaecef; --sub:#848e9c;
-  --sidebar:220px; --header:60px;
-  --mono:'JetBrains Mono',monospace;
-}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+html{overflow-x:hidden;scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;color:#1a1a1a;background:#fff;overflow-x:hidden;}
 a{text-decoration:none;color:inherit;}
-button{font-family:inherit;cursor:pointer;border:none;background:none;}
-input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
-
-.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
-
-/* HEADER */
-.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
-.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--b);}
-.hdr-logo-wrap img{height:36px;width:auto;}
-.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:color .15s;}
-.hdr-hamburger:hover{color:var(--text);}
-.hdr-search{flex:1;max-width:300px;margin-left:12px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
-.hdr-search input{font-size:13px;flex:1;}
-.hdr-search input::placeholder{color:var(--sub);}
-.hdr-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;}
-.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
-.hicon:hover{background:var(--s3);color:var(--text);}
-.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:4px;color:#fff;}
-
-/* LAYOUT */
-.layout{display:flex;flex:1;overflow:hidden;}
-
-/* SIDEBAR */
-.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
-.sidebar::-webkit-scrollbar{width:0;}
-.sb-logo-area{padding:14px 20px;display:flex;align-items:center;border-bottom:1px solid var(--b);flex-shrink:0;}
-.sb-logo-area img{height:32px;width:auto;}
-.sb-nav{flex:1;padding:8px 0;}
-.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 18px 4px;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
-.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
-.nav-item.active{color:var(--accent);background:rgba(240,90,26,.08);border-left-color:var(--accent);}
-.nav-item svg{flex-shrink:0;width:16px;height:16px;}
-.nav-item-label{flex:1;}
-.nav-divider{height:1px;background:var(--b);margin:6px 0;}
-.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
-.sb-user{display:flex;align-items:center;gap:10px;padding:12px 16px;}
-.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#fff;}
-.sb-user-info{flex:1;min-width:0;}
-.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.sb-user-uid{font-size:10.5px;color:var(--sub);margin-top:1px;}
-
-/* MAIN */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 28px;}
-.main::-webkit-scrollbar{width:4px;}
-
-/* PAGE HEADER */
-.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
-.page-hdr-left{display:flex;align-items:center;gap:12px;}
-.page-title{font-size:22px;font-weight:800;color:var(--text);}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(14,203,129,.2);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(14,203,129,.2);}50%{box-shadow:0 0 0 6px rgba(14,203,129,.06);}}
-.last-updated{font-size:12px;color:var(--sub);}
-.refresh-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--s2);border:1px solid var(--b);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;}
-.refresh-btn:hover{color:var(--text);border-color:var(--b2);}
-
-/* CATEGORY TABS */
-.cat-tabs{display:flex;align-items:center;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;}
-.cat-tabs::-webkit-scrollbar{height:0;}
-.cat-tab{display:inline-flex;align-items:center;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--sub);white-space:nowrap;transition:all .15s;border:1px solid transparent;text-decoration:none;}
-.cat-tab:hover{color:var(--text);background:rgba(255,255,255,.04);}
-.cat-tab.active{color:var(--accent);background:rgba(240,90,26,.08);border-color:rgba(240,90,26,.2);}
-
-/* WIDGET CONTAINER */
-.widget-wrap{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;padding:0;}
-.widget-inner{padding:16px;}
-
-/* SECTION CARD */
-.section-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;}
-.section-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--b);}
-.section-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
-.tbl-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;}
-th{font-size:10.5px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;padding:10px 18px;text-align:left;border-bottom:1px solid var(--b);background:var(--s2);white-space:nowrap;}
-td{padding:12px 18px;font-size:13px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(255,255,255,.02);}
-.pos{color:var(--green);}
-.neg{color:var(--red);}
-.trade-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:rgba(240,90,26,.1);border:1px solid rgba(240,90,26,.25);border-radius:7px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;}
-.trade-btn:hover{background:rgba(240,90,26,.2);border-color:rgba(240,90,26,.4);}
-.cat-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap;}
-.cat-precious{background:rgba(240,185,11,.12);color:var(--gold);}
-.cat-energy{background:rgba(33,150,243,.12);color:var(--blue);}
-.cat-base{background:rgba(123,97,255,.12);color:#7b61ff;}
-.cat-agri{background:rgba(14,203,129,.12);color:var(--green);}
-.commodity-icon{font-size:18px;margin-right:4px;}
-.price-cell{font-family:var(--mono);font-weight:600;}
-
-/* TOAST */
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
-.toast{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .25s ease;min-width:240px;max-width:340px;}
-.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--green);}
-@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
-
-/* SIDEBAR OVERLAY */
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;}
-.sidebar-overlay.open{display:block;}
+img{display:block;max-width:100%;}
+nav{position:sticky;top:0;z-index:9999;background:#fff;border-bottom:1px solid #eee;box-shadow:0 2px 16px rgba(0,0,0,.08);display:flex;align-items:center;padding:0 32px;height:70px;overflow:visible;}
+.nav-logo{display:flex;align-items:center;flex-shrink:0;margin-right:36px;}
+.nav-logo img{height:96px;width:auto;display:block;}
+.nav-links{display:flex;align-items:center;list-style:none;margin:0;padding:0;gap:2px;flex:1;}
+.nav-links>li{position:relative;display:list-item;}
+.nav-links>li>a{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:#222;padding:8px 16px;border-radius:6px;white-space:nowrap;text-decoration:none;transition:color .15s,background .15s;}
+.nav-links>li>a:hover{color:#f05a1a;background:#fdf3ef;}
+.nav-links>li.nav-sponsor>a{color:#f05a1a;}
+.nav-caret{display:inline-block;width:10px;height:10px;flex-shrink:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='1,1 5,5 9,1' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;transition:transform .25s;}
+.nav-links>li:hover>a .nav-caret,.nav-links>li.dd-open>a .nav-caret{transform:rotate(180deg);}
+.nav-dropdown{position:absolute;top:100%;left:0;z-index:10000;padding-top:10px;min-width:300px;opacity:0;visibility:hidden;transform:translateY(6px);transition:opacity .2s ease,transform .2s ease,visibility .2s;}
+.nav-dropdown-inner{background:#fff;border-radius:14px;box-shadow:0 12px 48px rgba(0,0,0,.15);padding:10px;}
+.nav-links>li:hover .nav-dropdown,.nav-links>li.dd-open .nav-dropdown{opacity:1;visibility:visible;transform:translateY(0);}
+.nav-dd-item{display:flex;align-items:center;gap:14px;padding:11px 14px;border-radius:10px;text-decoration:none;color:inherit;transition:background .15s;}
+.nav-dd-item:hover{background:#fff6f2;}
+.nav-dd-icon{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.nav-dd-icon img,.nav-dd-icon svg{width:28px;height:28px;object-fit:contain;}
+.nav-dd-text{flex:1;min-width:0;}
+.nav-dd-text-title{font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px;display:flex;align-items:center;gap:4px;}
+.nav-dd-text-title::after{content:'›';color:#f05a1a;font-size:16px;font-weight:900;}
+.nav-dd-text-sub{font-size:11.5px;color:#888;line-height:1.4;}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.btn-register{display:inline-flex;align-items:center;gap:7px;background:#f05a1a;color:#fff;padding:10px 22px;border-radius:7px;font-size:14px;font-weight:700;text-decoration:none;transition:background .15s;white-space:nowrap;}
+.btn-register:hover{background:#c94508;}
+.btn-login{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#333;padding:10px 14px;text-decoration:none;white-space:nowrap;transition:color .15s;}
+.btn-login:hover{color:#f05a1a;}
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:36px;height:36px;cursor:pointer;padding:4px;border:none;background:none;margin-left:auto;flex-shrink:0;}
+.nav-hamburger span{display:block;height:2.5px;border-radius:2px;background:#1a1a1a;transition:transform .3s,opacity .3s;}
+.nav-hamburger.open span:nth-child(1){transform:translateY(7.5px) rotate(45deg);}
+.nav-hamburger.open span:nth-child(2){opacity:0;}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg);}
+.mobile-nav{display:none;position:fixed;top:70px;left:0;right:0;bottom:0;background:#fff;z-index:9998;overflow-y:auto;padding:16px 0 40px;}
+.mobile-nav.open{display:block;}
+.mnav-item{display:block;font-size:16px;font-weight:600;color:#222;padding:14px 24px;border-bottom:1px solid #f0f0f0;text-decoration:none;}
+.mnav-item.orange{color:#f05a1a;}
+.mnav-group-title{font-size:11px;font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;padding:20px 24px 8px;}
+.mnav-sub{display:flex;align-items:center;gap:12px;padding:11px 24px;border-bottom:1px solid #f8f8f8;text-decoration:none;color:inherit;}
+.mnav-sub-icon{width:28px;height:28px;flex-shrink:0;}
+.mnav-sub-icon img,.mnav-sub-icon svg{width:24px;height:24px;object-fit:contain;}
+.mnav-sub-title{font-size:14px;font-weight:700;color:#1a1a1a;}
+.mnav-sub-title::after{content:' ›';color:#f05a1a;}
+.mnav-sub-desc{font-size:11px;color:#888;margin-top:1px;}
+.mnav-btns{display:flex;gap:10px;padding:20px 24px 0;}
+.mnav-btns .btn-register{flex:1;justify-content:center;}
+.mnav-btns .btn-login{flex:1;justify-content:center;border:1.5px solid #ddd;border-radius:7px;}
+.si{max-width:1280px;margin:0 auto;padding:0 48px;}
+.page-hero{min-height:400px;background:linear-gradient(135deg,#0d1a1a 0%,#1a3328 40%,#c84800 80%,#f05a1a 100%);display:flex;align-items:flex-end;padding:80px 48px 60px;position:relative;overflow:hidden;}
+.page-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,rgba(0,0,0,.3) 60%,rgba(0,0,0,.1) 100%);z-index:1;}
+.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;}
+.page-hero-content{position:relative;z-index:2;max-width:700px;}
+.page-hero-tag{display:inline-block;background:rgba(232,83,10,.25);color:#ffb38a;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border-radius:20px;margin-bottom:16px;border:1px solid rgba(232,83,10,.4);}
+.page-hero h1{font-size:clamp(32px,5vw,58px);font-weight:900;color:#fff;line-height:1.08;letter-spacing:-1px;margin-bottom:16px;}
+.page-hero h1 span{color:#f05a1a;}
+.page-hero p{font-size:16px;color:rgba(255,255,255,.8);line-height:1.6;max-width:560px;margin-bottom:28px;}
+.page-hero-btns{display:flex;gap:12px;flex-wrap:wrap;}
+.btn-orange{display:inline-flex;align-items:center;gap:8px;background:#f05a1a;color:#fff;padding:13px 28px;border-radius:50px;font-size:14px;font-weight:700;transition:background .15s;white-space:nowrap;}
+.btn-orange:hover{background:#c94508;}
+.btn-outline-white{display:inline-flex;align-items:center;gap:8px;border:2px solid rgba(255,255,255,.5);color:#fff;padding:13px 28px;border-radius:50px;font-size:14px;font-weight:700;transition:border-color .15s;white-space:nowrap;}
+.btn-outline-white:hover{border-color:#fff;}
+.stats-strip{background:#0d1a1a;padding:24px 48px;}
+.stats-strip-inner{max-width:1280px;margin:0 auto;display:flex;justify-content:center;gap:60px;flex-wrap:wrap;}
+.stat-item{text-align:center;}
+.stat-num{font-size:22px;font-weight:800;color:#f05a1a;}
+.stat-lbl{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;}
+.content-section{padding:80px 0;}
+.content-section.grey{background:#f7f7f7;}
+.section-tag{display:inline-block;color:#f05a1a;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+.section-h2{font-size:clamp(26px,3vw,38px);font-weight:800;color:#1a1a1a;margin-bottom:14px;letter-spacing:-.5px;line-height:1.2;}
+.section-h2 span{color:#f05a1a;}
+.section-p{font-size:15px;color:#555;line-height:1.7;margin-bottom:28px;max-width:620px;}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px;margin-top:36px;}
+.info-card{background:#fff;border:1px solid #e8e8e8;border-radius:14px;padding:28px;transition:box-shadow .2s,transform .2s;}
+.info-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.08);transform:translateY(-3px);}
+.info-card-icon{width:48px;height:48px;border-radius:12px;background:#fff2ec;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.info-card-icon svg{width:24px;height:24px;stroke:#f05a1a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.info-card h3{font-size:16px;font-weight:700;margin-bottom:8px;}
+.info-card p{font-size:13.5px;color:#666;line-height:1.65;}
+.cta-strip{background:linear-gradient(120deg,#071510 0%,#0e2a1f 30%,#1a4a30 55%,#c84800 80%,#f05a1a 100%);padding:72px 48px;text-align:center;}
+.cta-strip h2{font-size:clamp(24px,3vw,36px);font-weight:800;color:#fff;margin-bottom:14px;}
+.cta-strip p{font-size:15px;color:rgba(255,255,255,.75);margin-bottom:28px;}
+.table-wrap{overflow-x:auto;margin-top:28px;}
+.data-table{width:100%;border-collapse:collapse;font-size:14px;min-width:500px;}
+.data-table thead th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+.data-table tbody tr{border-bottom:1px solid #f0f0f0;}
+.data-table tbody tr:hover{background:#fafafa;}
+.data-table tbody td{padding:13px 16px;color:#333;}
+.data-table .td-name{font-weight:700;}
+.data-table .td-green{color:#2e7d32;font-weight:600;}
+.trade-btn{display:inline-flex;align-items:center;gap:6px;background:#f05a1a;color:#fff;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;transition:background .15s;}
+.trade-btn:hover{background:#c94508;}
+footer{background:#111;padding:60px 0 28px;}
+.ft-top{display:grid;grid-template-columns:240px 1fr;gap:60px;margin-bottom:48px;}
+.ft-desc{font-size:13px;color:#666;line-height:1.7;max-width:210px;margin:12px 0 20px;}
+.ft-socials{display:flex;gap:8px;}
+.soc{width:34px;height:34px;border-radius:50%;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#666;transition:background .15s;}
+.soc:hover{background:#f05a1a;color:#fff;}
+.ft-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
+.ft-col-h{font-size:11px;font-weight:700;color:#fff;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+.ft-col ul{list-style:none;}
+.ft-col li{margin-bottom:9px;}
+.ft-col li a{font-size:13px;color:#666;transition:color .15s;}
+.ft-col li a:hover{color:#fff;}
+.ft-divider{border:none;border-top:1px solid #222;margin:0 0 24px;}
+.ft-regs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.reg{background:#1a1a1a;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:700;color:#555;}
+.ft-legal{font-size:11px;color:#444;line-height:1.7;margin-bottom:20px;}
+.ft-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.ft-copy{font-size:12px;color:#444;}
+.ft-links{display:flex;gap:18px;}
+.ft-links a{font-size:12px;color:#444;transition:color .15s;}
+.ft-links a:hover{color:#fff;}
+@media(max-width:768px){
+  nav{padding:0 16px;overflow:visible;}.nav-logo img{height:72px;}.nav-links,.nav-right{display:none!important;}.nav-hamburger{display:flex;}.page-hero{padding:80px 20px 48px;}.page-hero h1{font-size:28px;}.stats-strip{padding:20px 16px;}.stats-strip-inner{gap:24px;}.si{padding:0 16px;}.content-section{padding:48px 0;}.cards-grid{grid-template-columns:1fr;}.cta-strip{padding:48px 20px;}.ft-top{grid-template-columns:1fr;gap:24px;}.ft-cols{grid-template-columns:repeat(2,1fr);gap:16px;}.ft-bottom{flex-direction:column;align-items:flex-start;gap:8px;}footer{padding:40px 0 20px;}
+}
+/* HERO ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(32px);}to{opacity:1;transform:translateY(0);}}
+@keyframes heroTagGlow{0%,100%{box-shadow:0 0 0 0 rgba(232,83,10,.5);}60%{box-shadow:0 0 0 12px rgba(232,83,10,0);}}
+.page-hero-tag{animation:fadeUp .55s ease .1s both,heroTagGlow 3.5s ease 1s infinite;}
+.page-hero h1{animation:fadeUp .65s ease .25s both;}
+.page-hero p{animation:fadeUp .65s ease .4s both;}
+.page-hero-btns{animation:fadeUp .65s ease .55s both;}
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
 </style>
-<script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
 </head>
 <body>
-<div class="page">
-<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+<nav>
+  <a href="../index-new.html" class="nav-logo"><img src="../assets/vgm-logo.png" alt="Veloci Global Markets"/></a>
+  <ul class="nav-links">
+    <li class="nav-sponsor"><a href="../sponsorship-new.html">🏁 Sponsorship</a></li>
+    <li><a href="#">Markets <span class="nav-caret"></span></a><div class="nav-dropdown" style="min-width:320px;"><div class="nav-dropdown-inner"><a href="../markets/forex.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-forex.svg" alt="Forex"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Forex</div><div class="nav-dd-text-sub">Trade major, minor, and exotic currency pairs</div></div></a><a href="../markets/indices.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-indices.svg" alt="Indices"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Indices</div><div class="nav-dd-text-sub">Trade top indices like DJI 30, S&amp;P 500 and DAX</div></div></a><a href="../markets/commodities.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-commodities.svg" alt="Commodities"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Commodities</div><div class="nav-dd-text-sub">Trade raw materials like gold, oil, and silver</div></div></a><a href="../markets/shares.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-shares.svg" alt="Shares CFD"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Shares CFD</div><div class="nav-dd-text-sub">Trade shares of global companies in the US, UK, EU and AU</div></div></a><a href="../markets/etfs.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-etf.svg" alt="ETFs"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">ETFs</div><div class="nav-dd-text-sub">Diversify with baskets of stocks, commodities, or bonds</div></div></a><a href="../markets/bonds.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-bonds.svg" alt="Bonds"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Bonds</div><div class="nav-dd-text-sub">Trade debt securities, including US 10-year Treasury bonds</div></div></a></div></div></li>
+    <li><a href="#">Platforms <span class="nav-caret"></span></a><div class="nav-dropdown" style="min-width:260px;"><div class="nav-dropdown-inner"><a href="../index-new.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-speedverse.svg" alt="Veloci"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">Veloci Platform</div><div class="nav-dd-text-sub">Our powerful proprietary trading platform</div></div></a><a href="../platforms/tradingview.html" class="nav-dd-item"><div class="nav-dd-icon"><img src="../assets/nav-tradingview.svg" alt="TradingView"/></div><div class="nav-dd-text"><div class="nav-dd-text-title">TradingView Platform</div><div class="nav-dd-text-sub">Advanced charting with TradingView integration</div></div></a></div></div></li>
+    <li><a href="#">Company <span class="nav-caret"></span></a><div class="nav-dropdown" style="min-width:240px;"><div class="nav-dropdown-inner"><a href="../index-new.html" class="nav-dd-item"><div class="nav-dd-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f05a1a" stroke-width="1.8"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div><div class="nav-dd-text"><div class="nav-dd-text-title">About Veloci</div><div class="nav-dd-text-sub">Our story, mission and values</div></div></a><a href="../privacy-new.html" class="nav-dd-item"><div class="nav-dd-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f05a1a" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="nav-dd-text"><div class="nav-dd-text-title">Privacy Policy</div><div class="nav-dd-text-sub">How we handle your data</div></div></a><a href="../terms-new.html" class="nav-dd-item"><div class="nav-dd-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f05a1a" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></div><div class="nav-dd-text"><div class="nav-dd-text-title">Terms</div><div class="nav-dd-text-sub">Terms and conditions of use</div></div></a><a href="../contact-new.html" class="nav-dd-item"><div class="nav-dd-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f05a1a" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.05 1.18 2 2 0 012.03 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg></div><div class="nav-dd-text"><div class="nav-dd-text-title">Contact Us</div><div class="nav-dd-text-sub">Get in touch with our team</div></div></a></div></div></li>
+  </ul>
+  <div class="nav-right">
+    <a href="#" class="btn-register"><svg width="15" height="15" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg> Register</a>
+    <a href="#" class="btn-login"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Login</a>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-nav" id="mobile-nav">
+  <a href="../sponsorship-new.html" class="mnav-item orange">🏁 Sponsorship</a>
+  <div class="mnav-group-title">Markets</div>
+  <a href="../markets/forex.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-forex.svg" alt=""/></div><div><div class="mnav-sub-title">Forex</div><div class="mnav-sub-desc">Major, minor and exotic pairs</div></div></a>
+  <a href="../markets/indices.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-indices.svg" alt=""/></div><div><div class="mnav-sub-title">Indices</div><div class="mnav-sub-desc">DJI 30, S&P 500, DAX and more</div></div></a>
+  <a href="../markets/commodities.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-commodities.svg" alt=""/></div><div><div class="mnav-sub-title">Commodities</div><div class="mnav-sub-desc">Gold, oil, silver and more</div></div></a>
+  <a href="../markets/shares.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-shares.svg" alt=""/></div><div><div class="mnav-sub-title">Shares CFD</div><div class="mnav-sub-desc">US, UK, EU and AU shares</div></div></a>
+  <a href="../markets/etfs.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-etf.svg" alt=""/></div><div><div class="mnav-sub-title">ETFs</div><div class="mnav-sub-desc">Diversified baskets of assets</div></div></a>
+  <a href="../markets/bonds.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-bonds.svg" alt=""/></div><div><div class="mnav-sub-title">Bonds</div><div class="mnav-sub-desc">US Treasury bonds and more</div></div></a>
+  <div class="mnav-group-title">Platforms</div>
+  <a href="../index-new.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-speedverse.svg" alt=""/></div><div><div class="mnav-sub-title">Veloci Platform</div><div class="mnav-sub-desc">Proprietary trading platform</div></div></a>
+  <a href="../platforms/tradingview.html" class="mnav-sub"><div class="mnav-sub-icon"><img src="../assets/nav-tradingview.svg" alt=""/></div><div><div class="mnav-sub-title">TradingView Platform</div><div class="mnav-sub-desc">Advanced charting integration</div></div></a>
+  <div class="mnav-group-title">Company</div>
+  <a href="../index-new.html" class="mnav-item" style="padding:11px 24px;font-size:14px;">About Veloci</a>
+  <a href="../privacy-new.html" class="mnav-item" style="padding:11px 24px;font-size:14px;">Privacy Policy</a>
+  <a href="../terms-new.html" class="mnav-item" style="padding:11px 24px;font-size:14px;">Terms</a>
+  <a href="../contact-new.html" class="mnav-item" style="padding:11px 24px;font-size:14px;">Contact Us</a>
+  <div class="mnav-btns"><a href="#" class="btn-register">Register</a><a href="#" class="btn-login">Login</a></div>
+</div>
 
-<!-- HEADER -->
-<header class="hdr">
-  <div class="hdr-logo-wrap">
-    <a href="../dashboard-new.html"><img src="../assets/vgm-logo.png" alt="Veloci Global Markets"/></a>
+<section class="page-hero">
+  <video class="hero-video" autoplay muted loop playsinline><source src="https://ywnpzjjpighjhhqoxtsj.supabase.co/storage/v1/object/public/media/videos/energy.webm" type="video/webm"/></video>
+  <div class="page-hero-content">
+    <div class="page-hero-tag">COMMODITIES</div>
+    <h1>Trade Gold, Oil & <span>More Commodities</span></h1>
+    <p>Access 20+ commodity CFDs including precious metals, energies and agricultural products. Hedge against inflation and diversify your portfolio with real-world assets.</p>
+    <div class="page-hero-btns">
+      <a href="#" class="btn-orange">Start Trading Now</a>
+      <a href="#" class="btn-outline-white">View All Commodities</a>
+    </div>
   </div>
-  <div class="hdr-hamburger" onclick="toggleSidebar()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-  </div>
-  <div class="hdr-search">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input type="text" placeholder="Search commodities..."/>
-  </div>
-  <div class="hdr-right">
-    <a class="hicon" href="../notifications-new.html">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    </a>
-    <div class="hdr-avatar" id="hdr-avatar">V</div>
-  </div>
-</header>
+</section>
 
-<div class="layout">
-<!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <div class="sb-logo-area">
-    <img src="../assets/vgm-logo.png" alt="Veloci Global Markets"/>
+<div class="stats-strip">
+  <div class="stats-strip-inner">
+    <div class="stat-item"><div class="stat-num">20+</div><div class="stat-lbl">Commodities</div></div>
+    <div class="stat-item"><div class="stat-num">Gold 0.75</div><div class="stat-lbl">Spread From</div></div>
+    <div class="stat-item"><div class="stat-num">200:1</div><div class="stat-lbl">Max Leverage</div></div>
+    <div class="stat-item"><div class="stat-num">24/5</div><div class="stat-lbl">Trading Hours</div></div>
   </div>
-  <nav class="sb-nav">
-    <a class="nav-item" href="../dashboard-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span class="nav-item-label">Dashboard</span>
-    </a>
-    <a class="nav-item active" href="../markets-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="nav-item-label">Markets</span>
-    </a>
-    <div class="nav-group-label">Markets</div>
-    <a class="nav-item" href="forex-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      <span class="nav-item-label">Forex</span>
-    </a>
-    <a class="nav-item" href="indices-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/></svg>
-      <span class="nav-item-label">Indices</span>
-    </a>
-    <a class="nav-item active" href="commodities-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <span class="nav-item-label">Commodities</span>
-    </a>
-    <a class="nav-item" href="shares-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="12" x2="7" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="17" y1="9" x2="17" y2="17"/></svg>
-      <span class="nav-item-label">Shares</span>
-    </a>
-    <a class="nav-item" href="etfs-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="8,12 12,8 16,12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-      <span class="nav-item-label">ETFs</span>
-    </a>
-    <a class="nav-item" href="bonds-new.html" style="padding-left:28px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-      <span class="nav-item-label">Bonds</span>
-    </a>
-    <div class="nav-divider"></div>
-    <a class="nav-item" href="../wallet-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
-      <span class="nav-item-label">Wallet</span>
-    </a>
-    <div class="nav-group-label">Funds</div>
-    <a class="nav-item" href="../deposit-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v14m0 0l-4-4m4 4l4-4"/><path d="M4 20h16"/></svg>
-      <span class="nav-item-label">Deposit</span>
-    </a>
-    <a class="nav-item" href="../withdraw-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22V8m0 0l4 4m-4-4l-4 4"/><path d="M4 4h16"/></svg>
-      <span class="nav-item-label">Withdraw</span>
-    </a>
-    <div class="nav-divider"></div>
-    <div class="nav-group-label">Trade</div>
-    <a class="nav-item" href="../spot-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-      <span class="nav-item-label">Spot</span>
-    </a>
-    <a class="nav-item" href="../futures-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>
-      <span class="nav-item-label">Futures</span>
-    </a>
-    <div class="nav-divider"></div>
-    <div class="nav-group-label">Account</div>
-    <a class="nav-item" href="../notifications-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      <span class="nav-item-label">Notifications</span>
-    </a>
-    <a class="nav-item" href="../settings-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      <span class="nav-item-label">Settings</span>
-    </a>
-    <a class="nav-item" href="../upgrade-new.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,11 12,6 7,11"/><polyline points="17,18 12,13 7,18"/></svg>
-      <span class="nav-item-label">Upgrade</span>
-    </a>
-  </nav>
-  <div class="sb-bottom">
-    <div class="sb-user">
-      <div class="sb-avatar" id="sb-avatar">V</div>
-      <div class="sb-user-info">
-        <div class="sb-user-name" id="sb-user-name">Loading...</div>
-        <div class="sb-user-uid" id="sb-user-uid"></div>
+</div>
+
+<section class="content-section">
+  <div class="si">
+    <div class="section-tag">COMMODITY CATEGORIES</div>
+    <h2 class="section-h2">Diverse <span>Commodity Markets</span></h2>
+    <p class="section-p">From safe-haven gold to energy-driving crude oil, Veloci gives you access to the full spectrum of global commodity markets with professional execution and competitive pricing.</p>
+    <div class="cards-grid">
+      <div class="info-card">
+        <div class="info-card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg></div>
+        <h3>Gold & Silver</h3>
+        <p>Trade the world's premier safe-haven assets. Gold (XAUUSD) and Silver (XAGUSD) offer excellent hedging opportunities during periods of economic uncertainty and inflation.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v8M8 12h8"/></svg></div>
+        <h3>Energy</h3>
+        <p>Access WTI Crude Oil, Brent Crude and Natural Gas markets. Energy commodities are driven by global supply and demand dynamics, geopolitical events and seasonal patterns.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></div>
+        <h3>Agriculture</h3>
+        <p>Trade soft commodities including wheat, corn, soybeans and coffee. Agricultural markets are influenced by weather, harvest cycles and global food demand trends.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-icon"><svg viewBox="0 0 24 24"><polygon points="12,2 22,20 2,20"/></svg></div>
+        <h3>Industrial Metals</h3>
+        <p>Gain exposure to copper, aluminium and other industrial metals that power the global economy. Ideal for tracking economic growth and infrastructure investment trends.</p>
       </div>
     </div>
-    <button onclick="doSignOut()" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--red);background:none;border:none;border-top:1px solid var(--b);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(246,70,93,.06)'" onmouseout="this.style.background='none'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Sign Out
-    </button>
   </div>
-</aside>
+</section>
 
-<!-- MAIN -->
-<main class="main">
-
-  <!-- PAGE HEADER -->
-  <div class="page-hdr">
-    <div class="page-hdr-left">
-      <div class="live-dot"></div>
-      <div class="page-title">Commodities Markets</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span class="last-updated" id="last-updated">Updated just now</span>
-      <button class="refresh-btn" onclick="refreshTime()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Refresh
-      </button>
-    </div>
-  </div>
-
-  <!-- CATEGORY TABS -->
-  <div class="cat-tabs">
-    <a class="cat-tab" href="../markets-new.html">Crypto</a>
-    <a class="cat-tab" href="forex-new.html">Forex</a>
-    <a class="cat-tab" href="indices-new.html">Indices</a>
-    <a class="cat-tab active" href="commodities-new.html">Commodities</a>
-    <a class="cat-tab" href="shares-new.html">Shares</a>
-    <a class="cat-tab" href="etfs-new.html">ETFs</a>
-    <a class="cat-tab" href="bonds-new.html">Bonds</a>
-  </div>
-
-  <!-- TRADINGVIEW COMMODITIES WIDGET -->
-  <div class="widget-wrap">
-    <div class="tradingview-widget-container">
-      <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-      {
-        "colorTheme": "dark",
-        "dateRange": "1D",
-        "showChart": true,
-        "locale": "en",
-        "width": "100%",
-        "height": 500,
-        "isTransparent": true,
-        "tabs": [
-          {
-            "title": "Commodities",
-            "symbols": [
-              {"s": "COMEX:GC1!", "d": "Gold"},
-              {"s": "COMEX:SI1!", "d": "Silver"},
-              {"s": "NYMEX:CL1!", "d": "Crude Oil WTI"},
-              {"s": "NYMEX:NG1!", "d": "Natural Gas"},
-              {"s": "CBOT:ZW1!", "d": "Wheat"},
-              {"s": "CBOT:ZC1!", "d": "Corn"},
-              {"s": "ICE:CC1!", "d": "Cocoa"},
-              {"s": "COMEX:HG1!", "d": "Copper"},
-              {"s": "NYMEX:RB1!", "d": "RBOB Gasoline"},
-              {"s": "CBOT:ZS1!", "d": "Soybeans"}
-            ]
-          }
-        ]
-      }
-      </script>
-    </div>
-  </div>
-
-  <!-- FEATURED COMMODITIES TABLE -->
-  <div class="section-card">
-    <div class="section-hdr">
-      <div class="section-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        Featured Commodities
-      </div>
-      <span style="font-size:12px;color:var(--sub);">Prices indicative — delayed 15 min</span>
-    </div>
-    <div class="tbl-wrap">
-      <table>
+<section class="content-section grey">
+  <div class="si">
+    <div class="section-tag">MARKET RATES</div>
+    <h2 class="section-h2">Popular <span>Commodities</span></h2>
+    <p class="section-p">Trade the most liquid commodity markets with tight spreads and high leverage. All conditions are indicative and subject to change.</p>
+    <div class="table-wrap">
+      <table class="data-table">
         <thead>
-          <tr>
-            <th>Commodity</th>
-            <th>Symbol</th>
-            <th>Price</th>
-            <th>Unit</th>
-            <th>Daily Change</th>
-            <th>Change %</th>
-            <th>Category</th>
-            <th>Action</th>
-          </tr>
+          <tr><th>Symbol</th><th>Description</th><th>Spread From</th><th>Max Leverage</th><th>Action</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="commodity-icon">🥇</span> Gold</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">XAU/USD</td>
-            <td class="price-cell">$2,345.80</td>
-            <td style="color:var(--sub);font-size:12px;">per oz</td>
-            <td class="pos">+$12.40</td>
-            <td class="pos">+0.53%</td>
-            <td><span class="cat-badge cat-precious">Precious Metal</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🥈</span> Silver</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">XAG/USD</td>
-            <td class="price-cell">$27.65</td>
-            <td style="color:var(--sub);font-size:12px;">per oz</td>
-            <td class="neg">-$0.18</td>
-            <td class="neg">-0.65%</td>
-            <td><span class="cat-badge cat-precious">Precious Metal</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🛢️</span> Crude Oil WTI</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">WTI/USD</td>
-            <td class="price-cell">$82.15</td>
-            <td style="color:var(--sub);font-size:12px;">per barrel</td>
-            <td class="pos">+$0.94</td>
-            <td class="pos">+1.16%</td>
-            <td><span class="cat-badge cat-energy">Energy</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🛢️</span> Brent Crude</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">BRENT/USD</td>
-            <td class="price-cell">$86.40</td>
-            <td style="color:var(--sub);font-size:12px;">per barrel</td>
-            <td class="pos">+$0.75</td>
-            <td class="pos">+0.88%</td>
-            <td><span class="cat-badge cat-energy">Energy</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🔥</span> Natural Gas</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">NG/USD</td>
-            <td class="price-cell">$2.34</td>
-            <td style="color:var(--sub);font-size:12px;">per MMBtu</td>
-            <td class="neg">-$0.08</td>
-            <td class="neg">-3.31%</td>
-            <td><span class="cat-badge cat-energy">Energy</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🔩</span> Copper</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">HG/USD</td>
-            <td class="price-cell">$4.48</td>
-            <td style="color:var(--sub);font-size:12px;">per lb</td>
-            <td class="pos">+$0.03</td>
-            <td class="pos">+0.67%</td>
-            <td><span class="cat-badge cat-base">Base Metal</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🌾</span> Wheat</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">ZW/USD</td>
-            <td class="price-cell">$545.25</td>
-            <td style="color:var(--sub);font-size:12px;">per bushel</td>
-            <td class="pos">+$2.50</td>
-            <td class="pos">+0.46%</td>
-            <td><span class="cat-badge cat-agri">Agriculture</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🌽</span> Corn</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">ZC/USD</td>
-            <td class="price-cell">$445.75</td>
-            <td style="color:var(--sub);font-size:12px;">per bushel</td>
-            <td class="neg">-$1.25</td>
-            <td class="neg">-0.28%</td>
-            <td><span class="cat-badge cat-agri">Agriculture</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">🫘</span> Soybeans</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">ZS/USD</td>
-            <td class="price-cell">$1,165.00</td>
-            <td style="color:var(--sub);font-size:12px;">per bushel</td>
-            <td class="pos">+$4.50</td>
-            <td class="pos">+0.39%</td>
-            <td><span class="cat-badge cat-agri">Agriculture</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
-          <tr>
-            <td><span class="commodity-icon">⚪</span> Platinum</td>
-            <td style="font-family:var(--mono);font-size:12px;color:var(--sub);">XPT/USD</td>
-            <td class="price-cell">$985.40</td>
-            <td style="color:var(--sub);font-size:12px;">per oz</td>
-            <td class="neg">-$3.20</td>
-            <td class="neg">-0.32%</td>
-            <td><span class="cat-badge cat-precious">Precious Metal</span></td>
-            <td><a class="trade-btn" href="../futures-new.html">Trade</a></td>
-          </tr>
+          <tr><td class="td-name">XAUUSD</td><td>Gold vs US Dollar</td><td class="td-green">0.75</td><td>200:1</td><td><a href="#" class="trade-btn">Trade</a></td></tr>
+          <tr><td class="td-name">XAGUSD</td><td>Silver vs US Dollar</td><td class="td-green">2.5</td><td>150:1</td><td><a href="#" class="trade-btn">Trade</a></td></tr>
+          <tr><td class="td-name">USOIL</td><td>WTI Crude Oil</td><td class="td-green">3 cts</td><td>100:1</td><td><a href="#" class="trade-btn">Trade</a></td></tr>
+          <tr><td class="td-name">UKOIL</td><td>Brent Crude Oil</td><td class="td-green">3 cts</td><td>100:1</td><td><a href="#" class="trade-btn">Trade</a></td></tr>
+          <tr><td class="td-name">NGAS</td><td>Natural Gas</td><td class="td-green">0.03</td><td>100:1</td><td><a href="#" class="trade-btn">Trade</a></td></tr>
         </tbody>
       </table>
     </div>
   </div>
+</section>
 
-</main>
-</div><!-- end layout -->
-</div><!-- end page -->
+<section class="cta-strip">
+  <h2>Start Trading Commodities Today</h2>
+  <p>Hedge your portfolio and capitalise on real-world market movements. Open your account in minutes with Veloci Global Markets.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+    <a href="#" class="btn-orange">Create Free Account</a>
+    <a href="#" class="btn-outline-white">Try Demo First</a>
+  </div>
+</section>
 
-<div class="toast-container" id="toast-container"></div>
-
+<footer>
+  <div class="si">
+    <div class="ft-top">
+      <div>
+        <div style="margin-bottom:10px;"><img src="../assets/vgm-logo.png" alt="Veloci Global Markets" style="height:80px;width:auto;"/></div>
+        <p class="ft-desc">Veloci Global Markets — a leading multi-asset CFD trading platform serving 5M+ traders across 170+ countries.</p>
+        <div class="ft-socials"><div class="soc">𝕏</div><div class="soc">f</div><div class="soc">in</div><div class="soc">▶</div><div class="soc">📸</div></div>
+      </div>
+      <div class="ft-cols">
+        <div class="ft-col"><div class="ft-col-h">Trading</div><ul><li><a href="../markets/forex.html">Forex</a></li><li><a href="../markets/indices.html">Indices</a></li><li><a href="../markets/commodities.html">Commodities</a></li><li><a href="../markets/shares.html">Shares</a></li><li><a href="../markets/etfs.html">ETFs</a></li><li><a href="../markets/bonds.html">Bonds</a></li></ul></div>
+        <div class="ft-col"><div class="ft-col-h">Platforms</div><ul><li><a href="../index-new.html">Veloci Platform</a></li><li><a href="../platforms/tradingview.html">TradingView Platform</a></li></ul></div>
+        <div class="ft-col"><div class="ft-col-h">Company</div><ul><li><a href="../index-new.html">About Us</a></li><li><a href="../contact-new.html">Contact Us</a></li><li><a href="../privacy-new.html">Privacy Policy</a></li><li><a href="../terms-new.html">Terms</a></li></ul></div>
+        <div class="ft-col"><div class="ft-col-h">Support</div><ul><li><a href="../contact-new.html">Help Centre</a></li><li><a href="../contact-new.html">Trading Academy</a></li><li><a href="../contact-new.html">Market Analysis</a></li><li><a href="#">Economic Calendar</a></li></ul></div>
+      </div>
+    </div>
+    <hr class="ft-divider"/>
+    <div class="ft-regs"><div class="reg">ASIC • Australia</div><div class="reg">FCA • United Kingdom</div><div class="reg">CIMA • Cayman Islands</div><div class="reg">FSC • Mauritius</div></div>
+    <p class="ft-legal">Veloci Global Markets is authorised and regulated by the Australian Securities and Investments Commission (ASIC), AFSL no. 428901. CFDs are complex instruments and come with a high risk of losing money rapidly due to leverage. Between 74–89% of retail investor accounts lose money when trading CFDs.</p>
+    <div class="ft-bottom">
+      <p class="ft-copy">© 2026 Veloci Global Markets. All rights reserved.</p>
+      <div class="ft-links"><a href="../privacy-new.html">Privacy Policy</a><a href="../terms-new.html">Terms of Service</a><a href="../cookie-policy-new.html">Cookie Policy</a></div>
+    </div>
+  </div>
+</footer>
 <script>
-const db = window.SV_DB;
-
-(async function init(){
-  const {data:{session}} = await db.auth.getSession();
-  if(!session){window.location.href='../login.html';return;}
-  const user = session.user;
-  const email = user.email || '';
-  const initials = email.substring(0,2).toUpperCase();
-  const avatarEl = document.getElementById('hdr-avatar');
-  if(avatarEl) avatarEl.textContent = initials;
-  const sbAvatarEl = document.getElementById('sb-avatar');
-  if(sbAvatarEl) sbAvatarEl.textContent = initials;
-  const nameEl = document.getElementById('sb-user-name');
-  if(nameEl) nameEl.textContent = email;
-  const uidEl = document.getElementById('sb-user-uid');
-  if(uidEl) uidEl.textContent = user.id.substring(0,8)+'...';
+(function(){var btn=document.getElementById('nav-hamburger');var drawer=document.getElementById('mobile-nav');if(!btn||!drawer)return;btn.addEventListener('click',function(){btn.classList.toggle('open');drawer.classList.toggle('open');document.body.style.overflow=drawer.classList.contains('open')?'hidden':'';});drawer.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){btn.classList.remove('open');drawer.classList.remove('open');document.body.style.overflow='';});});})();
+(function(){var navItems=document.querySelectorAll('.nav-links>li');navItems.forEach(function(li){var dd=li.querySelector('.nav-dropdown');var trigger=li.querySelector('a');if(!dd||!trigger)return;trigger.addEventListener('click',function(e){e.preventDefault();var isOpen=li.classList.contains('dd-open');navItems.forEach(function(x){x.classList.remove('dd-open');});if(!isOpen)li.classList.add('dd-open');});});document.addEventListener('click',function(e){if(!e.target.closest('.nav-links'))navItems.forEach(function(x){x.classList.remove('dd-open');});});})();
+</script>
+<script>
+(function(){
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.content-section,.cta-strip,.two-col,.step-row,.table-wrap,.stats-strip').forEach(function(el){
+    el.classList.add('reveal');obs.observe(el);
+  });
 })();
-
-function refreshTime(){
-  document.getElementById('last-updated').textContent = 'Updated just now';
-}
-
-function toggleSidebar(){
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sb-overlay');
-  sb.classList.toggle('mob-open');
-  ov.classList.toggle('open');
-}
-
-function closeSidebar(){
-  document.getElementById('sidebar').classList.remove('mob-open');
-  document.getElementById('sb-overlay').classList.remove('open');
-}
-
-async function doSignOut(){
-  await db.auth.signOut();
-  window.location.href = '../login.html';
-}
-
-function showToast(msg, type){
-  const tc = document.getElementById('toast-container');
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `<div class="toast-dot" style="background:${type==='error'?'var(--red)':'var(--green)'}"></div><span>${msg}</span>`;
-  tc.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);}, 3000);
-}
+(function(){
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting)return;
+      obs.unobserve(e.target);
+      var el=e.target,raw=el.textContent.trim();
+      var m=raw.match(/^([^0-9]*)(\d+(?:\.\d+)?)(.*)$/);
+      if(!m)return;
+      var pre=m[1],target=parseFloat(m[2]),suf=m[3];
+      var dec=m[2].indexOf('.')>=0?m[2].split('.')[1].length:0;
+      var dur=1600,t0=null;
+      function step(ts){
+        if(!t0)t0=ts;
+        var p=Math.min((ts-t0)/dur,1),ease=1-Math.pow(1-p,3);
+        el.textContent=pre+(target*ease).toFixed(dec)+suf;
+        if(p<1)requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  },{threshold:0.5});
+  document.querySelectorAll('.stat-num').forEach(function(el){obs.observe(el);});
+})();
 </script>
 </body>
 </html>

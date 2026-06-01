@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Veloci OPS — Admin Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/assets/favicon.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; }
+    body {
+      background: #080c18;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+
+    .login-wrap {
+      width: 100%; max-width: 420px;
+    }
+
+    .login-logo {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px; justify-content: center;
+    }
+    .login-logo img { width: 44px; height: 44px; object-fit: contain; }
+    .login-logo__text { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .login-logo__badge {
+      background: #f05a1a; color: #fff; font-size: 10px; font-weight: 800;
+      padding: 2px 8px; border-radius: 4px; letter-spacing: 0.08em;
+    }
+
+    .login-card {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 36px 32px;
+    }
+
+    .login-card__title {
+      font-size: 17px; font-weight: 700; color: #fff;
+      margin-bottom: 4px;
+    }
+    .login-card__sub {
+      font-size: 13px; color: rgba(255,255,255,0.4);
+      margin-bottom: 28px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .field label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.06em; }
+    .field input {
+      height: 44px; background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 0 14px;
+      font-size: 14px; color: #fff; outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: #f05a1a; }
+    .field input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .login-btn {
+      width: 100%; height: 46px; background: #f05a1a;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 700; color: #fff;
+      cursor: pointer; margin-top: 8px;
+      transition: background 0.15s;
+    }
+    .login-btn:hover { background: #d94d12; }
+    .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .login-err {
+      display: none; margin-top: 14px;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px; color: #f87171;
+    }
+
+    .login-footer {
+      text-align: center; margin-top: 24px;
+      font-size: 12px; color: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-logo">
+    <img src="assets/vgm-logo.png" alt="Veloci">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="login-logo__text">Veloci</span>
+        <span class="login-logo__badge">OPS</span>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:1px;">Admin Control Panel</div>
+    </div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-card__title">Administrator Sign In</div>
+    <div class="login-card__sub">Restricted access — authorised personnel only</div>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="admin-user" placeholder="admin@velociglobal.pro" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="admin-pass" placeholder="••••••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In to OPS</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+
+  <div class="login-footer">Veloci Global Markets &copy; 2025 &nbsp;&middot;&nbsp; Restricted</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./ops-supabase.js"></script>
+<script>
+  async function doLogin() {
+    const email = document.getElementById('admin-user').value.trim();
+    const pass  = document.getElementById('admin-pass').value;
+    const btn   = document.getElementById('login-btn');
+    const errEl = document.getElementById('login-err');
+
+    function showErr(msg) { errEl.style.display = 'block'; errEl.textContent = msg; }
+    errEl.style.display = 'none';
+
+    if (!email || !pass) { showErr('Enter your email and password.'); return; }
+
+    const db = window.SV_DB;
+    if (!db) { showErr('Database not initialised — refresh and try again.'); return; }
+
+    btn.disabled = true; btn.textContent = 'Signing in…';
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pass });
+
+    if (error) { showErr('Auth error: ' + error.message); btn.disabled = false; btn.textContent = 'Sign In to OPS'; return; }
+    if (!data?.user) { showErr('No user returned — try again.'); btn.disabled = false; btn.textContent = 'Sign In to OPS'; return; }
+
+    const { data: adminRow, error: adminErr } = await db.from('admin_users').select('id, email, role').eq('id', data.user.id).maybeSingle();
+
+    if (adminErr) { showErr('Admin lookup failed: ' + adminErr.message); btn.disabled = false; btn.textContent = 'Sign In to OPS'; return; }
+    if (!adminRow) { await db.auth.signOut(); showErr('Access denied — account is not authorised for OPS.'); btn.disabled = false; btn.textContent = 'Sign In to OPS'; return; }
+
+    sessionStorage.setItem('sv_ops_login_at', Date.now().toString());
+    window.location.href = 'ops-new.html';
+  }
+
+  // Auto-redirect if already logged in as admin
+  (async function() {
+    const db = window.SV_DB; if (!db) return;
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return;
+    const { data: adminRow } = await db.from('admin_users').select('id').eq('id', session.user.id).maybeSingle();
+    if (adminRow) window.location.href = 'ops-new.html';
+  })();
+</script>
+</body>
+</html>
