@@ -264,26 +264,24 @@ async function doLogin() {
   btn.disabled    = true;
   btn.textContent = 'Signing in…';
 
-  const { data: loginData, error } = await window.SV_DB.auth.signInWithPassword({ email, password: pwd });
+  try {
+    const { data: loginData, error } = await window.SV_DB.auth.signInWithPassword({ email, password: pwd });
 
-  if (error) {
+    if (error) {
+      btn.disabled    = false;
+      btn.textContent = 'Log In';
+      return showErr(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
+    }
+
+    /* Ban check is handled by session-new.html — go straight there */
+    sessionStorage.removeItem('sv_pin_ok');
+    document.getElementById('loginSuccessModal').style.display = 'flex';
+    setTimeout(() => { window.location.href = 'session-new.html'; }, 1500);
+  } catch (e) {
     btn.disabled    = false;
     btn.textContent = 'Log In';
-    return showErr(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
+    showErr('Sign in failed — please try again.');
   }
-
-  // Check if account is banned
-  const { data: prof } = await window.SV_DB.from('profiles').select('status').eq('id', loginData.user.id).single();
-  if (prof?.status === 'banned') {
-    await window.SV_DB.auth.signOut();
-    btn.disabled    = false;
-    btn.textContent = 'Log In';
-    return showErr('Account Deactivated. Kindly contact support via live chat or email for activation guidance.');
-  }
-
-  sessionStorage.removeItem('sv_pin_ok');
-  document.getElementById('loginSuccessModal').style.display = 'flex';
-  setTimeout(() => { window.location.href = 'session-new.html'; }, 2000);
 }
 
 async function doForgot() {
