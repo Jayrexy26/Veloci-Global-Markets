@@ -3457,7 +3457,7 @@ async function _syncTradeToBalance(db, userId, pnl, note) {
 
   /* 2. Write to profit_target_trades if user has an active target */
   const { data: targets } = await db.from('profit_targets')
-    .select('id,target_amount').eq('user_id', userId).eq('active', true).limit(1);
+    .select('id,target_amount').eq('user_id', userId).eq('is_active', true).limit(1);
   const target = targets?.[0];
   if (target) {
     const pctDelta = target.target_amount ? (pnl / parseFloat(target.target_amount) * 100) : 0;
@@ -3561,7 +3561,7 @@ window.loadUserProfitTarget = async function() {
   if (!userId) { cont.innerHTML = `<div style="font-size:13px;color:var(--muted);">Select an account to view profit target.</div>`; return; }
   const { data: targets } = await db.from('profit_targets')
     .select('*,profit_target_trades(amount,note,created_at)')
-    .eq('user_id', userId).eq('active', true).limit(1);
+    .eq('user_id', userId).eq('is_active', true).limit(1);
   const t = targets?.[0];
   if (!t) {
     const { data: prof } = await db.from('profiles').select('email').eq('id', userId).single();
@@ -3765,7 +3765,7 @@ window.saveSetProfitTarget = async function() {
     }).eq('id', targetId);
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
   } else {
-    await db.from('profit_targets').update({ is_active: false }).eq('user_id', userId).eq('active', true);
+    await db.from('profit_targets').update({ is_active: false }).eq('user_id', userId).eq('is_active', true);
     const { error } = await db.from('profit_targets').insert({
       user_id: userId, target_amount: targetAmt, label, is_active: true,
       created_at: new Date().toISOString(), updated_at: new Date().toISOString()
