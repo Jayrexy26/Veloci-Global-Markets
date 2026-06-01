@@ -2913,8 +2913,8 @@ window.renderWithdrawalsLive = async function() {
     return `<tr>
       <td>${userCell(w.user_id, w.user_email)}</td>
       <td style="font-weight:700;">${fmtMoney(w.amount||0)}</td>
-      <td>${w.method||'—'}</td>
-      <td><code style="font-size:11px;">${(w.wallet||w.bank_details||'—').slice(0,20)}</code></td>
+      <td>${w.destination_type||'—'}</td>
+      <td><code style="font-size:11px;">${(w.destination_name||w.destination_ref||'—').slice(0,28)}</code></td>
       <td>${fmtDate(w.created_at)}</td>
       <td><span class="badge-pill ${pill}">${w.status||'pending'}</span></td>
       <td><div class="row-actions">
@@ -2928,9 +2928,6 @@ async function approveWithdrawal(id) {
   const { data: req } = await db.from('withdrawal_requests').select('user_id,amount').eq('id', id).maybeSingle();
   await db.from('withdrawal_requests').update({ status:'approved' }).eq('id', id);
   if (req?.user_id && req?.amount) {
-    await db.from('transactions')
-      .update({ status:'completed' })
-      .eq('withdrawal_request_id', id);
     await db.from('notifications').insert({
       user_id: req.user_id,
       title:   'Withdrawal Approved',
@@ -2950,9 +2947,6 @@ async function rejectWithdrawal(id) {
     const { data: prof } = await db.from('profiles').select('balance').eq('id', req.user_id).maybeSingle();
     const refunded = parseFloat(prof?.balance || 0) + parseFloat(req.amount);
     await db.from('profiles').update({ balance: refunded }).eq('id', req.user_id);
-    await db.from('transactions')
-      .update({ status:'rejected' })
-      .eq('withdrawal_request_id', id);
     await db.from('notifications').insert({
       user_id: req.user_id,
       title:   'Withdrawal Rejected',
