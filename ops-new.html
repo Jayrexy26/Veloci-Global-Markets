@@ -3189,7 +3189,7 @@ window.renderAnnouncementsLive = renderAnnouncementsLive;
 
 window.opsToggleAnnouncement = async function(annId, enable) {
   const db = window.SV_DB; if (!db) return;
-  await db.from('announcements').update({ is_active: enable }).eq('id', annId);
+  await db.from('announcements').update({ is_active: enable, active: enable }).eq('id', annId);
   await db.from('notifications').update({ enabled: enable }).eq('announcement_id', annId);
   logAudit(enable ? 'ENABLE_ANNOUNCEMENT' : 'DISABLE_ANNOUNCEMENT', annId, `Popup ${enable ? 'enabled' : 'disabled'}`);
   showToast(`Popup ${enable ? 'enabled — users will see it' : 'disabled — users will no longer see it'}`, enable ? 'success' : 'error');
@@ -3254,7 +3254,7 @@ window.publishAnnouncement = async function() {
 
     if (_editingAnnId) {
       const { error } = await db.from('announcements').update({
-        title, body, type, audience,
+        title, body, message: body, type, audience,
         target_user_id: audience === 'specific' ? specificId : null,
         sent_count: recipientIds.length
       }).eq('id', _editingAnnId);
@@ -3266,9 +3266,9 @@ window.publishAnnouncement = async function() {
       showToast('Announcement updated', 'success');
     } else {
       const { data: annRow, error } = await db.from('announcements').insert({
-        title, body, type, audience,
+        title, body: body||null, message: body||null, type, audience,
         target_user_id: audience === 'specific' ? specificId : null,
-        is_active: true, sent_count: recipientIds.length,
+        active: true, is_active: true, sent_count: recipientIds.length,
         created_by: _adminUser?.id || null,
         published_by: _adminUser?.email || null
       }).select('id').single();
