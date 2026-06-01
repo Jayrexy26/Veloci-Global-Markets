@@ -1507,6 +1507,24 @@
   </div>
 </div>
 
+<!-- Withdrawal Detail Modal -->
+<div class="modal-overlay" id="modal-wd-detail">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal__head">
+      <div class="modal__title">Withdrawal Details</div>
+      <button class="modal__close" onclick="closeModal('modal-wd-detail')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body" id="wd-detail-body">
+      <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;">Loading…</div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modal-wd-detail')">Close</button>
+      <button class="btn btn--sm btn--green" id="wd-detail-approve-btn" style="display:none;" onclick="wdDetailAction('approve')">Approve</button>
+      <button class="btn btn--sm btn--red"   id="wd-detail-reject-btn"  style="display:none;" onclick="wdDetailAction('reject')">Reject</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
   <span id="toast-msg">Done</span>
@@ -2918,6 +2936,7 @@ window.renderWithdrawalsLive = async function() {
       <td>${fmtDate(w.created_at)}</td>
       <td><span class="badge-pill ${pill}">${w.status||'pending'}</span></td>
       <td><div class="row-actions">
+        <button class="btn btn--sm btn--outline" onclick="viewWithdrawal('${w.id}')">View</button>
         ${w.status==='pending'?`<button class="btn btn--sm btn--green" onclick="approveWithdrawal('${w.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="rejectWithdrawal('${w.id}')">Reject</button>`:''}
       </div></td>
     </tr>`;
@@ -2958,6 +2977,75 @@ async function rejectWithdrawal(id) {
   logAudit('reject_withdrawal', id, '');
   renderWithdrawalsLive(); loadDashStats();
 }
+
+/* ── View Withdrawal Detail ── */
+let _wdDetailId = null;
+window.viewWithdrawal = async function(id) {
+  _wdDetailId = id;
+  const body = document.getElementById('wd-detail-body');
+  body.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;">Loading…</div>';
+  document.getElementById('wd-detail-approve-btn').style.display = 'none';
+  document.getElementById('wd-detail-reject-btn').style.display  = 'none';
+  openModal('modal-wd-detail');
+
+  const db = window.SV_DB; if (!db) return;
+  const { data: w } = await db.from('withdrawal_requests').select('*').eq('id', id).maybeSingle();
+  if (!w) { body.innerHTML = '<p style="color:var(--red);text-align:center;">Could not load request.</p>'; return; }
+
+  const { data: prof } = await db.from('profiles').select('first_name,last_name,balance').eq('id', w.user_id).maybeSingle();
+  const { data: authUser } = await db.from('users').select('email').eq('id', w.user_id).maybeSingle().catch(()=>({data:null}));
+
+  const userName  = [prof?.first_name, prof?.last_name].filter(Boolean).join(' ') || '—';
+  const userEmail = authUser?.email || w.user_email || '—';
+  const isCrypto  = (w.destination_type || 'crypto') === 'crypto';
+  const pill      = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
+
+  /* Parse destination_ref for crypto vs bank */
+  let destRows = '';
+  if (isCrypto) {
+    const parts = (w.destination_ref || '').split(' | Memo: ');
+    destRows = `
+      <div class="wd-detail-row"><span>Wallet Address</span><code style="font-size:12px;word-break:break-all;">${parts[0] || '—'}</code></div>
+      ${parts[1] ? `<div class="wd-detail-row"><span>Memo / Tag</span><code style="font-size:12px;">${parts[1]}</code></div>` : ''}
+    `;
+  } else {
+    const refParts = (w.destination_ref || '').split(' | ');
+    const labels   = ['Account No.', 'SWIFT / BIC', 'IBAN'];
+    destRows = refParts.map((p,i) => `<div class="wd-detail-row"><span>${labels[i]||'Detail'}</span><code style="font-size:12px;">${p}</code></div>`).join('');
+  }
+
+  body.innerHTML = `
+    <style>
+      .wd-detail-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+      .wd-detail-row:last-child{border-bottom:none;}
+      .wd-detail-row>span:first-child{color:var(--muted);white-space:nowrap;flex-shrink:0;min-width:130px;}
+      .wd-detail-row>*:last-child{text-align:right;font-weight:500;}
+    </style>
+    <div class="wd-detail-row"><span>Request ID</span><code style="font-size:11px;">${w.id}</code></div>
+    <div class="wd-detail-row"><span>User</span><span>${userName}</span></div>
+    <div class="wd-detail-row"><span>Email</span><span>${userEmail}</span></div>
+    <div class="wd-detail-row"><span>User ID</span><code style="font-size:11px;">${w.user_id}</code></div>
+    <div class="wd-detail-row"><span>Amount (USD)</span><span style="font-weight:700;color:var(--red);">$${parseFloat(w.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+    <div class="wd-detail-row"><span>Type</span><span style="text-transform:capitalize;">${w.destination_type||'crypto'}</span></div>
+    ${isCrypto ? `<div class="wd-detail-row"><span>Coin / Amount</span><span>${w.destination_name||'—'}</span></div>` : `<div class="wd-detail-row"><span>Bank / Holder</span><span>${w.destination_name||'—'}</span></div>`}
+    ${destRows}
+    <div class="wd-detail-row"><span>Status</span><span class="badge-pill ${pill}">${w.status||'pending'}</span></div>
+    <div class="wd-detail-row"><span>Submitted</span><span>${fmtDate(w.created_at)}</span></div>
+    ${w.reviewed_at ? `<div class="wd-detail-row"><span>Reviewed</span><span>${fmtDate(w.reviewed_at)}</span></div>` : ''}
+  `;
+
+  if (w.status === 'pending') {
+    document.getElementById('wd-detail-approve-btn').style.display = '';
+    document.getElementById('wd-detail-reject-btn').style.display  = '';
+  }
+};
+
+window.wdDetailAction = async function(action) {
+  if (!_wdDetailId) return;
+  closeModal('modal-wd-detail');
+  if (action === 'approve') await approveWithdrawal(_wdDetailId);
+  else                      await rejectWithdrawal(_wdDetailId);
+};
 
 /* ── Upgrade Plan ── */
 window.openUpgradePlan = function(userId, userName, currentPlan) {
