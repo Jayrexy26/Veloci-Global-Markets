@@ -306,6 +306,13 @@ async function doLogin() {
       sessionStorage.setItem('sv_login_logged', '1');
     } catch(_) {}
 
+    /* Login alert email — fire-and-forget */
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.session.access_token}` },
+      body: JSON.stringify({ type: 'login', user_agent: navigator.userAgent }),
+    }).catch(() => {});
+
     /* Ban check is handled by session-new.html — go straight there */
     sessionStorage.removeItem('sv_pin_ok');
     document.getElementById('loginSuccessModal').style.display = 'flex';

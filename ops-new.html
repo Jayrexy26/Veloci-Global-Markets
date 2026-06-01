@@ -2715,6 +2715,16 @@ async function approveKYC(id, userId) {
   await db.from('kyc_submissions').update({ status: 'approved' }).eq('id', id);
   if (userId) await db.from('profiles').update({ kyc_status: 'verified' }).eq('id', userId);
   logAudit('approve_kyc', id, '');
+  if (userId) {
+    window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
+      if (!s?.access_token) return;
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+        body: JSON.stringify({ action: 'notify_kyc_approved', user_id: userId }),
+      }).catch(() => {});
+    }).catch(() => {});
+  }
   showToast('KYC approved ✓');
   renderKYCLive();
 }
@@ -3188,6 +3198,14 @@ window.saveUpgradePlan = async function() {
     },
   ]);
   logAudit('upgrade_plan', userId, `Plan set to ${plan}`);
+  window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
+    if (!s?.access_token) return;
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+      body: JSON.stringify({ action: 'notify_plan_upgraded', user_id: userId, plan }),
+    }).catch(() => {});
+  }).catch(() => {});
   showToast(`Plan upgraded to ${plan}`);
   closeModal('modal-upgrade-plan');
   await renderUsersLive();
