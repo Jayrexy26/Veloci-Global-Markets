@@ -536,7 +536,18 @@ async function afterPinSuccess() {
       const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
       const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
       let ipAddress = '', location = '';
-      try { const geo = await fetch('https://ipwho.is/').then(r=>r.json()); ipAddress=geo.ip||''; location=[geo.city,geo.country].filter(Boolean).join(', '); } catch(_){}
+      const geoApis = [
+        { url:'https://ipwho.is/',             parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
+        { url:'https://ipapi.co/json/',         parse: d=>({ ip:d.ip, loc:[d.city,d.country_name].filter(Boolean).join(', ') }) },
+        { url:'https://freeipapi.com/api/json', parse: d=>({ ip:d.ipAddress, loc:[d.cityName,d.countryName].filter(Boolean).join(', ') }) },
+      ];
+      for (const api of geoApis) {
+        try {
+          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),4000);
+          const d = await fetch(api.url,{signal:ctrl.signal}).then(r=>r.json()); clearTimeout(t);
+          const p = api.parse(d); if(p.ip){ipAddress=p.ip;location=p.loc;break;}
+        } catch(_){}
+      }
       await window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location });
     } catch(_) {}
     sessionStorage.setItem('sv_login_logged', '1');
