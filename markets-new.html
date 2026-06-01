@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Markets â€” Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#222d42;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
+  --text:#eaecef; --sub:#848e9c;
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:34px;width:auto;}
+.hdr-search{flex:1;max-width:340px;margin-left:16px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-search input{font-size:13px;flex:1;}
+.hdr-search input::placeholder{color:var(--sub);}
+.hdr-spacer{flex:1;}
+.hdr-right{display:flex;align-items:center;gap:6px;}
+.live-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub);padding:4px 10px;background:var(--s2);border:1px solid var(--b);border-radius:6px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hicon-badge{position:absolute;top:3px;right:2px;background:var(--red);color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--s1);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-item-label{flex:1;}
+.nav-item-badge{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,90,26,.18);color:var(--accent);flex-shrink:0;}
+.nav-divider{height:1px;background:var(--b);margin:6px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
+.sb-user{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .15s;}
+.sb-user:hover{background:rgba(255,255,255,.03);}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-email{font-size:10.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* TICKER TAPE */
+.ticker-wrap{border-bottom:1px solid var(--b);flex-shrink:0;overflow:hidden;}
+
+/* MARKETS CONTENT */
+.markets-content{padding:20px 24px 40px;flex:1;}
+
+/* PAGE HEADER */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;}
+.page-title{font-size:20px;font-weight:800;color:var(--text);}
+
+/* CATEGORY TABS */
+.cat-tabs{display:flex;gap:4px;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:4px;width:fit-content;margin-bottom:16px;flex-wrap:wrap;}
+.cat-tab{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;border:none;background:none;white-space:nowrap;}
+.cat-tab.active{background:var(--accent);color:#fff;}
+.cat-tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,.05);}
+.cat-tab-icon{font-size:14px;}
+
+/* FILTER ROW */
+.filter-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.sub-tabs{display:flex;gap:3px;}
+.sub-tab{padding:6px 14px;border-radius:6px;font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;border:1.5px solid transparent;background:none;}
+.sub-tab.active{color:var(--text);background:var(--s3);border-color:var(--b2);}
+.sub-tab:hover:not(.active){color:var(--text);}
+.filter-search{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:34px;min-width:200px;}
+.filter-search input{font-size:12.5px;flex:1;}
+.filter-search input::placeholder{color:var(--sub);}
+.filter-spacer{flex:1;}
+
+/* WIDGET CONTAINER */
+.widget-panel{display:none;}
+.widget-panel.active{display:block;}
+.tradingview-widget-container{border-radius:14px;overflow:hidden;border:1px solid var(--b);}
+.tradingview-widget-container iframe{display:block;}
+
+/* LIGHT THEME */
+body.light{--bg:#f0f2f5;--s1:#fff;--s2:#f7f8fa;--s3:#eef0f3;--s4:#e4e7eb;--b:rgba(0,0,0,.08);--b2:rgba(0,0,0,.14);--text:#111827;--sub:#6b7280;}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);}
+
+@media(max-width:768px){
+  .markets-content{padding:12px 12px 40px;}
+  .cat-tabs{gap:2px;}
+  .cat-tab{padding:7px 10px;font-size:12px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo-wrap">
+      <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+    </div>
+    <div class="hdr-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search markets..." id="market-search" oninput="handleSearch(this.value)"/>
+    </div>
+    <div class="hdr-spacer"></div>
+    <div class="hdr-right">
+      <div class="live-chip">
+        <div class="live-dot"></div>
+        <span>Live</span>
+      </div>
+      <a href="notifications-new.html" class="hicon" title="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="hicon-badge" id="hdr-notif-badge" style="display:none"></span>
+      </a>
+      <div class="hdr-avatar" id="hdr-avatar">?</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <nav class="sb-nav">
+        <a href="dashboard-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="nav-item-label">Dashboard</span>
+        </a>
+        <a href="markets-new.html" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="nav-item-label">Markets</span>
+        </a>
+        <a href="wallet-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span class="nav-item-label">Wallet</span>
+        </a>
+        <a href="deposit-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v14M5 9l7 7 7-7"/><path d="M3 21h18"/></svg>
+          <span class="nav-item-label">Deposit</span>
+        </a>
+        <a href="withdraw-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V8M5 15l7-7 7 7"/><path d="M3 3h18"/></svg>
+          <span class="nav-item-label">Withdraw</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="trades-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><polyline points="15 7 20 12 15 17"/></svg>
+          <span class="nav-item-label">Trade History</span>
+        </a>
+        <a href="history-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="nav-item-label">Transactions</span>
+        </a>
+        <a href="notifications-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="nav-item-label">Notifications</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="spot-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="nav-item-label">Spot</span>
+        </a>
+        <a href="futures-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span class="nav-item-label">Futures</span>
+        </a>
+        <a href="usdt-perpetual-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="nav-item-label">USDT Perp</span>
+        </a>
+        <a href="inverse-perpetual-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+          <span class="nav-item-label">Inverse Perp</span>
+        </a>
+        <a href="convert-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span class="nav-item-label">Convert</span>
+        </a>
+        <a href="sponsorship-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="nav-item-label">Sponsorship</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="settings-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="nav-item-label">Settings</span>
+        </a>
+        <a href="upgrade-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span class="nav-item-label">Upgrade</span>
+          <span class="nav-item-badge">PRO</span>
+        </a>
+      </nav>
+      <div class="sb-bottom">
+        <div class="sb-user" onclick="signOut()">
+          <div class="sb-avatar" id="sb-avatar">?</div>
+          <div class="sb-user-info">
+            <div class="sb-user-name" id="sb-name">Loading...</div>
+            <div class="sb-user-email" id="sb-email"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- TICKER TAPE -->
+      <div class="ticker-wrap">
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+          {"symbols":[{"proName":"FOREXCOM:SPXUSD","title":"S&P 500"},{"proName":"FOREXCOM:NSXUSD","title":"Nasdaq 100"},{"proName":"FX:EURUSD"},{"proName":"BINANCE:BTCUSDT","title":"Bitcoin"},{"proName":"BINANCE:ETHUSDT","title":"Ethereum"},{"proName":"BINANCE:SOLUSDT","title":"Solana"},{"proName":"COMEX:GC1!","title":"Gold"},{"proName":"NYMEX:CL1!","title":"Crude Oil"}],"showSymbolLogo":true,"colorTheme":"dark","isTransparent":true,"displayMode":"adaptive","locale":"en"}
+          </script>
+        </div>
+      </div>
+
+      <!-- MARKETS CONTENT -->
+      <div class="markets-content">
+
+        <!-- PAGE HEADER -->
+        <div class="page-hdr">
+          <div class="page-title">Markets Overview</div>
+        </div>
+
+        <!-- CATEGORY TABS -->
+        <div class="cat-tabs">
+          <button class="cat-tab active" data-cat="crypto" onclick="setCategory('crypto',this)">
+            <span class="cat-tab-icon">&#8383;</span> Crypto
+          </button>
+          <a class="cat-tab" href="markets/forex-new.html">
+            <span class="cat-tab-icon">&#128178;</span> Forex
+          </a>
+          <a class="cat-tab" href="markets/shares-new.html">
+            <span class="cat-tab-icon">&#128200;</span> Stocks
+          </a>
+          <a class="cat-tab" href="markets/indices-new.html">
+            <span class="cat-tab-icon">&#127760;</span> Indices
+          </a>
+          <button class="cat-tab" data-cat="commodities" onclick="setCategory('commodities',this)">
+            <span class="cat-tab-icon">&#127919;</span> Commodities
+          </button>
+          <a class="cat-tab" href="markets/etfs-new.html">
+            <span class="cat-tab-icon">&#128202;</span> ETFs
+          </a>
+          <a class="cat-tab" href="markets/bonds-new.html">
+            <span class="cat-tab-icon">&#128196;</span> Bonds
+          </a>
+        </div>
+
+        <!-- FILTER ROW -->
+        <div class="filter-row">
+          <div class="sub-tabs">
+            <button class="sub-tab active" onclick="setSubFilter('all',this)">All</button>
+            <button class="sub-tab" onclick="setSubFilter('gainers',this)">Gainers</button>
+            <button class="sub-tab" onclick="setSubFilter('losers',this)">Losers</button>
+            <button class="sub-tab" onclick="setSubFilter('watchlist',this)">Watchlist</button>
+          </div>
+          <div class="filter-spacer"></div>
+        </div>
+
+        <!-- WIDGET PANELS -->
+        <div id="panel-crypto" class="widget-panel active">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme":"dark",
+              "dateRange":"12M",
+              "showChart":true,
+              "locale":"en",
+              "width":"100%",
+              "height":"660",
+              "largeChartUrl":"",
+              "isTransparent":false,
+              "showSymbolLogo":true,
+              "showFloatingTooltip":false,
+              "plotLineColorGrowing":"rgba(41,98,255,1)",
+              "plotLineColorFalling":"rgba(41,98,255,1)",
+              "gridLineColor":"rgba(240,243,250,0)",
+              "scaleFontColor":"rgba(106,109,120,1)",
+              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
+              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
+              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
+              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
+              "symbolActiveColor":"rgba(41,98,255,0.12)",
+              "tabs":[
+                {"title":"Crypto","symbols":[{"s":"BINANCE:BTCUSDT","d":"Bitcoin"},{"s":"BINANCE:ETHUSDT","d":"Ethereum"},{"s":"BINANCE:BNBUSDT","d":"BNB"},{"s":"BINANCE:SOLUSDT","d":"Solana"},{"s":"BINANCE:XRPUSDT","d":"XRP"},{"s":"BINANCE:ADAUSDT","d":"Cardano"},{"s":"BINANCE:DOTUSDT","d":"Polkadot"},{"s":"BINANCE:AVAXUSDT","d":"Avalanche"}],"originalTitle":"Crypto"}
+              ]
+            }
+            </script>
+          </div>
+        </div>
+
+        <div id="panel-forex" class="widget-panel">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme":"dark",
+              "dateRange":"12M",
+              "showChart":true,
+              "locale":"en",
+              "width":"100%",
+              "height":"660",
+              "largeChartUrl":"",
+              "isTransparent":false,
+              "showSymbolLogo":true,
+              "showFloatingTooltip":false,
+              "plotLineColorGrowing":"rgba(41,98,255,1)",
+              "plotLineColorFalling":"rgba(41,98,255,1)",
+              "gridLineColor":"rgba(240,243,250,0)",
+              "scaleFontColor":"rgba(106,109,120,1)",
+              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
+              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
+              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
+              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
+              "symbolActiveColor":"rgba(41,98,255,0.12)",
+              "tabs":[
+                {"title":"Forex","symbols":[{"s":"FX:EURUSD","d":"EUR/USD"},{"s":"FX:GBPUSD","d":"GBP/USD"},{"s":"FX:USDJPY","d":"USD/JPY"},{"s":"FX:AUDUSD","d":"AUD/USD"},{"s":"FX:USDCAD","d":"USD/CAD"},{"s":"FX:USDCHF","d":"USD/CHF"},{"s":"FX:NZDUSD","d":"NZD/USD"},{"s":"FX:EURGBP","d":"EUR/GBP"}],"originalTitle":"Forex"}
+              ]
+            }
+            </script>
+          </div>
+        </div>
+
+        <div id="panel-stocks" class="widget-panel">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme":"dark",
+              "dateRange":"12M",
+              "showChart":true,
+              "locale":"en",
+              "width":"100%",
+              "height":"660",
+              "largeChartUrl":"",
+              "isTransparent":false,
+              "showSymbolLogo":true,
+              "showFloatingTooltip":false,
+              "plotLineColorGrowing":"rgba(41,98,255,1)",
+              "plotLineColorFalling":"rgba(41,98,255,1)",
+              "gridLineColor":"rgba(240,243,250,0)",
+              "scaleFontColor":"rgba(106,109,120,1)",
+              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
+              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
+              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
+              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
+              "symbolActiveColor":"rgba(41,98,255,0.12)",
+              "tabs":[
+                {"title":"Stocks","symbols":[{"s":"NASDAQ:AAPL","d":"Apple"},{"s":"NASDAQ:TSLA","d":"Tesla"},{"s":"NASDAQ:MSFT","d":"Microsoft"},{"s":"NYSE:JPM","d":"JPMorgan"},{"s":"NYSE:GS","d":"Goldman Sachs"},{"s":"NASDAQ:GOOGL","d":"Alphabet"},{"s":"NASDAQ:AMZN","d":"Amazon"},{"s":"NASDAQ:NVDA","d":"NVIDIA"}],"originalTitle":"Stocks"}
+              ]
+            }
+            </script>
+          </div>
+        </div>
+
+        <div id="panel-indices" class="widget-panel">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme":"dark",
+              "dateRange":"12M",
+              "showChart":true,
+              "locale":"en",
+              "width":"100%",
+              "height":"660",
+              "largeChartUrl":"",
+              "isTransparent":false,
+              "showSymbolLogo":true,
+              "showFloatingTooltip":false,
+              "plotLineColorGrowing":"rgba(41,98,255,1)",
+              "plotLineColorFalling":"rgba(41,98,255,1)",
+              "gridLineColor":"rgba(240,243,250,0)",
+              "scaleFontColor":"rgba(106,109,120,1)",
+              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
+              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
+              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
+              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
+              "symbolActiveColor":"rgba(41,98,255,0.12)",
+              "tabs":[
+                {"title":"Indices","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"FOREXCOM:NSXUSD","d":"NASDAQ 100"},{"s":"FOREXCOM:DJI","d":"Dow Jones"},{"s":"INDEX:DEU40","d":"DAX 40"},{"s":"SPREADEX:UK100","d":"FTSE 100"},{"s":"INDEX:NKY","d":"Nikkei 225"}],"originalTitle":"Indices"}
+              ]
+            }
+            </script>
+          </div>
+        </div>
+
+        <div id="panel-commodities" class="widget-panel">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme":"dark",
+              "dateRange":"12M",
+              "showChart":true,
+              "locale":"en",
+              "width":"100%",
+              "height":"660",
+              "largeChartUrl":"",
+              "isTransparent":false,
+              "showSymbolLogo":true,
+              "showFloatingTooltip":false,
+              "plotLineColorGrowing":"rgba(41,98,255,1)",
+              "plotLineColorFalling":"rgba(41,98,255,1)",
+              "gridLineColor":"rgba(240,243,250,0)",
+              "scaleFontColor":"rgba(106,109,120,1)",
+              "belowLineFillColorGrowing":"rgba(41,98,255,0.12)",
+              "belowLineFillColorFalling":"rgba(41,98,255,0.12)",
+              "belowLineFillColorGrowingBottom":"rgba(41,98,255,0)",
+              "belowLineFillColorFallingBottom":"rgba(41,98,255,0)",
+              "symbolActiveColor":"rgba(41,98,255,0.12)",
+              "tabs":[
+                {"title":"Commodities","symbols":[{"s":"COMEX:GC1!","d":"Gold"},{"s":"NYMEX:CL1!","d":"Crude Oil"},{"s":"COMEX:SI1!","d":"Silver"},{"s":"NYMEX:NG1!","d":"Natural Gas"},{"s":"CBOT:ZC1!","d":"Corn"},{"s":"CBOT:ZW1!","d":"Wheat"}],"originalTitle":"Commodities"}
+              ]
+            }
+            </script>
+          </div>
+        </div>
+
+      </div><!-- /markets-content -->
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script>
+const db = window.SV_DB;
+let uid = null;
+let currentCategory = 'crypto';
+let currentSubFilter = 'all';
+let watchlist = JSON.parse(localStorage.getItem('vgm-watchlist')||'[]');
+
+function setCategory(cat, el){
+  currentCategory = cat;
+  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.widget-panel').forEach(p=>p.classList.remove('active'));
+  const panel = document.getElementById('panel-'+cat);
+  if(panel) panel.classList.add('active');
+}
+
+function setSubFilter(f, el){
+  currentSubFilter = f;
+  document.querySelectorAll('.sub-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // Watchlist sub-filter: highlight note
+  if(f === 'watchlist'){
+    showToast('Watchlist filter â€” add symbols to your watchlist by starring them in any widget.','success');
+  }
+}
+
+function handleSearch(val){
+  // The TradingView widget handles its own search internally.
+  // For user feedback, show a hint if they type something.
+  if(val.length > 1){
+    // No-op: TradingView Market Overview has built-in search within each widget
+  }
+}
+
+function showToast(msg,type='success'){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:'+(type==='success'?'#0ecb81':'#f6465d')+';color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:340px;line-height:1.4;';
+  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),4000);
+}
+
+async function init(){
+  const {data:{session}} = await db.auth.getSession();
+  if(!session){window.location.href='login.html';return;}
+  uid = session.user.id;
+
+  const {data:p} = await db.from('profiles').select('first_name,last_name').eq('id',uid).single();
+  if(p){
+    const initials = ((p.first_name||'')[0]||'') + ((p.last_name||'')[0]||'') || '?';
+    document.getElementById('hdr-avatar').textContent = initials;
+    document.getElementById('sb-avatar').textContent = initials;
+    document.getElementById('sb-name').textContent = [p.first_name,p.last_name].filter(Boolean).join(' ') || 'User';
+  }
+  document.getElementById('sb-email').textContent = session.user.email || '';
+
+  // Unread notifications badge
+  const {count} = await db.from('notifications').select('*',{count:'exact',head:true}).eq('user_id',uid).eq('read',false);
+  if(count > 0){
+    const badge = document.getElementById('hdr-notif-badge');
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'flex';
+  }
+
+  // Apply saved theme
+  if(localStorage.getItem('vgm-theme')==='light') document.body.classList.add('light');
+}
+
+async function signOut(){
+  await db.auth.signOut();
+  window.location.href='login.html';
+}
+
+init();
+</script>
+</body>
+</html>
+

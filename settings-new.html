@@ -1,0 +1,979 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Settings â€” Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#222d42;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
+  --text:#eaecef; --sub:#848e9c;
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+/* PAGE */
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:34px;width:auto;}
+.hdr-spacer{flex:1;}
+.hdr-right{display:flex;align-items:center;gap:6px;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hicon-badge{position:absolute;top:3px;right:2px;background:var(--red);color:#fff;font-size:8px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid var(--s1);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:none;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-logo-area{padding:12px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;}
+.sb-logo-area img{height:30px;width:auto;}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 16px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;position:relative;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-item-label{flex:1;}
+.nav-item-badge{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,90,26,.18);color:var(--accent);flex-shrink:0;}
+.nav-divider{height:1px;background:var(--b);margin:6px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
+.sb-user{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:background .15s;}
+.sb-user:hover{background:rgba(255,255,255,.03);}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-email{font-size:10.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:28px 32px 48px;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* PAGE TITLE */
+.page-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:24px;}
+
+/* SETTINGS LAYOUT */
+.settings-layout{display:flex;gap:24px;align-items:flex-start;}
+
+/* SETTINGS LEFT NAV */
+.settings-nav{width:200px;flex-shrink:0;background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;position:sticky;top:0;}
+.sn-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;border-left:3px solid transparent;}
+.sn-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.sn-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.sn-item svg{width:15px;height:15px;flex-shrink:0;}
+.sn-divider{height:1px;background:var(--b);}
+
+/* SETTINGS CONTENT */
+.settings-content{flex:1;min-width:0;}
+.section-panel{display:none;}
+.section-panel.active{display:block;}
+
+/* SECTION TITLE */
+.sec-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.sec-sub{font-size:13px;color:var(--sub);margin-bottom:20px;}
+
+/* CARD */
+.set-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:24px;margin-bottom:16px;}
+
+/* AVATAR */
+.avatar-row{display:flex;align-items:center;gap:18px;margin-bottom:24px;}
+.big-avatar{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;flex-shrink:0;color:#fff;}
+.avatar-info{flex:1;}
+.avatar-name{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.avatar-uid{font-size:12px;color:var(--sub);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11.5px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;}
+.form-input-wrap{display:flex;align-items:center;gap:8px;background:var(--s2);border:1.5px solid var(--b);border-radius:10px;padding:0 12px;height:44px;transition:border-color .2s;}
+.form-input-wrap:focus-within{border-color:var(--accent);}
+.form-input-wrap.disabled{opacity:.6;pointer-events:none;}
+.form-input{flex:1;font-size:13.5px;height:100%;}
+.form-input::placeholder{color:var(--sub);}
+.form-select{flex:1;font-size:13.5px;height:100%;background:transparent;cursor:pointer;appearance:none;}
+.form-select option{background:var(--s2);color:var(--text);}
+.lock-icon{color:var(--sub);flex-shrink:0;}
+.save-btn{padding:11px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;border:none;}
+.save-btn:hover{background:var(--accent-dk);}
+.save-btn:disabled{opacity:.6;cursor:not-allowed;}
+
+/* SECURITY */
+.security-row{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--b);gap:16px;}
+.security-row:last-child{border-bottom:none;padding-bottom:0;}
+.security-row:first-child{padding-top:0;}
+.sec-row-left{flex:1;}
+.sec-row-name{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.sec-row-desc{font-size:12px;color:var(--sub);}
+.sec-row-right{flex-shrink:0;}
+.badge-green{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(14,203,129,.12);color:var(--green);}
+.badge-orange{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(240,90,26,.12);color:var(--accent);}
+.badge-blue{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(33,150,243,.12);color:var(--blue);}
+.badge-red{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(246,70,93,.12);color:var(--red);}
+.sec-row-btn{padding:7px 16px;border:1.5px solid var(--b2);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;}
+.sec-row-btn:hover{border-color:var(--accent);color:var(--accent);}
+.info-box{background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--sub);line-height:1.6;}
+.info-box strong{color:var(--text);}
+
+/* KYC TIMELINE */
+.kyc-timeline{display:flex;gap:0;margin-bottom:24px;}
+.kyc-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;}
+.kyc-step:not(:last-child)::after{content:'';position:absolute;top:14px;left:50%;right:-50%;height:2px;background:var(--b);z-index:0;}
+.kyc-step.done:not(:last-child)::after{background:var(--green);}
+.kyc-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;z-index:1;position:relative;}
+.kyc-dot.done{background:var(--green);color:#fff;}
+.kyc-dot.active{background:var(--accent);color:#fff;}
+.kyc-dot.pending{background:var(--s3);border:2px solid var(--b2);color:var(--sub);}
+.kyc-label{font-size:11px;font-weight:600;color:var(--sub);margin-top:6px;text-align:center;}
+.kyc-label.done{color:var(--green);}
+.kyc-label.active{color:var(--accent);}
+
+/* KYC UPLOAD */
+.file-upload-area{background:var(--s2);border:1.5px dashed var(--b2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.file-upload-area:hover{border-color:var(--accent);}
+.file-upload-area.has-file{border-color:var(--green);border-style:solid;}
+.file-upload-icon{font-size:24px;margin-bottom:6px;}
+.file-upload-label{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.file-upload-sub{font-size:11.5px;color:var(--sub);}
+.file-upload-name{font-size:12px;color:var(--green);margin-top:4px;font-weight:600;}
+.file-input-hidden{display:none;}
+
+/* PREFERENCES */
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid var(--b);}
+.pref-row:last-child{border-bottom:none;padding-bottom:0;}
+.pref-row:first-child{padding-top:0;}
+.pref-left{flex:1;}
+.pref-label{font-size:13.5px;font-weight:600;color:var(--text);}
+.pref-desc{font-size:12px;color:var(--sub);margin-top:2px;}
+.pref-right{flex-shrink:0;}
+.pref-select{padding:8px 12px;background:var(--s2);border:1.5px solid var(--b);border-radius:8px;font-size:13px;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;appearance:none;padding-right:28px;}
+.pref-select option{background:var(--s2);}
+
+/* THEME TOGGLE */
+.theme-opts{display:flex;gap:6px;}
+.theme-opt{padding:8px 16px;border:1.5px solid var(--b);border-radius:8px;font-size:13px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;background:none;}
+.theme-opt.active{border-color:var(--accent);color:var(--accent);background:rgba(240,90,26,.08);}
+.theme-opt:hover:not(.active){border-color:var(--b2);color:var(--text);}
+
+/* TOGGLE SWITCH */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--b);}
+.toggle-row:last-child{border-bottom:none;padding-bottom:0;}
+.toggle-row:first-child{padding-top:0;}
+.toggle-info{flex:1;}
+.toggle-name{font-size:13.5px;font-weight:600;color:var(--text);}
+.toggle-desc{font-size:12px;color:var(--sub);margin-top:2px;}
+.toggle-sw{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.sw-track{position:absolute;inset:0;background:var(--s3);border-radius:11px;cursor:pointer;transition:background .2s;}
+.sw-track::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;}
+.toggle-sw input:checked+.sw-track{background:var(--accent);}
+.toggle-sw input:checked+.sw-track::before{transform:translateX(18px);}
+
+/* LIGHT THEME */
+body.light{
+  --bg:#f0f2f5; --s1:#ffffff; --s2:#f7f8fa; --s3:#eef0f3; --s4:#e4e7eb;
+  --b:rgba(0,0,0,.08); --b2:rgba(0,0,0,.14);
+  --text:#111827; --sub:#6b7280;
+}
+body.light input,body.light select,body.light textarea{color:var(--text);}
+body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);}
+
+/* PASS STRENGTH */
+.pass-strength{height:4px;border-radius:2px;margin-top:6px;background:var(--s3);overflow:hidden;}
+.pass-strength-bar{height:100%;border-radius:2px;transition:width .3s,background .3s;}
+
+/* VERIFIED BADGE */
+.verified-banner{display:flex;align-items:center;gap:14px;background:rgba(14,203,129,.08);border:1px solid rgba(14,203,129,.2);border-radius:12px;padding:16px 20px;}
+.verified-icon{width:44px;height:44px;border-radius:50%;background:rgba(14,203,129,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.verified-text-title{font-size:15px;font-weight:700;color:var(--green);}
+.verified-text-sub{font-size:12.5px;color:var(--sub);margin-top:2px;}
+
+/* PENDING BANNER */
+.pending-banner{display:flex;align-items:center;gap:14px;background:rgba(240,185,11,.08);border:1px solid rgba(240,185,11,.2);border-radius:12px;padding:16px 20px;}
+.pending-icon{width:44px;height:44px;border-radius:50%;background:rgba(240,185,11,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pending-text-title{font-size:15px;font-weight:700;color:var(--gold);}
+.pending-text-sub{font-size:12.5px;color:var(--sub);margin-top:2px;}
+
+@media(max-width:768px){
+  .settings-nav{display:none;}
+  .form-grid{grid-template-columns:1fr;}
+  .main{padding:16px;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo-wrap">
+      <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+    </div>
+    <div class="hdr-spacer"></div>
+    <div class="hdr-right">
+      <a href="notifications-new.html" class="hicon" title="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="hicon-badge" id="hdr-notif-badge" style="display:none"></span>
+      </a>
+      <div class="hdr-avatar" id="hdr-avatar">?</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <nav class="sb-nav">
+        <a href="dashboard-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="nav-item-label">Dashboard</span>
+        </a>
+        <a href="markets-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span class="nav-item-label">Markets</span>
+        </a>
+        <a href="wallet-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span class="nav-item-label">Wallet</span>
+        </a>
+        <a href="deposit-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v14M5 9l7 7 7-7"/><path d="M3 21h18"/></svg>
+          <span class="nav-item-label">Deposit</span>
+        </a>
+        <a href="withdraw-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V8M5 15l7-7 7 7"/><path d="M3 3h18"/></svg>
+          <span class="nav-item-label">Withdraw</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="trades-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><polyline points="15 7 20 12 15 17"/></svg>
+          <span class="nav-item-label">Trade History</span>
+        </a>
+        <a href="history-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="nav-item-label">Transactions</span>
+        </a>
+        <a href="notifications-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="nav-item-label">Notifications</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="spot-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="nav-item-label">Spot</span>
+        </a>
+        <a href="futures-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <span class="nav-item-label">Futures</span>
+        </a>
+        <a href="usdt-perpetual-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="nav-item-label">USDT Perp</span>
+        </a>
+        <a href="inverse-perpetual-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+          <span class="nav-item-label">Inverse Perp</span>
+        </a>
+        <a href="convert-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span class="nav-item-label">Convert</span>
+        </a>
+        <a href="sponsorship-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="nav-item-label">Sponsorship</span>
+        </a>
+        <div class="nav-divider"></div>
+        <a href="settings-new.html" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="nav-item-label">Settings</span>
+        </a>
+        <a href="upgrade-new.html" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span class="nav-item-label">Upgrade</span>
+          <span class="nav-item-badge">PRO</span>
+        </a>
+      </nav>
+      <div class="sb-bottom">
+        <div class="sb-user" onclick="signOut()">
+          <div class="sb-avatar" id="sb-avatar">?</div>
+          <div class="sb-user-info">
+            <div class="sb-user-name" id="sb-name">Loading...</div>
+            <div class="sb-user-email" id="sb-email"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="page-title">Settings</div>
+
+      <div class="settings-layout">
+        <!-- LEFT NAV -->
+        <nav class="settings-nav">
+          <div class="sn-item active" onclick="showSection('profile',this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </div>
+          <div class="sn-divider"></div>
+          <div class="sn-item" onclick="showSection('security',this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Security
+          </div>
+          <div class="sn-divider"></div>
+          <div class="sn-item" onclick="showSection('kyc',this)" id="kyc-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            KYC
+          </div>
+          <div class="sn-divider"></div>
+          <div class="sn-item" onclick="showSection('preferences',this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            Preferences
+          </div>
+          <div class="sn-divider"></div>
+          <div class="sn-item" onclick="showSection('notif-prefs',this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifications
+          </div>
+        </nav>
+
+        <!-- CONTENT -->
+        <div class="settings-content">
+
+          <!-- PROFILE SECTION -->
+          <div class="section-panel active" id="panel-profile">
+            <div class="sec-title">Profile Information</div>
+            <div class="sec-sub">Manage your personal details and account information.</div>
+
+            <div class="set-card">
+              <div class="avatar-row">
+                <div class="big-avatar" id="profile-avatar">?</div>
+                <div class="avatar-info">
+                  <div class="avatar-name" id="profile-fullname">â€”</div>
+                  <div class="avatar-uid" id="profile-uid">UID: â€”</div>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">First Name</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-first" type="text" placeholder="First name"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Last Name</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-last" type="text" placeholder="Last name"/>
+                  </div>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Email Address</label>
+                  <div class="form-input-wrap disabled">
+                    <svg class="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <input class="form-input" id="inp-email" type="email" placeholder="Email" readonly/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Phone Number</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-phone" type="tel" placeholder="+1 234 567 8900"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Country</label>
+                  <div class="form-input-wrap">
+                    <select class="form-select" id="inp-country">
+                      <option value="">Select country</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                      <option value="JP">Japan</option>
+                      <option value="SG">Singapore</option>
+                      <option value="AE">UAE</option>
+                      <option value="NG">Nigeria</option>
+                      <option value="GH">Ghana</option>
+                      <option value="ZA">South Africa</option>
+                      <option value="KE">Kenya</option>
+                      <option value="IN">India</option>
+                      <option value="CN">China</option>
+                      <option value="BR">Brazil</option>
+                      <option value="MX">Mexico</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <button class="save-btn" id="save-profile-btn" onclick="saveProfile()">Save Changes</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECURITY SECTION -->
+          <div class="section-panel" id="panel-security">
+            <div class="sec-title">Security</div>
+            <div class="sec-sub">Manage your account security settings and authentication.</div>
+
+            <!-- Change Password -->
+            <div class="set-card">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px;">Change Password</div>
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label class="form-label">Current Password</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-cur-pass" type="password" placeholder="Enter current password"/>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">New Password</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-new-pass" type="password" placeholder="Min. 8 characters" oninput="checkPassStrength(this.value)"/>
+                  </div>
+                  <div class="pass-strength"><div class="pass-strength-bar" id="pass-strength-bar" style="width:0%;background:var(--red);"></div></div>
+                  <div style="font-size:11px;color:var(--sub);margin-top:3px;" id="pass-strength-label"></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Confirm New Password</label>
+                  <div class="form-input-wrap">
+                    <input class="form-input" id="inp-conf-pass" type="password" placeholder="Repeat new password"/>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:20px;">
+                <button class="save-btn" onclick="changePassword()">Update Password</button>
+              </div>
+            </div>
+
+            <!-- Anti-phishing -->
+            <div class="set-card">
+              <div class="security-row">
+                <div class="sec-row-left">
+                  <div class="sec-row-name">Anti-Phishing Code</div>
+                  <div class="sec-row-desc">A code that appears in all official emails from Veloci Global Markets to verify authenticity.</div>
+                </div>
+                <div class="sec-row-right">
+                  <span class="badge-orange">Not Set</span>
+                </div>
+              </div>
+              <div class="info-box" style="margin-top:0;">
+                <strong>Setup required via support.</strong> Contact our support team at <strong>support@velociglobal.pro</strong> to configure your anti-phishing code.
+              </div>
+            </div>
+
+            <!-- Login Activity -->
+            <div class="set-card">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;">Login Activity</div>
+              <div class="info-box">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--text);">Current Session</div>
+                    <div style="font-size:12px;color:var(--sub);margin-top:3px;" id="session-info">Last login: just now Â· This device</div>
+                  </div>
+                  <span class="badge-green">&#10003; Active</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--b);">
+                <div style="font-size:12px;color:var(--sub);">For security, we recommend signing in from trusted devices only. Contact support if you notice unrecognized activity.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KYC SECTION -->
+          <div class="section-panel" id="panel-kyc">
+            <div class="sec-title">KYC Verification</div>
+            <div class="sec-sub">Complete identity verification to unlock full platform features.</div>
+
+            <!-- Timeline -->
+            <div class="set-card">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:20px;">Verification Progress</div>
+              <div class="kyc-timeline">
+                <div class="kyc-step done">
+                  <div class="kyc-dot done">&#10003;</div>
+                  <div class="kyc-label done">Level 1<br/>Email Verified</div>
+                </div>
+                <div class="kyc-step" id="kyc-step-2">
+                  <div class="kyc-dot pending" id="kyc-dot-2">2</div>
+                  <div class="kyc-label" id="kyc-label-2">Level 2<br/>Identity Verified</div>
+                </div>
+                <div class="kyc-step" id="kyc-step-3">
+                  <div class="kyc-dot pending" id="kyc-dot-3">3</div>
+                  <div class="kyc-label" id="kyc-label-3">Level 3<br/>Advanced</div>
+                </div>
+              </div>
+
+              <!-- KYC Status -->
+              <div id="kyc-status-area"></div>
+            </div>
+
+            <!-- Upload Form -->
+            <div class="set-card" id="kyc-upload-card">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px;">Submit Identity Documents</div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Document Type</label>
+                  <div class="form-input-wrap">
+                    <select class="form-select" id="kyc-doc-type">
+                      <option value="">Select type</option>
+                      <option value="passport">Passport</option>
+                      <option value="drivers_license">Driver's License</option>
+                      <option value="national_id">National ID</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Country of Issue</label>
+                  <div class="form-input-wrap">
+                    <select class="form-select" id="kyc-country">
+                      <option value="">Select country</option>
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="AU">Australia</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                      <option value="JP">Japan</option>
+                      <option value="SG">Singapore</option>
+                      <option value="AE">UAE</option>
+                      <option value="NG">Nigeria</option>
+                      <option value="GH">Ghana</option>
+                      <option value="ZA">South Africa</option>
+                      <option value="KE">Kenya</option>
+                      <option value="IN">India</option>
+                      <option value="CN">China</option>
+                      <option value="BR">Brazil</option>
+                      <option value="MX">Mexico</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Front of ID</label>
+                  <div class="file-upload-area" id="front-area" onclick="document.getElementById('front-input').click()">
+                    <div class="file-upload-icon">&#128444;</div>
+                    <div class="file-upload-label">Upload Front Side</div>
+                    <div class="file-upload-sub">JPG, PNG or PDF â€” Max 10MB</div>
+                    <div class="file-upload-name" id="front-name"></div>
+                  </div>
+                  <input type="file" class="file-input-hidden" id="front-input" accept="image/*,.pdf" onchange="handleFile(this,'front')"/>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Back of ID</label>
+                  <div class="file-upload-area" id="back-area" onclick="document.getElementById('back-input').click()">
+                    <div class="file-upload-icon">&#128444;</div>
+                    <div class="file-upload-label">Upload Back Side</div>
+                    <div class="file-upload-sub">JPG, PNG or PDF â€” Max 10MB</div>
+                    <div class="file-upload-name" id="back-name"></div>
+                  </div>
+                  <input type="file" class="file-input-hidden" id="back-input" accept="image/*,.pdf" onchange="handleFile(this,'back')"/>
+                </div>
+
+                <div class="form-group full">
+                  <label class="form-label">Selfie Holding ID</label>
+                  <div class="file-upload-area" id="selfie-area" onclick="document.getElementById('selfie-input').click()" style="padding:24px 20px;">
+                    <div class="file-upload-icon">&#129535;</div>
+                    <div class="file-upload-label">Upload Selfie with ID</div>
+                    <div class="file-upload-sub">Take a clear photo holding your ID next to your face â€” JPG, PNG â€” Max 10MB</div>
+                    <div class="file-upload-name" id="selfie-name"></div>
+                  </div>
+                  <input type="file" class="file-input-hidden" id="selfie-input" accept="image/*" onchange="handleFile(this,'selfie')"/>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <button class="save-btn" id="kyc-submit-btn" onclick="submitKYC()">Submit for Verification</button>
+                <div style="font-size:12px;color:var(--sub);">Documents are reviewed within 1â€“3 business days.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PREFERENCES SECTION -->
+          <div class="section-panel" id="panel-preferences">
+            <div class="sec-title">Preferences</div>
+            <div class="sec-sub">Customize your platform experience.</div>
+
+            <div class="set-card">
+              <div class="pref-row">
+                <div class="pref-left">
+                  <div class="pref-label">Theme</div>
+                  <div class="pref-desc">Choose between dark and light interface.</div>
+                </div>
+                <div class="pref-right">
+                  <div class="theme-opts">
+                    <button class="theme-opt active" id="theme-dark-btn" onclick="setTheme('dark')">&#9790; Dark</button>
+                    <button class="theme-opt" id="theme-light-btn" onclick="setTheme('light')">&#9728; Light</button>
+                  </div>
+                </div>
+              </div>
+              <div class="pref-row">
+                <div class="pref-left">
+                  <div class="pref-label">Language</div>
+                  <div class="pref-desc">Display language for the platform.</div>
+                </div>
+                <div class="pref-right">
+                  <select class="pref-select">
+                    <option value="en">English</option>
+                    <option disabled>French (Coming Soon)</option>
+                    <option disabled>Spanish (Coming Soon)</option>
+                    <option disabled>Arabic (Coming Soon)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="pref-row">
+                <div class="pref-left">
+                  <div class="pref-label">Currency Display</div>
+                  <div class="pref-desc">Primary currency for balance and P&amp;L display.</div>
+                </div>
+                <div class="pref-right">
+                  <select class="pref-select">
+                    <option value="USD">USD â€” US Dollar</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTIFICATION PREFERENCES SECTION -->
+          <div class="section-panel" id="panel-notif-prefs">
+            <div class="sec-title">Notification Preferences</div>
+            <div class="sec-sub">Control which notifications you receive.</div>
+
+            <div class="set-card">
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-name">Price Alerts</div>
+                  <div class="toggle-desc">Get notified when assets reach your target prices.</div>
+                </div>
+                <label class="toggle-sw">
+                  <input type="checkbox" id="notif-price" onchange="saveNotifPref('price',this.checked)" checked/>
+                  <span class="sw-track"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-name">Trade Confirmations</div>
+                  <div class="toggle-desc">Receive notifications when your trades are executed.</div>
+                </div>
+                <label class="toggle-sw">
+                  <input type="checkbox" id="notif-trades" onchange="saveNotifPref('trades',this.checked)" checked/>
+                  <span class="sw-track"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-name">Deposit &amp; Withdrawal Updates</div>
+                  <div class="toggle-desc">Get updates on the status of your funds transfers.</div>
+                </div>
+                <label class="toggle-sw">
+                  <input type="checkbox" id="notif-funds" onchange="saveNotifPref('funds',this.checked)" checked/>
+                  <span class="sw-track"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-name">Login Alerts</div>
+                  <div class="toggle-desc">Be notified of new sign-ins to your account.</div>
+                </div>
+                <label class="toggle-sw">
+                  <input type="checkbox" id="notif-login" onchange="saveNotifPref('login',this.checked)" checked/>
+                  <span class="sw-track"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-info">
+                  <div class="toggle-name">Platform Announcements</div>
+                  <div class="toggle-desc">Stay informed about platform updates and new features.</div>
+                </div>
+                <label class="toggle-sw">
+                  <input type="checkbox" id="notif-announce" onchange="saveNotifPref('announce',this.checked)" checked/>
+                  <span class="sw-track"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /settings-content -->
+      </div><!-- /settings-layout -->
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script>
+const db = window.SV_DB;
+let uid = null;
+let profile = null;
+const kycFiles = {front:null,back:null,selfie:null};
+
+function showToast(msg,type='success'){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:'+(type==='success'?'#0ecb81':'#f6465d')+';color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3);animation:fadeIn .2s ease;';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+function showSection(id, el){
+  document.querySelectorAll('.section-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sn-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+function getInitials(first,last){
+  return ((first||'')[0]||'') + ((last||'')[0]||'') || '?';
+}
+
+async function init(){
+  const {data:{session}} = await db.auth.getSession();
+  if(!session){window.location.href='login.html';return;}
+  uid = session.user.id;
+
+  const {data:p} = await db.from('profiles').select('*').eq('id',uid).single();
+  profile = p || {};
+
+  const initials = getInitials(profile.first_name, profile.last_name);
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('hdr-avatar').textContent = initials;
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-name').textContent = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'User';
+  document.getElementById('sb-email').textContent = session.user.email || '';
+  document.getElementById('profile-fullname').textContent = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Unknown User';
+  document.getElementById('profile-uid').textContent = 'UID: ' + uid.slice(0,8).toUpperCase();
+
+  document.getElementById('inp-first').value = profile.first_name || '';
+  document.getElementById('inp-last').value = profile.last_name || '';
+  document.getElementById('inp-email').value = session.user.email || '';
+  document.getElementById('inp-phone').value = profile.phone || '';
+  const countrySelect = document.getElementById('inp-country');
+  if(profile.country) countrySelect.value = profile.country;
+
+  // Unread notifications badge
+  const {count} = await db.from('notifications').select('*',{count:'exact',head:true}).eq('user_id',uid).eq('read',false);
+  if(count > 0){
+    const badge = document.getElementById('hdr-notif-badge');
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'flex';
+  }
+
+  // KYC
+  renderKYC(profile.kyc_status || 'none');
+
+  // Theme
+  const savedTheme = localStorage.getItem('vgm-theme') || 'dark';
+  applyTheme(savedTheme);
+
+  // Notification prefs
+  ['price','trades','funds','login','announce'].forEach(k => {
+    const saved = localStorage.getItem('vgm-notif-'+k);
+    if(saved === 'false') document.getElementById('notif-'+k).checked = false;
+  });
+
+  // Session info
+  const loginTime = new Date(session.user.last_sign_in_at || Date.now());
+  document.getElementById('session-info').textContent = 'Last login: ' + loginTime.toLocaleString() + ' Â· This device';
+}
+
+async function saveProfile(){
+  const btn = document.getElementById('save-profile-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const first = document.getElementById('inp-first').value.trim();
+  const last = document.getElementById('inp-last').value.trim();
+  const phone = document.getElementById('inp-phone').value.trim();
+  const country = document.getElementById('inp-country').value;
+
+  const {error} = await db.from('profiles').update({first_name:first,last_name:last,phone,country}).eq('id',uid);
+  btn.disabled = false; btn.textContent = 'Save Changes';
+  if(error){ showToast('Failed to save: '+error.message,'error'); return; }
+  showToast('Profile updated successfully!');
+  profile.first_name = first; profile.last_name = last;
+  const initials = getInitials(first,last);
+  document.getElementById('profile-avatar').textContent = initials;
+  document.getElementById('hdr-avatar').textContent = initials;
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('profile-fullname').textContent = [first,last].filter(Boolean).join(' ') || 'â€”';
+  document.getElementById('sb-name').textContent = [first,last].filter(Boolean).join(' ') || 'User';
+}
+
+function checkPassStrength(val){
+  const bar = document.getElementById('pass-strength-bar');
+  const label = document.getElementById('pass-strength-label');
+  if(!val){ bar.style.width='0%'; label.textContent=''; return; }
+  let score = 0;
+  if(val.length >= 8) score++;
+  if(val.length >= 12) score++;
+  if(/[A-Z]/.test(val)) score++;
+  if(/[0-9]/.test(val)) score++;
+  if(/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [{w:'20%',c:'#f6465d',l:'Very Weak'},{w:'40%',c:'#f0b90b',l:'Weak'},{w:'60%',c:'#f0b90b',l:'Fair'},{w:'80%',c:'#2196f3',l:'Good'},{w:'100%',c:'#0ecb81',l:'Strong'}];
+  const lv = levels[Math.min(score,4)];
+  bar.style.width = lv.w; bar.style.background = lv.c;
+  label.textContent = lv.l; label.style.color = lv.c;
+}
+
+async function changePassword(){
+  const np = document.getElementById('inp-new-pass').value;
+  const cp = document.getElementById('inp-conf-pass').value;
+  if(!np){ showToast('Please enter a new password','error'); return; }
+  if(np.length < 8){ showToast('Password must be at least 8 characters','error'); return; }
+  if(np !== cp){ showToast('Passwords do not match','error'); return; }
+  const {error} = await db.auth.updateUser({password:np});
+  if(error){ showToast('Failed: '+error.message,'error'); return; }
+  showToast('Password updated successfully!');
+  document.getElementById('inp-cur-pass').value='';
+  document.getElementById('inp-new-pass').value='';
+  document.getElementById('inp-conf-pass').value='';
+  document.getElementById('pass-strength-bar').style.width='0%';
+  document.getElementById('pass-strength-label').textContent='';
+}
+
+function renderKYC(status){
+  const statusArea = document.getElementById('kyc-status-area');
+  const uploadCard = document.getElementById('kyc-upload-card');
+  const dot2 = document.getElementById('kyc-dot-2');
+  const label2 = document.getElementById('kyc-label-2');
+  const step2 = document.getElementById('kyc-step-2');
+
+  // Update timeline
+  if(status === 'approved' || status === 'verified'){
+    dot2.className='kyc-dot done'; dot2.textContent='âœ“';
+    label2.className='kyc-label done';
+    step2.className='kyc-step done';
+    document.getElementById('kyc-dot-3').className='kyc-dot active';
+    document.getElementById('kyc-dot-3').textContent='3';
+    document.getElementById('kyc-label-3').className='kyc-label active';
+    if(profile && (profile.plan === 'Platinum' || profile.plan === 'Elite')){
+      document.getElementById('kyc-dot-3').className='kyc-dot done';
+      document.getElementById('kyc-dot-3').textContent='âœ“';
+    }
+  } else if(status === 'pending'){
+    dot2.className='kyc-dot active'; dot2.textContent='2';
+    label2.className='kyc-label active';
+  }
+
+  // Status chip
+  const chips = {
+    none:'<span class="badge-orange">Not Started</span>',
+    pending:'<span class="badge-blue">Under Review</span>',
+    approved:'<span class="badge-green">&#10003; Verified</span>',
+    verified:'<span class="badge-green">&#10003; Verified</span>',
+    rejected:'<span class="badge-red">&#10007; Rejected</span>'
+  };
+  statusArea.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;"><span style="font-size:13px;color:var(--sub);">KYC Status:</span>${chips[status]||chips['none']}</div>`;
+
+  if(status === 'approved' || status === 'verified'){
+    uploadCard.style.display = 'none';
+    const banner = document.createElement('div');
+    banner.className='set-card';
+    banner.innerHTML=`<div class="verified-banner"><div class="verified-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0ecb81" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div><div><div class="verified-text-title">Identity Verified</div><div class="verified-text-sub">Your identity has been successfully verified. You have full access to all platform features.</div></div></div>`;
+    document.getElementById('panel-kyc').appendChild(banner);
+  } else if(status === 'pending'){
+    uploadCard.innerHTML=`<div class="pending-banner"><div class="pending-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0b90b" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div><div class="pending-text-title">Under Review</div><div class="pending-text-sub">Your documents have been submitted and are being reviewed. This typically takes 1â€“3 business days.</div></div></div>`;
+  }
+}
+
+function handleFile(input, type){
+  const file = input.files[0];
+  if(!file) return;
+  kycFiles[type] = file;
+  document.getElementById(type+'-name').textContent = file.name;
+  document.getElementById(type+'-area').classList.add('has-file');
+}
+
+async function submitKYC(){
+  const docType = document.getElementById('kyc-doc-type').value;
+  const country = document.getElementById('kyc-country').value;
+  if(!docType){ showToast('Please select document type','error'); return; }
+  if(!country){ showToast('Please select country','error'); return; }
+  if(!kycFiles.front){ showToast('Please upload front of ID','error'); return; }
+  if(!kycFiles.back){ showToast('Please upload back of ID','error'); return; }
+  if(!kycFiles.selfie){ showToast('Please upload selfie','error'); return; }
+
+  const btn = document.getElementById('kyc-submit-btn');
+  btn.disabled=true; btn.textContent='Uploading...';
+
+  try {
+    const ts = Date.now();
+    const uploadFile = async (file, path) => {
+      const {data,error} = await db.storage.from('kyc-docs').upload(path, file, {upsert:true});
+      if(error) throw error;
+      const {data:urlData} = db.storage.from('kyc-docs').getPublicUrl(path);
+      return urlData.publicUrl;
+    };
+
+    const frontUrl = await uploadFile(kycFiles.front, `${uid}/front-${ts}`);
+    const backUrl = await uploadFile(kycFiles.back, `${uid}/back-${ts}`);
+    const selfieUrl = await uploadFile(kycFiles.selfie, `${uid}/selfie-${ts}`);
+
+    const {error:insertErr} = await db.from('kyc_submissions').insert({
+      user_id: uid, doc_type: docType, country, status: 'pending',
+      front_url: frontUrl, back_url: backUrl, selfie_url: selfieUrl
+    });
+    if(insertErr) throw insertErr;
+
+    await db.from('profiles').update({kyc_status:'pending'}).eq('id',uid);
+    showToast('Documents submitted! Under review.');
+    renderKYC('pending');
+  } catch(e){
+    showToast('Upload failed: '+e.message,'error');
+    btn.disabled=false; btn.textContent='Submit for Verification';
+  }
+}
+
+function setTheme(t){
+  applyTheme(t);
+  localStorage.setItem('vgm-theme',t);
+}
+function applyTheme(t){
+  document.body.classList.toggle('light', t==='light');
+  document.getElementById('theme-dark-btn').classList.toggle('active',t==='dark');
+  document.getElementById('theme-light-btn').classList.toggle('active',t==='light');
+}
+
+function saveNotifPref(key, val){
+  localStorage.setItem('vgm-notif-'+key, val);
+}
+
+async function signOut(){
+  await db.auth.signOut();
+  window.location.href='login.html';
+}
+
+// Handle deep link to KYC
+if(window.location.hash === '#kyc'){
+  document.addEventListener('DOMContentLoaded',()=>{
+    const el = document.getElementById('kyc-nav-item');
+    if(el) el.click();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
+

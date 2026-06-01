@@ -1,0 +1,453 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="../assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>ETFs â€” Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase.js"></script>
+<style>
+:root {
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236;
+  --b:rgba(255,255,255,.07); --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --text:#eaecef; --sub:#848e9c;
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px;}
+
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--b);gap:10px;}
+.hdr-logo-wrap img{height:32px;width:auto;}
+.hdr-logo-wrap span{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.3px;}
+.hdr-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-dk));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;color:#fff;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:#0a0d1a;border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-logo{padding:14px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.sb-logo img{height:30px;width:auto;}
+.sb-logo-text{font-size:13px;font-weight:700;color:var(--text);}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-section-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(255,255,255,.25);text-transform:uppercase;padding:12px 16px 4px;display:flex;align-items:center;gap:8px;}
+.nav-section-label::after{content:'';flex:1;height:1px;background:var(--b);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.09);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-divider{height:1px;background:var(--b);margin:4px 0;}
+.nav-sub{padding:0;}
+.nav-sub-item{display:flex;align-items:center;padding:7px 16px 7px 42px;font-size:12.5px;color:var(--sub);cursor:pointer;transition:all .15s;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-sub-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-sub-item.active{color:var(--accent);background:rgba(240,90,26,.07);border-left-color:var(--accent);}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);padding:8px;}
+.sb-signout{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;}
+.sb-signout:hover{background:rgba(246,70,93,.08);color:var(--red);}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);display:flex;flex-direction:column;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* CATEGORY TABS */
+.cat-tabs{height:50px;flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px;gap:2px;overflow-x:auto;}
+.cat-tabs::-webkit-scrollbar{height:0;}
+.ctab{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none;border-bottom:2px solid transparent;}
+.ctab:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.ctab.active{color:var(--text);background:rgba(240,90,26,.09);border-bottom-color:var(--accent);}
+
+/* CONTENT */
+.content{padding:24px;flex:1;}
+.page-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--sub);margin-bottom:24px;}
+
+/* WIDGET CARD */
+.widget-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.widget-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--b);}
+.widget-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.widget-body{padding:0;}
+
+/* TABLE SECTION */
+.sec-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--b);}
+.sec-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--b);white-space:nowrap;}
+td{padding:12px 16px;font-size:13px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.025);}
+
+/* TICKER CELL */
+.ticker-cell{display:flex;align-items:center;gap:10px;}
+.ticker-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
+.ticker-sym{font-size:13px;font-weight:700;color:var(--text);}
+.ticker-name{font-size:11.5px;color:var(--sub);margin-top:1px;}
+
+/* CHANGE BADGE */
+.chg-pos{color:var(--green);font-weight:600;}
+.chg-neg{color:var(--red);font-weight:600;}
+.badge-pos{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:600;background:rgba(14,203,129,.12);color:var(--green);}
+.badge-neg{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:600;background:rgba(246,70,93,.12);color:var(--red);}
+
+/* TRADE BTN */
+.trade-btn{padding:5px 16px;border-radius:6px;font-size:12px;font-weight:600;color:var(--accent);border:1px solid rgba(240,90,26,.3);background:transparent;transition:all .15s;white-space:nowrap;}
+.trade-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo-wrap">
+    <img src="../assets/vgm-logo.png" alt="Veloci Global Markets" onerror="this.style.display='none'"/>
+    <span>Veloci Global</span>
+  </div>
+  <div class="hdr-right">
+    <a href="../notifications-new.html" class="hicon" title="Notifications">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </a>
+    <div class="hdr-avatar" id="hdr-avatar">?</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <img src="../assets/vgm-logo.png" alt="VGM" onerror="this.style.display='none'"/>
+      <span class="sb-logo-text">Veloci Global</span>
+    </div>
+    <div class="sb-nav">
+      <a href="../dashboard-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="../markets-new.html" class="nav-item active">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span>Markets</span>
+      </a>
+      <div class="nav-sub">
+        <a href="../markets-new.html" class="nav-sub-item">Crypto</a>
+        <a href="forex-new.html" class="nav-sub-item">Forex</a>
+        <a href="indices-new.html" class="nav-sub-item">Indices</a>
+        <a href="commodities-new.html" class="nav-sub-item">Commodities</a>
+        <a href="shares-new.html" class="nav-sub-item">Shares</a>
+        <a href="etfs-new.html" class="nav-sub-item active">ETFs</a>
+        <a href="bonds-new.html" class="nav-sub-item">Bonds</a>
+      </div>
+      <div class="nav-divider"></div>
+      <a href="../wallet-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <span>Wallet</span>
+      </a>
+      <a href="../deposit-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v14m-7-7 7 7 7-7"/><path d="M5 20h14"/></svg>
+        <span>Deposit</span>
+      </a>
+      <a href="../withdraw-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22V8m7 7-7-7-7 7"/><path d="M5 4h14"/></svg>
+        <span>Withdraw</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="../trades-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>Trade History</span>
+      </a>
+      <a href="../history-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Transactions</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="../notifications-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Notifications</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="../spot-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Spot</span>
+      </a>
+      <a href="../futures-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <span>Futures</span>
+      </a>
+      <a href="../usdt-perpetual-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+        <span>USDT Perp</span>
+      </a>
+      <a href="../inverse-perpetual-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+        <span>Inverse Perp</span>
+      </a>
+      <a href="../convert-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        <span>Convert</span>
+      </a>
+      <a href="../sponsorship-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Sponsorship</span>
+      </a>
+      <div class="nav-divider"></div>
+      <a href="../settings-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </a>
+      <a href="../upgrade-new.html" class="nav-item">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>Upgrade</span>
+      </a>
+    </div>
+    <div class="sb-bottom">
+      <div class="sb-signout" onclick="signOut()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Sign Out</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- CATEGORY TABS -->
+    <div class="cat-tabs">
+      <a href="../markets-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Crypto
+      </a>
+      <a href="forex-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
+        Forex
+      </a>
+      <a href="indices-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg>
+        Indices
+      </a>
+      <a href="commodities-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Commodities
+      </a>
+      <a href="shares-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Shares
+      </a>
+      <a href="etfs-new.html" class="ctab active">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        ETFs
+      </a>
+      <a href="bonds-new.html" class="ctab">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Bonds
+      </a>
+    </div>
+
+    <div class="content">
+      <div class="page-title">Exchange-Traded Funds</div>
+      <div class="page-sub">ETF market overview and performance data â€” powered by TradingView</div>
+
+      <!-- TRADINGVIEW ETF OVERVIEW WIDGET -->
+      <div class="widget-card">
+        <div class="widget-head">
+          <div class="widget-title">
+            <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            ETF Market Overview
+          </div>
+          <span style="font-size:11px;color:var(--sub);">Powered by TradingView</span>
+        </div>
+        <div class="widget-body">
+          <div class="tradingview-widget-container">
+            <div class="tradingview-widget-container__widget"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+            {
+              "colorTheme": "dark",
+              "dateRange": "1D",
+              "showChart": true,
+              "locale": "en",
+              "width": "100%",
+              "height": 550,
+              "isTransparent": true,
+              "tabs": [{
+                "title": "ETFs",
+                "symbols": [
+                  {"s":"AMEX:SPY","d":"SPDR S&P 500 ETF"},
+                  {"s":"NASDAQ:QQQ","d":"Invesco QQQ Trust"},
+                  {"s":"AMEX:GLD","d":"SPDR Gold Shares"},
+                  {"s":"AMEX:IWM","d":"iShares Russell 2000"},
+                  {"s":"AMEX:EEM","d":"iShares MSCI Emerging Markets"},
+                  {"s":"NASDAQ:VGT","d":"Vanguard IT ETF"},
+                  {"s":"AMEX:XLF","d":"Financial Select Sector SPDR"},
+                  {"s":"AMEX:XLE","d":"Energy Select Sector SPDR"}
+                ]
+              }]
+            }
+            </script>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURED ETFs TABLE -->
+      <div class="sec-card">
+        <div class="sec-head">
+          <div class="sec-title">
+            <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Featured ETFs
+          </div>
+          <span style="font-size:11px;color:var(--sub);">Static indicative data Â· USD</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Fund Name</th>
+                <th>Price (USD)</th>
+                <th>Daily Change %</th>
+                <th>AUM</th>
+                <th>Expense Ratio</th>
+                <th>Trade</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#c0392b,#922b21)">SPY</div><div><div class="ticker-sym">SPY</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">SPDR S&amp;P 500 ETF Trust</div><div style="font-size:11px;color:var(--sub)">AMEX Â· State Street</div></td>
+                <td><span style="font-weight:600">$536.74</span></td>
+                <td><span class="badge-pos">+0.82%</span></td>
+                <td><span style="color:var(--sub)">$552.3B</span></td>
+                <td>0.0945%</td>
+                <td><button class="trade-btn" onclick="openTrade('SPY')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#0070ba,#004d82)">QQQ</div><div><div class="ticker-sym">QQQ</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">Invesco QQQ Trust</div><div style="font-size:11px;color:var(--sub)">NASDAQ Â· Invesco</div></td>
+                <td><span style="font-weight:600">$462.15</span></td>
+                <td><span class="badge-pos">+1.14%</span></td>
+                <td><span style="color:var(--sub)">$294.1B</span></td>
+                <td>0.20%</td>
+                <td><button class="trade-btn" onclick="openTrade('QQQ')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#d4ac0d,#b7950b)">GLD</div><div><div class="ticker-sym">GLD</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">SPDR Gold Shares</div><div style="font-size:11px;color:var(--sub)">AMEX Â· State Street</div></td>
+                <td><span style="font-weight:600">$227.88</span></td>
+                <td><span class="badge-pos">+0.43%</span></td>
+                <td><span style="color:var(--sub)">$71.4B</span></td>
+                <td>0.40%</td>
+                <td><button class="trade-btn" onclick="openTrade('GLD')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#1a73e8,#0d47a1)">IWM</div><div><div class="ticker-sym">IWM</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">iShares Russell 2000 ETF</div><div style="font-size:11px;color:var(--sub)">AMEX Â· BlackRock</div></td>
+                <td><span style="font-weight:600">$206.33</span></td>
+                <td><span class="badge-neg">-0.57%</span></td>
+                <td><span style="color:var(--sub)">$64.8B</span></td>
+                <td>0.19%</td>
+                <td><button class="trade-btn" onclick="openTrade('IWM')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">EEM</div><div><div class="ticker-sym">EEM</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">iShares MSCI Emerging Markets</div><div style="font-size:11px;color:var(--sub)">AMEX Â· BlackRock</div></td>
+                <td><span style="font-weight:600">$43.71</span></td>
+                <td><span class="badge-pos">+0.28%</span></td>
+                <td><span style="color:var(--sub)">$20.1B</span></td>
+                <td>0.70%</td>
+                <td><button class="trade-btn" onclick="openTrade('EEM')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#6a1b9a,#4a148c)">VGT</div><div><div class="ticker-sym">VGT</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">Vanguard Information Technology</div><div style="font-size:11px;color:var(--sub)">NASDAQ Â· Vanguard</div></td>
+                <td><span style="font-weight:600">$591.40</span></td>
+                <td><span class="badge-pos">+1.72%</span></td>
+                <td><span style="color:var(--sub)">$75.2B</span></td>
+                <td>0.10%</td>
+                <td><button class="trade-btn" onclick="openTrade('VGT')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#00695c,#004d40)">XLF</div><div><div class="ticker-sym">XLF</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">Financial Select Sector SPDR</div><div style="font-size:11px;color:var(--sub)">AMEX Â· State Street</div></td>
+                <td><span style="font-weight:600">$48.82</span></td>
+                <td><span class="badge-pos">+0.55%</span></td>
+                <td><span style="color:var(--sub)">$43.7B</span></td>
+                <td>0.09%</td>
+                <td><button class="trade-btn" onclick="openTrade('XLF')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#e65100,#bf360c)">XLE</div><div><div class="ticker-sym">XLE</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">Energy Select Sector SPDR</div><div style="font-size:11px;color:var(--sub)">AMEX Â· State Street</div></td>
+                <td><span style="font-weight:600">$90.14</span></td>
+                <td><span class="badge-neg">-1.03%</span></td>
+                <td><span style="color:var(--sub)">$36.5B</span></td>
+                <td>0.09%</td>
+                <td><button class="trade-btn" onclick="openTrade('XLE')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#37474f,#263238)">TLT</div><div><div class="ticker-sym">TLT</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">iShares 20+ Year Treasury Bond</div><div style="font-size:11px;color:var(--sub)">NASDAQ Â· BlackRock</div></td>
+                <td><span style="font-weight:600">$86.53</span></td>
+                <td><span class="badge-neg">-0.31%</span></td>
+                <td><span style="color:var(--sub)">$50.3B</span></td>
+                <td>0.15%</td>
+                <td><button class="trade-btn" onclick="openTrade('TLT')">Trade</button></td>
+              </tr>
+              <tr>
+                <td><div class="ticker-cell"><div class="ticker-icon" style="background:linear-gradient(135deg,#4527a0,#311b92)">AGG</div><div><div class="ticker-sym">AGG</div></div></div></td>
+                <td><div style="font-size:13px;color:var(--text)">iShares Core US Aggregate Bond</div><div style="font-size:11px;color:var(--sub)">NYSE Â· BlackRock</div></td>
+                <td><span style="font-weight:600">$97.28</span></td>
+                <td><span class="badge-pos">+0.10%</span></td>
+                <td><span style="color:var(--sub)">$104.6B</span></td>
+                <td>0.03%</td>
+                <td><button class="trade-btn" onclick="openTrade('AGG')">Trade</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+async function init() {
+  const db = window.SV_DB;
+  if (!db) { window.location.href = '../login.html'; return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = '../login.html'; return; }
+  const av = document.getElementById('hdr-avatar');
+  if (av) {
+    const email = session.user.email || '';
+    av.textContent = email.charAt(0).toUpperCase();
+  }
+}
+init();
+
+async function signOut() {
+  const db = window.SV_DB;
+  if (db) await db.auth.signOut();
+  window.location.href = '../login.html';
+}
+
+function openTrade(symbol) {
+  alert('Open a trade for ' + symbol + ' via the trading platform. Navigate to Spot or Derivatives to place an order.');
+}
+</script>
+</body>
+</html>
+

@@ -1,0 +1,432 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="../assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Forex Markets â€” Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase.js"></script>
+<style>
+:root {
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#252b3d;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
+  --text:#eaecef; --sub:#848e9c;
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:36px;width:auto;}
+.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:color .15s;}
+.hdr-hamburger:hover{color:var(--text);}
+.hdr-search{flex:1;max-width:300px;margin-left:12px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-search input{font-size:13px;flex:1;}
+.hdr-search input::placeholder{color:var(--sub);}
+.hdr-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:4px;color:#fff;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-logo-area{padding:14px 20px;display:flex;align-items:center;border-bottom:1px solid var(--b);flex-shrink:0;}
+.sb-logo-area img{height:32px;width:auto;}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 18px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.08);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-item-label{flex:1;}
+.nav-divider{height:1px;background:var(--b);margin:6px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
+.sb-user{display:flex;align-items:center;gap:10px;padding:12px 16px;}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#fff;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-uid{font-size:10.5px;color:var(--sub);margin-top:1px;}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 28px;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* PAGE HEADER */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.page-hdr-left{display:flex;align-items:center;gap:12px;}
+.page-title{font-size:22px;font-weight:800;color:var(--text);}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(14,203,129,.2);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(14,203,129,.2);}50%{box-shadow:0 0 0 6px rgba(14,203,129,.06);}}
+.last-updated{font-size:12px;color:var(--sub);}
+.refresh-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--s2);border:1px solid var(--b);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;}
+.refresh-btn:hover{color:var(--text);border-color:var(--b2);}
+
+/* CATEGORY TABS */
+.cat-tabs{display:flex;align-items:center;gap:4px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;}
+.cat-tabs::-webkit-scrollbar{height:0;}
+.cat-tab{display:inline-flex;align-items:center;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--sub);white-space:nowrap;transition:all .15s;border:1px solid transparent;text-decoration:none;}
+.cat-tab:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.cat-tab.active{color:var(--accent);background:rgba(240,90,26,.08);border-color:rgba(240,90,26,.2);}
+
+/* WIDGET CONTAINER */
+.widget-wrap{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;padding:16px;}
+
+/* FEATURED TABLE */
+.section-card{background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--b);}
+.section-title{font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:10.5px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;padding:10px 18px;text-align:left;border-bottom:1px solid var(--b);background:var(--s2);white-space:nowrap;}
+td{padding:12px 18px;font-size:13px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.pos{color:var(--green);}
+.neg{color:var(--red);}
+.trade-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;background:rgba(240,90,26,.1);border:1px solid rgba(240,90,26,.25);border-radius:7px;font-size:12px;font-weight:700;color:var(--accent);cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;}
+.trade-btn:hover{background:rgba(240,90,26,.2);border-color:rgba(240,90,26,.4);}
+.session-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+.session-london{background:rgba(33,150,243,.12);color:var(--blue);}
+.session-ny{background:rgba(14,203,129,.12);color:var(--green);}
+.session-asian{background:rgba(240,185,11,.12);color:var(--gold);}
+.pair-cell{display:flex;align-items:center;gap:8px;}
+.pair-flag{font-size:16px;}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
+.toast{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .25s ease;min-width:240px;max-width:340px;}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--green);}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* SIDEBAR OVERLAY */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;}
+.sidebar-overlay.open{display:block;}
+html.mob .hdr-logo-wrap{display:none !important;}
+html.mob .hdr-search{display:none !important;}
+html.mob .sidebar{display:none !important;position:fixed;top:0;left:0;bottom:0;height:100%;width:var(--sidebar);z-index:200;overflow-y:auto;}
+html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
+html.mob .layout{display:block !important;overflow-y:auto;}
+html.mob .main{width:100% !important;padding:16px;}
+</style>
+<script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
+</head>
+<body>
+<div class="page">
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo-wrap">
+    <a href="../dashboard-new.html"><img src="../assets/vgm-logo.png" alt="Veloci Global Markets"/></a>
+  </div>
+  <div class="hdr-hamburger" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+  <div class="hdr-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Search marketsâ€¦"/>
+  </div>
+  <div class="hdr-right">
+    <a class="hicon" href="../notifications-new.html">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </a>
+    <div class="hdr-avatar" id="hdr-avatar">V</div>
+  </div>
+</header>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo-area">
+    <img src="../assets/vgm-logo.png" alt="Veloci Global Markets"/>
+  </div>
+  <nav class="sb-nav">
+    <a class="nav-item" href="../dashboard-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-item-label">Dashboard</span>
+    </a>
+    <a class="nav-item active" href="../markets-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-item-label">Markets</span>
+    </a>
+    <div class="nav-group-label">Markets</div>
+    <a class="nav-item" href="forex-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span class="nav-item-label" style="color:var(--accent);">Forex</span>
+    </a>
+    <a class="nav-item" href="indices-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/></svg>
+      <span class="nav-item-label">Indices</span>
+    </a>
+    <a class="nav-item" href="commodities-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <span class="nav-item-label">Commodities</span>
+    </a>
+    <a class="nav-item" href="shares-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="12" x2="7" y2="17"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="17" y1="9" x2="17" y2="17"/></svg>
+      <span class="nav-item-label">Shares</span>
+    </a>
+    <a class="nav-item" href="etfs-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="8,12 12,8 16,12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+      <span class="nav-item-label">ETFs</span>
+    </a>
+    <a class="nav-item" href="bonds-new.html" style="padding-left:28px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      <span class="nav-item-label">Bonds</span>
+    </a>
+    <a class="nav-item" href="../wallet-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+      <span class="nav-item-label">Wallet</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Funds</div>
+    <a class="nav-item" href="../deposit-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v14m0 0l-4-4m4 4l4-4"/><path d="M4 20h16"/></svg>
+      <span class="nav-item-label">Deposit</span>
+    </a>
+    <a class="nav-item" href="../withdraw-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22V8m0 0l4 4m-4-4l-4 4"/><path d="M4 4h16"/></svg>
+      <span class="nav-item-label">Withdraw</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Trade</div>
+    <a class="nav-item" href="../spot-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span class="nav-item-label">Spot</span>
+    </a>
+    <a class="nav-item" href="../futures-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>
+      <span class="nav-item-label">Futures</span>
+    </a>
+    <a class="nav-item" href="../usdt-perpetual-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+      <span class="nav-item-label">USDT Perp</span>
+    </a>
+    <a class="nav-item" href="../inverse-perpetual-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+      <span class="nav-item-label">Inverse Perp</span>
+    </a>
+    <a class="nav-item" href="../convert-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span class="nav-item-label">Convert</span>
+    </a>
+    <a class="nav-item" href="../sponsorship-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-item-label">Sponsorship</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Account</div>
+    <a class="nav-item" href="../notifications-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="nav-item-label">Notifications</span>
+    </a>
+    <a class="nav-item" href="../settings-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-item-label">Settings</span>
+    </a>
+    <a class="nav-item" href="../upgrade-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,11 12,6 7,11"/><polyline points="17,18 12,13 7,18"/></svg>
+      <span class="nav-item-label">Upgrade</span>
+    </a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">V</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sb-user-name">Loadingâ€¦</div>
+        <div class="sb-user-uid" id="sb-user-uid"></div>
+      </div>
+    </div>
+    <button onclick="doSignOut()" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--red);background:none;border:none;border-top:1px solid var(--b);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(246,70,93,.06)'" onmouseout="this.style.background='none'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-hdr">
+    <div class="page-hdr-left">
+      <div class="live-dot"></div>
+      <div class="page-title">Forex Markets</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="last-updated" id="last-updated">Updated just now</span>
+      <button class="refresh-btn" onclick="refreshTime()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- CATEGORY TABS -->
+  <div class="cat-tabs">
+    <a class="cat-tab" href="../markets-new.html">Crypto</a>
+    <a class="cat-tab active" href="forex-new.html">Forex</a>
+    <a class="cat-tab" href="indices-new.html">Indices</a>
+    <a class="cat-tab" href="commodities-new.html">Commodities</a>
+    <a class="cat-tab" href="shares-new.html">Shares</a>
+    <a class="cat-tab" href="etfs-new.html">ETFs</a>
+    <a class="cat-tab" href="bonds-new.html">Bonds</a>
+  </div>
+
+  <!-- TRADINGVIEW FOREX SCREENER WIDGET -->
+  <div class="widget-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js" async>
+      {
+        "width": "100%",
+        "height": 550,
+        "defaultColumn": "overview",
+        "defaultScreen": "forex",
+        "market": "forex",
+        "showToolbar": true,
+        "colorTheme": "dark",
+        "locale": "en",
+        "isTransparent": true
+      }
+      </script>
+    </div>
+  </div>
+
+  <!-- FEATURED FOREX PAIRS TABLE -->
+  <div class="section-card">
+    <div class="section-hdr">
+      <div class="section-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Featured Forex Pairs
+      </div>
+      <span style="font-size:12px;color:var(--sub);">Live indicative prices</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Bid</th>
+            <th>Ask</th>
+            <th>Spread</th>
+            <th>Daily Change %</th>
+            <th>Session</th>
+            <th>Trade</th>
+          </tr>
+        </thead>
+        <tbody id="forex-tbody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// =============================================
+// STATIC FOREX DATA
+// =============================================
+const FOREX_PAIRS = [
+  { pair:'EUR/USD', flag:'ðŸ‡ªðŸ‡ºðŸ‡ºðŸ‡¸', bid:'1.08542', ask:'1.08558', spread:'1.6', change:'+0.24', session:'london' },
+  { pair:'GBP/USD', flag:'ðŸ‡¬ðŸ‡§ðŸ‡ºðŸ‡¸', bid:'1.27341', ask:'1.27362', spread:'2.1', change:'-0.11', session:'london' },
+  { pair:'USD/JPY', flag:'ðŸ‡ºðŸ‡¸ðŸ‡¯ðŸ‡µ', bid:'149.582', ask:'149.601', spread:'1.9', change:'+0.35', session:'asian' },
+  { pair:'AUD/USD', flag:'ðŸ‡¦ðŸ‡ºðŸ‡ºðŸ‡¸', bid:'0.65218', ask:'0.65234', spread:'1.6', change:'-0.28', session:'asian' },
+  { pair:'USD/CAD', flag:'ðŸ‡ºðŸ‡¸ðŸ‡¨ðŸ‡¦', bid:'1.36741', ask:'1.36762', spread:'2.1', change:'+0.09', session:'ny' },
+  { pair:'USD/CHF', flag:'ðŸ‡ºðŸ‡¸ðŸ‡¨ðŸ‡­', bid:'0.90124', ask:'0.90142', spread:'1.8', change:'-0.15', session:'london' },
+  { pair:'NZD/USD', flag:'ðŸ‡³ðŸ‡¿ðŸ‡ºðŸ‡¸', bid:'0.60341', ask:'0.60358', spread:'1.7', change:'+0.18', session:'asian' },
+  { pair:'EUR/GBP', flag:'ðŸ‡ªðŸ‡ºðŸ‡¬ðŸ‡§', bid:'0.85218', ask:'0.85233', spread:'1.5', change:'+0.07', session:'london' },
+  { pair:'EUR/JPY', flag:'ðŸ‡ªðŸ‡ºðŸ‡¯ðŸ‡µ', bid:'162.341', ask:'162.368', spread:'2.7', change:'+0.59', session:'asian' },
+  { pair:'GBP/JPY', flag:'ðŸ‡¬ðŸ‡§ðŸ‡¯ðŸ‡µ', bid:'190.521', ask:'190.554', spread:'3.3', change:'+0.22', session:'london' },
+];
+
+function renderForex() {
+  const tbody = document.getElementById('forex-tbody');
+  tbody.innerHTML = FOREX_PAIRS.map(p => {
+    const isPos = p.change.startsWith('+');
+    const changeClass = isPos ? 'pos' : 'neg';
+    const sessionLabel = p.session === 'london' ? 'London' : p.session === 'ny' ? 'New York' : 'Asian';
+    const sessionClass = p.session === 'london' ? 'session-london' : p.session === 'ny' ? 'session-ny' : 'session-asian';
+    return `<tr>
+      <td>
+        <div class="pair-cell">
+          <span class="pair-flag">${p.flag}</span>
+          <span style="font-weight:700;">${p.pair}</span>
+        </div>
+      </td>
+      <td style="font-weight:600;">${p.bid}</td>
+      <td style="font-weight:600;">${p.ask}</td>
+      <td style="color:var(--sub);">${p.spread} pips</td>
+      <td class="${changeClass}" style="font-weight:700;">${p.change}%</td>
+      <td><span class="session-badge ${sessionClass}">${sessionLabel}</span></td>
+      <td><a class="trade-btn" href="../futures-new.html">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>
+        Trade
+      </a></td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshTime() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent = 'Updated ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+// =============================================
+// INIT
+// =============================================
+(async () => {
+  const db = window.SV_DB;
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = '../login.html'; return; }
+
+  const { data: p } = await db.from('profiles').select('first_name,last_name').eq('id', session.user.id).single();
+  const name = p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() || session.user.email : session.user.email;
+  const initials = name.charAt(0).toUpperCase();
+  document.getElementById('hdr-avatar').textContent = initials;
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-user-name').textContent = name;
+  document.getElementById('sb-user-uid').textContent = session.user.email;
+
+  renderForex();
+  refreshTime();
+})();
+
+async function doSignOut() {
+  await window.SV_DB.auth.signOut();
+  window.location.href = '../login.html';
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('mob-open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+</script>
+</body>
+</html>
+

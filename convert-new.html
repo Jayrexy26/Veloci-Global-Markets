@@ -1,0 +1,581 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/favicon.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Convert â€” Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<style>
+:root {
+  --bg:#080c18; --s1:#0d1117; --s2:#111827; --s3:#1a2236; --s4:#252b3d;
+  --b:rgba(255,255,255,.07); --b2:rgba(255,255,255,.13);
+  --accent:#f05a1a; --accent-dk:#d94d12;
+  --green:#0ecb81; --red:#f6465d; --gold:#f0b90b; --blue:#2196f3;
+  --text:#eaecef; --sub:#848e9c;
+  --sidebar:220px; --header:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;border:none;outline:none;background:none;color:var(--text);}
+select option{background:var(--s2);color:var(--text);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+
+.page{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* HEADER */
+.hdr{height:var(--header);flex-shrink:0;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px 0 0;z-index:50;}
+.hdr-logo-wrap{width:var(--sidebar);flex-shrink:0;height:100%;display:flex;align-items:center;padding:0 20px;border-right:1px solid var(--b);}
+.hdr-logo-wrap img{height:36px;width:auto;}
+.hdr-hamburger{width:44px;height:var(--header);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:color .15s;}
+.hdr-hamburger:hover{color:var(--text);}
+.hdr-search{flex:1;max-width:300px;margin-left:12px;display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:0 12px;height:36px;}
+.hdr-search input{font-size:13px;flex:1;}
+.hdr-search input::placeholder{color:var(--sub);}
+.hdr-right{display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;}
+.hicon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .15s;position:relative;}
+.hicon:hover{background:var(--s3);color:var(--text);}
+.hdr-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:4px;color:#fff;}
+
+/* LAYOUT */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;transition:width .25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-logo-area{padding:14px 20px;display:flex;align-items:center;border-bottom:1px solid var(--b);flex-shrink:0;}
+.sb-logo-area img{height:32px;width:auto;}
+.sb-nav{flex:1;padding:8px 0;}
+.nav-group-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:rgba(132,142,156,.5);text-transform:uppercase;padding:14px 18px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--sub);transition:all .15s;white-space:nowrap;border-left:2.5px solid transparent;text-decoration:none;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.nav-item.active{color:var(--accent);background:rgba(240,90,26,.08);border-left-color:var(--accent);}
+.nav-item svg{flex-shrink:0;width:16px;height:16px;}
+.nav-item-label{flex:1;}
+.nav-divider{height:1px;background:var(--b);margin:6px 0;}
+.sb-bottom{flex-shrink:0;border-top:1px solid var(--b);}
+.sb-user{display:flex;align-items:center;gap:10px;padding:12px 16px;}
+.sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#c94400);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#fff;}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-uid{font-size:10.5px;color:var(--sub);margin-top:1px;}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;padding:28px 32px;}
+.main::-webkit-scrollbar{width:4px;}
+
+/* PAGE HEADER */
+.page-hdr{margin-bottom:28px;}
+.page-title{font-size:24px;font-weight:800;color:var(--text);}
+.page-subtitle{font-size:13px;color:var(--sub);margin-top:4px;}
+
+/* CENTERED CONTENT */
+.center-wrap{display:flex;flex-direction:column;align-items:center;}
+
+/* CONVERSION CARD */
+.conv-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:32px;width:100%;max-width:480px;margin-bottom:32px;}
+.conv-card-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.conv-card-sub{font-size:13px;color:var(--sub);margin-bottom:28px;}
+
+.conv-asset-block{background:var(--s2);border:1.5px solid var(--b);border-radius:12px;padding:16px;}
+.conv-asset-label{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--sub);margin-bottom:10px;}
+.conv-asset-row{display:flex;align-items:center;gap:12px;}
+.conv-asset-select{flex:0 0 130px;height:44px;background:var(--s3);border:1.5px solid var(--b2);border-radius:10px;padding:0 12px;font-size:13.5px;font-weight:700;color:var(--text);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23848e9c' stroke-width='2.5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.conv-asset-select:focus{outline:none;border-color:var(--accent);}
+.conv-amount-input{flex:1;height:44px;background:var(--s3);border:1.5px solid var(--b2);border-radius:10px;padding:0 14px;font-size:16px;font-weight:700;color:var(--text);}
+.conv-amount-input:focus{outline:none;border-color:var(--accent);}
+.conv-amount-input::placeholder{color:var(--sub);font-weight:400;}
+.conv-amount-display{flex:1;height:44px;background:transparent;border:none;display:flex;align-items:center;font-size:16px;font-weight:700;color:var(--text);padding:0 14px;}
+
+.swap-btn-row{display:flex;justify-content:center;align-items:center;margin:12px 0;position:relative;}
+.swap-btn-row::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--b);}
+.swap-btn{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;background:var(--s3);border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;color:var(--sub);cursor:pointer;transition:all .2s;}
+.swap-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:rotate(180deg);}
+
+.conv-info-row{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding:12px 16px;background:var(--s2);border-radius:10px;border:1px solid var(--b);}
+.conv-info-item{display:flex;flex-direction:column;gap:3px;}
+.conv-info-label{font-size:10.5px;color:var(--sub);}
+.conv-info-val{font-size:12.5px;font-weight:700;color:var(--text);}
+.conv-info-divider{width:1px;height:30px;background:var(--b);}
+
+.conv-rate-display{margin-top:12px;text-align:center;font-size:12px;color:var(--sub);}
+.conv-rate-display span{color:var(--text);font-weight:600;}
+
+.conv-btn{width:100%;height:52px;background:var(--accent);color:#fff;border-radius:12px;font-size:15px;font-weight:700;border:none;cursor:pointer;transition:background .15s;margin-top:20px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.conv-btn:hover{background:var(--accent-dk);}
+.conv-btn:disabled{background:var(--s3);color:var(--sub);cursor:not-allowed;}
+
+.conv-success-msg{display:none;align-items:center;gap:12px;background:rgba(14,203,129,.07);border:1px solid rgba(14,203,129,.25);border-radius:12px;padding:14px 16px;margin-top:16px;}
+.conv-success-msg.show{display:flex;}
+.conv-success-msg-text{font-size:13px;color:var(--green);font-weight:500;line-height:1.5;}
+
+/* HISTORY CARD */
+.history-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;overflow:hidden;width:100%;max-width:480px;}
+.history-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--b);}
+.history-card-title{font-size:15px;font-weight:700;color:var(--text);}
+.rtx-table{width:100%;border-collapse:collapse;}
+.rtx-table th{font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--sub);padding:10px 16px;text-align:left;background:var(--s2);border-bottom:1px solid var(--b);}
+.rtx-table td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12.5px;vertical-align:middle;}
+.rtx-table tr:last-child td{border-bottom:none;}
+.rtx-table tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;}
+.badge-green{background:rgba(14,203,129,.12);color:var(--green);}
+.badge-yellow{background:rgba(240,185,11,.12);color:var(--gold);}
+.badge-red{background:rgba(246,70,93,.12);color:var(--red);}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;}
+.chip-pending{background:rgba(240,185,11,.12);color:var(--gold);}
+.chip-completed,.chip-approved{background:rgba(14,203,129,.12);color:var(--green);}
+.chip-failed,.chip-rejected{background:rgba(246,70,93,.12);color:var(--red);}
+.empty-state-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:10px;}
+.empty-state-box svg{opacity:.2;}
+.empty-state-box p{font-size:13px;color:var(--sub);}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;}
+.toast{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .25s ease;min-width:240px;max-width:340px;}
+.toast.success .toast-dot{background:var(--green);}
+.toast.error .toast-dot{background:var(--red);}
+.toast.info .toast-dot{background:var(--blue);}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+@keyframes slideOut{from{opacity:1;}to{opacity:0;transform:translateX(20px);}}
+.toast.removing{animation:slideOut .2s ease forwards;}
+
+/* SIDEBAR OVERLAY */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;}
+.sidebar-overlay.open{display:block;}
+html.mob .hdr-logo-wrap{display:none !important;}
+html.mob .hdr-search{display:none !important;}
+html.mob .sidebar{display:none !important;position:fixed;top:0;left:0;bottom:0;height:100%;width:var(--sidebar);z-index:200;overflow-y:auto;}
+html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
+html.mob .layout{display:block !important;overflow-y:auto;}
+html.mob .main{width:100% !important;padding:20px 16px;}
+</style>
+<script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
+</head>
+<body>
+<div class="page">
+<div class="sidebar-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-logo-wrap">
+    <a href="dashboard-new.html"><img src="assets/vgm-logo.png" alt="Veloci Global Markets"/></a>
+  </div>
+  <div class="hdr-hamburger" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+  <div class="hdr-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sub)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Searchâ€¦"/>
+  </div>
+  <div class="hdr-right">
+    <a class="hicon" href="notifications-new.html">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </a>
+    <div class="hdr-avatar" id="hdr-avatar">V</div>
+  </div>
+</header>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo-area">
+    <img src="assets/vgm-logo.png" alt="Veloci Global Markets"/>
+  </div>
+  <nav class="sb-nav">
+    <a class="nav-item" href="dashboard-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-item-label">Dashboard</span>
+    </a>
+    <a class="nav-item" href="markets-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-item-label">Markets</span>
+    </a>
+    <a class="nav-item" href="wallet-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="currentColor" stroke="none"/></svg>
+      <span class="nav-item-label">Wallet</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Funds</div>
+    <a class="nav-item" href="deposit-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v14m0 0l-4-4m4 4l4-4"/><path d="M4 20h16"/></svg>
+      <span class="nav-item-label">Deposit</span>
+    </a>
+    <a class="nav-item" href="withdraw-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22V8m0 0l4 4m-4-4l-4 4"/><path d="M4 4h16"/></svg>
+      <span class="nav-item-label">Withdraw</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">History</div>
+    <a class="nav-item" href="trades-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      <span class="nav-item-label">Trade History</span>
+    </a>
+    <a class="nav-item" href="history-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span class="nav-item-label">Transactions</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Trade</div>
+    <a class="nav-item" href="spot-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      <span class="nav-item-label">Spot</span>
+    </a>
+    <a class="nav-item" href="futures-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/><polyline points="16,7 22,7 22,13"/></svg>
+      <span class="nav-item-label">Futures</span>
+    </a>
+    <a class="nav-item" href="usdt-perpetual-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg>
+      <span class="nav-item-label">USDT Perp</span>
+    </a>
+    <a class="nav-item" href="inverse-perpetual-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+      <span class="nav-item-label">Inverse Perp</span>
+    </a>
+    <a class="nav-item active" href="convert-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <span class="nav-item-label">Convert</span>
+    </a>
+    <a class="nav-item" href="sponsorship-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-item-label">Sponsorship</span>
+    </a>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Account</div>
+    <a class="nav-item" href="notifications-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="nav-item-label">Notifications</span>
+    </a>
+    <a class="nav-item" href="settings-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-item-label">Settings</span>
+    </a>
+    <a class="nav-item" href="upgrade-new.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17,11 12,6 7,11"/><polyline points="17,18 12,13 7,18"/></svg>
+      <span class="nav-item-label">Upgrade</span>
+    </a>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-avatar">V</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="sb-user-name">Loadingâ€¦</div>
+        <div class="sb-user-uid" id="sb-user-uid"></div>
+      </div>
+    </div>
+    <button onclick="doSignOut()" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--red);background:none;border:none;border-top:1px solid var(--b);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='rgba(246,70,93,.06)'" onmouseout="this.style.background='none'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="page-hdr">
+    <div class="page-title">Convert</div>
+    <div class="page-subtitle">Instantly swap between crypto assets</div>
+  </div>
+
+  <div class="center-wrap">
+
+    <!-- CONVERSION CARD -->
+    <div class="conv-card">
+      <div class="conv-card-title">Convert Assets</div>
+      <div class="conv-card-sub">Instantly swap between assets at market rates</div>
+
+      <!-- FROM -->
+      <div class="conv-asset-block">
+        <div class="conv-asset-label">From</div>
+        <div class="conv-asset-row">
+          <select class="conv-asset-select" id="from-asset" onchange="onFromChange()">
+            <option value="USDT">USDT</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="BNB">BNB</option>
+            <option value="SOL">SOL</option>
+          </select>
+          <input type="number" class="conv-amount-input" id="from-amount" placeholder="0.00" min="0" step="any" oninput="calcTo()"/>
+        </div>
+      </div>
+
+      <!-- SWAP BUTTON -->
+      <div class="swap-btn-row">
+        <button class="swap-btn" onclick="swapAssets()" title="Swap assets">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19,12 12,19 5,12"/></svg>
+        </button>
+      </div>
+
+      <!-- TO -->
+      <div class="conv-asset-block">
+        <div class="conv-asset-label">To</div>
+        <div class="conv-asset-row">
+          <select class="conv-asset-select" id="to-asset" onchange="calcTo()">
+            <option value="USDT">USDT</option>
+            <option value="BTC" selected>BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="BNB">BNB</option>
+            <option value="SOL">SOL</option>
+          </select>
+          <div class="conv-amount-display" id="to-amount-display">0.00000000</div>
+        </div>
+      </div>
+
+      <!-- RATE INFO -->
+      <div class="conv-info-row">
+        <div class="conv-info-item">
+          <span class="conv-info-label">Exchange Rate</span>
+          <span class="conv-info-val" id="rate-display">1 USDT â‰ˆ 0.00001482 BTC</span>
+        </div>
+        <div class="conv-info-divider"></div>
+        <div class="conv-info-item">
+          <span class="conv-info-label">Network Fee</span>
+          <span class="conv-info-val">â‰ˆ $0.50</span>
+        </div>
+        <div class="conv-info-divider"></div>
+        <div class="conv-info-item">
+          <span class="conv-info-label">Slippage</span>
+          <span class="conv-info-val">0.1%</span>
+        </div>
+      </div>
+
+      <!-- CONVERT BUTTON -->
+      <button class="conv-btn" id="conv-btn" onclick="submitConvert()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Convert
+      </button>
+
+      <!-- SUCCESS MESSAGE -->
+      <div class="conv-success-msg" id="conv-success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" flex-shrink="0"><circle cx="12" cy="12" r="10"/><polyline points="9,12 12,15 16,9"/></svg>
+        <div class="conv-success-msg-text">Conversion request submitted. Funds will be credited within 15 minutes.</div>
+      </div>
+    </div>
+
+    <!-- CONVERSION HISTORY -->
+    <div class="history-card">
+      <div class="history-card-hdr">
+        <div class="history-card-title">Conversion History</div>
+      </div>
+      <div id="conv-history-wrap">
+        <table class="rtx-table">
+          <thead>
+            <tr>
+              <th>From</th>
+              <th>To</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="conv-history-body">
+            <tr><td colspan="5" style="text-align:center;padding:32px 20px;color:var(--sub);">Loadingâ€¦</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /center-wrap -->
+</main>
+</div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// =============================================
+// RATES & GLOBALS
+// =============================================
+const RATES = { BTC: 67450, ETH: 3540, BNB: 580, SOL: 175, USDT: 1 };
+const SYMBOLS = { BTC: 8, ETH: 6, BNB: 4, SOL: 4, USDT: 2 };
+const db = window.SV_DB;
+let session = null;
+
+// =============================================
+// UTILS
+// =============================================
+function fmtMoney(n) {
+  return '$' + (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(ts) {
+  if (!ts) return 'â€”';
+  return new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="toast-dot"></div><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.classList.add('removing'); setTimeout(() => t.remove(), 220); }, 3200);
+}
+
+// =============================================
+// CONVERSION LOGIC
+// =============================================
+function calcTo() {
+  const fromAsset = document.getElementById('from-asset').value;
+  const toAsset   = document.getElementById('to-asset').value;
+  const fromAmt   = parseFloat(document.getElementById('from-amount').value) || 0;
+
+  const rate = RATES[fromAsset] / RATES[toAsset];
+  const toAmt = fromAmt * rate;
+  const decimals = SYMBOLS[toAsset] || 4;
+
+  document.getElementById('to-amount-display').textContent = toAmt.toFixed(decimals);
+
+  // Update rate display
+  const rateDisplay = (RATES[fromAsset] / RATES[toAsset]);
+  let rateStr;
+  if (rateDisplay >= 1) {
+    rateStr = `1 ${fromAsset} â‰ˆ ${rateDisplay.toLocaleString('en-US', { maximumFractionDigits: 2 })} ${toAsset}`;
+  } else {
+    rateStr = `1 ${fromAsset} â‰ˆ ${rateDisplay.toFixed(8)} ${toAsset}`;
+  }
+  document.getElementById('rate-display').textContent = rateStr;
+}
+
+function onFromChange() {
+  // Auto-set to-asset to something different if same
+  const fromAsset = document.getElementById('from-asset').value;
+  const toSel = document.getElementById('to-asset');
+  if (toSel.value === fromAsset) {
+    const assets = ['USDT', 'BTC', 'ETH', 'BNB', 'SOL'];
+    const alt = assets.find(a => a !== fromAsset) || 'USDT';
+    toSel.value = alt;
+  }
+  calcTo();
+}
+
+function swapAssets() {
+  const fromSel = document.getElementById('from-asset');
+  const toSel   = document.getElementById('to-asset');
+  const tmp = fromSel.value;
+  fromSel.value = toSel.value;
+  toSel.value = tmp;
+  calcTo();
+}
+
+// =============================================
+// SUBMIT CONVERT
+// =============================================
+async function submitConvert() {
+  const fromAsset = document.getElementById('from-asset').value;
+  const toAsset   = document.getElementById('to-asset').value;
+  const fromAmt   = parseFloat(document.getElementById('from-amount').value);
+
+  if (!fromAmt || fromAmt <= 0) {
+    showToast('Please enter an amount to convert', 'error');
+    return;
+  }
+  if (fromAsset === toAsset) {
+    showToast('Please select different assets', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('conv-btn');
+  btn.disabled = true;
+  btn.textContent = 'Processingâ€¦';
+
+  // Small delay for UX
+  await new Promise(r => setTimeout(r, 800));
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Convert`;
+
+  const successEl = document.getElementById('conv-success');
+  successEl.classList.add('show');
+  document.getElementById('from-amount').value = '';
+  document.getElementById('to-amount-display').textContent = '0.00000000';
+  setTimeout(() => successEl.classList.remove('show'), 6000);
+}
+
+// =============================================
+// INIT
+// =============================================
+(async () => {
+  const { data: { session: s } } = await db.auth.getSession();
+  if (!s) { window.location.href = 'login.html'; return; }
+  session = s;
+
+  const { data: p } = await db.from('profiles').select('*').eq('id', s.user.id).single();
+  const name = p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() || s.user.email : s.user.email;
+  const initials = name.charAt(0).toUpperCase();
+  document.getElementById('hdr-avatar').textContent = initials;
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-user-name').textContent = name;
+  document.getElementById('sb-user-uid').textContent = s.user.email;
+
+  // Init rate display
+  calcTo();
+
+  // Load conversion history
+  await loadConvHistory(s.user.id);
+})();
+
+async function loadConvHistory(uid) {
+  const tbody = document.getElementById('conv-history-body');
+  const { data, error } = await db.from('transactions')
+    .select('*')
+    .eq('user_id', uid)
+    .eq('type', 'convert')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state-box">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      <p>No conversion history yet</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(tx => {
+    const status = (tx.status || 'pending').toLowerCase();
+    let chipClass = 'chip-pending';
+    if (status === 'completed' || status === 'approved') chipClass = 'chip-completed';
+    if (status === 'failed' || status === 'rejected') chipClass = 'chip-failed';
+
+    const from = tx.from_asset || tx.coin || 'â€”';
+    const to   = tx.to_asset || tx.currency || 'â€”';
+    return `<tr>
+      <td style="font-weight:600;">${from}</td>
+      <td style="font-weight:600;">${to}</td>
+      <td>${fmtMoney(tx.amount)}</td>
+      <td><span class="chip ${chipClass}" style="text-transform:capitalize;">${tx.status || 'Pending'}</span></td>
+      <td style="color:var(--sub);">${fmtDate(tx.created_at)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// =============================================
+// SIGN OUT
+// =============================================
+async function doSignOut() {
+  await db.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+// =============================================
+// SIDEBAR
+// =============================================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('mob-open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('sb-overlay').classList.remove('open');
+}
+</script>
+</body>
+</html>
+
