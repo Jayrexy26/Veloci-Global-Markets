@@ -1286,7 +1286,7 @@ async function renderMarketPerf() {
     const { data: authData } = await db.auth.getUser();
     if (!authData?.user) return;
     const { data: trades } = await db.from('positions')
-      .select('symbol,pnl')
+      .select('pair,pnl')
       .eq('user_id', authData.user.id);
     if (!trades?.length) {
       wrap.innerHTML = '<div class="mkt-perf-empty">No trade data yet</div>';
@@ -1294,7 +1294,7 @@ async function renderMarketPerf() {
     }
     const cats = {};
     trades.forEach(t => {
-      const cat = categorizeTradeSym(t.symbol);
+      const cat = categorizeTradeSym(t.pair);
       if (!cats[cat]) cats[cat] = { total: 0, wins: 0 };
       cats[cat].total++;
       if ((parseFloat(t.pnl) || 0) > 0) cats[cat].wins++;
@@ -1339,7 +1339,7 @@ async function renderPositions() {
     if (!user?.user) return;
     const [{ data: positions }, { count: totalCount }] = await Promise.all([
       db.from('positions').select('*').eq('user_id', user.user.id)
-        .order('opened_at', { ascending: false }).limit(5),
+        .order('created_at', { ascending: false }).limit(5),
       db.from('positions').select('id', { count: 'exact', head: true }).eq('user_id', user.user.id)
     ]);
     const countEl   = document.getElementById('pos-count');
@@ -1357,8 +1357,8 @@ async function renderPositions() {
       const pnl    = parseFloat(pos.pnl || 0);
       totalPnl    += pnl;
       const pnlUp  = pnl >= 0;
-      const side   = (pos.side || 'buy').toUpperCase();
-      const isLong = pos.side === 'buy';
+      const side   = (pos.direction || 'buy').toUpperCase();
+      const isLong = (pos.direction || '').toLowerCase() === 'buy';
       const lev    = pos.leverage || '';
       const closedDate = pos.closed_at
         ? new Date(pos.closed_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
@@ -1366,11 +1366,11 @@ async function renderPositions() {
       return `<tr>
         <td><div class="pos-num" style="font-size:11.5px;color:var(--sub);">#${pos.ticket||pos.id?.slice(0,6)||'—'}</div></td>
         <td>
-          <div class="pos-pair">${pos.symbol||'—'}</div>
+          <div class="pos-pair">${pos.pair||'—'}</div>
           ${lev ? `<div style="font-size:10px;color:var(--sub);">${lev}</div>` : ''}
         </td>
         <td><span class="pos-type ${isLong?'pos-long':'pos-short'}">${side}</span></td>
-        <td><div class="pos-num">${pos.lots||'—'}</div></td>
+        <td><div class="pos-num">${pos.size||'—'}</div></td>
         <td><div class="pos-num" style="font-size:11.5px;">${closedDate}</div></td>
         <td>
           <div class="${pnlUp?'pos-pos':'pos-neg'}">${pnlUp?'+':'-'}$${Math.abs(pnl).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
@@ -1712,7 +1712,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   const email = user.email || '';
 
   /* Try to get profile for richer name data */
-  const { data: profile } = await db.from('profiles').select('first_name,last_name,balance,pnl,plan').eq('id', user.id).maybeSingle();
+  const { data: profile } = await db.from('profiles').select('first_name,last_name,balance,total_pnl,plan').eq('id', user.id).maybeSingle();
 
   const firstName   = profile?.first_name || '';
   const displayName = firstName
@@ -1791,7 +1791,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       pnlSubEl.style.color = p >= 0 ? 'var(--green)' : 'var(--red)';
     }
   }
-  applyBalance(profile?.balance, profile?.pnl);
+  applyBalance(profile?.balance, profile?.total_pnl);
 
   /* Fade out loading screen — minimum 1.4s so the animation is actually visible */
   const _dashEl = document.getElementById('dash-loading');
@@ -1838,7 +1838,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       filter: `id=eq.${user.id}`
     }, payload => {
       applyPlanBadge(payload.new.plan || 'Starter');
-      applyBalance(payload.new.balance, payload.new.pnl);
+      applyBalance(payload.new.balance, payload.new.total_pnl);
     })
     .subscribe();
 })();
