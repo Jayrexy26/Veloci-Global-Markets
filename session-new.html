@@ -526,6 +526,21 @@ async function doReset() {
 
 /* ── After PIN OK ── */
 async function afterPinSuccess() {
+  /* Record login activity if login-new.html hasn't already done so this session */
+  if (!sessionStorage.getItem('sv_login_logged')) {
+    try {
+      const ua = navigator.userAgent;
+      const isMobile = /Mobi|Android/i.test(ua);
+      const isTablet = /Tablet|iPad/i.test(ua);
+      const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+      const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
+      const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
+      let ipAddress = '', location = '';
+      try { const geo = await fetch('https://ipwho.is/').then(r=>r.json()); ipAddress=geo.ip||''; location=[geo.city,geo.country].filter(Boolean).join(', '); } catch(_){}
+      await window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location });
+    } catch(_) {}
+    sessionStorage.setItem('sv_login_logged', '1');
+  }
   const { data: profile } = await window.SV_DB.from('profiles')
     .select('kyc_status').eq('id', _user.id).single();
   window.location.href = profile?.kyc_status === 'verified' ? 'dashboard-new.html' : 'verify-new.html';
