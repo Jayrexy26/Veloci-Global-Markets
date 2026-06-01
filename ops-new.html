@@ -4096,10 +4096,15 @@ async function _emailApiCall(action, payload) {
   return res.json();
 }
 
-window.emailPopulateUsers = function() {
+window.emailPopulateUsers = async function() {
+  const db = window.SV_DB; if (!db) return;
   const sel = document.getElementById('email-recipient-sel');
   if (!sel) return;
-  const users = _allUsers || [];
+  let users = (_allUsers && _allUsers.length) ? _allUsers : null;
+  if (!users) {
+    const { data } = await db.from('profiles').select('id,email,first_name,last_name').order('email');
+    users = data || [];
+  }
   sel.innerHTML = '<option value="">&#8212; Select recipient &#8212;</option>';
   users.forEach(function(u) {
     const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
