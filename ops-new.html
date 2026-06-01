@@ -4097,12 +4097,15 @@ async function _emailApiCall(action, payload) {
 }
 
 window.emailPopulateUsers = async function() {
+  const db = window.SV_DB; if (!db) return;
   const sel = document.getElementById('email-recipient-sel');
   if (!sel) return;
-  if (!_allUsers || !_allUsers.length) {
-    await renderUsersLive();
+  let users = (_allUsers && _allUsers.length) ? _allUsers : [];
+  if (!users.length) {
+    const { data } = await db.from('profiles').select('*').order('created_at', { ascending: false });
+    users = data || [];
+    if (users.length) _allUsers = users;
   }
-  const users = _allUsers || [];
   sel.innerHTML = '<option value="">&#8212; Select recipient &#8212;</option>';
   users.forEach(function(u) {
     const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
