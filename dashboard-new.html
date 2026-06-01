@@ -361,6 +361,9 @@ tr:hover td{background:rgba(255,255,255,.02);}
           </div>
         </div>
 
+        <!-- PROFIT TARGET WIDGET -->
+        <div id="profit-target-widget" style="display:none;"></div>
+
         <!-- 3. QUICK ACTIONS -->
         <div class="quick-actions">
           <a href="deposit-new.html" class="qa-btn primary">
@@ -374,6 +377,10 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <a href="trades-new.html" class="qa-btn">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Trade History
+          </a>
+          <a href="convert-new.html" class="qa-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            Convert
           </a>
           <a href="settings-new.html" class="qa-btn">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -683,6 +690,30 @@ tr:hover td{background:rgba(255,255,255,.02);}
     renderPnl(currentPnl);
   }
 
+  // PROFIT TARGET WIDGET
+  try {
+    const { data: target } = await db.from('profit_targets').select('*').eq('user_id', uid).eq('is_active', true).maybeSingle();
+    if (target) {
+      const { data: targetTrades } = await db.from('profit_target_trades').select('amount').eq('target_id', target.id);
+      const earned = (targetTrades || []).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+      const goal = parseFloat(target.target_amount) || 0;
+      const pct = goal > 0 ? Math.min(100, (earned / goal) * 100).toFixed(1) : 0;
+      const fmtVal = v => '$' + (parseFloat(v)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const widget = document.getElementById('profit-target-widget');
+      widget.style.display = 'block';
+      widget.innerHTML = `<div class="profit-target-card" style="background:rgba(240,90,26,0.08);border:1px solid rgba(240,90,26,0.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;">Profit Target</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;">${escHtml(target.label || target.name || 'Active Target')}</div>
+        <div style="margin:10px 0 4px;font-size:12px;color:rgba(255,255,255,0.4);">${fmtVal(earned)} / ${fmtVal(goal)} achieved</div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:6px;overflow:hidden;">
+          <div style="background:#f05a1a;height:100%;width:${pct}%;transition:width 0.5s;border-radius:4px;"></div>
+        </div>
+      </div>`;
+    }
+  } catch(e) { /* profit_targets table may not exist yet */ }
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   // OPEN POSITIONS COUNT
   const { count: openCount } = await db.from('positions').select('*', { count: 'exact', head: true })
     .eq('user_id', uid).eq('status', 'open');
@@ -780,8 +811,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
   }
 
   // REALTIME: profile balance updates
-  db.channel('profile-changes')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${uid}` }, payload => {
+  db.channel('dash-balance-' + uid)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + uid }, payload => {
       const updated = payload.new;
       if (updated) {
         currentBalance = parseFloat(updated.balance) || 0;
@@ -789,6 +820,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
         renderBalance();
         renderPnl(currentPnl);
       }
+    })
+    .subscribe();
+
+  // REALTIME: notification badge updates
+  db.channel('dash-notifs-' + uid)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_id=eq.' + uid }, () => {
+      db.from('notifications').select('*', { count: 'exact', head: true })
+        .eq('user_id', uid).eq('read', false)
+        .then(({ count }) => {
+          const badge = document.getElementById('notif-badge');
+          if (count && count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'flex';
+          } else {
+            badge.style.display = 'none';
+          }
+        });
     })
     .subscribe();
 

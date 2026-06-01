@@ -330,7 +330,8 @@ function buildNotifHTML(n){
   const typeClass = 'type-'+(n.type||'system');
   const unreadClass = !n.read ? ' unread' : '';
   return `
-  <div class="notif-item${unreadClass}" id="notif-${n.id}" onclick="handleNotifClick('${n.id}')">
+  <div class="notif-item${unreadClass}" id="notif-${n.id}" onclick="handleNotifClick('${n.id}')" style="position:relative;">
+    <button onclick="event.stopPropagation();deleteNotif('${n.id}')" style="position:absolute;top:8px;right:10px;background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;line-height:1;" title="Delete">&times;</button>
     <div class="notif-icon ${typeClass}">${getTypeIcon(n.type)}</div>
     <div class="notif-body">
       <div class="notif-title">${escHtml(n.title||'Notification')}</div>
@@ -342,6 +343,16 @@ function buildNotifHTML(n){
     </div>
   </div>`;
 }
+
+async function deleteNotif(id){
+  const db = window.SV_DB; if(!db) return;
+  await db.from('notifications').delete().eq('id', id);
+  allNotifs = allNotifs.filter(n=>n.id!==id);
+  const el = document.getElementById('notif-'+id);
+  if(el) el.remove();
+  updateUnreadBadge();
+}
+window.deleteNotif = deleteNotif;
 
 function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -493,10 +504,30 @@ async function init(){
   // Real-time subscription
   db.channel('notifs-'+uid)
     .on('postgres_changes',{
-      event:'INSERT', schema:'public', table:'notifications',
+      event:'*', schema:'public', table:'notifications',
       filter:'user_id=eq.'+uid
     }, payload => {
-      prependNotif(payload.new);
+      if(payload.eventType === 'INSERT'){
+        prependNotif(payload.new);
+      } else if(payload.eventType === 'UPDATE'){
+        const idx = allNotifs.findIndex(n=>n.id===payload.new.id);
+        if(idx !== -1){ allNotifs[idx] = payload.new; }
+        const el = document.getElementById('notif-'+payload.new.id);
+        if(el){
+          if(payload.new.read){
+            el.classList.remove('unread');
+            const dot = el.querySelector('.notif-dot'); if(dot) dot.remove();
+            const title = el.querySelector('.notif-title');
+            if(title){ title.style.fontWeight='500'; title.style.color='var(--sub)'; }
+          }
+        }
+        updateUnreadBadge();
+      } else if(payload.eventType === 'DELETE'){
+        allNotifs = allNotifs.filter(n=>n.id!==payload.old.id);
+        const el = document.getElementById('notif-'+payload.old.id);
+        if(el) el.remove();
+        updateUnreadBadge();
+      }
     })
     .subscribe();
 
