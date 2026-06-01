@@ -168,16 +168,38 @@ tick(); setInterval(tick,1000);
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
 <script>
-/* Poll every 15s — redirect to dashboard when maintenance is lifted */
-async function checkMaintenanceStatus(){
-  try{
-    const db=window.SV_DB; if(!db) return;
-    const {data}=await db.from('system_settings').select('value').eq('key','maintenance_mode').maybeSingle();
-    if(data?.value !== 'true') window.location.href='dashboard-new.html';
-  }catch(e){}
-}
-checkMaintenanceStatus();
-setInterval(checkMaintenanceStatus, 15000);
+(async () => {
+  const db = window.SV_DB; if (!db) return;
+
+  function liftMaintenance() {
+    sessionStorage.removeItem('sv_maint');
+    window.location.href = 'dashboard-new.html';
+  }
+
+  /* Initial check */
+  try {
+    const { data } = await db.from('system_settings').select('value').eq('key','maintenance_mode').maybeSingle();
+    if (data?.value !== 'true') { liftMaintenance(); return; }
+  } catch(e) {}
+
+  /* Real-time: redirect the instant admin lifts maintenance */
+  db.channel('sv-maint-lifted')
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'system_settings',
+      filter: 'key=eq.maintenance_mode'
+    }, payload => {
+      if (payload.new?.value !== 'true') liftMaintenance();
+    })
+    .subscribe();
+
+  /* Fallback poll every 15s in case real-time misses */
+  setInterval(async () => {
+    try {
+      const { data } = await db.from('system_settings').select('value').eq('key','maintenance_mode').maybeSingle();
+      if (data?.value !== 'true') liftMaintenance();
+    } catch(e) {}
+  }, 15000);
+})();
 </script>
 </body>
 </html>
