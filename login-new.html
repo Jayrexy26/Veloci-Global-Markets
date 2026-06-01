@@ -309,8 +309,15 @@ async function doLogin() {
     /* Login alert email — fire-and-forget */
     fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.session.access_token}` },
-      body: JSON.stringify({ type: 'login', user_agent: navigator.userAgent }),
+      body: JSON.stringify({
+        email: loginData.user.email,
+        event: 'password_login',
+        login_time: new Date().toISOString(),
+        user_agent: navigator.userAgent || '',
+        device_language: navigator.language || '',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        platform: navigator.platform || '',
+      }),
     }).catch(() => {});
 
     /* Ban check is handled by session-new.html — go straight there */
