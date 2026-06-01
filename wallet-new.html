@@ -446,10 +446,10 @@ html.mob .pb-balance{font-size:26px;}
         <div class="acct-card-icon" style="background:rgba(33,150,243,.15);">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="17" cy="14" r="1" fill="var(--blue)" stroke="none"/></svg>
         </div>
-        <div class="acct-card-name">Funding Account</div>
+        <div class="acct-card-name">Wallet Balance</div>
       </div>
       <div class="acct-card-val">$0.00</div>
-      <div class="acct-card-secondary">Available for withdrawal</div>
+      <div class="acct-card-secondary">Total portfolio value</div>
       <div class="acct-card-link" onclick="window.location.href='withdraw-new.html'">Withdraw ?</div>
     </div>
     <!-- Earn -->
@@ -518,7 +518,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase.js"></script>
-<script src="./maintenance-check.js"></script>n<script>
+<script src="./maintenance-check.js"></script><script>
 (async()=>{
   const db=window.SV_DB;
   if(!sessionStorage.getItem("sv_pin_ok")){window.location.href="session-new.html";return;}
@@ -544,35 +544,30 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 
   /* -- Balance -- */
   const fmt = n => '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  _walletBal = parseFloat(profile?.balance||0) + parseFloat(profile?.total_pnl||0);
-  const pnlAmt = parseFloat(profile?.total_pnl||0);
-  const pnlPct = _walletBal > 0 ? Math.abs(pnlAmt/_walletBal*100).toFixed(2) : '0.00';
-  _walletPnlStr = (pnlAmt>=0?'+':'-') + fmt(Math.abs(pnlAmt)) + ' (' + pnlPct + '%)';
-  document.getElementById('pb-total').textContent = fmt(_walletBal);
-  const pnlEl = document.getElementById('pnl-val');
-  if(pnlEl){ pnlEl.className = pnlAmt>=0?'pb-pnl-pos':'pb-pnl-neg'; pnlEl.textContent = _walletPnlStr; }
 
-  const ratios = {spot:0.452,deriv:0.302,fund:0.212,earn:0.034};
-  const cards = document.querySelectorAll('.acct-card-val');
-  if(cards[0]) cards[0].textContent = fmt(_walletBal*ratios.spot);
-  if(cards[1]) cards[1].textContent = fmt(_walletBal*ratios.deriv);
-  if(cards[2]) cards[2].textContent = fmt(_walletBal*ratios.fund);
-  if(cards[3]) cards[3].textContent = fmt(_walletBal*ratios.earn);
+  function applyBalances(bal, pnl) {
+    const cashBal = parseFloat(bal||0);
+    const pnlAmt  = parseFloat(pnl||0);
+    _walletBal    = cashBal + pnlAmt;
+
+    const pnlPct  = _walletBal > 0 ? Math.abs(pnlAmt/_walletBal*100).toFixed(2) : '0.00';
+    _walletPnlStr = (pnlAmt>=0?'+':'-') + fmt(Math.abs(pnlAmt)) + ' (' + pnlPct + '%)';
+
+    if(!hiddenBalance){
+      document.getElementById('pb-total').textContent = fmt(_walletBal);
+      const pnlEl = document.getElementById('pnl-val');
+      if(pnlEl){ pnlEl.className = pnlAmt>=0?'pb-pnl-pos':'pb-pnl-neg'; pnlEl.textContent = _walletPnlStr; }
+    }
+
+    /* Account cards — Funding card mirrors the total portfolio balance (wallet balance) */
+    const cards = document.querySelectorAll('.acct-card-val');
+    if(cards[2]) cards[2].textContent = fmt(_walletBal);   // Funding → total portfolio (wallet balance)
+  }
+
+  applyBalances(profile?.balance, profile?.total_pnl);
 
   db.channel('wallet-balance-'+user.id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:`id=eq.${user.id}`},payload=>{
-    _walletBal = parseFloat(payload.new.balance||0)+parseFloat(payload.new.total_pnl||0);
-    const pnlA = parseFloat(payload.new.total_pnl||0);
-    const pnlP = _walletBal>0?Math.abs(pnlA/_walletBal*100).toFixed(2):'0.00';
-    _walletPnlStr = (pnlA>=0?'+':'-')+fmt(Math.abs(pnlA))+' ('+pnlP+'%)';
-    if(!hiddenBalance){
-      document.getElementById('pb-total').textContent=fmt(_walletBal);
-      const pe=document.getElementById('pnl-val');if(pe){pe.className=pnlA>=0?'pb-pnl-pos':'pb-pnl-neg';pe.textContent=_walletPnlStr;}
-    }
-    const cs=document.querySelectorAll('.acct-card-val');
-    if(cs[0])cs[0].textContent=fmt(_walletBal*ratios.spot);
-    if(cs[1])cs[1].textContent=fmt(_walletBal*ratios.deriv);
-    if(cs[2])cs[2].textContent=fmt(_walletBal*ratios.fund);
-    if(cs[3])cs[3].textContent=fmt(_walletBal*ratios.earn);
+    applyBalances(payload.new.balance, payload.new.total_pnl);
   }).subscribe();
 })();
 async function doSignOut() {
