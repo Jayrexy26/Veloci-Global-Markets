@@ -564,17 +564,17 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   /* Load positions */
   const { data: positions } = await db.from('positions')
     .select('*').eq('user_id', user.id)
-    .order('opened_at', { ascending: false }).limit(500);
+    .order('created_at', { ascending: false }).limit(500);
 
   const TRADES = (positions || []).map(p => {
     const pnl    = parseFloat(p.pnl || 0);
-    const dt     = new Date(p.opened_at || p.created_at || Date.now());
+    const dt     = new Date(p.created_at || Date.now());
     const ticket = p.ticket || p.id?.slice(0,8) || '—';
     return {
       ticket,
-      symbol:     p.symbol || '—',
-      direction:  (p.side || 'buy').toUpperCase(),
-      lots:       p.lots != null ? p.lots : (p.volume != null ? p.volume : '—'),
+      symbol:     p.pair || '—',
+      direction:  (p.direction || 'buy').toUpperCase(),
+      lots:       p.size != null ? p.size : (p.volume != null ? p.volume : '—'),
       openDate:   dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
       openTime:   dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
       openDateRaw: dt,
