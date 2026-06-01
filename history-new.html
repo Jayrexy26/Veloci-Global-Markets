@@ -501,6 +501,7 @@ const ICON_ORDER = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" 
 // -- Transaction Data --
 const TRANSACTIONS = [];
 const WD_REQUESTS  = {};
+const WD_LIST      = []; // ordered array for amount+time matching
 
 let activeFilter = 'all';
 
@@ -686,7 +687,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
 
   // Fire all queries in parallel immediately
   const txnP      = db.from('transactions').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(200);
-  const wdP       = db.from('withdrawal_requests').select('id,destination_type,destination_name,destination_ref').eq('user_id', uid);
+  const wdP       = db.from('withdrawal_requests').select('id,amount,destination_type,destination_name,destination_ref,status,created_at').eq('user_id', uid);
   const legacyWdP = db.from('withdrawals').select('id,amount,method,wallet_address,status,created_at').eq('user_email', email).order('created_at',{ascending:false}).limit(100);
   const depReqP   = db.from('deposit_requests').select('id,amount,coin,network,status,created_at').eq('user_id', uid).order('created_at',{ascending:false}).limit(200);
   const profileP  = db.from('profiles').select('first_name,last_name').eq('id', uid).maybeSingle();
@@ -695,7 +696,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   // Render transactions as soon as they (and withdrawal_requests) arrive
   Promise.all([txnP, wdP, legacyWdP, depReqP]).then(function(results) {
     const txnRes = results[0], wdRes = results[1], legacyWdRes = results[2], depReqRes = results[3];
-    (wdRes.data || []).forEach(function(r) { WD_REQUESTS[r.id] = r; });
+    (wdRes.data || []).forEach(function(r) { WD_REQUESTS[r.id] = r; WD_LIST.push(r); });
     (txnRes.data || []).forEach(function(t) {
       if (['trade_pnl','trade_loss'].includes(t.type)) return;
       const amt = parseFloat(t.amount || 0);
@@ -861,34 +862,41 @@ function openTxDetail(idx) {
     if (raw.method)  rows.push(['Method',  raw.method]);
     if (raw.note)    rows.push(['Note',    raw.note]);
     rows.push(['Transaction ID', tx.txid || raw.id?.slice(0,16) || '—']);
-    if (tx.type === 'withdrawal' && raw.withdrawal_request_id) {
-      const wr = WD_REQUESTS[raw.withdrawal_request_id];
+    if (tx.type === 'withdrawal') {
+      /* Match withdrawal_request by amount + created_at proximity (within 2 min) */
+      const txAmt  = Math.abs(tx.amount);
+      const txTime = new Date(raw.created_at || 0).getTime();
+      const wr = WD_LIST.find(function(r) {
+        const amtDiff  = Math.abs(parseFloat(r.amount || 0) - txAmt);
+        const timeDiff = Math.abs(new Date(r.created_at || 0).getTime() - txTime);
+        return amtDiff < 0.02 && timeDiff < 120000;
+      });
       if (wr) {
-        if (wr.wallet) rows.push(['Wallet Address', wr.wallet]);
-        if (wr.bank_details) {
-          try {
-            const bd = typeof wr.bank_details === 'string' ? JSON.parse(wr.bank_details) : wr.bank_details;
-            if (bd.holder)   rows.push(['Account Holder', bd.holder]);
-            if (bd.bankName) rows.push(['Bank Name',      bd.bankName]);
-            if (bd.acct)     rows.push(['Account Number', bd.acct]);
-            if (bd.swift)    rows.push(['SWIFT / BIC',    bd.swift]);
-            if (bd.iban)     rows.push(['IBAN',           bd.iban]);
-            if (bd.country)  rows.push(['Country',        bd.country]);
-            if (bd.ccy)      rows.push(['Currency',       bd.ccy]);
-            if (bd.ref)      rows.push(['Reference',      bd.ref]);
-          } catch(e) {}
+        const isCrypto = (wr.destination_type || 'crypto') === 'crypto';
+        rows.push(['Transfer Type', isCrypto ? 'Crypto' : 'Bank Transfer']);
+        if (wr.destination_name) rows.push([isCrypto ? 'Coin / Amount' : 'Bank / Holder', wr.destination_name]);
+        if (isCrypto) {
+          const parts = (wr.destination_ref || '').split(' | Memo: ');
+          if (parts[0]) rows.push(['Wallet Address', parts[0]]);
+          if (parts[1]) rows.push(['Memo / Tag',     parts[1]]);
+        } else {
+          const refParts = (wr.destination_ref || '').split(' | ');
+          const refLabels = ['Account No.', 'SWIFT / BIC', 'IBAN'];
+          refParts.forEach(function(p, i) { if (p) rows.push([refLabels[i] || 'Detail', p]); });
         }
       }
     }
   }
 
   const bodyEl = document.getElementById('txd-rows');
+  const copyableKeys = new Set(['Transaction ID','Ticket','Wallet Address','Memo / Tag','Account No.','SWIFT / BIC','IBAN']);
   bodyEl.innerHTML = rows.map(([k, v]) => {
-    const isId = k.includes('ID') || k === 'Ticket';
+    const copyable = copyableKeys.has(k);
+    const safe = String(v).replace(/'/g, "\\'");
     return `<div class="txd-row">
       <span class="txd-key">${k}</span>
-      <span class="txd-val">${isId
-        ? `<div class="txd-copy-row"><span>${v}</span><button class="txd-copy-btn" onclick="navigator.clipboard.writeText('${v}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)})">Copy</button></div>`
+      <span class="txd-val">${copyable
+        ? `<div class="txd-copy-row"><span style="word-break:break-all;">${v}</span><button class="txd-copy-btn" onclick="navigator.clipboard.writeText('${safe}').then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)})">Copy</button></div>`
         : v}</span>
     </div>`;
   }).join('');
