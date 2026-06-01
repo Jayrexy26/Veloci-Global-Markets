@@ -507,10 +507,16 @@
             <div class="page-header__title">User Management</div>
             <div class="page-header__sub">Manage all platform accounts</div>
           </div>
-          <button class="btn btn--primary" onclick="openModal('modalAddUser')">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add User
-          </button>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn--outline" onclick="exportUsersCSV()">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <button class="btn btn--primary" onclick="openModal('modalAddUser')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add User
+            </button>
+          </div>
         </div>
         <div class="card">
           <div class="card__head">
@@ -526,8 +532,8 @@
           </div>
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>User</th><th>Type</th><th>Plan</th><th>Balance</th><th>KYC</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
-              <tbody id="userTableBody"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
+              <thead><tr><th>User</th><th>Country</th><th>Type</th><th>Plan</th><th>Balance</th><th>KYC</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="userTableBody"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -906,6 +912,27 @@
                 <div><div class="toggle-wrap__label">Withdrawals Restricted</div><div class="toggle-wrap__sub">Block withdrawal requests platform-wide</div></div>
                 <label class="toggle-switch"><input type="checkbox" id="togWithdrawals" onchange="saveToggle('withdrawals_enabled',this)"><span class="toggle-slider"></span></label>
               </div>
+              <!-- Withdrawal Scope Sub-panel -->
+              <div style="margin-top:16px;padding:16px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+                <div style="font-size:13px;font-weight:600;margin-bottom:12px">Withdrawal Block Scope</div>
+                <div class="field" style="margin-bottom:12px">
+                  <label>Scope</label>
+                  <select id="wdScope" onchange="renderWdScopePanel()" style="height:36px;border:1.5px solid var(--border);border-radius:7px;padding:0 12px;font-size:13px;outline:none;background:var(--white);color:var(--text);width:100%">
+                    <option value="all">All Users</option>
+                    <option value="specific">Specific Users</option>
+                  </select>
+                </div>
+                <div id="wdSpecificPanel" style="display:none">
+                  <div style="display:flex;gap:8px;margin-bottom:10px">
+                    <input type="email" id="wdBlockEmail" placeholder="Enter user email to block..." style="flex:1;height:36px;border:1.5px solid var(--border);border-radius:7px;padding:0 12px;font-size:13px;outline:none;background:var(--white);color:var(--text)">
+                    <button class="btn btn--outline btn--sm" onclick="addWdBlockedUser()">Add</button>
+                  </div>
+                  <div id="wdBlockedList" style="display:flex;flex-wrap:wrap;gap:6px;min-height:30px"></div>
+                </div>
+                <div style="margin-top:12px">
+                  <button class="btn btn--primary btn--sm" onclick="saveWdScope()">Save Scope</button>
+                </div>
+              </div>
               <div class="toggle-wrap">
                 <div><div class="toggle-wrap__label">Maintenance Mode</div><div class="toggle-wrap__sub">Show maintenance page to users</div></div>
                 <label class="toggle-switch"><input type="checkbox" id="togMaintenance" onchange="saveToggle('maintenance_mode',this)"><span class="toggle-slider"></span></label>
@@ -1190,6 +1217,15 @@
       <input type="hidden" id="annEditId">
       <div class="form-grid" style="grid-template-columns:1fr">
         <div class="field"><label>Title</label><input type="text" id="annTitle" placeholder="Announcement title..."></div>
+        <div class="field"><label>Type</label>
+          <select id="annType">
+            <option value="Notice">Notice</option>
+            <option value="Info">Info</option>
+            <option value="Warning">Warning</option>
+            <option value="Success">Success</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
         <div class="field"><label>Body</label><textarea id="annBody" rows="5" placeholder="Announcement content..."></textarea></div>
         <div class="field"><label>Audience</label>
           <select id="annAudience" onchange="toggleAnnSpecificUser()">
@@ -1663,6 +1699,7 @@ function renderUserTable() {
   tbody.innerHTML = users.map(u =>
     `<tr>
       <td>${buildUserName(u)}</td>
+      <td>${u.country||'—'}</td>
       <td>${typeBadge(u.account_type)}</td>
       <td>${planBadge(u.plan)}</td>
       <td>${fmtMoney(u.balance)}</td>
@@ -1675,7 +1712,7 @@ function renderUserTable() {
         <button class="btn btn--purple btn--sm" onclick='openUpgradePlan("${u.id}","${((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email}","${u.plan||''}")'>Plan</button>
       </div></td>
     </tr>`
-  ).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No users found</td></tr>';
+  ).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No users found</td></tr>';
 }
 
 async function createUser() {
@@ -1734,6 +1771,14 @@ async function saveEditUser() {
   };
   const { error } = await db.from('profiles').update(updates).eq('id', id);
   if(error) return showToast('Error: ' + error.message, 'error');
+  if(updates.status === 'banned') {
+    await db.from('audit_log').insert({
+      action: 'BAN_USER',
+      admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+      target_user_id: id,
+      details: { email: updates.email }
+    });
+  }
   await logAudit('edit_user', updates.email, JSON.stringify(updates));
   showToast('User updated');
   closeModal('modalEditUser');
@@ -1763,6 +1808,28 @@ async function applyCreditDebit() {
 
   const { error } = await db.from('profiles').update(updates).eq('id', userId);
   if(error) return showToast('Error: ' + error.message, 'error');
+
+  // Send notification to user
+  const actionLabel = op === 'credit' ? 'credited' : op === 'debit' ? 'debited' : 'adjusted';
+  const notifTitle = op === 'credit' ? 'Account Credited' : op === 'debit' ? 'Account Debited' : 'Balance Adjusted';
+  const notifMsg = op === 'set_pnl'
+    ? `Your P&L has been adjusted to $${parseFloat(amount).toFixed(2)}.`
+    : `Your account has been ${actionLabel} $${parseFloat(amount).toFixed(2)}.`;
+  await db.from('notifications').insert({
+    user_id: userId,
+    title: notifTitle,
+    message: notifMsg,
+    type: op === 'credit' ? 'deposit_approved' : 'info',
+    read: false
+  });
+
+  // Audit log
+  await db.from('audit_log').insert({
+    action: op === 'credit' ? 'CREDIT_ACCOUNT' : op === 'debit' ? 'DEBIT_ACCOUNT' : 'SET_PNL',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { amount, note, op }
+  });
   await logAudit(op, user?.email||userId, `${fmtMoney(amount)} — ${note}`);
   showToast('Balance updated');
   closeModal('modalCreditDebit');
@@ -1862,6 +1929,12 @@ async function approveKyc(id, userId) {
   await db.from('profiles').update({kyc_status:'verified'}).eq('id', userId);
   const user = _allUsers.find(u => u.id === userId);
   await db.from('notifications').insert({user_id:userId, type:'kyc_approved', title:'KYC Approved', message:'Your identity verification has been approved.', read:false, created_at:new Date().toISOString()});
+  await db.from('audit_log').insert({
+    action: 'APPROVE_KYC',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { kyc_id: id }
+  });
   await logAudit('approve_kyc', user?.email||userId, id);
   showToast('KYC approved');
   loadKyc(); loadBadgeCounts();
@@ -1884,6 +1957,12 @@ async function submitKycReject() {
   await db.from('profiles').update({kyc_status:'rejected'}).eq('id', userId);
   const user = _allUsers.find(u => u.id === userId);
   await db.from('notifications').insert({user_id:userId, type:'kyc_rejected', title:'KYC Rejected', message:`Your KYC was rejected: ${reason}`, read:false, created_at:new Date().toISOString()});
+  await db.from('audit_log').insert({
+    action: 'REJECT_KYC',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { kyc_id: id, reason }
+  });
   await logAudit('reject_kyc', user?.email||userId, reason);
   showToast('KYC rejected');
   closeModal('modalKycReject');
@@ -1984,10 +2063,17 @@ function renderPositionsTable(rows) {
 
 async function forceClose(posId, userId) {
   if(!confirm('Force close this position?')) return;
+  const pos = { user_id: userId };
   const { error } = await db.from('positions').update({status:'closed', closed_at: new Date().toISOString()}).eq('id', posId);
   if(error) return showToast('Error: ' + error.message, 'error');
+
+  // Resync total_pnl from remaining open positions
+  const { data: openPos } = await db.from('positions').select('pnl').eq('user_id', userId).eq('status','open');
+  const newPnl = (openPos||[]).reduce((s, p) => s + (parseFloat(p.pnl)||0), 0);
+  await db.from('profiles').update({total_pnl: newPnl}).eq('id', userId);
+
   const user = _allUsers.find(u => u.id === userId);
-  await logAudit('force_close_position', user?.email||userId, posId);
+  await logAudit('FORCE_CLOSE_POSITION', user?.email||userId, posId);
   showToast('Position closed');
   loadPositions();
 }
@@ -2015,18 +2101,27 @@ async function submitDTI() {
   if(!userId) return showToast('Select a user', 'error');
   if(!pair) return showToast('Select a pair', 'error');
 
-  const ticket = 'TKT-' + Date.now().toString(36).toUpperCase();
+  const ticket = 'TKT-' + Date.now();
+  const dtiNote = `${pair} ${_dtiDir} size:${size}`;
   const { error } = await db.from('positions').insert({
     user_id: userId, ticket, pair, direction: _dtiDir,
-    size, open_price: 0, total_pnl: pnl,
+    size, open_price: 0, pnl: pnl,
     status: 'closed', created_at, closed_at: new Date().toISOString()
   });
   if(error) return showToast('Error: ' + error.message, 'error');
 
   // Update profile total_pnl
   const user = _allUsers.find(u => u.id === userId);
-  const newPnl = (parseFloat(user?.total_pnl)||0) + pnl;
-  await db.from('profiles').update({total_pnl: newPnl}).eq('id', userId);
+  const { data: currentProfile } = await db.from('profiles').select('total_pnl').eq('id', userId).maybeSingle();
+  const currentTotalPnl = parseFloat(currentProfile?.total_pnl) || 0;
+  await db.from('profiles').update({total_pnl: currentTotalPnl + pnl}).eq('id', userId);
+
+  // Check for active profit target and insert trade entry
+  const { data: activePt } = await db.from('profit_targets').select('id').eq('user_id', userId).eq('is_active', true).maybeSingle();
+  if(activePt) {
+    await db.from('profit_target_trades').insert({target_id: activePt.id, user_id: userId, amount: pnl, percentage_delta: 0, note: dtiNote});
+  }
+
   await logAudit('dti_trade', user?.email||userId, `${pair} ${_dtiDir} size:${size} pnl:${fmtMoney(pnl)}`);
   showToast('Trade submitted');
   loadPositions();
@@ -2166,6 +2261,12 @@ async function approveDeposit(id, userId, amount, userEmail, coin, method) {
   await db.from('profiles').update({balance: newBal}).eq('id', userId);
   await db.from('transactions').insert({user_id:userId, type:'deposit', amount, coin, method, status:'completed', note:'Deposit approved', created_at:new Date().toISOString()});
   await db.from('notifications').insert({user_id:userId, type:'deposit_approved', title:'Deposit Approved', message:`Your deposit of ${fmtMoney(amount)} has been approved and credited.`, read:false, created_at:new Date().toISOString()});
+  await db.from('audit_log').insert({
+    action: 'APPROVE_DEPOSIT',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { amount, coin, method }
+  });
   await logAudit('approve_deposit', userEmail, `${fmtMoney(amount)} ${coin}`);
   showToast('Deposit approved and credited');
   loadDeposits(); loadBadgeCounts(); cacheAllUsers();
@@ -2175,6 +2276,12 @@ async function rejectDeposit(id) {
   if(!confirm('Reject this deposit request?')) return;
   const { error } = await db.from('deposit_requests').update({status:'rejected'}).eq('id', id);
   if(error) return showToast('Error: ' + error.message, 'error');
+  await db.from('audit_log').insert({
+    action: 'REJECT_DEPOSIT',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: null,
+    details: { deposit_id: id }
+  });
   await logAudit('reject_deposit', id, '');
   showToast('Deposit rejected');
   loadDeposits(); loadBadgeCounts();
@@ -2246,6 +2353,12 @@ async function approveWithdrawal(id, userId, amount, userEmail, method) {
   if(error) return showToast('Error: ' + error.message, 'error');
   await db.from('transactions').insert({user_id:userId, type:'withdrawal', amount, method, status:'completed', note:'Withdrawal approved', created_at:new Date().toISOString()});
   await db.from('notifications').insert({user_id:userId, type:'withdrawal_approved', title:'Withdrawal Approved', message:`Your withdrawal of ${fmtMoney(amount)} has been approved.`, read:false, created_at:new Date().toISOString()});
+  await db.from('audit_log').insert({
+    action: 'APPROVE_WITHDRAWAL',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { amount, method }
+  });
   await logAudit('approve_withdrawal', userEmail, `${fmtMoney(amount)} via ${method}`);
   showToast('Withdrawal approved');
   loadWithdrawals(); loadBadgeCounts();
@@ -2259,6 +2372,12 @@ async function rejectWithdrawal(id, userId, amount) {
   const newBal = (parseFloat(user?.balance)||0) + amount;
   await db.from('profiles').update({balance: newBal}).eq('id', userId);
   await db.from('notifications').insert({user_id:userId, type:'withdrawal_rejected', title:'Withdrawal Rejected', message:`Your withdrawal of ${fmtMoney(amount)} was rejected. Your balance has been refunded.`, read:false, created_at:new Date().toISOString()});
+  await db.from('audit_log').insert({
+    action: 'REJECT_WITHDRAWAL',
+    admin_id: (await db.auth.getUser()).data.user?.email || 'admin',
+    target_user_id: userId,
+    details: { amount }
+  });
   await logAudit('reject_withdrawal', user?.email||userId, `Refunded ${fmtMoney(amount)}`);
   showToast('Withdrawal rejected and balance refunded');
   loadWithdrawals(); loadBadgeCounts(); cacheAllUsers();
@@ -2307,6 +2426,7 @@ function editAnnouncement(a) {
   document.getElementById('annEditId').value = a.id;
   document.getElementById('annTitle').value = a.title || '';
   document.getElementById('annBody').value = a.body || '';
+  if(document.getElementById('annType')) document.getElementById('annType').value = a.type || 'Notice';
   document.getElementById('annAudience').value = a.specific_user_id ? 'specific' : (a.audience || 'all');
   if(a.specific_user_id) {
     document.getElementById('annSpecificUserField').style.display = 'block';
@@ -2326,6 +2446,7 @@ async function saveAnnouncement() {
   const editId = document.getElementById('annEditId').value;
   const title = document.getElementById('annTitle').value.trim();
   const body = document.getElementById('annBody').value.trim();
+  const type = document.getElementById('annType')?.value || 'Notice';
   const audienceVal = document.getElementById('annAudience').value;
   const specific_user_id = audienceVal === 'specific' ? document.getElementById('annSpecificUser').value : null;
   const audience = specific_user_id ? 'specific' : audienceVal;
@@ -2333,12 +2454,12 @@ async function saveAnnouncement() {
   if(!title || !body) return showToast('Title and body required', 'error');
 
   if(editId) {
-    const { error } = await db.from('announcements').update({title, body, audience, specific_user_id, active: true}).eq('id', editId);
+    const { error } = await db.from('announcements').update({title, body, type, audience, specific_user_id, active: true}).eq('id', editId);
     if(error) return showToast('Error: ' + error.message, 'error');
     await logAudit('edit_announcement', title, audience);
     showToast('Announcement updated');
   } else {
-    const { data: ann, error } = await db.from('announcements').insert({title, body, audience, specific_user_id, active: true, created_at: new Date().toISOString()}).select().single();
+    const { data: ann, error } = await db.from('announcements').insert({title, body, type, audience, specific_user_id, active: true, created_at: new Date().toISOString()}).select().single();
     if(error) return showToast('Error: ' + error.message, 'error');
 
     // Send notifications
@@ -2659,6 +2780,21 @@ async function loadAuditLog() {
       <td style="font-size:12px;white-space:nowrap">${fmtDate(a.created_at)}</td>
     </tr>`
   ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px">No audit entries</td></tr>';
+}
+
+// ======================== CSV EXPORT ========================
+function exportUsersCSV() {
+  if (!_allUsers?.length) return;
+  const headers = ['Name','Email','Country','Plan','Balance','Status','KYC','Joined'];
+  const rows = _allUsers.map(u => [
+    [u.first_name,u.last_name].filter(Boolean).join(' ') || u.email,
+    u.email, u.country||'', u.plan||'Starter',
+    (u.balance||0).toFixed(2), u.status||'active',
+    u.kyc_status||'pending', new Date(u.created_at).toLocaleDateString()
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = 'users-export.csv'; a.click();
 }
 
 // ======================== INIT DTI ========================

@@ -795,13 +795,31 @@ function copyAddress(){
   // Load system settings
   await loadSettings();
   await loadDepositHistory();
+  await loadDepositAddresses();
 })();
+
+// Deposit addresses from DB (keyed as asset+network)
+let depositAddressMap = {};
+
+async function loadDepositAddresses(){
+  const {data:addrs} = await db.from('deposit_addresses').select('*').eq('enabled',true);
+  if(!addrs) return;
+  addrs.forEach(a=>{
+    const key = (a.asset||'')+'|'+(a.network||'');
+    depositAddressMap[key] = a;
+  });
+}
 
 async function loadSettings(){
   const {data:settings} = await db.from('system_settings').select('key,value');
   if(!settings) return;
   const map={};
   settings.forEach(r=>map[r.key]=r.value);
+
+  if(map['maintenance_mode']==='true'){
+    window.location.href='maintenance-new.html';
+    return;
+  }
 
   if(map['deposits_enabled']==='false'){
     depositsEnabled = false;
@@ -901,9 +919,9 @@ async function goToStep2(fromStep1=true){
   }
   if(!selectedAsset||!selectedNetwork){showToast('Please select an asset and network','error');return;}
 
-  // Fetch address
-  const {data:addrRow} = await db.from('deposit_addresses')
-    .select('address').eq('asset',selectedAsset).eq('network',selectedNetwork).single();
+  // Fetch address from cached map (enabled addresses only)
+  const addrKey = selectedAsset+'|'+selectedNetwork;
+  const addrRow = depositAddressMap[addrKey];
 
   currentAddress = addrRow?.address || 'Address not configured â€” contact support';
 
@@ -971,6 +989,7 @@ async function submitCryptoDeposit(){
     currency: selectedAsset,
     method: 'crypto',
     status: 'pending',
+    tx_hash: txid||null,
     proof_url: txid||null,
   }).select().single();
 

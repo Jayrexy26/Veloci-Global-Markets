@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/vgm-logo.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Security PIN — Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080c18; --card:#111827; --border:rgba(255,255,255,.08);
+  --accent:#f05a1a; --green:#22a06b; --red:#f6465d;
+  --text:#eaecef; --sub:rgba(255,255,255,.45);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+a{text-decoration:none;color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ── Loading screen ── */
+#vgm-loading{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;
+}
+.al-glow{position:absolute;width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,rgba(240,90,26,.1) 0%,transparent 70%);
+  pointer-events:none;animation:alPulse 3s ease-in-out infinite;}
+@keyframes alPulse{0%,100%{transform:scale(1);opacity:.7;}50%{transform:scale(1.1);opacity:1;}}
+.al-logo{height:60px;width:auto;position:relative;z-index:1;animation:alFade .5s cubic-bezier(.4,0,.2,1) both;}
+.al-brand{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:.12em;text-transform:uppercase;
+  margin-top:12px;margin-bottom:36px;position:relative;z-index:1;animation:alFade .5s .08s cubic-bezier(.4,0,.2,1) both;}
+.al-bar-track{width:180px;height:2px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;position:relative;z-index:1;}
+.al-bar{height:100%;width:40%;background:linear-gradient(90deg,transparent 0%,var(--accent) 50%,transparent 100%);
+  border-radius:2px;animation:alSweep 1.4s ease-in-out infinite;}
+@keyframes alSweep{0%{transform:translateX(-100%);}100%{transform:translateX(350%);}}
+@keyframes alFade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── PIN page ── */
+#pin-page{
+  min-height:100vh;display:none;align-items:center;justify-content:center;
+  padding:20px;
+  background:
+    radial-gradient(ellipse at 25% 20%,rgba(240,90,26,.07) 0%,transparent 55%),
+    radial-gradient(ellipse at 75% 80%,rgba(26,92,255,.04) 0%,transparent 55%);
+}
+
+.pin-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:24px;padding:40px 36px 28px;
+  width:100%;max-width:380px;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+.pin-logo{height:60px;width:auto;margin:0 auto 28px;display:block;}
+
+/* Mode panels */
+.pin-mode{display:none;}
+
+.pin-h2{font-size:19px;font-weight:700;color:#fff;margin-bottom:6px;}
+.pin-sub{font-size:13px;color:var(--sub);line-height:1.65;margin-bottom:20px;}
+
+/* Dots indicator */
+.pin-dots{display:flex;gap:14px;justify-content:center;margin:14px 0 20px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.18);background:transparent;transition:all .18s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+
+/* Hidden input */
+.pin-hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;}
+
+/* Number pad */
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px;}
+.num-btn{
+  height:56px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;font-size:18px;font-weight:600;color:#fff;
+  cursor:pointer;transition:background .12s,transform .08s;
+  display:flex;align-items:center;justify-content:center;
+  user-select:none;
+}
+.num-btn:hover{background:rgba(255,255,255,.1);}
+.num-btn:active{transform:scale(.94);background:rgba(240,90,26,.18);}
+.num-btn.clear-btn{font-size:13px;font-weight:700;color:var(--sub);}
+.num-btn.back-btn svg{stroke:var(--sub);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* Error message */
+.pin-err{
+  min-height:22px;font-size:13px;color:var(--red);
+  margin:8px 0 0;
+  animation:shake 0s;
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%,60%{transform:translateX(-6px);}
+  40%,80%{transform:translateX(6px);}
+}
+.pin-err.shaking{animation:shake .35s cubic-bezier(.4,0,.2,1);}
+
+/* Submit btn */
+.pin-submit{
+  width:100%;height:46px;background:var(--accent);
+  border:none;border-radius:10px;
+  font-size:14px;font-weight:700;color:#fff;
+  margin-top:16px;cursor:pointer;transition:background .15s;
+}
+.pin-submit:hover{background:#d94d12;}
+.pin-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Confirm input (set mode) */
+.pin-confirm-label{font-size:12px;color:var(--sub);margin:18px 0 6px;text-align:left;}
+
+.pin-footer{margin-top:24px;padding-top:18px;border-top:1px solid var(--border);
+  display:flex;justify-content:center;gap:20px;}
+.pin-footer a{font-size:12px;color:var(--sub);font-weight:500;}
+.pin-footer a:hover{color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="vgm-loading">
+  <div class="al-glow"></div>
+  <img class="al-logo" src="assets/vgm-logo.png" alt="VGM">
+  <div class="al-brand">Veloci Global Markets</div>
+  <div class="al-bar-track"><div class="al-bar"></div></div>
+</div>
+
+<!-- PIN page -->
+<div id="pin-page" style="display:none;flex-direction:column;">
+  <div class="pin-card">
+    <img class="pin-logo" src="assets/vgm-logo.png" alt="VGM">
+
+    <!-- ENTER mode -->
+    <div class="pin-mode" id="mode-enter">
+      <div class="pin-h2" id="enter-greeting">Welcome back</div>
+      <div class="pin-sub">Enter your 4-digit security PIN to continue</div>
+      <div class="pin-dots" id="enter-dots">
+        <div class="pin-dot" id="ed0"></div>
+        <div class="pin-dot" id="ed1"></div>
+        <div class="pin-dot" id="ed2"></div>
+        <div class="pin-dot" id="ed3"></div>
+      </div>
+      <div class="pin-err" id="enter-err"></div>
+      <div class="numpad">
+        <button class="num-btn" onclick="padTap('enter','1')">1</button>
+        <button class="num-btn" onclick="padTap('enter','2')">2</button>
+        <button class="num-btn" onclick="padTap('enter','3')">3</button>
+        <button class="num-btn" onclick="padTap('enter','4')">4</button>
+        <button class="num-btn" onclick="padTap('enter','5')">5</button>
+        <button class="num-btn" onclick="padTap('enter','6')">6</button>
+        <button class="num-btn" onclick="padTap('enter','7')">7</button>
+        <button class="num-btn" onclick="padTap('enter','8')">8</button>
+        <button class="num-btn" onclick="padTap('enter','9')">9</button>
+        <button class="num-btn clear-btn" onclick="clearPin('enter')">CLR</button>
+        <button class="num-btn" onclick="padTap('enter','0')">0</button>
+        <button class="num-btn back-btn" onclick="backPin('enter')"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M21 12H3M9 6l-6 6 6 6"/></svg></button>
+      </div>
+    </div>
+
+    <!-- SET mode -->
+    <div class="pin-mode" id="mode-set">
+      <div class="pin-h2">Set up your Trading PIN</div>
+      <div class="pin-sub">Choose a 4-digit PIN to secure your account</div>
+
+      <div style="font-size:12px;color:var(--sub);margin-bottom:6px;text-align:left;">New PIN</div>
+      <div class="pin-dots" id="set-dots">
+        <div class="pin-dot" id="sd0"></div>
+        <div class="pin-dot" id="sd1"></div>
+        <div class="pin-dot" id="sd2"></div>
+        <div class="pin-dot" id="sd3"></div>
+      </div>
+      <div style="font-size:12px;color:var(--sub);margin:12px 0 6px;text-align:left;">Confirm PIN</div>
+      <div class="pin-dots" id="set-dots2">
+        <div class="pin-dot" id="sd20"></div>
+        <div class="pin-dot" id="sd21"></div>
+        <div class="pin-dot" id="sd22"></div>
+        <div class="pin-dot" id="sd23"></div>
+      </div>
+      <div class="pin-err" id="set-err"></div>
+      <div class="numpad" id="set-numpad">
+        <button class="num-btn" onclick="padTap('set','1')">1</button>
+        <button class="num-btn" onclick="padTap('set','2')">2</button>
+        <button class="num-btn" onclick="padTap('set','3')">3</button>
+        <button class="num-btn" onclick="padTap('set','4')">4</button>
+        <button class="num-btn" onclick="padTap('set','5')">5</button>
+        <button class="num-btn" onclick="padTap('set','6')">6</button>
+        <button class="num-btn" onclick="padTap('set','7')">7</button>
+        <button class="num-btn" onclick="padTap('set','8')">8</button>
+        <button class="num-btn" onclick="padTap('set','9')">9</button>
+        <button class="num-btn clear-btn" onclick="clearPin('set')">CLR</button>
+        <button class="num-btn" onclick="padTap('set','0')">0</button>
+        <button class="num-btn back-btn" onclick="backPin('set')"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M21 12H3M9 6l-6 6 6 6"/></svg></button>
+      </div>
+      <button class="pin-submit" id="set-submit" onclick="submitSetPin()" disabled>Save PIN &amp; Continue</button>
+    </div>
+
+    <div class="pin-footer">
+      <a href="#" onclick="doSignOut()">Sign out</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script>
+let _mode = 'enter'; // 'enter' | 'set'
+let _storedPin = '';
+let _enterBuf = '';
+let _setPin1 = '';
+let _setPin2 = '';
+let _setStep = 1; // 1=enter new, 2=confirm
+let _userId = '';
+
+// Update dots
+function updateDots(prefix, buf, count) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById(prefix + i);
+    if (!d) continue;
+    d.classList.toggle('filled', i < buf.length);
+    d.classList.remove('error');
+  }
+}
+function errorDots(prefix) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById(prefix + i);
+    if (d) { d.classList.remove('filled'); d.classList.add('error'); }
+  }
+  setTimeout(() => {
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById(prefix + i);
+      if (d) d.classList.remove('error');
+    }
+  }, 700);
+}
+
+function padTap(mode, digit) {
+  if (mode === 'enter') {
+    if (_enterBuf.length >= 4) return;
+    _enterBuf += digit;
+    updateDots('ed', _enterBuf);
+    if (_enterBuf.length === 4) setTimeout(() => checkPin(), 150);
+  } else {
+    if (_setStep === 1) {
+      if (_setPin1.length >= 4) return;
+      _setPin1 += digit;
+      updateDots('sd', _setPin1);
+      if (_setPin1.length === 4) { _setStep = 2; document.getElementById('set-err').textContent = 'Now confirm your PIN'; document.getElementById('set-err').style.color = 'rgba(255,255,255,.4)'; }
+    } else {
+      if (_setPin2.length >= 4) return;
+      _setPin2 += digit;
+      updateDots('sd2', _setPin2);
+      updateSetSubmit();
+    }
+  }
+}
+function backPin(mode) {
+  if (mode === 'enter') { _enterBuf = _enterBuf.slice(0,-1); updateDots('ed', _enterBuf); }
+  else {
+    if (_setStep === 2 && _setPin2.length === 0) { _setStep = 1; _setPin1 = ''; updateDots('sd', ''); document.getElementById('set-err').textContent = ''; }
+    else if (_setStep === 2) { _setPin2 = _setPin2.slice(0,-1); updateDots('sd2', _setPin2); updateSetSubmit(); }
+    else { _setPin1 = _setPin1.slice(0,-1); updateDots('sd', _setPin1); }
+  }
+}
+function clearPin(mode) {
+  if (mode === 'enter') { _enterBuf = ''; updateDots('ed', ''); document.getElementById('enter-err').textContent = ''; }
+  else { _setPin1 = ''; _setPin2 = ''; _setStep = 1; updateDots('sd',''); updateDots('sd2',''); document.getElementById('set-err').textContent = ''; updateSetSubmit(); }
+}
+function updateSetSubmit() {
+  document.getElementById('set-submit').disabled = !(_setPin1.length === 4 && _setPin2.length === 4);
+}
+
+function checkPin() {
+  if (_enterBuf === _storedPin) {
+    sessionStorage.setItem('sv_pin_ok', '1');
+    window.location.href = 'dashboard-new.html';
+  } else {
+    errorDots('ed');
+    const err = document.getElementById('enter-err');
+    err.textContent = 'Incorrect PIN — try again';
+    err.classList.remove('shaking');
+    void err.offsetWidth;
+    err.classList.add('shaking');
+    setTimeout(() => { _enterBuf = ''; }, 300);
+  }
+}
+
+async function submitSetPin() {
+  const db = window.SV_DB;
+  const err = document.getElementById('set-err');
+  if (_setPin1 !== _setPin2) {
+    errorDots('sd2');
+    err.style.color = 'var(--red)';
+    err.textContent = 'PINs do not match — try again';
+    _setPin2 = ''; updateDots('sd2',''); updateSetSubmit();
+    return;
+  }
+  document.getElementById('set-submit').disabled = true;
+  document.getElementById('set-submit').textContent = 'Saving…';
+  const { error } = await db.from('profiles').update({ pin: _setPin1 }).eq('id', _userId);
+  if (error) { err.style.color='var(--red)'; err.textContent='Error saving PIN — try again.'; document.getElementById('set-submit').disabled=false; document.getElementById('set-submit').textContent='Save PIN & Continue'; return; }
+  sessionStorage.setItem('sv_pin_ok', '1');
+  window.location.href = 'dashboard-new.html';
+}
+
+async function doSignOut() {
+  const db = window.SV_DB;
+  sessionStorage.removeItem('sv_pin_ok');
+  await db.auth.signOut();
+  window.location.href = 'login-new.html';
+}
+
+// Init
+(async () => {
+  const db = window.SV_DB; if (!db) { window.location.href = 'login-new.html'; return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { window.location.href = 'login-new.html'; return; }
+
+  _userId = session.user.id;
+
+  const { data: profile } = await db.from('profiles').select('pin, first_name, status').eq('id', _userId).maybeSingle();
+
+  // Banned check
+  if (profile?.status === 'banned') {
+    await db.auth.signOut();
+    window.location.href = 'login-new.html';
+    return;
+  }
+
+  // If PIN already verified this session, skip straight to dashboard
+  if (sessionStorage.getItem('sv_pin_ok') === '1' && profile?.pin) {
+    window.location.href = 'dashboard-new.html';
+    return;
+  }
+
+  // Hide loading, show PIN page
+  document.getElementById('vgm-loading').style.display = 'none';
+  const pinPage = document.getElementById('pin-page');
+  pinPage.style.display = 'flex';
+
+  if (profile?.pin) {
+    _storedPin = profile.pin;
+    _mode = 'enter';
+    document.getElementById('mode-enter').style.display = 'block';
+    const greeting = profile?.first_name ? `Welcome back, ${profile.first_name}` : 'Welcome back';
+    document.getElementById('enter-greeting').textContent = greeting;
+  } else {
+    _mode = 'set';
+    document.getElementById('mode-set').style.display = 'block';
+  }
+})();
+</script>
+</body>
+</html>

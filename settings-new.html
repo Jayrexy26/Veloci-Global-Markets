@@ -467,6 +467,24 @@ body.light ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);}
               </div>
             </div>
 
+            <!-- Trading PIN -->
+            <div class="set-card">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px;">Trading PIN</div>
+              <div style="font-size:13px;color:var(--sub);margin-bottom:16px;">Your 4-digit PIN is required each time you log in to access your dashboard.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:420px;">
+                <div class="form-group">
+                  <label class="form-label">New PIN</label>
+                  <input type="password" id="newPin" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="form-input" style="letter-spacing:0.3em;font-size:16px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Confirm PIN</label>
+                  <input type="password" id="confirmPin" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="form-input" style="letter-spacing:0.3em;font-size:16px;">
+                </div>
+              </div>
+              <button onclick="savePIN()" class="save-btn" style="margin-top:4px;">Save PIN</button>
+              <div id="pin-msg" style="margin-top:8px;font-size:13px;"></div>
+            </div>
+
             <!-- Anti-phishing -->
             <div class="set-card">
               <div class="security-row">
@@ -836,12 +854,37 @@ function checkPassStrength(val){
   label.textContent = lv.l; label.style.color = lv.c;
 }
 
+async function savePIN() {
+  const db = window.SV_DB;
+  const newPin = document.getElementById('newPin').value;
+  const confirmPin = document.getElementById('confirmPin').value;
+  const msg = document.getElementById('pin-msg');
+  if (!/^\d{4}$/.test(newPin)) { msg.style.color='#f87171'; msg.textContent='PIN must be exactly 4 digits.'; return; }
+  if (newPin !== confirmPin) { msg.style.color='#f87171'; msg.textContent='PINs do not match.'; return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) return;
+  const { error } = await db.from('profiles').update({ pin: newPin }).eq('id', session.user.id);
+  if (error) { msg.style.color='#f87171'; msg.textContent='Error saving PIN.'; return; }
+  msg.style.color='#4ade80'; msg.textContent='PIN saved successfully.';
+  document.getElementById('newPin').value='';
+  document.getElementById('confirmPin').value='';
+}
+
 async function changePassword(){
+  const curPass = document.getElementById('inp-cur-pass').value;
   const np = document.getElementById('inp-new-pass').value;
   const cp = document.getElementById('inp-conf-pass').value;
+  if(!curPass){ showToast('Please enter your current password','error'); return; }
   if(!np){ showToast('Please enter a new password','error'); return; }
   if(np.length < 8){ showToast('Password must be at least 8 characters','error'); return; }
   if(np !== cp){ showToast('Passwords do not match','error'); return; }
+
+  // Verify current password first
+  const {data:{session:curSession}} = await db.auth.getSession();
+  if(!curSession){ showToast('Session expired. Please log in again.','error'); return; }
+  const {error: authErr} = await db.auth.signInWithPassword({email: curSession.user.email, password: curPass});
+  if(authErr){ showToast('Current password is incorrect.','error'); return; }
+
   const {error} = await db.auth.updateUser({password:np});
   if(error){ showToast('Failed: '+error.message,'error'); return; }
   showToast('Password updated successfully!');
@@ -850,6 +893,22 @@ async function changePassword(){
   document.getElementById('inp-conf-pass').value='';
   document.getElementById('pass-strength-bar').style.width='0%';
   document.getElementById('pass-strength-label').textContent='';
+}
+
+async function savePIN(){
+  const db = window.SV_DB;
+  const newPin = document.getElementById('newPin').value;
+  const confirmPin = document.getElementById('confirmPin').value;
+  const msg = document.getElementById('pin-msg');
+  if(!/^\d{4}$/.test(newPin)){ msg.style.color='#f87171'; msg.textContent='PIN must be exactly 4 digits.'; return; }
+  if(newPin !== confirmPin){ msg.style.color='#f87171'; msg.textContent='PINs do not match.'; return; }
+  const {data:{session:s}} = await db.auth.getSession();
+  if(!s) return;
+  const {error} = await db.from('profiles').update({pin: newPin}).eq('id', s.user.id);
+  if(error){ msg.style.color='#f87171'; msg.textContent='Error saving PIN.'; return; }
+  msg.style.color='#4ade80'; msg.textContent='PIN saved successfully.';
+  document.getElementById('newPin').value='';
+  document.getElementById('confirmPin').value='';
 }
 
 function renderKYC(status){

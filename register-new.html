@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/png" href="assets/vgm-logo.png"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Open Account — Veloci Global Markets</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;}
+body{font-family:'Inter',sans-serif;background:#080c18;color:#fff;min-height:100vh;display:flex;flex-direction:column;}
+a{text-decoration:none;color:inherit;}
+img{display:block;max-width:100%;}
+button{font-family:inherit;cursor:pointer;}
+input,select{font-family:inherit;}
+
+.page{flex:1;display:grid;grid-template-columns:1fr 520px;min-height:100vh;}
+@media(max-width:900px){.page{grid-template-columns:1fr;}.panel-left{display:none;}.panel-right{padding:28px 20px;}}
+
+/* LEFT */
+.panel-left{position:relative;display:flex;flex-direction:column;justify-content:center;padding:60px 56px;color:#fff;overflow:hidden;background:#060e18;}
+.panel-left-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,14,24,.97) 30%,rgba(180,40,0,.45) 80%,rgba(240,90,26,.35) 100%);z-index:1;}
+.panel-deco{position:absolute;border-radius:50%;opacity:.08;z-index:1;}
+.panel-deco-1{width:400px;height:400px;border:2px solid #f05a1a;bottom:-120px;right:-100px;}
+.panel-deco-2{width:240px;height:240px;border:2px solid rgba(255,255,255,.3);bottom:-40px;right:60px;}
+.panel-left-content{position:relative;z-index:2;max-width:440px;}
+.panel-logo{margin-bottom:32px;display:flex;align-items:center;gap:12px;}
+.panel-logo img{height:48px;width:auto;}
+.panel-logo-text{font-size:17px;font-weight:700;}
+.panel-h1{font-size:clamp(26px,2.8vw,38px);font-weight:800;line-height:1.1;letter-spacing:-0.5px;margin-bottom:14px;}
+.panel-h1 span{color:#f05a1a;}
+.benefit-list{display:flex;flex-direction:column;gap:14px;margin-top:32px;}
+.benefit{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 18px;}
+.benefit-icon{width:36px;height:36px;background:#f05a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.benefit-icon svg{stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.benefit-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;}
+.benefit-sub{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5;}
+
+/* RIGHT */
+.panel-right{background:#080c18;border-left:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;justify-content:center;padding:40px 48px;overflow-y:auto;}
+.form-logo{margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.form-logo img{height:36px;width:auto;}
+.form-logo-text{font-size:14px;font-weight:700;}
+.form-title{font-size:20px;font-weight:800;color:#fff;margin-bottom:3px;}
+.form-subtitle{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:20px;}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-group{margin-bottom:13px;}
+.form-label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase;}
+.form-input{width:100%;height:44px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:0 12px;font-size:13.5px;color:#fff;outline:none;transition:border-color .15s;}
+.form-input:focus{border-color:#f05a1a;box-shadow:0 0 0 3px rgba(240,90,26,.12);}
+.form-input::placeholder{color:rgba(255,255,255,.2);}
+.form-input-wrap{position:relative;}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:0;display:flex;align-items:center;}
+.eye-btn:hover{color:rgba(255,255,255,.6);}
+
+/* Country dropdown */
+.country-wrap{position:relative;}
+.country-inp{width:100%;height:44px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:0 36px 0 12px;font-size:13.5px;color:#fff;outline:none;cursor:pointer;transition:border-color .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.country-inp:focus,.country-wrap.open .country-inp{border-color:#f05a1a;}
+.country-inp::placeholder{color:rgba(255,255,255,.2);}
+.country-arrow{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:rgba(255,255,255,.4);transition:transform .2s;}
+.country-wrap.open .country-arrow{transform:translateY(-50%) rotate(180deg);}
+.country-dd{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1f2e;border:1.5px solid rgba(255,255,255,.12);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.5);z-index:300;display:none;overflow:hidden;}
+.country-wrap.open .country-dd{display:block;}
+.country-dd-search{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:#1a1f2e;}
+.country-dd-search input{width:100%;height:32px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:0 10px;font-size:13px;outline:none;color:#fff;font-family:'Inter',sans-serif;}
+.country-dd-search input::placeholder{color:rgba(255,255,255,.3);}
+.country-list{max-height:180px;overflow-y:auto;}
+.country-list::-webkit-scrollbar{width:4px;}
+.country-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px;}
+.c-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px;color:#fff;transition:background .1s;}
+.c-opt:hover,.c-opt.highlighted{background:rgba(240,90,26,.12);}
+.c-opt-flag{font-size:16px;line-height:1;flex-shrink:0;}
+.c-opt-name{flex:1;}
+.c-no-result{padding:12px;font-size:13px;color:rgba(255,255,255,.3);text-align:center;}
+
+/* Check */
+.check-group{margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;}
+.check-group input[type="checkbox"]{width:15px;height:15px;accent-color:#f05a1a;margin-top:2px;flex-shrink:0;cursor:pointer;}
+.check-group label{font-size:12px;color:rgba(255,255,255,.5);line-height:1.55;cursor:pointer;}
+.check-group label a{color:#f05a1a;}
+
+.btn-submit{width:100%;height:46px;background:#f05a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px;}
+.btn-submit:hover{background:#d94d12;}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+
+.err-box{display:none;margin-top:12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;}
+.form-footer{text-align:center;margin-top:16px;font-size:13px;color:rgba(255,255,255,.4);}
+.form-footer a{color:#f05a1a;font-weight:600;}
+.footer{text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.18);}
+
+/* Success modal */
+#regSuccessModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(8,12,24,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;}
+.rs-card{background:#111827;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.5);animation:rsIn .4s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes rsIn{from{opacity:0;transform:scale(.82) translateY(20px);}to{opacity:1;transform:none;}}
+.rs-ring{width:72px;height:72px;border-radius:50%;background:rgba(240,90,26,.1);border:2px solid rgba(240,90,26,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.rs-icon{width:32px;height:32px;stroke:#f05a1a;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.rs-title{font-size:19px;font-weight:800;color:#fff;margin-bottom:8px;}
+.rs-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="panel-left">
+    <div class="panel-left-overlay"></div>
+    <div class="panel-deco panel-deco-1"></div>
+    <div class="panel-deco panel-deco-2"></div>
+    <div class="panel-left-content">
+      <div class="panel-logo">
+        <img src="assets/vgm-logo.png" alt="VGM">
+        <span class="panel-logo-text">Veloci Global Markets</span>
+      </div>
+      <div class="panel-h1">Start trading the<br>world's markets <span>today</span></div>
+      <div class="benefit-list">
+        <div class="benefit">
+          <div class="benefit-icon"><svg width="18" height="18" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+          <div><div class="benefit-title">150+ Instruments</div><div class="benefit-sub">Forex, indices, commodities, shares, crypto and ETFs</div></div>
+        </div>
+        <div class="benefit">
+          <div class="benefit-icon"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <div><div class="benefit-title">Advanced Platform</div><div class="benefit-sub">Professional-grade charting and execution tools</div></div>
+        </div>
+        <div class="benefit">
+          <div class="benefit-icon"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div><div class="benefit-title">Regulated & Secure</div><div class="benefit-sub">Funds secured with industry-leading protection</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="form-logo">
+      <img src="assets/vgm-logo.png" alt="">
+      <span class="form-logo-text">Veloci Global Markets</span>
+    </div>
+    <div class="form-title">Create your account</div>
+    <div class="form-subtitle">Join thousands of traders worldwide</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input type="text" class="form-input" id="r-fname" placeholder="John" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input type="text" class="form-input" id="r-lname" placeholder="Doe" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <input type="email" class="form-input" id="r-email" placeholder="you@example.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Phone Number</label>
+      <input type="tel" class="form-input" id="r-phone" placeholder="+1 555 000 0000" autocomplete="tel">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Country</label>
+      <div class="country-wrap" id="countryWrap">
+        <input type="text" class="country-inp" id="countryDisplay" placeholder="Select your country" readonly onclick="toggleCountryDd()">
+        <span class="country-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span>
+        <input type="hidden" id="r-country">
+        <div class="country-dd" id="countryDd">
+          <div class="country-dd-search"><input type="text" id="countrySearch" placeholder="Search country…" oninput="filterCountries(this.value)" autocomplete="off"></div>
+          <div class="country-list" id="countryList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="form-input-wrap">
+          <input type="password" class="form-input" id="r-pass" placeholder="Min 8 characters" autocomplete="new-password">
+          <button class="eye-btn" onclick="togglePass('r-pass')" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <div class="form-input-wrap">
+          <input type="password" class="form-input" id="r-pass2" placeholder="Repeat password" autocomplete="new-password">
+          <button class="eye-btn" onclick="togglePass('r-pass2')" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="check-group">
+      <input type="checkbox" id="r-terms">
+      <label for="r-terms">I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a></label>
+    </div>
+
+    <button class="btn-submit" id="regBtn" onclick="doRegister()">Create Account</button>
+    <div class="err-box" id="r-err"></div>
+
+    <div class="form-footer">Already have an account? <a href="login-new.html">Sign in</a></div>
+    <div class="footer">Veloci Global Markets &copy; 2025 &nbsp;&middot;&nbsp; Secure Connection</div>
+  </div>
+</div>
+
+<!-- Success modal -->
+<div id="regSuccessModal">
+  <div class="rs-card">
+    <div class="rs-ring"><svg class="rs-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="rs-title">Account Created!</div>
+    <div class="rs-sub">Welcome to Veloci Global Markets.<br>Setting up your account…</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.js"></script>
+<script>
+const COUNTRIES = [
+  {name:'United Kingdom',flag:'🇬🇧'},{name:'United States',flag:'🇺🇸'},{name:'South Africa',flag:'🇿🇦'},
+  {name:'Nigeria',flag:'🇳🇬'},{name:'Ghana',flag:'🇬🇭'},{name:'Kenya',flag:'🇰🇪'},{name:'Uganda',flag:'🇺🇬'},
+  {name:'Tanzania',flag:'🇹🇿'},{name:'Zimbabwe',flag:'🇿🇼'},{name:'Zambia',flag:'🇿🇲'},
+  {name:'Australia',flag:'🇦🇺'},{name:'Canada',flag:'🇨🇦'},{name:'Germany',flag:'🇩🇪'},
+  {name:'France',flag:'🇫🇷'},{name:'Spain',flag:'🇪🇸'},{name:'Italy',flag:'🇮🇹'},
+  {name:'Netherlands',flag:'🇳🇱'},{name:'Belgium',flag:'🇧🇪'},{name:'Sweden',flag:'🇸🇪'},
+  {name:'Norway',flag:'🇳🇴'},{name:'Denmark',flag:'🇩🇰'},{name:'Switzerland',flag:'🇨🇭'},
+  {name:'Poland',flag:'🇵🇱'},{name:'Portugal',flag:'🇵🇹'},{name:'Greece',flag:'🇬🇷'},
+  {name:'Ireland',flag:'🇮🇪'},{name:'New Zealand',flag:'🇳🇿'},{name:'Singapore',flag:'🇸🇬'},
+  {name:'Malaysia',flag:'🇲🇾'},{name:'India',flag:'🇮🇳'},{name:'Pakistan',flag:'🇵🇰'},
+  {name:'Bangladesh',flag:'🇧🇩'},{name:'Sri Lanka',flag:'🇱🇰'},{name:'Philippines',flag:'🇵🇭'},
+  {name:'Indonesia',flag:'🇮🇩'},{name:'Thailand',flag:'🇹🇭'},{name:'Vietnam',flag:'🇻🇳'},
+  {name:'China',flag:'🇨🇳'},{name:'Japan',flag:'🇯🇵'},{name:'South Korea',flag:'🇰🇷'},
+  {name:'UAE',flag:'🇦🇪'},{name:'Saudi Arabia',flag:'🇸🇦'},{name:'Qatar',flag:'🇶🇦'},
+  {name:'Kuwait',flag:'🇰🇼'},{name:'Bahrain',flag:'🇧🇭'},{name:'Oman',flag:'🇴🇲'},
+  {name:'Egypt',flag:'🇪🇬'},{name:'Morocco',flag:'🇲🇦'},{name:'Tunisia',flag:'🇹🇳'},
+  {name:'Algeria',flag:'🇩🇿'},{name:'Ethiopia',flag:'🇪🇹'},{name:'Cameroon',flag:'🇨🇲'},
+  {name:'Ivory Coast',flag:'🇨🇮'},{name:'Senegal',flag:'🇸🇳'},{name:'Rwanda',flag:'🇷🇼'},
+  {name:'Brazil',flag:'🇧🇷'},{name:'Mexico',flag:'🇲🇽'},{name:'Argentina',flag:'🇦🇷'},
+  {name:'Colombia',flag:'🇨🇴'},{name:'Chile',flag:'🇨🇱'},{name:'Peru',flag:'🇵🇪'},
+  {name:'Russia',flag:'🇷🇺'},{name:'Ukraine',flag:'🇺🇦'},{name:'Turkey',flag:'🇹🇷'},
+  {name:'Israel',flag:'🇮🇱'},{name:'Cyprus',flag:'🇨🇾'},{name:'Malta',flag:'🇲🇹'},
+];
+
+let filteredCountries = [...COUNTRIES];
+
+function renderCountryList(list) {
+  const el = document.getElementById('countryList');
+  if (!list.length) { el.innerHTML = '<div class="c-no-result">No countries found</div>'; return; }
+  el.innerHTML = list.map((c,i) =>
+    `<div class="c-opt" data-name="${c.name}" onclick="selectCountry('${c.name}')">
+      <span class="c-opt-flag">${c.flag}</span>
+      <span class="c-opt-name">${c.name}</span>
+    </div>`
+  ).join('');
+}
+
+function filterCountries(q) {
+  filteredCountries = COUNTRIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
+  renderCountryList(filteredCountries);
+}
+
+function selectCountry(name) {
+  document.getElementById('countryDisplay').value = name;
+  document.getElementById('r-country').value = name;
+  document.getElementById('countryWrap').classList.remove('open');
+}
+
+function toggleCountryDd() {
+  const wrap = document.getElementById('countryWrap');
+  const isOpen = wrap.classList.toggle('open');
+  if (isOpen) { renderCountryList(COUNTRIES); document.getElementById('countrySearch').focus(); }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#countryWrap')) document.getElementById('countryWrap').classList.remove('open');
+});
+
+function togglePass(id) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function showErr(msg) {
+  const e = document.getElementById('r-err');
+  e.textContent = msg; e.style.display = 'block';
+}
+
+async function doRegister() {
+  const db = window.SV_DB; if (!db) return showErr('Database not initialised.');
+  const fname   = document.getElementById('r-fname').value.trim();
+  const lname   = document.getElementById('r-lname').value.trim();
+  const email   = document.getElementById('r-email').value.trim();
+  const phone   = document.getElementById('r-phone').value.trim();
+  const country = document.getElementById('r-country').value;
+  const pass    = document.getElementById('r-pass').value;
+  const pass2   = document.getElementById('r-pass2').value;
+  const terms   = document.getElementById('r-terms').checked;
+  const btn     = document.getElementById('regBtn');
+
+  document.getElementById('r-err').style.display = 'none';
+
+  if (!fname || !lname) return showErr('Please enter your first and last name.');
+  if (!email) return showErr('Please enter your email address.');
+  if (!phone) return showErr('Please enter your phone number.');
+  if (!country) return showErr('Please select your country.');
+  if (!pass || pass.length < 8) return showErr('Password must be at least 8 characters.');
+  if (pass !== pass2) return showErr('Passwords do not match.');
+  if (!terms) return showErr('Please accept the Terms of Service to continue.');
+
+  btn.disabled = true; btn.textContent = 'Creating account…';
+
+  const { data, error } = await db.auth.signUp({
+    email,
+    password: pass,
+    options: { data: { first_name: fname, last_name: lname } }
+  });
+
+  if (error) {
+    btn.disabled = false; btn.textContent = 'Create Account';
+    return showErr(error.message);
+  }
+
+  if (data?.user) {
+    await db.from('profiles').upsert({
+      id: data.user.id,
+      email,
+      first_name: fname,
+      last_name: lname,
+      full_name: fname + ' ' + lname,
+      phone,
+      country,
+      balance: 0,
+      kyc_status: 'pending',
+      status: 'active',
+      plan: 'Starter',
+      account_type: 'demo'
+    }, { onConflict: 'id' });
+  }
+
+  document.getElementById('regSuccessModal').style.display = 'flex';
+  setTimeout(() => { window.location.href = 'session-new.html'; }, 2500);
+}
+
+// Redirect if already logged in
+(async () => {
+  const db = window.SV_DB; if (!db) return;
+  const { data: { session } } = await db.auth.getSession();
+  if (session) window.location.href = 'session-new.html';
+})();
+</script>
+</body>
+</html>

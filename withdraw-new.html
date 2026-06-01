@@ -733,11 +733,37 @@ function showToast(msg,type='success'){
   await loadWithdrawalHistory();
 })();
 
+function disableWithdrawForm(){
+  const cs=document.getElementById('crypto-submit-btn');
+  const bs=document.getElementById('bank-submit-btn');
+  if(cs){cs.disabled=true;}
+  if(bs){bs.disabled=true;}
+  ['crypto-amount','crypto-wallet','crypto-asset','crypto-network','bank-amount','bank-fullname','bank-name','bank-acct-num','bank-sort-code'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.disabled=true;el.style.opacity='0.5';}
+  });
+}
+
+function showError(msg){
+  let banner=document.getElementById('maint-banner');
+  banner.classList.add('show');
+  const textEl=document.getElementById('maint-text');
+  const subEl=document.getElementById('maint-sub');
+  if(textEl) textEl.textContent='Withdrawals Unavailable';
+  if(subEl) subEl.textContent=msg;
+}
+
 async function loadSettings(){
   const {data:settings} = await db.from('system_settings').select('key,value');
   if(!settings) return;
   const map={};
   settings.forEach(r=>map[r.key]=r.value);
+
+  // Maintenance redirect
+  if(map['maintenance_mode']==='true'){
+    window.location.href='maintenance-new.html';
+    return;
+  }
 
   // Withdrawals enabled check
   if(map['withdrawals_enabled']==='false'){
@@ -748,8 +774,24 @@ async function loadSettings(){
     document.getElementById('bank-submit-btn').disabled=true;
   }
 
+  // Per-user withdrawal scope check
+  if(withdrawalsEnabled && session){
+    const scope = map['withdrawals_disabled_scope'] || 'all';
+    if(scope==='specific' && map['withdrawals_disabled_users']){
+      try{
+        const blockedIds = JSON.parse(map['withdrawals_disabled_users']);
+        if(blockedIds.includes(session.user.id)){
+          showError('Withdrawals are currently unavailable for your account. Please contact support.');
+          disableWithdrawForm();
+          withdrawalsEnabled=false;
+          bankWdEnabled=false;
+        }
+      }catch(e){}
+    }
+  }
+
   // Bank-specific maintenance
-  if(map['bank_wd_maintenance_enabled']==='true'){
+  if(map['bank_wd_maintenance']==='true' || map['bank_wd_maintenance_enabled']==='true'){
     bankWdEnabled=false;
     document.getElementById('bank-maint-banner').classList.add('show');
     document.getElementById('bank-submit-btn').disabled=true;
@@ -787,18 +829,17 @@ async function loadWithdrawalHistory(){
       : `<span class="badge badge-yellow">Pending</span>`;
 
     let dest = 'â€”';
-    if(w.method==='crypto' && w.wallet){
-      dest = `<span style="font-family:monospace;font-size:11.5px;">${w.wallet.slice(0,8)}â€¦${w.wallet.slice(-6)}</span>`;
-    } else if(w.method==='bank'){
-      try{
-        const bd = typeof w.bank_details==='string' ? JSON.parse(w.bank_details) : w.bank_details;
-        dest = bd?.bank_name||'Bank Transfer';
-      } catch(e){ dest='Bank Transfer'; }
+    if(w.destination_type==='crypto' && w.destination_ref){
+      dest = `<span style=”font-family:monospace;font-size:11.5px;”>${w.destination_ref.slice(0,8)}â€¦${w.destination_ref.slice(-6)}</span>`;
+    } else if(w.destination_type==='bank'){
+      dest = w.destination_name||'Bank Transfer';
+    } else if(w.destination_name){
+      dest = w.destination_name;
     }
 
     return `<tr>
       <td style="font-weight:700;color:var(--text);">${fmtMoney(w.amount)}</td>
-      <td><span style="text-transform:capitalize;font-weight:600;">${w.method==='bank'?'Bank':'Crypto'}</span></td>
+      <td><span style="text-transform:capitalize;font-weight:600;">${w.destination_type==='bank'?'Bank':'Crypto'}</span></td>
       <td>${dest}</td>
       <td>${statusBadge}</td>
       <td style="color:var(--sub);">${fmtDate(w.created_at)}</td>
@@ -904,10 +945,10 @@ async function submitCryptoWithdrawal(){
   // Insert withdrawal request
   const {data,error} = await db.from('withdrawal_requests').insert({
     user_id: session.user.id,
-    user_email: session.user.email,
     amount,
-    method: 'crypto',
-    wallet,
+    destination_type: 'crypto',
+    destination_name: asset+' '+network,
+    destination_ref: wallet,
     status: 'pending',
   }).select().single();
 
@@ -983,15 +1024,12 @@ async function submitBankWithdrawal(){
   btn.disabled=true;
   btn.textContent='Processingâ€¦';
 
-  const bank_details = JSON.stringify({full_name:fullName,bank_name:bankName,account_number:acctNum,sort_code:sortCode,account_type:acctType,note});
-
   const {data,error} = await db.from('withdrawal_requests').insert({
     user_id: session.user.id,
-    user_email: session.user.email,
     amount,
-    method: 'bank',
-    wallet: null,
-    bank_details,
+    destination_type: 'bank',
+    destination_name: bankName+' ('+fullName+')',
+    destination_ref: acctNum,
     status: 'pending',
   }).select().single();
 
