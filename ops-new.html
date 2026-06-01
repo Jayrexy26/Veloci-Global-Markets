@@ -1515,7 +1515,7 @@
       <button class="modal__close" onclick="closeModal('modal-wd-detail')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal__body" id="wd-detail-body">
-      <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;">Loading…</div>
+      <div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;" id="wd-detail-loading">Loading…</div>
     </div>
     <div class="modal__foot">
       <button class="btn btn--outline" onclick="closeModal('modal-wd-detail')">Close</button>
@@ -2983,60 +2983,65 @@ let _wdDetailId = null;
 window.viewWithdrawal = async function(id) {
   _wdDetailId = id;
   const body = document.getElementById('wd-detail-body');
-  body.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:13px;">Loading…</div>';
   document.getElementById('wd-detail-approve-btn').style.display = 'none';
   document.getElementById('wd-detail-reject-btn').style.display  = 'none';
   openModal('modal-wd-detail');
 
-  const db = window.SV_DB; if (!db) return;
-  const { data: w } = await db.from('withdrawal_requests').select('*').eq('id', id).maybeSingle();
-  if (!w) { body.innerHTML = '<p style="color:var(--red);text-align:center;">Could not load request.</p>'; return; }
+  const db = window.SV_DB;
+  try {
+    const { data: w, error: wErr } = await db.from('withdrawal_requests').select('*').eq('id', id).maybeSingle();
+    if (wErr || !w) { body.innerHTML = '<p style="color:var(--red);text-align:center;padding:32px 0;">Could not load request.</p>'; return; }
 
-  const { data: prof } = await db.from('profiles').select('first_name,last_name,balance').eq('id', w.user_id).maybeSingle();
-  const { data: authUser } = await db.from('users').select('email').eq('id', w.user_id).maybeSingle().catch(()=>({data:null}));
+    /* Use already-loaded _allUsers so no extra auth-table query needed */
+    const u         = (_allUsers || []).find(x => x.id === w.user_id);
+    const userName  = [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—';
+    const userEmail = u?.email || '—';
+    const isCrypto  = (w.destination_type || 'crypto') === 'crypto';
+    const pill      = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
 
-  const userName  = [prof?.first_name, prof?.last_name].filter(Boolean).join(' ') || '—';
-  const userEmail = authUser?.email || w.user_email || '—';
-  const isCrypto  = (w.destination_type || 'crypto') === 'crypto';
-  const pill      = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
+    const fmt2 = n => '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const fmtDt = ts => ts ? new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
 
-  /* Parse destination_ref for crypto vs bank */
-  let destRows = '';
-  if (isCrypto) {
-    const parts = (w.destination_ref || '').split(' | Memo: ');
-    destRows = `
-      <div class="wd-detail-row"><span>Wallet Address</span><code style="font-size:12px;word-break:break-all;">${parts[0] || '—'}</code></div>
-      ${parts[1] ? `<div class="wd-detail-row"><span>Memo / Tag</span><code style="font-size:12px;">${parts[1]}</code></div>` : ''}
+    /* Parse destination_ref */
+    let destRows = '';
+    if (isCrypto) {
+      const parts = (w.destination_ref || '').split(' | Memo: ');
+      destRows = `<div class="wd-detail-row"><span>Wallet Address</span><code style="font-size:12px;word-break:break-all;max-width:280px;">${parts[0]||'—'}</code></div>`
+               + (parts[1] ? `<div class="wd-detail-row"><span>Memo / Tag</span><code style="font-size:12px;">${parts[1]}</code></div>` : '');
+    } else {
+      const refParts = (w.destination_ref || '').split(' | ');
+      const labels   = ['Account No.', 'SWIFT / BIC', 'IBAN'];
+      destRows = refParts.map((p,i) => `<div class="wd-detail-row"><span>${labels[i]||'Detail'}</span><code style="font-size:12px;">${p}</code></div>`).join('');
+    }
+
+    body.innerHTML = `
+      <style>
+        .wd-detail-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+        .wd-detail-row:last-child{border-bottom:none;}
+        .wd-detail-row>span:first-child{color:var(--muted);white-space:nowrap;flex-shrink:0;min-width:130px;}
+        .wd-detail-row>*:last-child{text-align:right;font-weight:500;}
+      </style>
+      <div class="wd-detail-row"><span>Request ID</span><code style="font-size:11px;">${w.id}</code></div>
+      <div class="wd-detail-row"><span>User</span><span>${userName}</span></div>
+      <div class="wd-detail-row"><span>Email</span><span>${userEmail}</span></div>
+      <div class="wd-detail-row"><span>User ID</span><code style="font-size:11px;">${w.user_id}</code></div>
+      <div class="wd-detail-row"><span>Amount (USD)</span><span style="font-weight:700;color:var(--red);">${fmt2(w.amount)}</span></div>
+      <div class="wd-detail-row"><span>Type</span><span style="text-transform:capitalize;">${w.destination_type||'crypto'}</span></div>
+      ${isCrypto
+        ? `<div class="wd-detail-row"><span>Coin / Amount</span><span>${w.destination_name||'—'}</span></div>`
+        : `<div class="wd-detail-row"><span>Bank / Holder</span><span>${w.destination_name||'—'}</span></div>`}
+      ${destRows}
+      <div class="wd-detail-row"><span>Status</span><span class="badge-pill ${pill}">${w.status||'pending'}</span></div>
+      <div class="wd-detail-row"><span>Submitted</span><span>${fmtDt(w.created_at)}</span></div>
+      ${w.reviewed_at ? `<div class="wd-detail-row"><span>Reviewed</span><span>${fmtDt(w.reviewed_at)}</span></div>` : ''}
     `;
-  } else {
-    const refParts = (w.destination_ref || '').split(' | ');
-    const labels   = ['Account No.', 'SWIFT / BIC', 'IBAN'];
-    destRows = refParts.map((p,i) => `<div class="wd-detail-row"><span>${labels[i]||'Detail'}</span><code style="font-size:12px;">${p}</code></div>`).join('');
-  }
 
-  body.innerHTML = `
-    <style>
-      .wd-detail-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
-      .wd-detail-row:last-child{border-bottom:none;}
-      .wd-detail-row>span:first-child{color:var(--muted);white-space:nowrap;flex-shrink:0;min-width:130px;}
-      .wd-detail-row>*:last-child{text-align:right;font-weight:500;}
-    </style>
-    <div class="wd-detail-row"><span>Request ID</span><code style="font-size:11px;">${w.id}</code></div>
-    <div class="wd-detail-row"><span>User</span><span>${userName}</span></div>
-    <div class="wd-detail-row"><span>Email</span><span>${userEmail}</span></div>
-    <div class="wd-detail-row"><span>User ID</span><code style="font-size:11px;">${w.user_id}</code></div>
-    <div class="wd-detail-row"><span>Amount (USD)</span><span style="font-weight:700;color:var(--red);">$${parseFloat(w.amount||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
-    <div class="wd-detail-row"><span>Type</span><span style="text-transform:capitalize;">${w.destination_type||'crypto'}</span></div>
-    ${isCrypto ? `<div class="wd-detail-row"><span>Coin / Amount</span><span>${w.destination_name||'—'}</span></div>` : `<div class="wd-detail-row"><span>Bank / Holder</span><span>${w.destination_name||'—'}</span></div>`}
-    ${destRows}
-    <div class="wd-detail-row"><span>Status</span><span class="badge-pill ${pill}">${w.status||'pending'}</span></div>
-    <div class="wd-detail-row"><span>Submitted</span><span>${fmtDate(w.created_at)}</span></div>
-    ${w.reviewed_at ? `<div class="wd-detail-row"><span>Reviewed</span><span>${fmtDate(w.reviewed_at)}</span></div>` : ''}
-  `;
-
-  if (w.status === 'pending') {
-    document.getElementById('wd-detail-approve-btn').style.display = '';
-    document.getElementById('wd-detail-reject-btn').style.display  = '';
+    if (w.status === 'pending') {
+      document.getElementById('wd-detail-approve-btn').style.display = '';
+      document.getElementById('wd-detail-reject-btn').style.display  = '';
+    }
+  } catch(e) {
+    body.innerHTML = `<p style="color:var(--red);text-align:center;padding:32px 0;">Error: ${e.message||'Unknown error'}</p>`;
   }
 };
 
