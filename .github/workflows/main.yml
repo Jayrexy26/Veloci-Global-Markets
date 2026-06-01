@@ -1,21 +1,34 @@
-name: Coinluxora Status Check
+name: Deploy Supabase Edge Functions
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'supabase/functions/**'
 
 jobs:
-  status-check:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Basic sanity check
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy edge functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          echo "Coinluxora workflow running..."
-          ls -la
-          echo "All good ✔️"
-          
+          for dir in supabase/functions/*/; do
+            fn=$(basename "$dir")
+            echo "Deploying $fn..."
+            supabase functions deploy "$fn" \
+              --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} \
+              --no-verify-jwt
+            echo "✓ $fn deployed"
+          done
