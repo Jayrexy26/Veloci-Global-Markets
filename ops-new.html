@@ -2942,10 +2942,9 @@ async function approveDeposit(id) {
           body: JSON.stringify({ action: 'notify_deposit_approved', user_id: req.user_id, amount, coin: req.coin || null, network: req.network || null, new_balance: newBalance }),
         });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) console.error('[deposit-email] HTTP', r.status, j);
-        else console.log('[deposit-email] sent ok', j);
-      } else { console.warn('[deposit-email] no session token'); }
-    } catch(e) { console.error('[deposit-email] error', e); }
+        if (!r.ok) showToast(`Email error ${r.status}: ${j?.error || 'unknown'}`, 'error');
+      } else { showToast('Email skipped: no session', 'error'); }
+    } catch(e) { showToast('Email exception: ' + e.message, 'error'); }
   }
   renderDepositsLive(); loadDashStats();
 }
@@ -3098,10 +3097,9 @@ async function approveWithdrawal(id) {
           body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, method: req.destination_type || req.coin || null }),
         });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) console.error('[withdrawal-email] HTTP', r.status, j);
-        else console.log('[withdrawal-email] sent ok', j);
-      } else { console.warn('[withdrawal-email] no session token'); }
-    } catch(e) { console.error('[withdrawal-email] error', e); }
+        if (!r.ok) showToast(`Email error ${r.status}: ${j?.error || 'unknown'}`, 'error');
+      } else { showToast('Email skipped: no session', 'error'); }
+    } catch(e) { showToast('Email exception: ' + e.message, 'error'); }
   }
   showToast('Withdrawal approved');
   logAudit('approve_withdrawal', id, '');
