@@ -602,19 +602,18 @@ html.mob .main{width:100% !important;padding:20px 16px;}
       <div style="font-size:16px;font-weight:700;color:var(--text);">Recent Deposits</div>
       <a href="history-new.html" style="font-size:12.5px;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:none;">View All ?</a>
     </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-radius:14px;overflow:hidden;">
-      <table class="rtx-table">
+    <div style="background:var(--s1);border:1px solid var(--b2);border-radius:14px;overflow:hidden;">
+      <table class="rtx-table" style="width:100%;border-collapse:collapse;">
         <thead>
-          <tr>
-            <th>Time</th>
-            <th>Coin</th>
-            <th>Network</th>
-            <th>Amount</th>
-            <th>Status</th>
+          <tr style="background:var(--s2);">
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--sub);text-align:left;letter-spacing:.06em;">TIME</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--sub);text-align:left;letter-spacing:.06em;">COIN</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--sub);text-align:left;letter-spacing:.06em;">AMOUNT</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:600;color:var(--sub);text-align:left;letter-spacing:.06em;">STATUS</th>
           </tr>
         </thead>
         <tbody id="recent-tbody">
-          <tr><td colspan="5">
+          <tr><td colspan="4">
             <div class="empty-state">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
               <p>No deposit history</p>
@@ -1007,19 +1006,19 @@ async function loadRecentDeposits() {
     const tbody = document.getElementById('recent-tbody');
     if (!tbody) return;
     if (!data?.length) {
-      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><p>No deposit history</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg><p>No deposit history</p></div></td></tr>`;
       return;
     }
+    const fmtD = s => new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+    const pillBg = s => s==='approved'?'#22c55e':s==='rejected'?'#ef4444':'#f59e0b';
     tbody.innerHTML = data.map(d => {
-      const pill = d.status === 'approved' ? 'pill-green' : d.status === 'rejected' ? 'pill-red' : 'pill-orange';
       const label = d.status === 'approved' ? 'Completed' : d.status === 'rejected' ? 'Rejected' : 'Pending';
-      const dt = d.created_at ? new Date(d.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
-      return `<tr>
-        <td style="font-size:12px;color:var(--sub);">${dt}</td>
-        <td style="font-weight:600;">${d.coin || '—'}</td>
-        <td style="font-size:12px;color:var(--sub);">${d.network || '—'}</td>
-        <td style="font-weight:600;color:var(--green);">${d.amount > 0 ? '$'+parseFloat(d.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</td>
-        <td><span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${d.status==='approved'?'rgba(14,203,129,.15)':d.status==='rejected'?'rgba(246,70,93,.15)':'rgba(240,185,11,.15)'};color:${d.status==='approved'?'var(--green)':d.status==='rejected'?'var(--red)':'var(--gold)'};">${label}</span></td>
+      const coin = [d.coin, d.network].filter(Boolean).join(' / ') || 'Crypto';
+      return `<tr style="border-top:1px solid var(--b);">
+        <td style="padding:12px 14px;font-size:12.5px;color:var(--sub);">${d.created_at ? fmtD(d.created_at) : '—'}</td>
+        <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${coin}</td>
+        <td style="padding:12px 14px;font-size:13px;font-weight:700;color:var(--green);">${d.amount > 0 ? '$'+parseFloat(d.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</td>
+        <td style="padding:12px 14px;"><span style="display:inline-block;padding:2px 10px;border-radius:99px;font-size:11.5px;font-weight:700;color:#fff;background:${pillBg(d.status)};">${label}</span></td>
       </tr>`;
     }).join('');
   } catch(e) { console.error('loadRecentDeposits', e); }
