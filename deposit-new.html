@@ -245,7 +245,13 @@ html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
 html.mob .layout{display:block !important;overflow-y:auto;}
 html.mob .main{width:100% !important;padding:20px 16px;}
 @keyframes dep-spin{to{transform:rotate(360deg);}}
-.dep-spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:dep-spin .7s linear infinite;vertical-align:middle;margin-right:8px;}</style>
+.dep-spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:dep-spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes genieIn{0%{opacity:.7;clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);}18%{opacity:1;clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.58);}50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);}78%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}100%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}}
+@keyframes genieOut{0%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}20%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);opacity:1;}80%{clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.56);opacity:.8;}100%{clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);opacity:0;}}
+.dep-genie-in{animation:genieIn 0.54s cubic-bezier(0.34,1.1,0.64,1) both;}
+.dep-genie-out{animation:genieOut 0.36s cubic-bezier(0.4,0,0.8,1) both;}
+.dep-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.dep-modal-overlay.open{display:flex;}</style>
 <script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
 </head>
 <body>
@@ -629,8 +635,8 @@ html.mob .main{width:100% !important;padding:20px 16px;}
 </div><!-- /page -->
 
 <!-- DEPOSIT SUCCESS MODAL -->
-<div id="dep-success-overlay" onclick="closeDepSuccessModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div onclick="event.stopPropagation()" style="background:#16191f;border:1px solid rgba(255,255,255,.1);border-radius:18px;width:100%;max-width:380px;overflow:hidden;">
+<div id="dep-success-overlay" class="dep-modal-overlay" onclick="closeDepSuccessModal()">
+  <div id="dep-success-card" onclick="event.stopPropagation()" style="background:#16191f;border:1px solid rgba(255,255,255,.1);border-radius:18px;width:100%;max-width:380px;overflow:hidden;transform-origin:center 85%;will-change:clip-path,transform;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);">
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:10px;height:10px;border-radius:50%;background:#f05a1a;flex-shrink:0;"></div>
@@ -1128,11 +1134,23 @@ function showDepSuccessModal(amount) {
   document.getElementById('dep-success-msg').textContent =
     `Your deposit of $${fmt} has been successfully submitted and is awaiting approval. You will be notified once it is confirmed.`;
   const ov = document.getElementById('dep-success-overlay');
-  ov.style.display = 'flex';
+  const card = document.getElementById('dep-success-card');
+  card.classList.remove('dep-genie-out');
+  ov.classList.add('open');
+  void card.offsetWidth;
+  card.classList.add('dep-genie-in');
+  card.addEventListener('animationend', () => card.classList.remove('dep-genie-in'), { once: true });
 }
 
 function closeDepSuccessModal() {
-  document.getElementById('dep-success-overlay').style.display = 'none';
+  const ov = document.getElementById('dep-success-overlay');
+  const card = document.getElementById('dep-success-card');
+  card.classList.remove('dep-genie-in');
+  card.classList.add('dep-genie-out');
+  card.addEventListener('animationend', () => {
+    card.classList.remove('dep-genie-out');
+    ov.classList.remove('open');
+  }, { once: true });
   const sec = document.getElementById('recent-dep-section');
   if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

@@ -896,8 +896,8 @@ html.mob .main{width:100% !important;padding:20px 16px;}</style>
 </div><!-- /page -->
 
 <!-- WITHDRAWAL SUCCESS MODAL -->
-<div id="wd-success-overlay" onclick="closeWdSuccessModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);">
-  <div onclick="event.stopPropagation()" style="background:#16191f;border:1px solid rgba(255,255,255,.1);border-radius:18px;width:100%;max-width:380px;overflow:hidden;">
+<div id="wd-success-overlay" class="modal-overlay" onclick="closeWdSuccessModal()">
+  <div id="wd-success-card" onclick="event.stopPropagation()" style="background:#16191f;border:1px solid rgba(255,255,255,.1);border-radius:18px;width:100%;max-width:380px;overflow:hidden;transform-origin:center 85%;will-change:clip-path,transform;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);">
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:10px;height:10px;border-radius:50%;background:#f05a1a;flex-shrink:0;"></div>
@@ -1505,12 +1505,25 @@ function showWdSuccessModal(amount) {
   document.getElementById('wd-success-msg').textContent =
     `Your withdrawal of $${fmt} has been successfully submitted and is awaiting approval. You will be notified once it is processed.`;
   const ov = document.getElementById('wd-success-overlay');
-  if (ov) { ov.style.display = 'flex'; }
+  const card = document.getElementById('wd-success-card');
+  if (!ov || !card) return;
+  card.classList.remove('genie-out');
+  ov.classList.add('open');
+  void card.offsetWidth;
+  card.classList.add('genie-in');
+  card.addEventListener('animationend', () => card.classList.remove('genie-in'), { once: true });
 }
 
 function closeWdSuccessModal() {
   const ov = document.getElementById('wd-success-overlay');
-  if (ov) { ov.style.display = 'none'; }
+  const card = document.getElementById('wd-success-card');
+  if (!ov || !card) return;
+  card.classList.remove('genie-in');
+  card.classList.add('genie-out');
+  card.addEventListener('animationend', () => {
+    card.classList.remove('genie-out');
+    ov.classList.remove('open');
+  }, { once: true });
   const sec = document.getElementById('recent-wd-section');
   if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
