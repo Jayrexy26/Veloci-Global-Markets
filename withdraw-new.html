@@ -300,6 +300,11 @@ body.light select option{background:#fff;color:#111;}
 .wd-np-btn.action{font-size:16px;color:var(--sub);}
 @keyframes wd-shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
 .wd-pin-shake{animation:wd-shake .35s ease;}
+@keyframes wd-spin{to{transform:rotate(360deg);}}
+#wd-processing-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;}
+#wd-processing-overlay.active{display:flex;}
+#wd-processing-overlay .wd-proc-spinner{width:44px;height:44px;border:3.5px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;animation:wd-spin .75s linear infinite;}
+#wd-processing-overlay .wd-proc-text{font-size:15px;font-weight:600;color:rgba(255,255,255,.75);letter-spacing:.01em;}
 
 @media(max-width:640px){.dep-card{padding:18px;}.network-grid{grid-template-columns:1fr 1fr;}.coin-grid{grid-template-columns:repeat(3,1fr);}.method-btn{font-size:12px;padding:11px 10px;}.wd-hide-mobile{display:none;}}
 
@@ -895,6 +900,12 @@ html.mob .main{width:100% !important;padding:20px 16px;}</style>
 </div><!-- /layout -->
 </div><!-- /page -->
 
+<!-- PROCESSING OVERLAY -->
+<div id="wd-processing-overlay">
+  <div class="wd-proc-spinner"></div>
+  <div class="wd-proc-text">Processing your withdrawal…</div>
+</div>
+
 <!-- WITHDRAWAL SUCCESS MODAL -->
 <div id="wd-success-overlay" class="modal-overlay" onclick="closeWdSuccessModal()">
   <div id="wd-success-card" onclick="event.stopPropagation()" style="background:var(--s1);border:1px solid var(--b2);border-radius:16px;padding:28px;width:380px;max-width:94vw;text-align:center;transform-origin:center 85%;will-change:clip-path,transform;">
@@ -1339,8 +1350,9 @@ async function checkWdPin(){
 async function doWithdraw(){
   if (_wdSubmitting) return;
   _wdSubmitting = true;
+  document.getElementById('wd-processing-overlay').classList.add('active');
   const db = window.SV_DB;
-  if (!db || !_svUserId) { _wdSubmitting=false; return; }
+  if (!db || !_svUserId) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); return; }
 
   let _submittedAmt = 0;
   let _wdDestType = '', _wdDestName = '', _wdDestRef = '';
@@ -1365,7 +1377,7 @@ async function doWithdraw(){
       destination_ref:  _wdDestRef,
       status:           'pending',
     }).select('id').single();
-    if (wrErr) { _wdSubmitting=false; showToastWd('Submission failed — please try again.', true); return; }
+    if (wrErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
     const { error: txErr } = await db.from('transactions').insert({
       user_id:    _svUserId,
@@ -1378,7 +1390,7 @@ async function doWithdraw(){
       note:       `Crypto withdrawal — ${amt} ${selCoin.sym} via ${selNet.id}`,
       status:     'pending',
     });
-    if (txErr) { _wdSubmitting=false; showToastWd('Submission failed — please try again.', true); return; }
+    if (txErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
     /* Deduct from profiles.balance only (not pnl) */
     const { data: _p1 } = await db.from('profiles').select('balance').eq('id', _svUserId).maybeSingle();
@@ -1405,7 +1417,7 @@ async function doWithdraw(){
     const iban    = document.getElementById('bank-iban')?.value.trim() || '';
     const country = document.getElementById('bank-country').value;
     const ref     = document.getElementById('bank-ref')?.value.trim() || '';
-    if (amt <= 0) { _wdSubmitting=false; return; }
+    if (amt <= 0) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); return; }
 
     const bankDetails = JSON.stringify({ holder, bankName:bkName, acct, swift, iban, country, ref, ccy });
     const fee = BANK_FEES[ccy] || 15;
@@ -1421,7 +1433,7 @@ async function doWithdraw(){
       destination_ref:  _wdDestRef,
       status:           'pending',
     }).select('id').single();
-    if (wrErr) { showToastWd('Submission failed — please try again.', true); return; }
+    if (wrErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
     const { error: txErr } = await db.from('transactions').insert({
       user_id:    _svUserId,
@@ -1432,7 +1444,7 @@ async function doWithdraw(){
       note:       `Bank withdrawal — ${ccy} ${amt.toLocaleString()} to ${bkName}`,
       status:     'pending',
     });
-    if (txErr) { showToastWd('Submission failed — please try again.', true); return; }
+    if (txErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
     /* Deduct from profiles.balance only (not pnl) */
     const { data: _p2 } = await db.from('profiles').select('balance').eq('id', _svUserId).maybeSingle();
@@ -1448,6 +1460,7 @@ async function doWithdraw(){
     }).then(null,()=>{});
   }
 
+  document.getElementById('wd-processing-overlay').classList.remove('active');
   showWdSuccessBanner();
   _wdSubmitting = false;
   showWdSuccessModal(_submittedAmt);
