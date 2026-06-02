@@ -22,8 +22,8 @@
       z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;
     }
     #svnp-box {
-      background: #16191f; border-radius: 18px; width: 100%; max-width: 480px;
-      border: 1px solid rgba(255,255,255,.1);
+      background: var(--s1, #111318); border-radius: 16px; width: 100%; max-width: 480px;
+      border: 1px solid var(--b2, rgba(255,255,255,.13));
       box-shadow: 0 24px 64px rgba(0,0,0,.55);
       overflow: hidden; transform-origin: center 85%; will-change: clip-path, transform;
     }
@@ -34,7 +34,7 @@
       padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,.07);
     }
     #svnp-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    #svnp-title { font-size: 16px; font-weight: 700; flex: 1; color: #fff; font-family: inherit; }
+    #svnp-title { font-size: 16px; font-weight: 700; flex: 1; color: var(--text, #eaecef); font-family: inherit; }
     #svnp-close {
       background: none; border: none; font-size: 20px; color: #666;
       cursor: pointer; padding: 0 2px; line-height: 1;
@@ -42,7 +42,7 @@
     #svnp-close:hover { color: #eaecef; }
     #svnp-body {
       padding: 20px 22px; font-size: 14px; line-height: 1.7;
-      color: rgba(255,255,255,.6); word-break: break-word; white-space: pre-wrap;
+      color: var(--sub, #848e9c); word-break: break-word; white-space: pre-wrap;
     }
     #svnp-footer { padding: 12px 22px 20px; display: flex; justify-content: flex-end; gap: 10px; }
     #svnp-btn {
@@ -103,7 +103,7 @@
         </div>
         <div id="svnp-body">${String(notif.message || '').replace(/</g, '&lt;')}</div>
         <div id="svnp-footer">
-          <button id="svnp-btn" style="background:${cfg.color};" onclick="window._svnpClose && window._svnpClose()">Got it</button>
+          <button id="svnp-btn" style="background:var(--accent,#f05a1a);" onclick="window._svnpClose && window._svnpClose()">Got it</button>
         </div>
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) _removePopup(); });
