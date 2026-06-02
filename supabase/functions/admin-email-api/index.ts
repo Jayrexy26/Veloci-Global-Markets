@@ -214,28 +214,41 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
 
   if (tmpl === "deposit_approved") {
     const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const fmtBal = data.new_balance != null ? Number(data.new_balance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null;
     const method = [data.coin, data.network].filter(Boolean).join(" / ") || "Crypto";
+    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
     badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">DEPOSIT APPROVED</span></div>`;
     content = `
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your deposit has been confirmed and credited to your trading account. Your funds are now available for trading.</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We are pleased to inform you that your recent deposit has been successfully received and credited to your Veloci Global Markets trading account.</p>
+      <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0d1117;">Transaction Details</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Deposit Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
         <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(method)}</td></tr>
-        ${fmtBal ? `<tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Updated Balance</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#0d1117;border:1px solid #e5e7eb;">$${s(fmtBal)}</td></tr>` : ""}
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Date &amp; Time</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#166534;border:1px solid #e5e7eb;">Successfully Completed</td></tr>
       </table>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your account balance has been updated accordingly, and the funds are now available for trading and investment activities.</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We appreciate your continued trust in Veloci Global Markets.</p>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a> to start trading.</p>`;
 
   } else if (tmpl === "withdrawal_approved") {
     const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const destination = s(data.method || data.coin || "—");
+    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
+    const ref = `VGM-W-${Date.now().toString(36).toUpperCase()}`;
     badge = `<div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#991b1b;">WITHDRAWAL APPROVED</span></div>`;
     content = `
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your withdrawal request has been approved and is being processed. Please allow 1–5 business days for the funds to arrive.</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We are pleased to inform you that your withdrawal request has been successfully approved and processed by our finance department.</p>
+      <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0d1117;">Withdrawal Details</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Withdrawal Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#991b1b;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
-        ${data.method ? `<tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(data.method)}</td></tr>` : ""}
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Destination Wallet / Account</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${destination}</td></tr>
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Transaction Reference</td><td style="padding:14px 18px;font-size:14px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(ref)}</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Processing Date</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#166534;border:1px solid #e5e7eb;">Approved and Released</td></tr>
       </table>
-      <p style="margin:0;font-size:14px;color:#6b7280;">Questions? Contact us at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:${accent};">help.velociglobalmarkets@gmail.com</a>.</p>`;
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">The funds have been transmitted to the designated destination and are currently awaiting confirmation by the receiving financial institution or blockchain network. Depending on network conditions and processing times, the funds should become available shortly.</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">You may monitor the status of your transaction through your account <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a>.</p>
+      <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">Thank you for choosing Veloci Global Markets. We appreciate your continued confidence in our services.</p>`;
 
   } else if (tmpl === "kyc_approved") {
     badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">IDENTITY VERIFIED</span></div>`;
