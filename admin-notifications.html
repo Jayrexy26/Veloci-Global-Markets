@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Notification</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn active" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">🔔 Notification</div><div class="small" id="notificationStatus">Not loaded.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadNotifications)">Refresh</button></div>
+          </div>
+          <div class="small" style="margin-bottom:10px">
+            This controls the site-wide popup modal for each user. When enabled, the notification will appear on the user dashboard and any page that uses the same notification reader.
+          </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:320px">User</th><th style="width:220px">Title</th><th style="width:520px">Message</th>
+                <th style="width:160px">Enable Toggle</th><th style="width:220px">Actions</th>
+              </tr></thead>
+              <tbody id="notificationRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'notification';
+window.loadCurrentPage = function(){ safeLoad(loadNotifications); };
+
+async function loadNotifications(){
+  const st = document.getElementById("notificationStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  const [usersRes, notifRes] = await Promise.allSettled([
+    apiCall("users_list"),
+    apiCall("notifications_admin_list", {})
+  ]);
+  if(usersRes.status === "fulfilled"){
+    CACHE.users = usersRes.value.data || [];
+    CACHE.users.forEach(u=>{
+      const em = String(u.email||"").trim().toLowerCase();
+      USERNAME_MAP[em] = String(u.username||u.full_name||u.name||u.display_name||"").trim() || inferUsernameFromEmail(em) || "User";
+    });
+    onSearchInput();
+  }
+  if(notifRes.status === "fulfilled"){
+    CACHE.notifications = Array.isArray(notifRes.value.data) ? notifRes.value.data : [];
+  }
+  renderNotifications();
+  const active = (CACHE.notifications||[]).filter(n=>!!(n.enabled??n.is_active??n.active)).length;
+  const el = document.getElementById("cnt-notification");
+  if(el) el.textContent = active;
+  feed("notifications loaded (" + (CACHE.notifications||[]).length + ")");
+}
+
+function renderNotifications(){
+  const status = document.getElementById("notificationStatus");
+  const tbody = document.getElementById("notificationRows");
+  if(!tbody || !status) return;
+
+  const rows = (CACHE.users||[]).filter(matchSearch).slice().sort((a,b)=>{
+    const ea = String(a.email||"").toLowerCase();
+    const eb = String(b.email||"").toLowerCase();
+    return ea.localeCompare(eb);
+  });
+
+  if(rows.length === 0){
+    status.textContent = "No users loaded.";
+    tbody.innerHTML = `<tr><td colspan="5" class="small">No users found.</td></tr>`;
+    return;
+  }
+
+  const noticeMap = new Map();
+  (CACHE.notifications||[]).forEach(n=>{
+    const keyId = String(n.user_id||"").trim();
+    const keyEmail = String(n.user_email||"").trim().toLowerCase();
+    if(keyId && !noticeMap.has(keyId)) noticeMap.set(keyId, n);
+    if(keyEmail && !noticeMap.has(keyEmail)) noticeMap.set(keyEmail, n);
+  });
+
+  status.textContent = `Loaded ${rows.length} user(s) ✅ Manage popup notice per user.`;
+  tbody.innerHTML = rows.map(u=>{
+    const uid = esc(u.id||u.user_id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    const notice = noticeMap.get(String(u.id||u.user_id||"").trim()) || noticeMap.get(email) || {};
+    const enabled = !!(notice.enabled ?? notice.is_active ?? notice.active);
+    const title = String(notice.title ?? "Notification");
+    const message = String(notice.message ?? notice.body ?? "");
+    return `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><input id="notif-title-${uid}" maxlength="120" value="${esc(title)}" placeholder="Notification"></td>
+        <td><textarea id="notif-msg-${uid}" placeholder="Enter popup message..." style="min-height:90px;">${esc(message)}</textarea></td>
+        <td>
+          <label class="tiny" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="notif-on-${uid}" ${enabled?'checked':''} style="width:18px;height:18px;accent-color:rgba(56,189,248,1);">
+            <span>Enabled</span>
+          </label>
+        </td>
+        <td><div class="rowTools wrap">
+          <button class="btnOk" onclick="saveNotificationRow('${esc(email)}','${uid}')">Save</button>
+          <button class="btnErr" onclick="clearNotificationRow('${esc(email)}','${uid}')">Clear</button>
+        </div></td>
+      </tr>`;
+  }).join("");
+}
+
+async function saveNotificationRow(email, uid){
+  const titleEl = document.getElementById("notif-title-" + uid);
+  const msgEl = document.getElementById("notif-msg-" + uid);
+  const onEl = document.getElementById("notif-on-" + uid);
+  if(!uid) return modalShow("User not loaded", "Refresh users first.");
+  if(!titleEl || !msgEl) return modalShow("Missing input", "Notification fields are missing.");
+  const title = String(titleEl.value||"").trim() || "Notification";
+  const message = String(msgEl.value||"").trim();
+  const enabled = !!(onEl && onEl.checked);
+  if(enabled && !message) return modalShow("Missing message", "Enter a notification message before enabling it.");
+  if(!confirm(`Save notification for ${email}?`)) return;
+  const res = await apiCall("notification_save", { user_id:uid, user_email:email, enabled, title, message });
+  if(res && res.success === false){ modalShow("Notification error", res.error || "Unable to save."); return; }
+  feed(`notification_save -> ${email} (enabled=${enabled})`);
+  modalShow("Saved", "Notification updated for this user.");
+  await safeLoad(loadNotifications);
+}
+
+async function clearNotificationRow(email, uid){
+  if(!uid) return modalShow("User not loaded", "Refresh users first.");
+  if(!confirm(`Clear notification for ${email}?`)) return;
+  const res = await apiCall("notification_clear", { user_id:uid, user_email:email });
+  if(res && res.success === false){ modalShow("Notification error", res.error || "Unable to clear."); return; }
+  feed(`notification_clear -> ${email}`);
+  modalShow("Cleared", "Notification disabled and cleared for this user.");
+  await safeLoad(loadNotifications);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadNotifications);
+});
+</script>
+</body>
+</html>

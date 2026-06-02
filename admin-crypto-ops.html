@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Crypto Ops</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn active" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">🪙 Crypto Credit / Debit / Set</div><div class="small" id="cryptoOpsStatus">Uses loaded users. Choose asset + amount, then apply.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadCryptoOps)">Refresh Users</button></div>
+          </div>
+          <div class="small" style="margin-bottom:10px">
+            This is separated from <strong>Users</strong> for clean operations. Search bar filters by username/email.
+          </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:360px">User</th><th style="width:160px">Current Balance</th>
+                <th style="width:140px">Asset</th><th style="width:180px">Amount</th><th style="width:320px">Actions</th>
+              </tr></thead>
+              <tbody id="cryptoOpsRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'cryptoops';
+window.loadCurrentPage = function(){ renderCryptoOps(CACHE.users); };
+
+async function loadCryptoOps(){
+  document.getElementById("cryptoOpsStatus").innerHTML = `<span class="spin"></span>Loading users…`;
+  const res = await apiCall("users_list");
+  CACHE.users = res.data || [];
+  CACHE.users.forEach(u=>{
+    const em = String(u.email||"").trim().toLowerCase();
+    USERNAME_MAP[em] = String(u.username||u.full_name||u.name||u.display_name||"").trim() || inferUsernameFromEmail(em) || "User";
+  });
+  renderCryptoOps(CACHE.users);
+  onSearchInput();
+  feed("users_list loaded for crypto ops (" + CACHE.users.length + ")");
+  const el = document.getElementById("cnt-cryptoops");
+  if(el) el.textContent = CACHE.users.length;
+}
+
+function getCryptoBalanceForUser(userObj, assetKey){
+  const ak = String(assetKey||"").trim().toUpperCase();
+  if(!ak) return 0;
+  const m = userObj?.crypto_balances;
+  if(!m) return 0;
+  const toFinite = v => { const n=Number(v); return Number.isFinite(n)?n:0; };
+  if(typeof m === "object" && !Array.isArray(m)){
+    if(Object.prototype.hasOwnProperty.call(m, ak)) return toFinite(m[ak]);
+    let total = 0;
+    for(const [k,v] of Object.entries(m)){
+      const kk = String(k||"").trim().toUpperCase();
+      if(kk===ak || kk.startsWith(ak+"_")) total += toFinite(v);
+    }
+    return total;
+  }
+  if(Array.isArray(m)){
+    let total = 0;
+    for(const row of m){
+      const rowKey = String(row?.asset_key||row?.asset||"").trim().toUpperCase();
+      if(rowKey===ak || rowKey.startsWith(ak+"_")) total += toFinite(row?.balance??row?.amount??0);
+    }
+    return total;
+  }
+  return 0;
+}
+
+function cryptoAssetOptionsHtml(){
+  return CRYPTO_ASSETS.map(s=>`<option value="${s}">${s}</option>`).join("");
+}
+
+function renderCryptoOps(data){
+  const status = document.getElementById("cryptoOpsStatus");
+  const tbody = document.getElementById("cryptoOpsRows");
+  const filtered = (data||[]).filter(r=>!String(r.label||"").toLowerCase().includes("pamm")).filter(matchSearch);
+  if(filtered.length === 0){ status.textContent = 'No users loaded yet. Click "Refresh Users".'; tbody.innerHTML = ""; return; }
+  status.textContent = `Loaded ${filtered.length} user(s) ✅ Choose asset + amount then run ops.`;
+  tbody.innerHTML = "";
+  filtered.forEach(u=>{
+    const uid = esc(u.id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    const defaultAsset = CRYPTO_ASSETS[0] || "BTC";
+    const bal = getCryptoBalanceForUser(u, defaultAsset);
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><strong class="mono" id="cbal-${uid}">${Number(bal).toFixed(8)}</strong></td>
+        <td>
+          <select id="casset-${uid}" onchange="onCryptoAssetChange('${uid}')">
+            ${cryptoAssetOptionsHtml()}
+          </select>
+        </td>
+        <td><input type="number" step="0.00000001" id="camt-${uid}" placeholder="0.00"></td>
+        <td><div class="rowTools">
+          <button class="btnOk" onclick="cryptoCreditUser('${uid}','${esc(email)}')">Credit</button>
+          <button class="btnErr" onclick="cryptoDebitUser('${uid}','${esc(email)}')">Debit</button>
+          <button class="btnGhost" onclick="cryptoSetUser('${uid}','${esc(email)}')">Set</button>
+        </div></td>
+      </tr>`;
+  });
+  filtered.forEach(u=>{
+    const uid = String(u.id||"");
+    const rowEl = document.getElementById(`cbal-${uid}`);
+    if(rowEl) rowEl.dataset.cryptoBalances = JSON.stringify(u.crypto_balances || {});
+  });
+}
+
+function onCryptoAssetChange(uid){
+  const sel = document.getElementById(`casset-${uid}`);
+  const balEl = document.getElementById(`cbal-${uid}`);
+  if(!sel || !balEl) return;
+  let cb = {};
+  try{ cb = JSON.parse(balEl.dataset.cryptoBalances||"{}"); }catch(_){}
+  const balance = getCryptoBalanceForUser({ crypto_balances: cb }, sel.value);
+  balEl.textContent = Number(balance||0).toFixed(8);
+}
+
+function getCryptoInputs(uid){
+  const asset = (document.getElementById(`casset-${uid}`)?.value||"").trim().toUpperCase();
+  const amtRaw = document.getElementById(`camt-${uid}`)?.value || "";
+  const amt = Number(amtRaw);
+  return { asset, amt, amtRaw };
+}
+
+async function cryptoCreditUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!(amt>0)){ modalShow("Invalid amount","Enter crypto amount > 0"); return; }
+  const res = await apiCall("user_crypto_credit", { user_id:uid, email, asset_key:asset, amount:amt });
+  feed(`user_crypto_credit -> ${email} (${asset})`);
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? "ok");
+  modalShow("Crypto Credited", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadCryptoOps);
+}
+
+async function cryptoDebitUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!(amt>0)){ modalShow("Invalid amount","Enter crypto amount > 0"); return; }
+  const res = await apiCall("user_crypto_debit", { user_id:uid, email, asset_key:asset, amount:amt });
+  feed(`user_crypto_debit -> ${email} (${asset})`);
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? "ok");
+  modalShow("Crypto Debited", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadCryptoOps);
+}
+
+async function cryptoSetUser(uid, email){
+  const { asset, amt } = getCryptoInputs(uid);
+  if(!asset){ modalShow("Missing asset","Pick a crypto asset."); return; }
+  if(!Number.isFinite(amt)){ modalShow("Invalid target","Enter a target crypto balance number."); return; }
+  if(!confirm(`Set ${email} ${asset} balance to ${amt} ?`)) return;
+  const res = await apiCall("user_crypto_set", { user_id:uid, email, asset_key:asset, target_balance:amt });
+  feed(`user_crypto_set -> ${email} (${asset})`);
+  const newBal = (res.data?.new_balance ?? res.data?.balance ?? res.data?.new_crypto_balance ?? amt);
+  modalShow("Crypto Balance Set", `User: ${email}\nAsset: ${asset}\nNew ${asset} Balance: ${newBal}\n`);
+  safeLoad(loadCryptoOps);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadCryptoOps);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Trades</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn active" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">📒 Trades • History Allocation</div><div class="small" id="tradesStatus">Assign trade history to users (only effective when Trades is enabled for that user).</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadTrades)">Refresh</button></div>
+          </div>
+          <div class="small" style="margin-bottom:10px">Set a user's trade controls here, then add trade history entries anytime.</div>
+
+          <div class="card" style="margin:12px 0 14px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10)">
+            <div class="cardTitle" style="margin-bottom:6px;">🎯 User Trade Settings</div>
+            <div class="small" style="margin-bottom:10px;">
+              Controls the <strong>trades enabled toggle</strong> and <strong>trade %</strong> shown on the user dashboard. Enter a number like <span class="mono">5</span> for 5%.
+            </div>
+            <div class="tableWrap"><div class="tableScroll">
+              <table>
+                <thead><tr>
+                  <th style="width:360px">User</th><th style="width:160px">Trade %</th>
+                  <th style="width:180px">Enable Toggle</th><th style="width:160px">Save</th>
+                </tr></thead>
+                <tbody id="tradeSettingsRows"></tbody>
+              </table>
+            </div></div>
+          </div>
+
+          <form onsubmit="createTrade(event)">
+            <div class="inline">
+              <select id="tradeUser" class="grow" required><option value="">Select user…</option></select>
+              <select id="tradeMarket" class="w200">
+                <option value="crypto">Crypto</option>
+                <option value="forex">Forex</option>
+                <option value="indices">Indices</option>
+                <option value="stocks">Stocks</option>
+              </select>
+              <input id="tradePair" class="w200" placeholder="Pair (BTC/USDT)" required>
+              <select id="tradeDirection" class="w140">
+                <option value="buy">BUY</option>
+                <option value="sell">SELL</option>
+              </select>
+              <input id="tradeSize" class="w140" type="number" step="0.0001" placeholder="Size" required>
+              <input id="tradePnl" class="w140" type="number" step="0.01" placeholder="P/L" required>
+              <button class="btnOk" type="submit">Add Trade</button>
+            </div>
+          </form>
+
+          <div style="height:12px"></div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:360px">User</th><th style="width:140px">Market</th><th style="width:220px">Pair</th>
+                <th style="width:140px">Direction</th><th style="width:140px">Size</th><th style="width:160px">Profit/Loss</th>
+                <th style="width:220px">Created</th><th style="width:180px">Action</th>
+              </tr></thead>
+              <tbody id="tradesRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'trades';
+window.loadCurrentPage = function(){ safeLoad(loadTrades); };
+
+function populateTradeUserSelect(){
+  const users = (CACHE.users||[]).slice().sort((a,b)=>String(a.email||"").toLowerCase().localeCompare(String(b.email||"").toLowerCase()));
+  const sel = document.getElementById("tradeUser");
+  if(!sel) return;
+  const current = sel.value || "";
+  sel.innerHTML = ['<option value="">Select user…</option>'].concat(users.map(u=>{
+    const email = String(u.email||"").trim().toLowerCase();
+    const name = String(u.username||u.full_name||u.name||u.display_name||"").trim() || USERNAME_MAP[email] || inferUsernameFromEmail(email) || "User";
+    return `<option value="${esc(email)}">${esc(name)} • ${esc(email)}</option>`;
+  })).join("");
+  if(current) sel.value = current;
+}
+
+function renderTradeSettingsTable(){
+  const tbody = document.getElementById("tradeSettingsRows");
+  if(!tbody) return;
+  const filtered = (CACHE.users||[]).filter(matchSearch).slice().sort((a,b)=>String(a.email||"").toLowerCase().localeCompare(String(b.email||"").toLowerCase()));
+  if(filtered.length === 0){ tbody.innerHTML = `<tr><td colspan="4" class="small">No users found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(u=>{
+    const uid = esc(u.id||u.user_id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    const enabled = !!(u.trades_active??u.trade_active??u.trading_active??u.trades_enabled);
+    const rawPct = u.trade_percent??u.trades_percent??u.trade_roi_percent??u.tradePct??0;
+    const safePct = Number.isFinite(Number(rawPct)) ? Number(rawPct) : 0;
+    return `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><input type="number" step="0.01" min="0" max="100" id="tradepct-${uid}" value="${esc(String(safePct))}" placeholder="5"></td>
+        <td>
+          <label class="tiny" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="tradeon-${uid}" ${enabled?'checked':''} style="width:18px;height:18px;accent-color:rgba(56,189,248,1);">
+            <span>Enabled</span>
+          </label>
+        </td>
+        <td><button class="btnOk" onclick="saveTradeSettingsRow('${esc(email)}','${uid}')">Save</button></td>
+      </tr>`;
+  }).join("");
+}
+
+async function saveTradeSettingsRow(email, uid){
+  const pctEl = document.getElementById("tradepct-" + uid);
+  const onEl = document.getElementById("tradeon-" + uid);
+  if(!pctEl) return modalShow("Missing input", "Trade % input is missing for this row.");
+  const trade_percent = Number(pctEl.value || 0);
+  if(!isFinite(trade_percent) || trade_percent < 0 || trade_percent > 100) return modalShow("Invalid %","Trade % must be a number between 0 and 100.");
+  const trades_active = !!(onEl && onEl.checked);
+  if(!uid) return modalShow("User not loaded","Refresh Users first.");
+  if(!confirm(`Save trade settings for ${email}?`)) return;
+  const res = await apiCall("user_trade_settings_update", { user_id:uid, user_email:email, trades_active, trade_percent });
+  if(res && res.success === false){ modalShow("Trade settings error", res.error || "Unable to update trade settings."); return; }
+  feed(`user_trade_settings_update -> ${email} (active=${trades_active}, %=${trade_percent})`);
+  modalShow("Saved","Trade controls updated for this user.");
+  await safeLoad(loadTrades);
+}
+
+async function loadTrades(){
+  const st = document.getElementById("tradesStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  const [usersRes, tradesRes] = await Promise.allSettled([
+    apiCall("users_list"),
+    apiCall("trades_admin_list")
+  ]);
+  if(usersRes.status === "fulfilled"){
+    CACHE.users = usersRes.value.data || [];
+    CACHE.users.forEach(u=>{
+      const em = String(u.email||"").trim().toLowerCase();
+      USERNAME_MAP[em] = String(u.username||u.full_name||u.name||u.display_name||"").trim() || inferUsernameFromEmail(em) || "User";
+    });
+    onSearchInput();
+  }
+  if(tradesRes.status === "fulfilled"){
+    const r = tradesRes.value;
+    CACHE.trades = (r && (r.data || r.trades || r.rows || r.items)) || [];
+    if(!Array.isArray(CACHE.trades)) CACHE.trades = [];
+  }
+  populateTradeUserSelect();
+  renderTradeSettingsTable();
+  renderTrades(CACHE.trades);
+  if(st) st.textContent = `Loaded ${CACHE.trades.length} trade(s) ✅`;
+  feed("trades loaded (" + CACHE.trades.length + ")");
+  const el = document.getElementById("cnt-trades");
+  if(el) el.textContent = CACHE.trades.length;
+}
+
+function renderTrades(data){
+  const tbody = document.getElementById("tradesRows");
+  if(!tbody) return;
+  const filtered = (data||[]).filter(matchSearch);
+  if(filtered.length === 0){ tbody.innerHTML = `<tr><td colspan="8" style="padding:14px;color:rgba(234,240,255,.70)">No trades found.</td></tr>`; return; }
+  tbody.innerHTML = "";
+  filtered.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).forEach(t=>{
+    const id = esc(t.id||"");
+    const email = String(t.user_email||t.email||"").trim().toLowerCase();
+    const market = esc(t.market||"-");
+    const pair = esc(t.pair||t.symbol||"-");
+    const dir = String(t.direction||t.side||"-").toUpperCase();
+    const size = Number(t.size||t.qty||0);
+    const pnl = Number(t.pnl||t.profit_loss||t.profit||0);
+    const created = t.created_at ? new Date(t.created_at).toLocaleString() : "-";
+    const pnlTxt = (pnl>=0?"+":"") + pnl.toFixed(2);
+    const pnlColor = pnl>=0 ? "rgba(34,197,94,1)" : "rgba(248,113,113,1)";
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td>${market}</td>
+        <td><span class="mono">${pair}</span></td>
+        <td><strong>${esc(dir)}</strong></td>
+        <td>${esc(size)}</td>
+        <td><strong style="color:${pnlColor}">$${esc(pnlTxt)}</strong></td>
+        <td>${esc(created)}</td>
+        <td><div class="rowTools">
+          <button class="btnGhost" onclick="viewTrade(${JSON.stringify(t).replaceAll('"',"&quot;")})">View</button>
+          <button class="btnErr" onclick="deleteTrade('${id}')">Delete</button>
+        </div></td>
+      </tr>`;
+  });
+}
+
+function viewTrade(t){ modalShow("Trade", JSON.stringify(t, null, 2)); }
+
+async function createTrade(ev){
+  ev.preventDefault();
+  const user_email = String(document.getElementById("tradeUser")?.value||"").trim().toLowerCase();
+  const market = String(document.getElementById("tradeMarket")?.value||"crypto").trim().toLowerCase();
+  const pair = String(document.getElementById("tradePair")?.value||"").trim();
+  const direction = String(document.getElementById("tradeDirection")?.value||"buy").trim().toLowerCase();
+  const size = Number(document.getElementById("tradeSize")?.value||0);
+  const pnl = Number(document.getElementById("tradePnl")?.value||0);
+  if(!user_email) return modalShow("Missing user","Select a user.");
+  if(!pair) return modalShow("Missing pair","Enter a pair e.g. BTC/USDT.");
+  if(!isFinite(size)||size<=0) return modalShow("Invalid size","Enter a valid trade size.");
+  if(!isFinite(pnl)) return modalShow("Invalid P/L","Enter profit/loss number.");
+  const userObj = (CACHE.users||[]).find(u=>String(u.email||"").trim().toLowerCase()===user_email);
+  const tradeEnabled = !!(userObj && (userObj.trades_active??userObj.trade_active??userObj.trading_active??userObj.trades_enabled));
+  if(!tradeEnabled){ if(!confirm("This user does NOT have Trades enabled. Add trade anyway?")) return; }
+  if(!confirm(`Add trade for ${user_email}?`)) return;
+  const res = await apiCall("trades_admin_create", { user_email, market, pair, direction, size, pnl });
+  if(res && res.success === false){ modalShow("Create trade error", res.error||"Unable to create trade."); return; }
+  feed(`trades_admin_create -> ${user_email} ${pair} ${direction}`);
+  modalShow("Trade added","Trade history entry created.");
+  document.getElementById("tradePair").value = "";
+  document.getElementById("tradeSize").value = "";
+  document.getElementById("tradePnl").value = "";
+  safeLoad(loadTrades);
+}
+
+async function deleteTrade(id){
+  if(!confirm("Delete this trade entry?")) return;
+  const res = await apiCall("trades_admin_delete", { id });
+  if(res && res.success === false){ modalShow("Delete trade error", res.error||"Unable to delete trade."); return; }
+  feed("trades_admin_delete -> " + id);
+  modalShow("Deleted","Trade entry removed.");
+  safeLoad(loadTrades);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadTrades);
+});
+</script>
+</body>
+</html>

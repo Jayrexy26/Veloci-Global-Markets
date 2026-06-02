@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Settings</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn active" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+
+        <div class="gridMain">
+          <div class="card" style="margin-bottom:14px;">
+            <div class="cardHead">
+              <div><div class="cardTitle">🌐 Homepage Content</div><div class="small" id="homepageContentStatus">Not loaded.</div></div>
+              <div class="rowTools">
+                <button class="btnGhost" onclick="safeLoad(loadHomepageContent)">Reload</button>
+                <button class="btnPrimary" onclick="saveHomepageContent()">Save</button>
+              </div>
+            </div>
+            <div class="small" style="margin-bottom:10px">Update the homepage support email and client testimonials here.</div>
+            <div class="inline" style="margin-bottom:12px">
+              <input id="homepageSupportEmail" class="grow" placeholder="support@velociglobal.pro">
+            </div>
+            <div id="homepageTestimonialsEditor" style="display:grid;gap:12px;"></div>
+            <div class="inline" style="margin-top:12px">
+              <button class="btnGhost" onclick="addHomepageTestimonialRow()">Add Testimonial</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHead">
+              <div><div class="cardTitle">📧 Manual Branded Email</div><div class="small" id="manualEmailStatus">Send branded user emails directly from admin.</div></div>
+              <div class="rowTools"><button class="btnPrimary" onclick="safeLoad(sendManualBrandedEmail)">Send Email</button></div>
+            </div>
+            <div class="small" style="margin-bottom:10px">Uses the same Veloci branded template as verification and plan approval emails.</div>
+            <div style="display:grid;gap:12px;">
+              <div class="inline">
+                <input id="manualEmailTo" class="grow" placeholder="Recipient email">
+                <input id="manualEmailUserName" class="grow" placeholder="User name (optional)">
+              </div>
+              <div class="inline">
+                <input id="manualEmailSubject" class="grow" placeholder="Email subject">
+                <input id="manualEmailTitle" class="grow" placeholder="Email title (optional)">
+              </div>
+              <textarea id="manualEmailMessage" placeholder="Write the email message here.&#10;Use a new line between each paragraph." style="min-height:180px;"></textarea>
+              <div class="inline">
+                <input id="manualEmailButtonText" class="grow" placeholder="Button text (optional)">
+                <input id="manualEmailButtonUrl" class="grow" placeholder="Button URL (optional)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'settings';
+window.loadCurrentPage = function(){ safeLoad(loadHomepageContent); };
+
+let HOMEPAGE_TESTIMONIAL_DRAFT = [];
+
+function normalizeHomepageTestimonials(list){
+  if(!Array.isArray(list)) return [];
+  return list.map((item, idx)=>({
+    id: String(item?.id || ("row-" + (idx+1))),
+    name: String(item?.name || "").trim(),
+    message: String(item?.message || item?.text || "").trim(),
+    avatar_url: String(item?.avatar_url || "").trim(),
+    stars: 5
+  }));
+}
+
+function renderHomepageTestimonialsEditor(){
+  const wrap = document.getElementById("homepageTestimonialsEditor");
+  if(!wrap) return;
+  if(!HOMEPAGE_TESTIMONIAL_DRAFT.length){
+    HOMEPAGE_TESTIMONIAL_DRAFT = [{ id:"row-1", name:"", message:"", avatar_url:"", stars:5 }];
+  }
+  wrap.innerHTML = HOMEPAGE_TESTIMONIAL_DRAFT.map((t, idx)=>`
+    <div class="tableWrap" style="padding:12px;">
+      <div class="inline" style="align-items:flex-start">
+        <input id="hp-name-${idx}" class="w200" placeholder="Client name" value="${esc(t.name||"")}">
+        <div class="grow" style="min-width:220px">
+          <input id="hp-avatar-${idx}" type="file" accept="image/*" onchange="uploadHomepageTestimonialAvatar(${idx}, this)">
+          <div class="tiny" style="margin-top:6px">Upload avatar/photo.</div>
+        </div>
+      </div>
+      <div class="inline" style="margin-top:10px;align-items:center">
+        <div id="hp-avatar-preview-${idx}" style="width:54px;height:54px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);display:grid;place-items:center;overflow:hidden;flex:0 0 auto;">
+          ${t.avatar_url ? `<img src="${esc(t.avatar_url)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:18px">${esc((t.name||"U").trim().slice(0,1).toUpperCase())}</span>`}
+        </div>
+        <input id="hp-avatar-url-${idx}" class="grow" placeholder="Avatar URL" value="${esc(t.avatar_url||"")}" readonly>
+        <div class="countPill">★★★★★</div>
+      </div>
+      <div style="height:10px"></div>
+      <textarea id="hp-message-${idx}" placeholder="Client message">${esc(t.message||"")}</textarea>
+      <div class="inline" style="margin-top:10px">
+        <button class="btnErr" onclick="removeHomepageTestimonialRow(${idx})">Remove</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function collectHomepageTestimonialsFromEditor(){
+  const next = [];
+  for(let i=0;i<HOMEPAGE_TESTIMONIAL_DRAFT.length;i++){
+    const nameEl = document.getElementById(`hp-name-${i}`);
+    const messageEl = document.getElementById(`hp-message-${i}`);
+    const avatarUrlEl = document.getElementById(`hp-avatar-url-${i}`);
+    if(!nameEl || !messageEl || !avatarUrlEl) continue;
+    const row = {
+      id: HOMEPAGE_TESTIMONIAL_DRAFT[i]?.id || ("row-" + (i+1)),
+      name: String(nameEl.value||"").trim(),
+      message: String(messageEl.value||"").trim(),
+      avatar_url: String(avatarUrlEl.value||"").trim(),
+      stars: 5
+    };
+    if(row.name || row.message || row.avatar_url) next.push(row);
+  }
+  HOMEPAGE_TESTIMONIAL_DRAFT = next.length ? next : [{ id:"row-1", name:"", message:"", avatar_url:"", stars:5 }];
+}
+
+function addHomepageTestimonialRow(){
+  collectHomepageTestimonialsFromEditor();
+  HOMEPAGE_TESTIMONIAL_DRAFT.push({ id:"row-"+Date.now(), name:"", message:"", avatar_url:"", stars:5 });
+  renderHomepageTestimonialsEditor();
+}
+
+function removeHomepageTestimonialRow(idx){
+  collectHomepageTestimonialsFromEditor();
+  HOMEPAGE_TESTIMONIAL_DRAFT.splice(idx, 1);
+  if(!HOMEPAGE_TESTIMONIAL_DRAFT.length) HOMEPAGE_TESTIMONIAL_DRAFT = [{ id:"row-1", name:"", message:"", avatar_url:"", stars:5 }];
+  renderHomepageTestimonialsEditor();
+}
+
+async function uploadHomepageTestimonialAvatar(idx, input){
+  try{
+    const file = input?.files?.[0];
+    if(!file) return;
+    if(file.size > 5*1024*1024){ modalShow("Image too large","Please upload an image smaller than 5MB."); input.value=""; return; }
+    const base64 = await new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=>{ const r=String(reader.result||""); const c=r.indexOf(","); resolve(c>=0?r.slice(c+1):r); };
+      reader.onerror = ()=>reject(new Error("Unable to read image file."));
+      reader.readAsDataURL(file);
+    });
+    modalShow("Uploading","Uploading testimonial avatar...");
+    const res = await siteContentCall("upload_avatar", { file_name:file.name||("avatar-"+Date.now()+".png"), content_type:file.type||"image/png", data_base64:base64 });
+    const avatarUrl = String(res?.data?.avatar_url||"").trim();
+    if(!avatarUrl) throw new Error("Avatar upload did not return a URL.");
+    const urlEl = document.getElementById(`hp-avatar-url-${idx}`);
+    const previewEl = document.getElementById(`hp-avatar-preview-${idx}`);
+    if(urlEl) urlEl.value = avatarUrl;
+    if(previewEl) previewEl.innerHTML = `<img src="${esc(avatarUrl)}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">`;
+    if(HOMEPAGE_TESTIMONIAL_DRAFT[idx]) HOMEPAGE_TESTIMONIAL_DRAFT[idx].avatar_url = avatarUrl;
+    modalShow("Uploaded","Testimonial avatar uploaded successfully.");
+  }catch(e){
+    modalShow("Upload failed", String(e?.message||e||"Unable to upload avatar."));
+  }finally{
+    if(input) input.value = "";
+  }
+}
+
+async function loadHomepageContent(){
+  const statusEl = document.getElementById("homepageContentStatus");
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Loading…`;
+  try{
+    const res = await siteContentCall("get_content", {});
+    const content = res.data || {};
+    CACHE.homepage_content = content;
+    const emailEl = document.getElementById("homepageSupportEmail");
+    if(emailEl) emailEl.value = String(content.support_email||"");
+    HOMEPAGE_TESTIMONIAL_DRAFT = normalizeHomepageTestimonials(content.testimonials||[]);
+    renderHomepageTestimonialsEditor();
+    if(statusEl) statusEl.textContent = "Homepage content loaded ✅";
+  }catch(e){
+    renderHomepageTestimonialsEditor();
+    if(statusEl) statusEl.textContent = "Homepage content failed to load.";
+    throw e;
+  }
+}
+
+async function saveHomepageContent(){
+  const statusEl = document.getElementById("homepageContentStatus");
+  const emailEl = document.getElementById("homepageSupportEmail");
+  if(!emailEl){ throw new Error("Homepage support email field is missing."); }
+  collectHomepageTestimonialsFromEditor();
+  const support_email = String(emailEl.value||"").trim();
+  if(!support_email){ modalShow("Missing email","Enter the homepage support email first."); return; }
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Saving…`;
+  const payload = {
+    support_email,
+    testimonials: HOMEPAGE_TESTIMONIAL_DRAFT.map((t,idx)=>({
+      id: t.id||("row-"+(idx+1)),
+      name: t.name||"",
+      message: t.message||"",
+      avatar_url: t.avatar_url||"",
+      stars: 5
+    }))
+  };
+  await siteContentCall("save_content", payload);
+  if(statusEl) statusEl.textContent = "Homepage content saved ✅";
+  modalShow("Saved","Homepage support email and testimonials updated.");
+  feed("homepage_content saved");
+  await loadHomepageContent();
+}
+
+async function sendManualBrandedEmail(){
+  const statusEl = document.getElementById("manualEmailStatus");
+  const to = String(document.getElementById("manualEmailTo")?.value||"").trim();
+  const user_name = String(document.getElementById("manualEmailUserName")?.value||"").trim();
+  const subject = String(document.getElementById("manualEmailSubject")?.value||"").trim();
+  const title = String(document.getElementById("manualEmailTitle")?.value||"").trim();
+  const message = String(document.getElementById("manualEmailMessage")?.value||"").trim();
+  const button_text = String(document.getElementById("manualEmailButtonText")?.value||"").trim();
+  const button_url = String(document.getElementById("manualEmailButtonUrl")?.value||"").trim();
+  if(!to){ modalShow("Missing recipient","Enter the recipient email first."); return; }
+  if(!subject){ modalShow("Missing subject","Enter the email subject first."); return; }
+  if(!message){ modalShow("Missing message","Write the email message first."); return; }
+  if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Sending…`;
+  await apiCall("manual_email_send", { to, user_name, subject, title, message, button_text, button_url });
+  if(statusEl) statusEl.textContent = "Email sent ✅";
+  modalShow("Email Sent","The branded email was sent successfully.");
+  ["manualEmailTo","manualEmailUserName","manualEmailSubject","manualEmailTitle","manualEmailMessage","manualEmailButtonText","manualEmailButtonUrl"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  feed("manual_email_send -> " + to);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadHomepageContent);
+});
+</script>
+</body>
+</html>

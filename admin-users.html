@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Users</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead">
+      <div class="modalTitle" id="modalTitle">Notice</div>
+      <button class="btnGhost" onclick="modalClose()">Close</button>
+    </div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brandDot"></div>
+        <div class="brandName">
+          <strong>Veloci Admin</strong>
+          <span id="subAdmin">Operator • —</span>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'">
+          <div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div>
+          <div class="countPill" id="cnt-overview">✓</div>
+        </div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'">
+          <div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div>
+          <div class="countPill" id="cnt-settings">•</div>
+        </div>
+        <div class="navBtn active" id="nav-users" onclick="location.href='admin-users.html'">
+          <div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div>
+          <div class="countPill" id="cnt-users">0</div>
+        </div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'">
+          <div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div>
+          <div class="countPill" id="cnt-cryptoops">0</div>
+        </div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'">
+          <div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div>
+          <div class="countPill" id="cnt-plans">0</div>
+        </div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'">
+          <div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div>
+          <div class="countPill" id="cnt-wallets">0</div>
+        </div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'">
+          <div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div>
+          <div class="countPill" id="cnt-walletlinks">0</div>
+        </div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'">
+          <div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div>
+          <div class="countPill" id="cnt-pamms">0</div>
+        </div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'">
+          <div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div>
+          <div class="countPill" id="cnt-trades">0</div>
+        </div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'">
+          <div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div>
+          <div class="countPill" id="cnt-emailhistory">0</div>
+        </div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'">
+          <div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div>
+          <div class="countPill" id="cnt-notification">0</div>
+        </div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'">
+          <div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div>
+          <div class="countPill" id="cnt-support">0</div>
+        </div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'">
+          <div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div>
+          <div class="countPill" id="cnt-deposits">0</div>
+        </div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'">
+          <div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div>
+          <div class="countPill" id="cnt-withdrawals">0</div>
+        </div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'">
+          <div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div>
+          <div class="countPill" id="cnt-kyc">0</div>
+        </div>
+      </div>
+      <div class="sideCard">
+        <strong>Live Feed</strong>
+        <div class="small">Actions + errors.</div>
+        <div class="debug" id="feedBox">No activity yet.</div>
+      </div>
+      <div class="sideCard">
+        <strong>Session</strong>
+        <div class="small">Lock returns to login.</div>
+        <div class="inline" style="margin-top:10px;">
+          <button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop">
+        <button class="burger" onclick="openSidebar()">☰</button>
+        <div class="chip ok">CONNECTED</div>
+      </div>
+
+      <div class="topbar" id="topbar">
+        <div class="chips">
+          <span class="chip ok" id="connChip">CONNECTED</span>
+          <span class="chip" id="autoChip">AUTO: OFF</span>
+          <span class="chip" id="lastChip">LAST: —</span>
+          <span class="chip" id="adminChip">ADMIN: —</span>
+        </div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg">
+              <div class="suggHead">
+                <div class="suggTitle" id="suggTitle">Matches</div>
+                <button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button>
+              </div>
+              <div class="suggList" id="suggList"></div>
+            </div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps">
+          <div class="card" id="opsCard">
+            <div class="cardHead">
+              <div>
+                <div class="cardTitle">🧠 Ops Intelligence</div>
+                <div class="small">System + last error/response.</div>
+              </div>
+              <div class="rowTools">
+                <button class="btnGhost" onclick="clearDebug()">Clear</button>
+              </div>
+            </div>
+            <div class="small"><strong>System Status</strong></div>
+            <div class="debug" id="sysBox">Not connected.</div>
+            <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div>
+            <div class="debug" id="debugBox">No errors yet.</div>
+          </div>
+        </div>
+
+        <div class="gridMain">
+          <div class="card">
+            <div class="cardHead">
+              <div>
+                <div class="cardTitle">👤 Users</div>
+                <div class="small" id="usersStatus">Not loaded.</div>
+              </div>
+              <div class="rowTools">
+                <button class="btnGhost" onclick="safeLoad(loadUsers)">Refresh</button>
+              </div>
+            </div>
+            <div class="tableWrap">
+              <div class="tableScroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:320px">User</th>
+                      <th style="width:120px">Balance</th>
+                      <th style="width:160px">Set Balance</th>
+                      <th style="width:140px">Amount</th>
+                      <th style="width:260px">Plan Upgrade</th>
+                      <th style="width:430px">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userRows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'users';
+
+window.loadCurrentPage = function(){ renderUsers(CACHE.users); };
+
+function planOptionsHtml(){
+  return PLAN_TEMPLATES.map(p=>`<option value="${esc(p.key)}">${esc(p.label)}</option>`).join("");
+}
+
+async function loadUsers(){
+  document.getElementById("usersStatus").innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("users_list");
+  CACHE.users = res.data || [];
+  CACHE.users.forEach(u=>{
+    const email = String(u.email||"").trim().toLowerCase();
+    const name = String(u.username||u.full_name||u.name||u.display_name||"").trim() || inferUsernameFromEmail(email);
+    if(email) USERNAME_MAP[email] = name || inferUsernameFromEmail(email) || "User";
+  });
+  renderUsers(CACHE.users);
+  feed("users_list loaded (" + CACHE.users.length + ")");
+  onSearchInput();
+  const el = document.getElementById("cnt-users");
+  if(el) el.textContent = CACHE.users.length;
+}
+
+function renderUsers(data){
+  const status = document.getElementById("usersStatus");
+  const tbody = document.getElementById("userRows");
+  const filtered = (data||[]).filter(r => !String(r.label||"").toLowerCase().includes("pamm")).filter(matchSearch);
+
+  if(filtered.length === 0){
+    status.textContent = "No users found.";
+    tbody.innerHTML = "";
+    return;
+  }
+
+  status.textContent = `Loaded ${filtered.length} user(s) ✅`;
+  tbody.innerHTML = "";
+  filtered.forEach(u=>{
+    const uid = esc(u.id||"");
+    const email = String(u.email||"").trim().toLowerCase();
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><strong>$${Number(u.balance||0).toFixed(2)}</strong></td>
+        <td><input type="number" step="0.01" id="setbal-${uid}" placeholder="9000.00"></td>
+        <td><input type="number" step="0.01" id="amt-${uid}" placeholder="50.00"></td>
+        <td>
+          <select id="plan-${uid}">
+            ${planOptionsHtml()}
+          </select>
+        </td>
+        <td>
+          <div class="rowTools">
+            <button class="btnOk" onclick="creditUser('${esc(email)}','${uid}')">Credit</button>
+            <button class="btnErr" onclick="debitUser('${esc(email)}','${uid}')">Debit</button>
+            <button class="btnGhost" onclick="setBalance('${esc(email)}','${uid}')">Set</button>
+            <button class="btnPrimary" onclick="upgradeUser('${esc(email)}','${uid}')">Upgrade</button>
+            <button class="btnPrimary" onclick="location.href='admin-trades.html'">Trades</button>
+            <button class="btnErr" onclick="deleteUser('${esc(email)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function creditUser(email, id){
+  const amt = Number(document.getElementById(`amt-${id}`).value||0);
+  if(amt<=0){ modalShow("Invalid amount","Enter amount > 0"); return; }
+  const res = await apiCall("user_credit", { email, amount: amt });
+  feed("user_credit -> " + email);
+  modalShow("Credited", `User: ${email}\nNew Balance: ${res.data?.new_balance ?? "ok"}\n`);
+  safeLoad(loadUsers);
+}
+
+async function debitUser(email, id){
+  const amt = Number(document.getElementById(`amt-${id}`).value||0);
+  if(amt<=0){ modalShow("Invalid amount","Enter amount > 0"); return; }
+  const res = await apiCall("user_debit", { email, amount: amt });
+  feed("user_debit -> " + email);
+  modalShow("Debited", `User: ${email}\nNew Balance: ${res.data?.new_balance ?? "ok"}\n`);
+  safeLoad(loadUsers);
+}
+
+async function setBalance(email, id){
+  const target = Number(document.getElementById(`setbal-${id}`).value||NaN);
+  if(!Number.isFinite(target)){ modalShow("Invalid target","Enter a target balance number."); return; }
+  if(!confirm(`Set ${email} balance to $${target.toFixed(2)} ?`)) return;
+  const res = await apiCall("user_set_balance", { email, target_balance: target });
+  feed("user_set_balance -> " + email);
+  modalShow("Balance Set", `User: ${email}\nTarget: $${target.toFixed(2)}\nDelta applied: ${res.data?.delta ?? ""}\n`);
+  safeLoad(loadUsers);
+}
+
+async function upgradeUser(email, id){
+  const key = document.getElementById(`plan-${id}`).value;
+  const tpl = PLAN_TEMPLATES.find(p=>p.key === key);
+  if(!tpl){ modalShow("Plan missing","Invalid plan selection."); return; }
+  if(!confirm(`Upgrade ${email} to:\n${tpl.label}\n\nProceed?`)) return;
+  await apiCall("plan_assign", { email, plan_name: tpl.plan_name, amount: tpl.amount, x_times: tpl.x_times, duration_days: tpl.duration_days });
+  feed("plan_assign -> " + email);
+  modalShow("Upgraded", `User: ${email}\nPlan: ${tpl.plan_name}\nAmount: $${tpl.amount}\nReturn: X${tpl.x_times}\nDuration: ${tpl.duration_days} days\n`);
+  safeLoad(loadUsers);
+}
+
+async function deleteUser(email){
+  if(!confirm(`DELETE USER:\n${email}\n\nThis removes auth + profile.\nContinue?`)) return;
+  const res = await apiCall("user_delete", { email });
+  feed("user_delete -> " + email);
+  modalShow("User Deleted", `Deleted: ${email}\nAuth User ID: ${res.data?.auth_user_id ?? ""}\nAuth Deleted: ${res.data?.auth_deleted ?? ""}\n`);
+  safeLoad(loadUsers);
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadUsers);
+});
+</script>
+</body>
+</html>

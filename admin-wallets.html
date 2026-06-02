@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Wallets</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn active" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">🏦 Deposit Wallets (Edit from Admin)</div><div class="small" id="walletsStatus">Not loaded.</div></div>
+            <div class="rowTools">
+              <button class="btnGhost" onclick="safeLoad(loadWallets)">Refresh</button>
+              <button class="btnPrimary" onclick="addPresetWalletRows()">Load Preset Coins</button>
+            </div>
+          </div>
+          <div class="small" style="margin-bottom:10px">
+            Asset keys must be unique (examples: <span class="mono">BTC</span>, <span class="mono">ETH</span>, <span class="mono">USDT_TRC20</span>, <span class="mono">USDT_ERC20</span>). XRP is excluded.
+          </div>
+          <form onsubmit="createWallet(event)">
+            <div class="inline">
+              <input id="newAssetKey" class="w200" placeholder="Asset Key (USDT_TRC20)" required>
+              <input id="newName" class="w200" placeholder="Name (Tether USDT)" required>
+              <input id="newNetwork" class="w200" placeholder="Network (TRC20)" required>
+              <input id="newAddress" class="grow" placeholder="Deposit Address" required>
+              <input id="newMemoLabel" class="w200" placeholder="Memo Label (optional)">
+              <input id="newMemoValue" class="w200" placeholder="Memo Value (optional)">
+              <input id="newNote" class="grow" placeholder="Note (optional)">
+              <button class="btnOk" type="submit">Add</button>
+            </div>
+          </form>
+          <div style="height:12px"></div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:180px">Asset Key</th><th style="width:220px">Name</th><th style="width:150px">Network</th>
+                <th style="width:520px">Address</th><th style="width:160px">Memo Label</th><th style="width:180px">Memo Value</th>
+                <th style="width:300px">Note</th><th style="width:220px">Actions</th>
+              </tr></thead>
+              <tbody id="walletRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'wallets';
+window.loadCurrentPage = function(){ safeLoad(loadWallets); };
+
+function addPresetWalletRows(){
+  const byKey = new Map((CACHE.wallets||[]).map(w=>[String(w.asset_key||"").trim().toUpperCase(), w]));
+  WALLET_PRESETS.forEach(p=>{
+    const k = String(p.asset_key||"").trim().toUpperCase();
+    if(!k) return;
+    if(!byKey.has(k)){
+      byKey.set(k, { asset_key:k, name:p.name, network:p.network, address:"", memo_label:null, memo_value:null, note:"" });
+    }
+  });
+  CACHE.wallets = Array.from(byKey.values()).sort((a,b)=>String(a.asset_key||"").localeCompare(String(b.asset_key||"")));
+  renderWallets(CACHE.wallets);
+  feed("Preset coins loaded into table");
+}
+
+async function loadWallets(){
+  const st = document.getElementById("walletsStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await walletApiCall("wallets_admin_list", {});
+  const list = res.wallets || [];
+  CACHE.wallets = list.map(w=>({
+    asset_key: String(w.asset_key||"").trim().toUpperCase(),
+    name: String(w.name||"").trim(),
+    network: String(w.network||"").trim(),
+    address: String(w.address||"").trim(),
+    memo_label: w.memo_label === undefined ? null : w.memo_label,
+    memo_value: w.memo_value === undefined ? null : w.memo_value,
+    note: w.note === undefined ? null : w.note
+  }));
+  addPresetWalletRows();
+  if(st) st.textContent = `Loaded ${CACHE.wallets.length} wallet row(s) ✅`;
+  feed("wallets_admin_list loaded (" + list.length + " from DB)");
+  const el = document.getElementById("cnt-wallets");
+  if(el) el.textContent = CACHE.wallets.length;
+}
+
+function renderWallets(data){
+  const status = document.getElementById("walletsStatus");
+  const tbody = document.getElementById("walletRows");
+  const filtered = (data||[]).filter(matchSearch);
+  if(filtered.length === 0){ if(status) status.textContent = "No wallet rows."; tbody.innerHTML = ""; return; }
+  if(status) status.textContent = `Loaded ${filtered.length} wallet row(s) ✅`;
+  tbody.innerHTML = "";
+  filtered.forEach(w=>{
+    const key = esc(String(w.asset_key||"").trim().toUpperCase());
+    const rowId = key.replaceAll(/[^A-Z0-9_]/g, "_");
+    tbody.innerHTML += `
+      <tr>
+        <td><input id="wk-key-${rowId}" value="${key}" /></td>
+        <td><input id="wk-name-${rowId}" value="${esc(w.name||"")}" /></td>
+        <td><input id="wk-net-${rowId}" value="${esc(w.network||"")}" /></td>
+        <td><input id="wk-addr-${rowId}" value="${esc(w.address||"")}" placeholder="Paste address here" /></td>
+        <td><input id="wk-ml-${rowId}" value="${esc(w.memo_label||"")}" placeholder="(optional)" /></td>
+        <td><input id="wk-mv-${rowId}" value="${esc(w.memo_value||"")}" placeholder="(optional)" /></td>
+        <td><input id="wk-note-${rowId}" value="${esc(w.note||"")}" placeholder="(optional)" /></td>
+        <td><div class="rowTools">
+          <button class="btnOk" onclick="saveWallet('${rowId}')">Save</button>
+          <button class="btnErr" onclick="deleteWallet('${rowId}')">Delete</button>
+        </div></td>
+      </tr>`;
+  });
+}
+
+async function createWallet(e){
+  e.preventDefault();
+  const asset_key = String(document.getElementById("newAssetKey").value||"").trim().toUpperCase();
+  const name = String(document.getElementById("newName").value||"").trim();
+  const network = String(document.getElementById("newNetwork").value||"").trim();
+  const address = String(document.getElementById("newAddress").value||"").trim();
+  const memo_label = String(document.getElementById("newMemoLabel").value||"").trim() || null;
+  const memo_value = String(document.getElementById("newMemoValue").value||"").trim() || null;
+  const note = String(document.getElementById("newNote").value||"").trim() || null;
+  if(!asset_key || !name || !network || !address){ modalShow("Missing fields","Fill asset_key, name, network, address."); return; }
+  if(asset_key === "XRP"){ modalShow("Not allowed","XRP is removed from your list."); return; }
+  await walletApiCall("wallets_admin_upsert", { wallet:{ asset_key, name, network, address, memo_label, memo_value, note } });
+  feed("wallets_admin_upsert -> " + asset_key);
+  modalShow("Wallet Saved", "Deposit wallet updated.");
+  e.target.reset();
+  safeLoad(loadWallets);
+}
+
+async function saveWallet(rowId){
+  const asset_key = String(document.getElementById(`wk-key-${rowId}`).value||"").trim().toUpperCase();
+  const name = String(document.getElementById(`wk-name-${rowId}`).value||"").trim();
+  const network = String(document.getElementById(`wk-net-${rowId}`).value||"").trim();
+  const address = String(document.getElementById(`wk-addr-${rowId}`).value||"").trim();
+  const memo_label = String(document.getElementById(`wk-ml-${rowId}`).value||"").trim() || null;
+  const memo_value = String(document.getElementById(`wk-mv-${rowId}`).value||"").trim() || null;
+  const note = String(document.getElementById(`wk-note-${rowId}`).value||"").trim() || null;
+  if(!asset_key || !name || !network || !address){ modalShow("Missing fields","Fill asset_key, name, network, address."); return; }
+  if(asset_key === "XRP"){ modalShow("Not allowed","XRP is removed from your list."); return; }
+  await walletApiCall("wallets_admin_upsert", { wallet:{ asset_key, name, network, address, memo_label, memo_value, note } });
+  feed("wallets_admin_upsert -> " + asset_key);
+  modalShow("Saved", "Wallet row updated.");
+  safeLoad(loadWallets);
+}
+
+async function deleteWallet(rowId){
+  const asset_key = String(document.getElementById(`wk-key-${rowId}`).value||"").trim().toUpperCase();
+  if(!asset_key){ modalShow("Missing asset_key","Row has no asset_key."); return; }
+  if(!confirm(`Delete wallet row:\n${asset_key}\n\nContinue?`)) return;
+  await walletApiCall("wallets_admin_delete", { asset_key });
+  feed("wallets_admin_delete -> " + asset_key);
+  modalShow("Deleted", "Wallet row removed.");
+  safeLoad(loadWallets);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadWallets);
+});
+</script>
+</body>
+</html>

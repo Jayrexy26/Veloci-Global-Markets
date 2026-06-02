@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Login</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead">
+      <div class="modalTitle" id="modalTitle">Notice</div>
+      <button class="btnGhost" onclick="modalClose()">Close</button>
+    </div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<section class="loginWrap">
+  <div class="loginCard">
+    <div class="loginLeft">
+      <div class="brandRow">
+        <div class="brandDot"></div>
+        <div>
+          <div class="title" style="text-transform:uppercase;font-size:13px;letter-spacing:.3px">Veloci Admin</div>
+          <div class="tiny">Elite Ops Console • Edge API Controlled</div>
+        </div>
+      </div>
+
+      <div class="title" style="font-size:22px;margin:10px 0 8px;">Operator Access</div>
+      <div class="small">Login first. Console unlocks full screen after authentication.</div>
+    </div>
+
+    <div class="loginRight">
+      <div class="title" style="margin:0 0 10px;">Admin Login</div>
+      <div class="small">Enter operator identity + admin secret.</div>
+
+      <div style="height:10px;"></div>
+
+      <label class="tiny">Admin ID</label>
+      <input id="adminIdLogin" placeholder="Carl-Admin" autocomplete="username">
+
+      <div style="height:10px;"></div>
+
+      <label class="tiny">Admin Secret (x-admin-secret)</label>
+      <input id="adminSecretLogin" placeholder="••••••••••••••••" type="password" autocomplete="current-password">
+
+      <div style="height:12px;"></div>
+
+      <div class="inline">
+        <button class="btnPrimary grow" onclick="connectFromLogin()">Enter Console</button>
+        <button class="btnGhost" onclick="clearLogin()">Clear</button>
+      </div>
+
+      <div style="height:12px;"></div>
+      <div class="chip" id="loginHint" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.1)">Login failed</div>
+    </div>
+  </div>
+</section>
+
+<script src="admin-shared.js"></script>
+<script>
+function clearLogin(){
+  document.getElementById("adminIdLogin").value = "";
+  document.getElementById("adminSecretLogin").value = "";
+  document.getElementById("loginHint").style.display = "none";
+}
+
+async function connectFromLogin(){
+  const sid = (document.getElementById("adminIdLogin").value || "").trim();
+  const ssec = (document.getElementById("adminSecretLogin").value || "").trim();
+  if(!ssec){
+    document.getElementById("loginHint").style.display = "inline-flex";
+    document.getElementById("loginHint").textContent = "Enter Admin Secret";
+    return;
+  }
+
+  ADMIN_ID = sid || "admin";
+  ADMIN_SECRET = ssec;
+
+  try{ await apiCall("ping", {}); }
+  catch(e){
+    ADMIN_SECRET="";
+    document.getElementById("loginHint").style.display = "inline-flex";
+    document.getElementById("loginHint").textContent = "Login failed: " + e.message;
+    return;
+  }
+
+  sessionStorage.setItem("sv_admin_secret", ADMIN_SECRET);
+  sessionStorage.setItem("sv_admin_id", ADMIN_ID);
+  window.location.href = "admin-overview.html";
+}
+
+// If already logged in, redirect straight to overview
+document.addEventListener("DOMContentLoaded", function(){
+  if(sessionStorage.getItem("sv_admin_secret")){
+    window.location.href = "admin-overview.html";
+  }
+});
+</script>
+</body>
+</html>

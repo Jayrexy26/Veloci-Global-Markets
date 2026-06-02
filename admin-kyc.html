@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • KYC</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn active" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">🛡️ KYC Requests</div><div class="small" id="kycStatus">Not loaded.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadKyc)">Refresh</button></div>
+          </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:320px">User</th><th style="width:180px">Doc Type</th><th style="width:200px">Country</th>
+                <th style="width:110px">Front</th><th style="width:110px">Back</th><th style="width:120px">Status</th>
+                <th style="width:220px">Submitted</th><th style="width:280px">Actions</th>
+              </tr></thead>
+              <tbody id="kycRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'kyc';
+window.loadCurrentPage = function(){ safeLoad(loadKyc); };
+
+async function loadKyc(){
+  const st = document.getElementById("kycStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  const res = await apiCall("kyc_list",{});
+  CACHE.kyc = res.data || [];
+  renderKyc(CACHE.kyc);
+  feed("kyc_list loaded ("+CACHE.kyc.length+")");
+  const el = document.getElementById("cnt-kyc");
+  if(el) el.textContent = CACHE.kyc.length;
+}
+
+function renderKyc(data){
+  const status = document.getElementById("kycStatus");
+  const tbody = document.getElementById("kycRows");
+  const filtered = (data||[]).filter(matchSearch);
+  if(filtered.length===0){ if(status) status.textContent="No KYC requests found."; tbody.innerHTML=""; return; }
+  if(status) status.textContent=`Loaded ${filtered.length} request(s) ✅`;
+  tbody.innerHTML="";
+  filtered.forEach(r=>{
+    const id=esc(r.id||"");
+    const email=String(r.user_email||"").trim().toLowerCase();
+    const st=String(r.status||"pending").toLowerCase();
+    const isDone=(st==="approved"||st==="rejected");
+    const front=r.front_url?`<a href="javascript:void(0)" onclick="openProof('${esc(r.front_url)}')">View</a>`:(r.front_path?`<span class="tiny mono ellipsis">${esc(r.front_path)}</span>`:"-");
+    const back=r.back_url?`<a href="javascript:void(0)" onclick="openProof('${esc(r.back_url)}')">View</a>`:(r.back_path?`<span class="tiny mono ellipsis">${esc(r.back_path)}</span>`:"-");
+    tbody.innerHTML+=`
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><strong>${esc(r.doc_type||"-")}</strong></td>
+        <td>${esc(r.issuing_country||"-")}</td>
+        <td>${front}</td><td>${back}</td><td>${esc(st)}</td>
+        <td>${esc(r.created_at?new Date(r.created_at).toLocaleString():"-")}</td>
+        <td><div class="rowTools">
+          <button class="btnOk" onclick="approveKyc('${id}')" ${isDone?"disabled":""}>Approve</button>
+          <button class="btnErr" onclick="rejectKyc('${id}')" ${isDone?"disabled":""}>Reject</button>
+        </div></td>
+      </tr>`;
+  });
+}
+
+async function approveKyc(id){
+  const row=(CACHE.kyc||[]).find(x=>String(x.id||"")===String(id));
+  const st=String(row?.status||"pending").toLowerCase();
+  if(st==="approved"||st==="rejected"){ modalShow("Already processed","This KYC is already "+st+"."); return; }
+  if(!confirm("Approve this KYC request?")) return;
+  await apiCall("kyc_approve",{kyc_id:id});
+  feed("kyc_approve -> "+id);
+  modalShow("KYC Approved","KYC marked approved.");
+  safeLoad(loadKyc);
+}
+
+async function rejectKyc(id){
+  const row=(CACHE.kyc||[]).find(x=>String(x.id||"")===String(id));
+  const st=String(row?.status||"pending").toLowerCase();
+  if(st==="approved"||st==="rejected"){ modalShow("Already processed","This KYC is already "+st+"."); return; }
+  const note=prompt("Reject reason (optional):","") || "";
+  if(!confirm("Reject this KYC request?")) return;
+  await apiCall("kyc_reject",{kyc_id:id,note});
+  feed("kyc_reject -> "+id);
+  modalShow("KYC Rejected","KYC marked rejected.");
+  safeLoad(loadKyc);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  safeLoad(loadKyc);
+});
+</script>
+</body>
+</html>
