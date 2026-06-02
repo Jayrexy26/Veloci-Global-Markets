@@ -118,6 +118,40 @@ serve(async (req) => {
       return ok({ sent: true });
     }
 
+    if (action === "notify_deposit_approved") {
+      const { user_id, amount, coin, network, new_balance } = body;
+      if (!user_id || !amount) return err("Missing user_id or amount");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Your Deposit Has Been Approved";
+      const html = buildPlanEmailHtml(subject, name, "deposit_approved", { amount, coin, network, new_balance });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_withdrawal_approved") {
+      const { user_id, amount, method } = body;
+      if (!user_id || !amount) return err("Missing user_id or amount");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Your Withdrawal Has Been Approved";
+      const html = buildPlanEmailHtml(subject, name, "withdrawal_approved", { amount, method });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
     return err("Unknown action: " + action);
 
   } catch (e: any) {
@@ -170,7 +204,32 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
 
   let badge = "", content = "";
 
-  if (tmpl === "kyc_approved") {
+  if (tmpl === "deposit_approved") {
+    const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtBal = data.new_balance != null ? Number(data.new_balance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null;
+    const method = [data.coin, data.network].filter(Boolean).join(" / ") || "Crypto";
+    badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">DEPOSIT APPROVED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your deposit has been confirmed and credited to your trading account. Your funds are now available for trading.</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Deposit Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(method)}</td></tr>
+        ${fmtBal ? `<tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Updated Balance</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#0d1117;border:1px solid #e5e7eb;">$${s(fmtBal)}</td></tr>` : ""}
+      </table>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a> to start trading.</p>`;
+
+  } else if (tmpl === "withdrawal_approved") {
+    const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    badge = `<div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#991b1b;">WITHDRAWAL APPROVED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your withdrawal request has been approved and is being processed. Please allow 1–5 business days for the funds to arrive.</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Withdrawal Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#991b1b;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
+        ${data.method ? `<tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(data.method)}</td></tr>` : ""}
+      </table>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Questions? Contact us at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:${accent};">help.velociglobalmarkets@gmail.com</a>.</p>`;
+
+  } else if (tmpl === "kyc_approved") {
     badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">IDENTITY VERIFIED</span></div>`;
     content = `
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Congratulations! Your identity has been successfully verified. You now have full access to all Veloci Global Markets features and services.</p>

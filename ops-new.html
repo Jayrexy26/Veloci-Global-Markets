@@ -2922,6 +2922,16 @@ async function approveDeposit(id) {
   }
 
   logAudit('approve_deposit', id, `$${amount} for ${req.user_email}`);
+  if (req.user_id) {
+    window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
+      if (!s?.access_token) return;
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+        body: JSON.stringify({ action: 'notify_deposit_approved', user_id: req.user_id, amount, coin: req.coin || null, network: req.network || null, new_balance: newBalance }),
+      }).catch(() => {});
+    }).catch(() => {});
+  }
   showToast('Deposit approved — balance credited');
   renderDepositsLive(); loadDashStats();
 }
@@ -3056,7 +3066,7 @@ window.renderWithdrawalsLive = async function() {
 };
 async function approveWithdrawal(id) {
   const db = window.SV_DB; if (!db) return;
-  const { data: req } = await db.from('withdrawal_requests').select('user_id,amount').eq('id', id).maybeSingle();
+  const { data: req } = await db.from('withdrawal_requests').select('user_id,amount,destination_type,coin').eq('id', id).maybeSingle();
   await db.from('withdrawal_requests').update({ status:'approved' }).eq('id', id);
   if (req?.user_id && req?.amount) {
     await db.from('notifications').insert({
@@ -3065,6 +3075,14 @@ async function approveWithdrawal(id) {
       message: `Your withdrawal of $${parseFloat(req.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} has been approved and is being processed.`,
       type:    'success',
     }).then(null,()=>{});
+    window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
+      if (!s?.access_token) return;
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+        body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, method: req.destination_type || req.coin || null }),
+      }).catch(() => {});
+    }).catch(() => {});
   }
   showToast('Withdrawal approved');
   logAudit('approve_withdrawal', id, '');
