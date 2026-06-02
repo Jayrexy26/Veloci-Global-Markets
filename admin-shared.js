@@ -509,11 +509,18 @@ function handleScroll(currentTop){
 
 function attachScrollHandler(){
   const main = document.getElementById("mainScroll");
-  if(main){
+  const isMobile = window.matchMedia("(max-width:1100px)").matches;
+  if(!isMobile && main){
     main.addEventListener("scroll", ()=>handleScroll(main.scrollTop), { passive:true });
   }
-  window.addEventListener("scroll", ()=>handleScroll(window.scrollY || 0), { passive:true });
+  if(isMobile){
+    window.addEventListener("scroll", ()=>handleScroll(window.scrollY || 0), { passive:true });
+  }
 }
+
+window.addEventListener('pageshow', function(e){
+  if(e.persisted) closeSidebar();
+});
 
 /* ── Topbar init ── */
 function initTopbar(){
