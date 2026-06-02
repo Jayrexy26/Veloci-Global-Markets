@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Veloci Admin • Plans</title>
+  <title>Veloci Admin • Audit Log</title>
   <link rel="stylesheet" href="admin-styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -28,7 +28,7 @@
         <div class="navBtn" id="nav-settings" onclick="location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
         <div class="navBtn" id="nav-users" onclick="location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
         <div class="navBtn" id="nav-cryptoops" onclick="location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
-        <div class="navBtn active" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
         <div class="navBtn" id="nav-wallets" onclick="location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
         <div class="navBtn" id="nav-walletlinks" onclick="location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
         <div class="navBtn" id="nav-pamms" onclick="location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
@@ -40,7 +40,7 @@
         <div class="navBtn" id="nav-withdrawals" onclick="location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
         <div class="navBtn" id="nav-kyc" onclick="location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
         <div class="navBtn" id="nav-activity" onclick="location.href='admin-activity.html'"><div class="navLeft"><div class="navIcon">📡</div><div class="navText">Live Activity</div></div><div class="countPill" id="cnt-activity">•</div></div>
-        <div class="navBtn" id="nav-audit" onclick="location.href='admin-audit.html'"><div class="navLeft"><div class="navIcon">📋</div><div class="navText">Audit Log</div></div><div class="countPill" id="cnt-audit">•</div></div>
+        <div class="navBtn active" id="nav-audit" onclick="location.href='admin-audit.html'"><div class="navLeft"><div class="navIcon">📋</div><div class="navText">Audit Log</div></div><div class="countPill" id="cnt-audit">•</div></div>
       </div>
       <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
       <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
@@ -70,17 +70,25 @@
         </div></div>
         <div class="gridMain"><div class="card">
           <div class="cardHead">
-            <div><div class="cardTitle">📈 Plans</div><div class="small" id="plansStatus">Not loaded.</div></div>
-            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadPlans)">Refresh</button></div>
+            <div><div class="cardTitle">📋 Audit Log</div><div class="small" id="auditStatus">Not loaded.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadAudit)">Refresh</button></div>
+          </div>
+          <div class="small" style="margin-bottom:10px">
+            Full record of admin actions: credits, debits, approvals, rejections, and all key operations. Last 50 entries.
           </div>
           <div class="tableWrap"><div class="tableScroll">
             <table>
               <thead><tr>
-                <th style="width:320px">User</th><th style="width:160px">Plan</th><th style="width:120px">Amount</th>
-                <th style="width:120px">Return</th><th style="width:110px">Duration</th><th style="width:120px">Status</th>
-                <th style="width:240px">Actions</th>
+                <th style="width:200px">Time</th>
+                <th style="width:180px">Admin</th>
+                <th style="width:220px">Action</th>
+                <th style="width:220px">Target</th>
+                <th style="width:320px">Details</th>
+                <th style="width:140px">IP</th>
               </tr></thead>
-              <tbody id="planRows"></tbody>
+              <tbody id="audit-tbody">
+                <tr><td colspan="6" style="text-align:center;color:rgba(234,240,255,.60);padding:24px;">Loading…</td></tr>
+              </tbody>
             </table>
           </div></div>
         </div></div>
@@ -91,73 +99,25 @@
 
 <script src="admin-shared.js"></script>
 <script>
-ACTIVE_VIEW = 'plans';
-window.loadCurrentPage = function(){ safeLoad(loadPlans); };
+ACTIVE_VIEW = 'audit';
+window.loadCurrentPage = function(){ safeLoad(loadAudit); };
 
-async function loadPlans(){
-  document.getElementById("plansStatus").innerHTML = `<span class="spin"></span>Loading…`;
-  const res = await apiCall("plans_list");
-  CACHE.plans = res.data || [];
-  renderPlans(CACHE.plans);
-  feed("plans_list loaded (" + CACHE.plans.length + ")");
-  const el = document.getElementById("cnt-plans");
-  if(el) el.textContent = CACHE.plans.length;
-}
-
-function renderPlans(data){
-  const status = document.getElementById("plansStatus");
-  const tbody = document.getElementById("planRows");
-  const filtered = (data||[]).filter(matchSearch);
-  if(filtered.length === 0){ status.textContent = "No plans found."; tbody.innerHTML = ""; return; }
-  status.textContent = `Loaded ${filtered.length} plan(s) ✅`;
-  tbody.innerHTML = "";
-  filtered.forEach(p=>{
-    const pid = esc(p.id||"");
-    const x = Number(p.roi_percent||0);
-    const email = String(p.user_email||"").trim().toLowerCase();
-    tbody.innerHTML += `
-      <tr>
-        <td>${userPillHtml(email)}</td>
-        <td><strong>${esc(p.plan_name||"")}</strong></td>
-        <td>$${Number(p.amount||0).toFixed(2)}</td>
-        <td><strong>X${Number.isFinite(x) ? x : 0}</strong></td>
-        <td>${Number(p.duration_days||0)}d</td>
-        <td>${esc(p.status||"")}</td>
-        <td><div class="rowTools">
-          <button class="btnOk" onclick="approvePlan('${pid}')">Approve</button>
-          <button class="btnPrimary" onclick="completePlan('${pid}')">Complete</button>
-          <button class="btnErr" onclick="rejectPlan('${pid}')">Reject</button>
-        </div></td>
-      </tr>`;
-  });
-}
-
-async function approvePlan(id){
-  await apiCall("plan_approve", { plan_id: id });
-  feed("plan_approve -> " + id);
-  modalShow("Plan Approved", "Plan has been approved.");
-  safeLoad(loadPlans);
-}
-
-async function rejectPlan(id){
-  await apiCall("plan_reject", { plan_id: id });
-  feed("plan_reject -> " + id);
-  modalShow("Plan Rejected", "Plan has been rejected.");
-  safeLoad(loadPlans);
-}
-
-async function completePlan(id){
-  if(!confirm("Complete plan now?")) return;
-  const res = await apiCall("plan_complete", { plan_id: id });
-  feed("plan_complete -> " + id);
-  modalShow("Plan Completed", `Completed.\nReturn: X${res.data?.x_times ?? ""}\nProfit credited: ${res.data?.profit ?? ""}`);
-  safeLoad(loadPlans);
+async function loadAudit(){
+  const st = document.getElementById("auditStatus");
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+  if(!window.VELOCI_DB){
+    if(st) st.textContent = "Supabase client not initialized. Ensure CDN script loaded.";
+    return;
+  }
+  await renderAuditLive();
+  if(st) st.textContent = "Audit Log loaded ✅";
+  feed("audit log loaded");
 }
 
 document.addEventListener('DOMContentLoaded', function(){
   requireAuth();
   initTopbar();
-  safeLoad(loadPlans);
+  safeLoad(loadAudit);
 });
 </script>
 </body>

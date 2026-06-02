@@ -4,6 +4,16 @@ const API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-api
 const WALLET_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/wallet-api";
 const SITE_CONTENT_API_URL = "https://xdcscknfomlzwysczegc.supabase.co/functions/v1/site-content-api";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4";
+const SUPABASE_URL = "https://xdcscknfomlzwysczegc.supabase.co";
+
+// Direct Supabase client for audit log (CDN loaded per-page in <head>)
+(function(){
+  try{
+    if(window.supabase && window.supabase.createClient){
+      window.VELOCI_DB = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
+    }
+  }catch(_){}
+})();
 
 let ADMIN_SECRET = "";
 let ADMIN_ID = "admin";
@@ -66,6 +76,7 @@ function esc(s){
     .replaceAll("'","&#39;");
 }
 function nowStamp(){ return new Date().toLocaleString(); }
+function fmtDate(ts){ if(!ts) return "—"; return new Date(ts).toLocaleString(); }
 
 function inferUsernameFromEmail(email){
   const e = String(email||"").trim().toLowerCase();
@@ -323,6 +334,30 @@ document.addEventListener("click", (ev)=>{
   if(!wrap.contains(ev.target)) hideSuggestions();
 });
 
+/* ── Audit Log ── */
+async function logAudit(action, target, details){
+  const db = window.VELOCI_DB;
+  if(!db) return;
+  await db.from('audit_log').insert({
+    admin_id: ADMIN_ID,
+    admin_email: ADMIN_ID,
+    action,
+    target: String(target||'').slice(0,100),
+    details: String(details||'').slice(0,255)
+  });
+}
+
+const _LOGGABLE_ACTIONS = new Set([
+  'user_credit','user_debit','user_set_balance','plan_assign','user_delete',
+  'plan_approve','plan_reject','plan_complete','deposit_approve','deposit_reject',
+  'withdrawal_approve','withdrawal_reject','kyc_approve','kyc_reject',
+  'ticket_reply','ticket_close','manual_email_send','notification_save','notification_clear',
+  'user_trade_settings_update','trades_admin_create','trades_admin_delete',
+  'user_crypto_credit','user_crypto_debit','user_crypto_set'
+]);
+
+const _WALLET_LOGGABLE = new Set(['wallet_link_admin_update_status']);
+
 /* ── API ── */
 async function apiCall(action, payload={}){
   if(!ADMIN_SECRET) throw new Error("Admin not connected.");
@@ -344,6 +379,11 @@ async function apiCall(action, payload={}){
     setDebugBox(`HTTP ${res.status}\nAction: ${action}\nPayload: ${JSON.stringify(payload)}\nResponse: ${raw}`);
     feed("ERROR " + action + " -> HTTP " + res.status);
     throw new Error(data.error || ("HTTP " + res.status));
+  }
+  if(_LOGGABLE_ACTIONS.has(action)){
+    const target = payload.email||payload.user_email||payload.deposit_id||payload.withdrawal_id||payload.kyc_id||payload.plan_id||payload.ticket_id||payload.id||'';
+    const details = payload.amount != null ? `Amount: ${payload.amount}` : (payload.note||payload.reply||payload.message||'');
+    logAudit(action.toUpperCase(), String(target), String(details)).catch(()=>{});
   }
   return data;
 }
@@ -368,6 +408,11 @@ async function walletApiCall(action, bodyPayload={}){
     setDebugBox(`HTTP ${res.status}\nAction: ${action}\nPayload: ${JSON.stringify(bodyPayload)}\nResponse: ${raw}`);
     feed("ERROR wallet-api " + action + " -> HTTP " + res.status);
     throw new Error(data.error || ("HTTP " + res.status));
+  }
+  if(_WALLET_LOGGABLE.has(action)){
+    const target = bodyPayload.id||bodyPayload.user_email||'';
+    const details = bodyPayload.status ? `Status: ${bodyPayload.status}` : (bodyPayload.admin_note||'');
+    logAudit(action.toUpperCase(), String(target), String(details)).catch(()=>{});
   }
   return data;
 }
@@ -475,4 +520,47 @@ function initTopbar(){
   attachScrollHandler();
   const connChip = document.getElementById("connChip");
   if(connChip) connChip.textContent = "CONNECTED";
+}
+
+/* ── Live Activity + Audit Log renders ── */
+async function renderActivityLive(){
+  const db = window.VELOCI_DB;
+  if(!db) return;
+  const el = document.getElementById('activity-feed');
+  if(!el) return;
+  const { data } = await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(20);
+  const empty = '<div style="text-align:center;color:rgba(234,240,255,.60);padding:24px;">No recent activity</div>';
+  if(!data?.length){ el.innerHTML = empty; return; }
+  el.innerHTML = data.map(a=>`
+    <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07);">
+      <div style="width:32px;height:32px;border-radius:50%;background:#f05a1a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">
+        ${(a.admin_email||'A')[0].toUpperCase()}
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;">${esc(a.action)}</div>
+        <div style="font-size:12px;color:rgba(234,240,255,.60);">${esc(a.details||a.target||'—')}</div>
+        <div style="font-size:11px;color:rgba(234,240,255,.60);">${fmtDate(a.created_at)} · ${esc(a.admin_email||'Admin')}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function renderAuditLive(){
+  const db = window.VELOCI_DB;
+  if(!db) return;
+  const tbody = document.getElementById('audit-tbody');
+  if(!tbody) return;
+  const { data } = await db.from('audit_log').select('*').order('created_at',{ascending:false}).limit(50);
+  if(!data?.length){
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:rgba(234,240,255,.60);padding:24px;">No audit entries yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(a=>`
+    <tr>
+      <td style="font-size:12px;">${fmtDate(a.created_at)}</td>
+      <td><strong>${esc(a.admin_email||'Admin')}</strong></td>
+      <td style="font-weight:600;">${esc(a.action)}</td>
+      <td style="font-size:12px;">${esc(a.target||'—')}</td>
+      <td style="font-size:12px;color:rgba(234,240,255,.60);">${esc(a.details||'—')}</td>
+      <td style="font-size:11px;color:rgba(234,240,255,.60);">${esc(a.ip_address||'—')}</td>
+    </tr>`).join('');
 }
