@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { email, event, login_time, user_agent, device_language, timezone, platform } = body;
+    const { email, event, login_time, user_agent, device_language, timezone, platform, ip_address, location: userLocation } = body;
 
     if (!email) {
       return new Response(JSON.stringify({ error: "Missing email" }), {
@@ -41,25 +41,9 @@ serve(async (req) => {
       : /Linux/.test(ua) ? "Linux"
       : "Unknown";
 
-    /* ── IP / geo lookup ── */
-    let ipAddress = "Unknown";
-    let location  = "Unknown";
-    const geoApis = [
-      { url: "https://ip-api.com/json?fields=status,city,country,query", parse: (d: any) => ({ ip: d.query, loc: d.status === "success" ? [d.city, d.country].filter(Boolean).join(", ") : "" }) },
-      { url: "https://ipinfo.io/json",         parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country].filter(Boolean).join(", ") }) },
-      { url: "https://ipwho.is/",              parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country].filter(Boolean).join(", ") }) },
-      { url: "https://ipapi.co/json/",         parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country_name].filter(Boolean).join(", ") }) },
-    ];
-    for (const api of geoApis) {
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 4000);
-        const d = await fetch(api.url, { signal: ctrl.signal }).then(r => r.json());
-        clearTimeout(t);
-        const parsed = api.parse(d);
-        if (parsed.ip) { ipAddress = parsed.ip; location = parsed.loc || "Unknown"; break; }
-      } catch (_) {}
-    }
+    /* Use client-supplied IP/location (already resolved by the browser) */
+    const ipAddress = ip_address || "Unknown";
+    const location  = userLocation || "Unknown";
 
     const loginTime = login_time
       ? new Date(login_time).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: timezone || "UTC" })
