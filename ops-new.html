@@ -2931,17 +2931,22 @@ async function approveDeposit(id) {
   }
 
   logAudit('approve_deposit', id, `$${amount} for ${req.user_email}`);
-  if (req.user_id) {
-    window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s?.access_token) return;
-      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
-        body: JSON.stringify({ action: 'notify_deposit_approved', user_id: req.user_id, amount, coin: req.coin || null, network: req.network || null, new_balance: newBalance }),
-      }).catch(() => {});
-    }).catch(() => {});
-  }
   showToast('Deposit approved — balance credited');
+  if (req.user_id) {
+    try {
+      const { data: { session: s } } = await window.SV_DB.auth.getSession();
+      if (s?.access_token) {
+        const r = await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+          body: JSON.stringify({ action: 'notify_deposit_approved', user_id: req.user_id, amount, coin: req.coin || null, network: req.network || null, new_balance: newBalance }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) console.error('[deposit-email] HTTP', r.status, j);
+        else console.log('[deposit-email] sent ok', j);
+      } else { console.warn('[deposit-email] no session token'); }
+    } catch(e) { console.error('[deposit-email] error', e); }
+  }
   renderDepositsLive(); loadDashStats();
 }
 async function rejectDeposit(id) {
@@ -3084,14 +3089,19 @@ async function approveWithdrawal(id) {
       message: `Your withdrawal of $${parseFloat(req.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} has been approved and is being processed.`,
       type:    'success',
     }).then(null,()=>{});
-    window.SV_DB.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s?.access_token) return;
-      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
-        body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, method: req.destination_type || req.coin || null }),
-      }).catch(() => {});
-    }).catch(() => {});
+    try {
+      const { data: { session: s } } = await window.SV_DB.auth.getSession();
+      if (s?.access_token) {
+        const r = await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+          body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, method: req.destination_type || req.coin || null }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) console.error('[withdrawal-email] HTTP', r.status, j);
+        else console.log('[withdrawal-email] sent ok', j);
+      } else { console.warn('[withdrawal-email] no session token'); }
+    } catch(e) { console.error('[withdrawal-email] error', e); }
   }
   showToast('Withdrawal approved');
   logAudit('approve_withdrawal', id, '');
