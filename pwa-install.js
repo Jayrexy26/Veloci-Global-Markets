@@ -139,4 +139,12 @@
       overlay.remove();
     });
   }
+
+  /* ── Auto-show on iOS Safari ─────────────────────────────────────────────── */
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isIOS && isSafari && !isStandalone) {
+    setTimeout(function () { showIOSModal(); }, 3000);
+  }
 })();
