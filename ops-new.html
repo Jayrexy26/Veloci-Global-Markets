@@ -2897,9 +2897,10 @@ async function approveDeposit(id) {
 
   /* 3. Credit user balance */
   const amount = parseFloat(req.amount) || 0;
+  let newBalance = 0;
   if (amount > 0 && req.user_id) {
     const { data: prof } = await db.from('profiles').select('balance').eq('id', req.user_id).single();
-    const newBalance = (parseFloat(prof?.balance) || 0) + amount;
+    newBalance = (parseFloat(prof?.balance) || 0) + amount;
     await db.from('profiles').update({ balance: newBalance }).eq('id', req.user_id);
   }
 
