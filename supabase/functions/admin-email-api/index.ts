@@ -27,10 +27,18 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization") ?? "";
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7);
-      const { data: { user } } = await db.auth.getUser(token);
-      if (user) {
-        const { count } = await db.from("admin_users").select("id", { count: "exact", head: true }).eq("id", user.id);
-        authorized = (count ?? 0) > 0;
+      // Accept service role JWT directly
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.role === "service_role") authorized = true;
+      } catch (_) {}
+
+      if (!authorized) {
+        const { data: { user } } = await db.auth.getUser(token);
+        if (user) {
+          const { count } = await db.from("admin_users").select("id", { count: "exact", head: true }).eq("id", user.id);
+          authorized = (count ?? 0) > 0;
+        }
       }
     }
   }
