@@ -1637,6 +1637,8 @@
     document.getElementById('page-title').textContent = PAGE_TITLES[id] || id;
     document.getElementById('sidebar').classList.remove('open');
     localStorage.setItem('sv-ops-page', id);
+    if (id === 'audit')    { if (window.renderAuditLive) window.renderAuditLive(); }
+    if (id === 'activity') { if (window.renderActivity)  window.renderActivity(); }
   }
 
   /* ── Modals ── */
@@ -2416,6 +2418,7 @@ window.renderAll = async function() {
     renderUsersLive(), renderRecentUsers(), renderActivityFeed(),
     renderKYCLive(), renderDepositsLive(), renderWithdrawalsLive(),
     renderBalancesLive(), renderPositionsLive(), renderProfitTargetsLive(),
+    renderAuditLive(),
   ]);
 };
 
@@ -2452,6 +2455,27 @@ async function renderActivityFeed() {
   if (el2) el2.innerHTML = html;
 }
 window.renderActivity = renderActivityFeed;
+
+/* ── Audit Log ── */
+window.renderAuditLive = async function() {
+  const db = window.SV_DB; if (!db) return;
+  const tbody = document.getElementById('audit-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px 0;font-size:13px;">Loading…</td></tr>`;
+  const { data } = await db.from('audit_log').select('*').order('created_at', { ascending: false }).limit(100);
+  if (!data?.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:48px 0;font-size:13px;">No audit entries yet. Approvals, balance adjustments, and user edits will appear here automatically.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(a => `
+    <tr>
+      <td style="font-size:13px;">${a.admin_email || 'Admin'}</td>
+      <td style="font-weight:600;font-size:13px;">${a.action || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);">${a.target || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);">${a.details || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDate(a.created_at)}</td>
+    </tr>`).join('');
+};
 
 /* ── Shared user-cell helper — name (bold) + email + phone stacked ── */
 function userCell(userId, fallbackEmail) {
