@@ -45,9 +45,10 @@ serve(async (req) => {
     let ipAddress = "Unknown";
     let location  = "Unknown";
     const geoApis = [
-      { url: "https://ipwho.is/",             parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country].filter(Boolean).join(", ") }) },
+      { url: "https://ip-api.com/json?fields=status,city,country,query", parse: (d: any) => ({ ip: d.query, loc: d.status === "success" ? [d.city, d.country].filter(Boolean).join(", ") : "" }) },
+      { url: "https://ipinfo.io/json",         parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country].filter(Boolean).join(", ") }) },
+      { url: "https://ipwho.is/",              parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country].filter(Boolean).join(", ") }) },
       { url: "https://ipapi.co/json/",         parse: (d: any) => ({ ip: d.ip, loc: [d.city, d.country_name].filter(Boolean).join(", ") }) },
-      { url: "https://freeipapi.com/api/json", parse: (d: any) => ({ ip: d.ipAddress, loc: [d.cityName, d.countryName].filter(Boolean).join(", ") }) },
     ];
     for (const api of geoApis) {
       try {
