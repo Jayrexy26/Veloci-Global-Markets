@@ -227,7 +227,6 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Deposit Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
         <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(method)}</td></tr>
-        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Date &amp; Time</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
         <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#166534;border:1px solid #e5e7eb;">Successfully Completed</td></tr>
       </table>
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your account balance has been updated accordingly, and the funds are now available for trading and investment activities.</p>
@@ -237,10 +236,9 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
   } else if (tmpl === "withdrawal_approved") {
     const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const isCrypto = (data.destination_type || "crypto") === "crypto";
-    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
     const submittedDate = data.submitted_at
       ? new Date(data.submitted_at).toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" })
-      : now;
+      : "—";
     const ref = data.request_id ? `VGM-${s(data.request_id).slice(0,8).toUpperCase()}` : `VGM-W-${Date.now().toString(36).toUpperCase()}`;
     const td1 = `style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:42%;background:#f8fafc;"`;
     const td2 = `style="padding:12px 16px;font-size:13px;color:#4b5563;border:1px solid #e5e7eb;"`;
@@ -248,16 +246,15 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
     let detailRows = "";
     if (isCrypto) {
       const parts = (data.destination_ref || "").split(" | Memo: ");
-      const walletAddr = parts[0] || "—";
-      const memo = parts[1] || null;
-      detailRows = `
-        <tr><td ${td1}>Coin / Token</td><td ${td2}>${s(data.destination_name || "—")}</td></tr>
-        <tr><td ${td1}>Wallet Address</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;word-break:break-all;">${s(walletAddr)}</td></tr>
-        ${memo ? `<tr><td ${td1}>Memo / Tag</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(memo)}</td></tr>` : ""}`;
+      const walletAddr = parts[0] ? parts[0].trim() : "";
+      const memo = parts[1] ? parts[1].trim() : null;
+      if (data.destination_name) detailRows += `<tr><td ${td1}>Coin / Token</td><td ${td2}>${s(data.destination_name)}</td></tr>`;
+      if (walletAddr) detailRows += `<tr><td ${td1}>Wallet Address</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;word-break:break-all;">${s(walletAddr)}</td></tr>`;
+      if (memo) detailRows += `<tr><td ${td1}>Memo / Tag</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(memo)}</td></tr>`;
     } else {
       const refParts = (data.destination_ref || "").split(" | ");
       const refLabels = ["Account No.", "SWIFT / BIC", "IBAN"];
-      detailRows = `<tr><td ${td1}>Bank / Holder</td><td ${td2}>${s(data.destination_name || "—")}</td></tr>`;
+      if (data.destination_name) detailRows += `<tr><td ${td1}>Bank / Holder</td><td ${td2}>${s(data.destination_name)}</td></tr>`;
       detailRows += refParts.filter(Boolean).map((p: string, i: number) =>
         `<tr><td ${td1}>${refLabels[i] || "Detail"}</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(p)}</td></tr>`
       ).join("");
@@ -273,7 +270,6 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         ${detailRows}
         <tr><td ${td1}>Reference</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(ref)}</td></tr>
         <tr><td ${td1}>Date Submitted</td><td ${td2}>${s(submittedDate)}</td></tr>
-        <tr><td ${td1}>Processing Date</td><td ${td2}>${s(now)}</td></tr>
         <tr><td ${td1}>Status</td><td style="padding:12px 16px;font-size:13px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">Approved and Released</td></tr>
       </table>
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">${isCrypto
