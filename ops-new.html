@@ -3079,7 +3079,7 @@ window.renderWithdrawalsLive = async function() {
 };
 async function approveWithdrawal(id) {
   const db = window.SV_DB; if (!db) return;
-  const { data: req, error: reqErr } = await db.from('withdrawal_requests').select('user_id,amount,destination_type,destination_name').eq('id', id).maybeSingle();
+  const { data: req, error: reqErr } = await db.from('withdrawal_requests').select('id,user_id,amount,destination_type,destination_name,destination_ref,created_at').eq('id', id).maybeSingle();
   if (reqErr || !req) { showToast('Could not load withdrawal request: ' + (reqErr?.message || 'not found'), 'error'); return; }
   await db.from('withdrawal_requests').update({ status:'approved' }).eq('id', id);
   try {
@@ -3107,7 +3107,7 @@ async function approveWithdrawal(id) {
     const r = await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
-      body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, method: req.destination_type || req.destination_name || null }),
+      body: JSON.stringify({ action: 'notify_withdrawal_approved', user_id: req.user_id, amount: req.amount, destination_type: req.destination_type, destination_name: req.destination_name, destination_ref: req.destination_ref, request_id: req.id, submitted_at: req.created_at }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) showToast(`Withdrawal email error ${r.status}: ${j?.error || JSON.stringify(j)}`, 'error');

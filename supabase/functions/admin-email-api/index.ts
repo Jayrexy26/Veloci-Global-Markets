@@ -144,19 +144,23 @@ serve(async (req) => {
     }
 
     if (action === "notify_withdrawal_approved") {
-      const { user_id, amount, method } = body;
+      const { user_id, amount, destination_type, destination_name, destination_ref, request_id, submitted_at } = body;
       if (!user_id || !amount) return err("Missing user_id or amount");
       if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
       const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
       if (!prof?.email) return err("User not found");
       const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
       const subject = "Your Withdrawal Has Been Approved";
-      const html = buildPlanEmailHtml(subject, name, "withdrawal_approved", { amount, method });
-      await fetch("https://api.resend.com/emails", {
+      const html = buildPlanEmailHtml(subject, name, "withdrawal_approved", { amount, destination_type, destination_name, destination_ref, request_id, submitted_at });
+      const sendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
-      }).catch(() => {});
+      });
+      if (!sendRes.ok) {
+        const e = await sendRes.json().catch(() => ({}));
+        return err(`Resend error: ${(e as any).message ?? sendRes.status}`);
+      }
       return ok({ sent: true });
     }
 
@@ -232,22 +236,50 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
 
   } else if (tmpl === "withdrawal_approved") {
     const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const destination = s(data.method || data.coin || "—");
+    const isCrypto = (data.destination_type || "crypto") === "crypto";
     const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
-    const ref = `VGM-W-${Date.now().toString(36).toUpperCase()}`;
+    const submittedDate = data.submitted_at
+      ? new Date(data.submitted_at).toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" })
+      : now;
+    const ref = data.request_id ? `VGM-${s(data.request_id).slice(0,8).toUpperCase()}` : `VGM-W-${Date.now().toString(36).toUpperCase()}`;
+    const td1 = `style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:42%;background:#f8fafc;"`;
+    const td2 = `style="padding:12px 16px;font-size:13px;color:#4b5563;border:1px solid #e5e7eb;"`;
+
+    let detailRows = "";
+    if (isCrypto) {
+      const parts = (data.destination_ref || "").split(" | Memo: ");
+      const walletAddr = parts[0] || "—";
+      const memo = parts[1] || null;
+      detailRows = `
+        <tr><td ${td1}>Coin / Token</td><td ${td2}>${s(data.destination_name || "—")}</td></tr>
+        <tr><td ${td1}>Wallet Address</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;word-break:break-all;">${s(walletAddr)}</td></tr>
+        ${memo ? `<tr><td ${td1}>Memo / Tag</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(memo)}</td></tr>` : ""}`;
+    } else {
+      const refParts = (data.destination_ref || "").split(" | ");
+      const refLabels = ["Account No.", "SWIFT / BIC", "IBAN"];
+      detailRows = `<tr><td ${td1}>Bank / Holder</td><td ${td2}>${s(data.destination_name || "—")}</td></tr>`;
+      detailRows += refParts.filter(Boolean).map((p: string, i: number) =>
+        `<tr><td ${td1}>${refLabels[i] || "Detail"}</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(p)}</td></tr>`
+      ).join("");
+    }
+
     badge = `<div style="display:inline-block;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#991b1b;">WITHDRAWAL APPROVED</span></div>`;
     content = `
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We are pleased to inform you that your withdrawal request has been successfully approved and processed by our finance department.</p>
-      <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0d1117;">Withdrawal Details</p>
+      <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#0d1117;">Withdrawal Details</p>
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Withdrawal Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#991b1b;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
-        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Destination Wallet / Account</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${destination}</td></tr>
-        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Transaction Reference</td><td style="padding:14px 18px;font-size:14px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(ref)}</td></tr>
-        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Processing Date</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
-        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#166534;border:1px solid #e5e7eb;">Approved and Released</td></tr>
+        <tr><td ${td1}>Withdrawal Amount</td><td style="padding:12px 16px;font-size:16px;font-weight:700;color:#991b1b;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
+        <tr><td ${td1}>Type</td><td ${td2}>${isCrypto ? "Crypto" : "Bank Transfer"}</td></tr>
+        ${detailRows}
+        <tr><td ${td1}>Reference</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(ref)}</td></tr>
+        <tr><td ${td1}>Date Submitted</td><td ${td2}>${s(submittedDate)}</td></tr>
+        <tr><td ${td1}>Processing Date</td><td ${td2}>${s(now)}</td></tr>
+        <tr><td ${td1}>Status</td><td style="padding:12px 16px;font-size:13px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">Approved and Released</td></tr>
       </table>
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">The funds have been transmitted to the designated destination and are currently awaiting confirmation by the receiving financial institution or blockchain network. Depending on network conditions and processing times, the funds should become available shortly.</p>
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">You may monitor the status of your transaction through your account <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a>.</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">${isCrypto
+        ? "The funds have been transmitted to the designated wallet address. Depending on network conditions, they should arrive shortly."
+        : "The funds have been transmitted to your designated bank account. Please allow 1–5 business days for the transfer to complete."}</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">You may monitor the status of your transaction through your account <a href="https://velociglobal.pro/history-new.html" style="color:${accent};">transaction history</a>.</p>
       <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">Thank you for choosing Veloci Global Markets. We appreciate your continued confidence in our services.</p>`;
 
   } else if (tmpl === "kyc_approved") {
