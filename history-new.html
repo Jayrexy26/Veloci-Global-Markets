@@ -723,7 +723,18 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
         wdMethod:  isDeposit ? null : (isBankWd ? 'Bank' : 'Crypto'),
         amount:    isDeposit ? Math.abs(amt) : -Math.abs(amt),
         price:     1,
-        status:    t.status || 'completed',
+        status:    (function() {
+          if (!isDeposit && (!t.status || t.status === 'pending')) {
+            const tTime = dt.getTime();
+            const match = WD_LIST.filter(function(w) {
+              return Math.abs(parseFloat(w.amount) - Math.abs(amt)) < 0.01 && w.status && w.status !== 'pending';
+            }).sort(function(a, b) {
+              return Math.abs(new Date(a.created_at).getTime() - tTime) - Math.abs(new Date(b.created_at).getTime() - tTime);
+            })[0];
+            if (match) return match.status;
+          }
+          return t.status || 'completed';
+        })(),
         date:      dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
         time:      dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
         txid:      t.id?.slice(0,12) || '—',
