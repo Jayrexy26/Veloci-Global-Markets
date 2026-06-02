@@ -177,12 +177,20 @@ serve(async (req) => {
       const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
       if (!prof?.email) return err("User not found");
       const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
-      const subject = "Your Deposit Request Has Been Received";
-      const html = buildPlanEmailHtml(subject, name, "deposit_submitted", { amount, coin, network });
+      const userSubject = "Your Deposit Request Has Been Received";
+      const adminSubject = `${name} Just made a deposit request`;
+      const html = buildPlanEmailHtml(userSubject, name, "deposit_submitted", { amount, coin, network });
+      // Email to user
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], cc: ["help.velociglobalmarkets@gmail.com"], subject, html }),
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject: userSubject, html }),
+      }).catch(() => {});
+      // Copy to admin with custom subject
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
       }).catch(() => {});
       return ok({ sent: true });
     }
@@ -194,12 +202,20 @@ serve(async (req) => {
       const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
       if (!prof?.email) return err("User not found");
       const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
-      const subject = "Your Withdrawal Request Has Been Received";
-      const html = buildPlanEmailHtml(subject, name, "withdrawal_submitted", { amount, destination_type, destination_name, destination_ref });
+      const userSubject = "Your Withdrawal Request Has Been Received";
+      const adminSubject = `${name} just made a withdrawal`;
+      const html = buildPlanEmailHtml(userSubject, name, "withdrawal_submitted", { amount, destination_type, destination_name, destination_ref });
+      // Email to user
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], cc: ["help.velociglobalmarkets@gmail.com"], subject, html }),
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject: userSubject, html }),
+      }).catch(() => {});
+      // Copy to admin with custom subject
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
       }).catch(() => {});
       return ok({ sent: true });
     }
