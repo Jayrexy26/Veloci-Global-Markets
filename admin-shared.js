@@ -141,12 +141,14 @@ function clearDebug(){
 }
 
 function openSidebar(){
-  document.getElementById("sidebar").classList.add("open");
+  const sb = document.getElementById("sidebar");
+  if(sb) sb.classList.add("open");
   const ov = document.getElementById("sideOverlay");
   if(ov) ov.classList.add("show");
 }
 function closeSidebar(){
-  document.getElementById("sidebar").classList.remove("open");
+  const sb = document.getElementById("sidebar");
+  if(sb) sb.classList.remove("open");
   const ov = document.getElementById("sideOverlay");
   if(ov) ov.classList.remove("show");
 }
@@ -527,6 +529,14 @@ function initTopbar(){
   attachScrollHandler();
   const connChip = document.getElementById("connChip");
   if(connChip) connChip.textContent = "CONNECTED";
+  // iOS needs touchstart (not just onclick) for reliable div tap detection
+  const sideOv = document.getElementById("sideOverlay");
+  if(sideOv){
+    sideOv.addEventListener('touchstart', function(e){
+      e.preventDefault();
+      closeSidebar();
+    }, {passive: false});
+  }
 }
 
 /* ── Live Activity + Audit Log renders ── */
