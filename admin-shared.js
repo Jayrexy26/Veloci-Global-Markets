@@ -20,6 +20,9 @@ let ADMIN_ID = "admin";
 let ACTIVE_VIEW = "";
 let AUTO_REFRESH = false;
 let AUTO_TIMER = null;
+// Block ghost clicks that arrive from the previous page within 400ms of load
+let _clickGuard = true;
+setTimeout(function(){ _clickGuard = false; }, 400);
 
 const CACHE = {
   support: [],
@@ -141,6 +144,7 @@ function clearDebug(){
 }
 
 function openSidebar(){
+  if(_clickGuard) return;
   const sb = document.getElementById("sidebar");
   if(sb) sb.classList.add("open");
   const ov = document.getElementById("sideOverlay");
