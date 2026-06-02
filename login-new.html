@@ -274,6 +274,7 @@ async function doLogin() {
     }
 
     /* Log login activity (fire-and-forget) */
+    let ipAddress = '', loginLocation = '';
     try {
       const ua = navigator.userAgent;
       const isMobile = /Mobi|Android/i.test(ua);
@@ -281,7 +282,6 @@ async function doLogin() {
       const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
       const browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : /Opera|OPR/.test(ua) ? 'Opera' : 'Unknown';
       const os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown';
-      let ipAddress = '', location = '';
       try {
         const geoApis = [
           { url:'https://ip-api.com/json?fields=status,city,country,query', parse: d=>({ ip:d.query, loc:d.status==='success'?[d.city,d.country].filter(Boolean).join(', '):'' }) },
@@ -296,13 +296,13 @@ async function doLogin() {
             const d = await fetch(api.url, { signal: ctrl.signal }).then(r => r.json());
             clearTimeout(t);
             const parsed = api.parse(d);
-            if (parsed.ip) { ipAddress = parsed.ip; location = parsed.loc; break; }
+            if (parsed.ip) { ipAddress = parsed.ip; loginLocation = parsed.loc; break; }
           } catch(_) {}
         }
       } catch(_) {}
       await window.SV_DB.from('login_activity').insert({
         user_id: loginData.user.id, ip_address: ipAddress,
-        device_type: deviceType, browser, os, location
+        device_type: deviceType, browser, os, location: loginLocation
       });
       sessionStorage.setItem('sv_login_logged', '1');
     } catch(_) {}
@@ -319,7 +319,7 @@ async function doLogin() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
         platform: navigator.platform || '',
         ip_address: ipAddress || '',
-        location: location || '',
+        location: loginLocation || '',
       }),
     }).catch(() => {});
 
