@@ -1,49 +1,69 @@
-const CACHE_NAME = "veloci-global-v1";
-const ASSETS_TO_CACHE = [
-  "/",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon-maskable-192.png",
-  "/icons/icon-maskable-512.png"
+const CACHE = 'veloci-v2';
+
+const PRECACHE = [
+  '/',
+  '/login-new.html',
+  '/dashboard-new.html',
+  '/spot-new.html',
+  '/markets-new.html',
+  '/wallet-new.html',
+  '/history-new.html',
+  '/notifications-new.html',
+  '/settings-new.html',
+  '/session-new.html',
+  '/assets/icon-192.png',
+  '/assets/icon-512.png',
+  '/assets/vgm-logo.png',
+  '/manifest.json',
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)).then(() => self.skipWaiting())
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(PRECACHE)).catch(() => {})
   );
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('resend.com') ||
+    url.hostname.includes('jsdelivr.net') ||
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('ip-api.com') ||
+    url.hostname.includes('ipinfo.io') ||
+    e.request.method !== 'GET'
+  ) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response;
-          }
+  if (/\.(png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf)$/i.test(url.pathname)) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(res => {
+          if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          return res;
+        });
+      })
+    );
+    return;
+  }
 
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-          return response;
-        })
-        .catch(() => cached);
-
-      return cached || networkFetch;
-    })
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
