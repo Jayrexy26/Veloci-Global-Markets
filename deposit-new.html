@@ -243,7 +243,9 @@ html.mob .hdr-nav{display:none !important;}
 html.mob .sidebar{display:none !important;position:fixed;top:0;left:0;bottom:0;height:100%;width:var(--sidebar);z-index:200;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 24px rgba(0,0,0,.6);}
 html.mob .sidebar.mob-open{display:flex !important;flex-direction:column;}
 html.mob .layout{display:block !important;overflow-y:auto;}
-html.mob .main{width:100% !important;padding:20px 16px;}</style>
+html.mob .main{width:100% !important;padding:20px 16px;}
+@keyframes dep-spin{to{transform:rotate(360deg);}}
+.dep-spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:dep-spin .7s linear infinite;vertical-align:middle;margin-right:8px;}</style>
 <script>if(window.innerWidth<=960||screen.width<=960)document.documentElement.classList.add('mob');</script>
 </head>
 <body>
@@ -936,7 +938,7 @@ function clearProof() {
 async function confirmDeposit() {
   if (!window._proofFile) return;
   const btn = document.getElementById('btn-made-payment');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  if (btn) { btn.disabled = true; btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.cursor = 'not-allowed'; btn.innerHTML = '<span class="dep-spinner"></span>Uploading…'; }
   try {
     const db = window.SV_DB;
     if (!sessionStorage.getItem('sv_pin_ok')) { window.location.href = 'session-new.html'; return; }
@@ -986,7 +988,7 @@ async function confirmDeposit() {
       }
     }, 4000);
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = "I've Made Payment"; }
+    if (btn) { btn.disabled = false; btn.innerHTML = "I've Made Payment"; btn.style.background = 'var(--s3)'; btn.style.borderColor = 'var(--b2)'; btn.style.color = 'var(--sub)'; }
     alert('Submission failed: ' + (e.message || 'Please try again.'));
   }
 }
