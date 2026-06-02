@@ -21,36 +21,42 @@ serve(async (req) => {
   const db = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const xSecret = req.headers.get("x-admin-secret");
-  let authorized = ADMIN_SECRET.length > 0 && xSecret === ADMIN_SECRET;
+  let admin_authorized = ADMIN_SECRET.length > 0 && xSecret === ADMIN_SECRET;
+  let authenticated_user_id: string | null = null;
 
-  if (!authorized) {
+  if (!admin_authorized) {
     const authHeader = req.headers.get("authorization") ?? "";
     if (authHeader.startsWith("Bearer ")) {
       const token = authHeader.slice(7);
-      // Accept service role JWT directly
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        if (payload.role === "service_role") authorized = true;
+        if (payload.role === "service_role") admin_authorized = true;
       } catch (_) {}
 
-      if (!authorized) {
+      if (!admin_authorized) {
         const { data: { user } } = await db.auth.getUser(token);
         if (user) {
+          authenticated_user_id = user.id;
           const { count } = await db.from("admin_users").select("id", { count: "exact", head: true }).eq("id", user.id);
-          authorized = (count ?? 0) > 0;
+          if ((count ?? 0) > 0) admin_authorized = true;
         }
       }
     }
   }
+
+  const body = await req.json();
+  const { action } = body;
+
+  // Users can trigger submission notifications for their own account only
+  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted"];
+  const authorized = admin_authorized ||
+    (authenticated_user_id !== null && USER_SELF_ACTIONS.includes(action) && body.user_id === authenticated_user_id);
 
   if (!authorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...cors, "Content-Type": "application/json" },
     });
   }
-
-  const body = await req.json();
-  const { action } = body;
 
   try {
     if (action === "send_email") {
@@ -161,6 +167,40 @@ serve(async (req) => {
         const e = await sendRes.json().catch(() => ({}));
         return err(`Resend error: ${(e as any).message ?? sendRes.status}`);
       }
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_deposit_submitted") {
+      const { user_id, amount, coin, network } = body;
+      if (!user_id || !amount) return err("Missing user_id or amount");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Your Deposit Request Has Been Received";
+      const html = buildPlanEmailHtml(subject, name, "deposit_submitted", { amount, coin, network });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_withdrawal_submitted") {
+      const { user_id, amount, destination_type, destination_name, destination_ref } = body;
+      if (!user_id || !amount) return err("Missing user_id or amount");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Your Withdrawal Request Has Been Received";
+      const html = buildPlanEmailHtml(subject, name, "withdrawal_submitted", { amount, destination_type, destination_name, destination_ref });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
       return ok({ sent: true });
     }
 
@@ -277,6 +317,64 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         : "The funds have been transmitted to your designated bank account. Please allow 1–5 business days for the transfer to complete."}</p>
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">You may monitor the status of your transaction through your account <a href="https://velociglobal.pro/history-new.html" style="color:${accent};">transaction history</a>.</p>
       <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">Thank you for choosing Veloci Global Markets. We appreciate your continued confidence in our services.</p>`;
+
+  } else if (tmpl === "deposit_submitted") {
+    const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const method = [data.coin, data.network].filter(Boolean).join(" / ") || "Crypto";
+    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
+    badge = `<div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#92400e;">DEPOSIT RECEIVED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We have received your deposit request and it is now under review by our team. You will be notified once it has been approved and credited to your account.</p>
+      <p style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0d1117;">Deposit Details</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Deposit Amount</td><td style="padding:14px 18px;font-size:16px;font-weight:700;color:#92400e;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Method</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(method)}</td></tr>
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Date Submitted</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#d97706;border:1px solid #e5e7eb;">Pending Review</td></tr>
+      </table>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Once our team verifies your payment, your account will be credited and you will receive a confirmation email. This typically takes 1–24 hours.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;">You can track the status of your deposit in your <a href="https://velociglobal.pro/history-new.html" style="color:#f05a1a;">transaction history</a>.</p>`;
+
+  } else if (tmpl === "withdrawal_submitted") {
+    const fmtAmt = Number(data.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const isCrypto = (data.destination_type || "crypto") === "crypto";
+    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
+    const td1 = `style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:42%;background:#f8fafc;"`;
+    const td2 = `style="padding:12px 16px;font-size:13px;color:#4b5563;border:1px solid #e5e7eb;"`;
+
+    let detailRows = "";
+    if (isCrypto) {
+      const parts = (data.destination_ref || "").split(" | Memo: ");
+      const walletAddr = parts[0] ? parts[0].trim() : "";
+      const memo = parts[1] ? parts[1].trim() : null;
+      if (data.destination_name) detailRows += `<tr><td ${td1}>Coin / Token</td><td ${td2}>${s(data.destination_name)}</td></tr>`;
+      if (walletAddr) detailRows += `<tr><td ${td1}>Wallet Address</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;word-break:break-all;">${s(walletAddr)}</td></tr>`;
+      if (memo) detailRows += `<tr><td ${td1}>Memo / Tag</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(memo)}</td></tr>`;
+    } else {
+      const refParts = (data.destination_ref || "").split(" | ");
+      const refLabels = ["Account No.", "SWIFT / BIC", "IBAN"];
+      if (data.destination_name) detailRows += `<tr><td ${td1}>Bank / Holder</td><td ${td2}>${s(data.destination_name)}</td></tr>`;
+      detailRows += refParts.filter(Boolean).map((p: string, i: number) =>
+        `<tr><td ${td1}>${refLabels[i] || "Detail"}</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#4b5563;border:1px solid #e5e7eb;">${s(p)}</td></tr>`
+      ).join("");
+    }
+
+    badge = `<div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#92400e;">WITHDRAWAL RECEIVED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We have received your withdrawal request and it is now under review by our finance team. You will receive a confirmation email once it has been approved and processed.</p>
+      <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#0d1117;">Withdrawal Details</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr><td ${td1}>Withdrawal Amount</td><td style="padding:12px 16px;font-size:16px;font-weight:700;color:#92400e;border:1px solid #e5e7eb;">$${s(fmtAmt)}</td></tr>
+        <tr><td ${td1}>Type</td><td ${td2}>${isCrypto ? "Crypto" : "Bank Transfer"}</td></tr>
+        ${detailRows}
+        <tr><td ${td1}>Date Submitted</td><td ${td2}>${s(now)}</td></tr>
+        <tr><td ${td1}>Status</td><td style="padding:12px 16px;font-size:13px;font-weight:700;color:#d97706;border:1px solid #e5e7eb;">Pending Review</td></tr>
+      </table>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">${isCrypto
+        ? "Our team will verify your request and process the transfer. Please allow up to 1–3 business days for the funds to reach your wallet."
+        : "Our team will verify your request and process the bank transfer. Please allow 1–5 business days for the funds to arrive."}</p>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">If you did not initiate this request or have any concerns, please contact our support team immediately.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Track your withdrawal in your <a href="https://velociglobal.pro/history-new.html" style="color:#f05a1a;">transaction history</a>.</p>`;
 
   } else if (tmpl === "kyc_approved") {
     badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">IDENTITY VERIFIED</span></div>`;

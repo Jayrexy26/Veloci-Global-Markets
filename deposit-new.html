@@ -967,6 +967,12 @@ async function confirmDeposit() {
     if (error) throw error;
 
     const submittedDepAmt = depositAmount;
+    // Fire-and-forget pending notification email
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: 'notify_deposit_submitted', user_id: userId, amount: depositAmount, coin: selectedCoin?.sym || null, network: selectedNet?.id || null }),
+    }).catch(() => {});
     if (btn) {
       btn.textContent = 'Submitted ?';
       btn.style.background = 'var(--green)';

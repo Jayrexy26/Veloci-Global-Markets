@@ -1343,6 +1343,7 @@ async function doWithdraw(){
   if (!db || !_svUserId) { _wdSubmitting=false; return; }
 
   let _submittedAmt = 0;
+  let _wdDestType = '', _wdDestName = '', _wdDestRef = '';
 
   if (currentModalType === 'crypto') {
     const amt  = parseFloat(document.getElementById('amount-input').value) || 0;
@@ -1352,13 +1353,16 @@ async function doWithdraw(){
 
     const usdAmt = amt * selCoin.price;
     _submittedAmt = usdAmt;
+    _wdDestType = 'crypto';
+    _wdDestName = `${amt} ${selCoin.sym}`;
+    _wdDestRef  = addr + (memo ? ' | Memo: ' + memo : '');
 
     const { data: wrData, error: wrErr } = await db.from('withdrawal_requests').insert({
       user_id:          _svUserId,
       amount:           usdAmt,
       destination_type: 'crypto',
-      destination_name: `${amt} ${selCoin.sym}`,
-      destination_ref:  addr + (memo ? ' | Memo: ' + memo : ''),
+      destination_name: _wdDestName,
+      destination_ref:  _wdDestRef,
       status:           'pending',
     }).select('id').single();
     if (wrErr) { _wdSubmitting=false; showToastWd('Submission failed — please try again.', true); return; }
@@ -1405,13 +1409,16 @@ async function doWithdraw(){
 
     const bankDetails = JSON.stringify({ holder, bankName:bkName, acct, swift, iban, country, ref, ccy });
     const fee = BANK_FEES[ccy] || 15;
+    _wdDestType = 'bank';
+    _wdDestName = bkName || holder;
+    _wdDestRef  = [acct, swift, iban].filter(Boolean).join(' | ');
 
     const { data: wrData, error: wrErr } = await db.from('withdrawal_requests').insert({
       user_id:          _svUserId,
       amount:           amt,
       destination_type: 'bank',
-      destination_name: bkName || holder,
-      destination_ref:  [acct, swift, iban].filter(Boolean).join(' | '),
+      destination_name: _wdDestName,
+      destination_ref:  _wdDestRef,
       status:           'pending',
     }).select('id').single();
     if (wrErr) { showToastWd('Submission failed — please try again.', true); return; }
@@ -1445,6 +1452,16 @@ async function doWithdraw(){
   showWdSuccessBanner();
   _wdSubmitting = false;
   showWdSuccessModal(_submittedAmt);
+
+  // Fire-and-forget pending notification email
+  db.auth.getSession().then(({ data: { session: s } }) => {
+    if (!s?.access_token) return;
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.access_token}` },
+      body: JSON.stringify({ action: 'notify_withdrawal_submitted', user_id: _svUserId, amount: _submittedAmt, destination_type: _wdDestType, destination_name: _wdDestName, destination_ref: _wdDestRef }),
+    }).catch(() => {});
+  });
 }
 
 function showToastWd(msg, isErr=false){
