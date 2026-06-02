@@ -627,6 +627,18 @@ html.mob .main{width:100% !important;padding:20px 16px;}</style>
 </div><!-- /layout -->
 </div><!-- /page -->
 
+<!-- DEPOSIT SUCCESS MODAL -->
+<div class="modal-overlay" id="dep-success-overlay" onclick="closeDepSuccessModal()" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div onclick="event.stopPropagation()" style="background:var(--s1);border:1px solid var(--b2);border-radius:16px;padding:28px;width:380px;max-width:94vw;text-align:center;">
+    <div style="width:68px;height:68px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:10px;">Deposit Submitted!</div>
+    <p id="dep-success-msg" style="font-size:14px;color:var(--sub);line-height:1.65;margin-bottom:24px;"></p>
+    <button style="width:100%;height:46px;background:var(--accent);color:#fff;border-radius:9px;font-size:14px;font-weight:700;border:none;cursor:pointer;" onclick="closeDepSuccessModal()">Done</button>
+  </div>
+</div>
+
 <script>
 /* -- Theme -- */
 (function(){
@@ -953,6 +965,7 @@ async function confirmDeposit() {
     });
     if (error) throw error;
 
+    const submittedDepAmt = depositAmount;
     if (btn) {
       btn.textContent = 'Submitted ?';
       btn.style.background = 'var(--green)';
@@ -962,10 +975,7 @@ async function confirmDeposit() {
     const amtInput = document.getElementById('dep-amount-input');
     if (amtInput) amtInput.value = '';
     await loadRecentDeposits();
-    setTimeout(() => {
-      const sec = document.getElementById('recent-dep-section');
-      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 200);
+    showDepSuccessModal(submittedDepAmt);
     setTimeout(() => {
       if (btn) {
         btn.textContent = "I've Made Payment";
@@ -1099,6 +1109,20 @@ async function doSignOut() {
   sessionStorage.removeItem('sv_pin_ok');
   await window.SV_DB.auth.signOut();
   window.location.href = 'login-new.html';
+}
+
+function showDepSuccessModal(amount) {
+  const fmt = Number(amount).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('dep-success-msg').textContent =
+    `Your deposit of $${fmt} has been successfully submitted and is awaiting approval. You will be notified once it is confirmed.`;
+  const ov = document.getElementById('dep-success-overlay');
+  ov.style.display = 'flex';
+}
+
+function closeDepSuccessModal() {
+  document.getElementById('dep-success-overlay').style.display = 'none';
+  const sec = document.getElementById('recent-dep-section');
+  if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 <script src="notif-popup.js"></script>
