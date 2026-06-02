@@ -3082,13 +3082,15 @@ async function approveWithdrawal(id) {
   const { data: req } = await db.from('withdrawal_requests').select('user_id,amount,destination_type,coin').eq('id', id).maybeSingle();
   await db.from('withdrawal_requests').update({ status:'approved' }).eq('id', id);
   if (req?.user_id && req?.amount) {
-    await db.from('transactions')
-      .update({ status: 'approved' })
-      .eq('user_id', req.user_id)
-      .eq('type', 'withdrawal')
-      .eq('status', 'pending')
-      .eq('amount', req.amount)
-      .then(null, () => {});
+    try {
+      db.from('transactions')
+        .update({ status: 'approved' })
+        .eq('user_id', req.user_id)
+        .eq('type', 'withdrawal')
+        .eq('status', 'pending')
+        .eq('amount', req.amount)
+        .then(null, () => {});
+    } catch(_) {}
     await db.from('notifications').insert({
       user_id: req.user_id,
       title:   'Withdrawal Approved',
