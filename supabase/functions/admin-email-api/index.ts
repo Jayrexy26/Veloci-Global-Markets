@@ -251,24 +251,20 @@ serve(async (req) => {
           <p style="margin:0;font-size:11px;color:#374151;">&copy; 2026 Veloci Global Markets. All rights reserved.</p>
         </div>
       </div>`;
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html: adminHtml }),
-      }).catch(() => {});
-      // Save profile after email so a slow DB call never blocks the notification
-      db.from("profiles").upsert({
-        id: user_id,
-        email: regEmail,
-        first_name: regFname || "",
-        last_name: regLname || "",
-        country: regCountry || null,
-        phone: regPhone || null,
-        account_type: "live",
-        status: "active",
-        kyc_status: "none",
-        plan: "Starter",
-      }, { onConflict: "id" }).catch(() => {});
+      // Run email + profile save in parallel — email won't be blocked by DB
+      await Promise.allSettled([
+        fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html: adminHtml }),
+        }),
+        db.from("profiles").update({
+          first_name: regFname || "",
+          last_name: regLname || "",
+          country: regCountry || null,
+          phone: regPhone || null,
+        }).eq("id", user_id),
+      ]);
       return ok({ sent: true });
     }
 
