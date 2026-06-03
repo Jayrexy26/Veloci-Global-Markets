@@ -224,13 +224,10 @@ serve(async (req) => {
     }
 
     if (action === "notify_user_registered") {
-      const { user_id } = body;
-      if (!user_id) return err("Missing user_id");
+      const { user_id, name: regName, email: regEmail, country: regCountry, phone: regPhone } = body;
+      if (!user_id || !regEmail) return err("Missing user_id or email");
       if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
-      const { data: prof } = await db.from("profiles").select("email,first_name,last_name,country,phone,plan").eq("id", user_id).single();
-      if (!prof?.email) return err("User not found");
-      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
-      const adminSubject = `New Registration — ${name} (${prof.email})`;
+      const adminSubject = `New Registration — ${regName || regEmail} (${regEmail})`;
       const adminHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e6ee;border-radius:12px;overflow:hidden;">
         <div style="background:#0a0e1a;padding:20px 40px;text-align:center;">
@@ -241,10 +238,10 @@ serve(async (req) => {
           <div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:4px 14px;margin-bottom:18px;"><span style="font-size:12px;font-weight:700;color:#92400e;">NEW USER REGISTERED</span></div>
           <h2 style="margin:0 0 20px;font-size:20px;font-weight:700;color:#0d1117;">A new user has joined Veloci Global Markets</h2>
           <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-            <tr style="background:#f8fafc;"><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:40%;">Name</td><td style="padding:12px 16px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${name}</td></tr>
-            <tr><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Email</td><td style="padding:12px 16px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${prof.email}</td></tr>
-            <tr style="background:#f8fafc;"><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Country</td><td style="padding:12px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${prof.country || "—"}</td></tr>
-            <tr><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Phone</td><td style="padding:12px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${prof.phone || "—"}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:40%;">Name</td><td style="padding:12px 16px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${regName || "—"}</td></tr>
+            <tr><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Email</td><td style="padding:12px 16px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${regEmail}</td></tr>
+            <tr style="background:#f8fafc;"><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Country</td><td style="padding:12px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${regCountry || "—"}</td></tr>
+            <tr><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Phone</td><td style="padding:12px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${regPhone || "—"}</td></tr>
             <tr style="background:#f8fafc;"><td style="padding:12px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">User ID</td><td style="padding:12px 16px;font-size:12px;font-family:monospace;color:#6b7280;border:1px solid #e5e7eb;">${user_id}</td></tr>
           </table>
           <p style="margin:0;font-size:13px;color:#6b7280;">Review this user in the <a href="https://velociglobal.pro/ops-new.html" style="color:#f05a1a;text-decoration:none;">admin panel</a>.</p>
