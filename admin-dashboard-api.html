@@ -946,8 +946,21 @@
 
                 <div style="display:grid; gap:12px;">
                   <div class="inline">
-                    <input id="manualEmailTo" class="grow" placeholder="Recipient email">
-                    <input id="manualEmailUserName" class="grow" placeholder="User name (optional)">
+                    <select id="manualEmailRecipientType" class="grow" onchange="onRecipientTypeChange()" style="height:38px;background:var(--s2,#1a1d24);border:1px solid var(--b,rgba(255,255,255,.1));border-radius:8px;color:inherit;padding:0 10px;font-size:13px;">
+                      <option value="specific">Specific User</option>
+                      <option value="all">All Users</option>
+                    </select>
+                  </div>
+
+                  <div id="specificUserRow" class="inline">
+                    <select id="manualEmailUserSelect" class="grow" onchange="onUserSelectChange()" style="height:38px;background:var(--s2,#1a1d24);border:1px solid var(--b,rgba(255,255,255,.1));border-radius:8px;color:inherit;padding:0 10px;font-size:13px;min-width:0;">
+                      <option value="">— Select a user —</option>
+                    </select>
+                    <input id="manualEmailUserName" class="grow" placeholder="User name (auto-filled)">
+                  </div>
+
+                  <div id="allUsersNotice" style="display:none;background:rgba(240,90,26,.08);border:1px solid rgba(240,90,26,.3);border-radius:8px;padding:11px 14px;font-size:13px;color:rgba(234,240,255,.75);line-height:1.55;">
+                    <strong style="color:rgba(234,240,255,.95);">Broadcast to all users.</strong> This email will be sent to every registered user. Double-check content before sending.
                   </div>
 
                   <div class="inline">
@@ -3064,58 +3077,91 @@ async function uploadHomepageTestimonialAvatar(idx, input){
 }
 
 
+function onRecipientTypeChange(){
+  const type = document.getElementById("manualEmailRecipientType")?.value;
+  const specificRow = document.getElementById("specificUserRow");
+  const allNotice = document.getElementById("allUsersNotice");
+  if(specificRow) specificRow.style.display = type === "all" ? "none" : "";
+  if(allNotice) allNotice.style.display = type === "all" ? "block" : "none";
+  if(type === "specific"){
+    const sel = document.getElementById("manualEmailUserSelect");
+    if(sel && sel.options.length <= 1) loadUsersForEmailSelect();
+  }
+}
+
+function onUserSelectChange(){
+  const sel = document.getElementById("manualEmailUserSelect");
+  const nameEl = document.getElementById("manualEmailUserName");
+  if(!sel || !nameEl) return;
+  const opt = sel.options[sel.selectedIndex];
+  nameEl.value = opt?.dataset?.name || "";
+}
+
+async function loadUsersForEmailSelect(){
+  const sel = document.getElementById("manualEmailUserSelect");
+  if(!sel || sel.options.length > 1) return;
+  sel.innerHTML = '<option value="">Loading users…</option>';
+  try{
+    const res = await apiCall("users_list");
+    const users = (res.data||[]).slice().sort((a,b)=>{
+      const an = String(a.full_name||a.username||a.first_name||a.email||"").toLowerCase();
+      const bn = String(b.full_name||b.username||b.first_name||b.email||"").toLowerCase();
+      return an.localeCompare(bn);
+    });
+    sel.innerHTML = '<option value="">— Select a user —</option>' +
+      users.map(u=>{
+        const email = String(u.email||"").trim();
+        const name = String(u.full_name||u.username||u.first_name||"").trim() || email;
+        return `<option value="${esc(email)}" data-name="${esc(name)}">${esc(name)} &lt;${esc(email)}&gt;</option>`;
+      }).join("");
+  }catch(e){
+    sel.innerHTML = '<option value="">— Failed to load users —</option>';
+  }
+}
+
 async function sendManualBrandedEmail(){
   const statusEl = document.getElementById("manualEmailStatus");
-  const to = String(document.getElementById("manualEmailTo")?.value || "").trim();
-  const user_name = String(document.getElementById("manualEmailUserName")?.value || "").trim();
-  const subject = String(document.getElementById("manualEmailSubject")?.value || "").trim();
-  const title = String(document.getElementById("manualEmailTitle")?.value || "").trim();
-  const message = String(document.getElementById("manualEmailMessage")?.value || "").trim();
-  const button_text = String(document.getElementById("manualEmailButtonText")?.value || "").trim();
-  const button_url = String(document.getElementById("manualEmailButtonUrl")?.value || "").trim();
+  const recipientType = document.getElementById("manualEmailRecipientType")?.value || "specific";
+  const subject = String(document.getElementById("manualEmailSubject")?.value||"").trim();
+  const title = String(document.getElementById("manualEmailTitle")?.value||"").trim();
+  const message = String(document.getElementById("manualEmailMessage")?.value||"").trim();
+  const button_text = String(document.getElementById("manualEmailButtonText")?.value||"").trim();
+  const button_url = String(document.getElementById("manualEmailButtonUrl")?.value||"").trim();
 
-  if(!to){
-    modalShow("Missing recipient", "Enter the recipient email first.");
-    return;
-  }
-  if(!subject){
-    modalShow("Missing subject", "Enter the email subject first.");
-    return;
-  }
-  if(!message){
-    modalShow("Missing message", "Write the email message first.");
+  if(!subject){ modalShow("Missing subject","Enter the email subject first."); return; }
+  if(!message){ modalShow("Missing message","Write the email message first."); return; }
+
+  if(recipientType === "all"){
+    if(!confirm(`Send this email to ALL registered users?\n\nSubject: ${subject}\n\nThis cannot be undone.`)) return;
+    if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Loading users…`;
+    const usersRes = await apiCall("users_list");
+    const users = (usersRes.data||[]).filter(u => String(u.email||"").trim());
+    if(!users.length){ modalShow("No users","No users found."); return; }
+    let sent = 0, failed = 0;
+    for(const u of users){
+      const to = String(u.email||"").trim();
+      const user_name = String(u.full_name||u.username||u.first_name||"").trim();
+      if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Sending ${sent+failed+1} of ${users.length}…`;
+      try{ await apiCall("manual_email_send", { to, user_name, subject, title, message, button_text, button_url }); sent++; }
+      catch(e){ failed++; }
+    }
+    if(statusEl) statusEl.textContent = `Broadcast complete: ${sent} sent${failed ? `, ${failed} failed` : ""} ✅`;
+    modalShow("Broadcast Complete",`Email sent to ${sent} user(s).${failed ? `\n${failed} failed.` : ""}`);
+    feed(`manual_email_send_all -> ${sent} sent, ${failed} failed`);
     return;
   }
 
+  const to = String(document.getElementById("manualEmailUserSelect")?.value||"").trim();
+  const user_name = String(document.getElementById("manualEmailUserName")?.value||"").trim();
+  if(!to){ modalShow("Missing recipient","Please select a user from the dropdown."); return; }
   if(statusEl) statusEl.innerHTML = `<span class="spin"></span>Sending…`;
-
-  await apiCall("manual_email_send", {
-    to,
-    user_name,
-    subject,
-    title,
-    message,
-    button_text,
-    button_url
-  });
-
+  await apiCall("manual_email_send", { to, user_name, subject, title, message, button_text, button_url });
   if(statusEl) statusEl.textContent = "Email sent ✅";
-  modalShow("Email Sent", "The branded email was sent successfully.");
-
-  const ids = [
-    "manualEmailTo",
-    "manualEmailUserName",
-    "manualEmailSubject",
-    "manualEmailTitle",
-    "manualEmailMessage",
-    "manualEmailButtonText",
-    "manualEmailButtonUrl"
-  ];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.value = "";
+  modalShow("Email Sent","The branded email was sent successfully.");
+  document.getElementById("manualEmailUserSelect").value = "";
+  ["manualEmailUserName","manualEmailSubject","manualEmailTitle","manualEmailMessage","manualEmailButtonText","manualEmailButtonUrl"].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value = "";
   });
-
   feed("manual_email_send -> " + to);
 }
 
