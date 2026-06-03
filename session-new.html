@@ -545,8 +545,16 @@ async function doReset() {
   await window.SV_DB.auth.updateUser({ data: { trading_pin: null } });
   localStorage.removeItem(`sv_attempts_${_user.id}`);
   localStorage.removeItem(`sv_lockout_${_user.id}`);
+  const { data: { session: resetSession } } = await window.SV_DB.auth.getSession();
   const { data: { user: fresh } } = await window.SV_DB.auth.getUser();
   _user = fresh;
+  if (resetSession?.access_token) {
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resetSession.access_token}` },
+      body: JSON.stringify({ action: 'notify_pin_reset', user_id: _user.id }),
+    }).catch(() => {});
+  }
   showCreate();
 }
 

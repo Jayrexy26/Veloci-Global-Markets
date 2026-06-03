@@ -48,7 +48,7 @@ serve(async (req) => {
   const { action } = body;
 
   // Users can trigger submission notifications for their own account only
-  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted"];
+  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_pin_reset"];
   const authorized = admin_authorized ||
     (authenticated_user_id !== null && USER_SELF_ACTIONS.includes(action) && body.user_id === authenticated_user_id);
 
@@ -216,6 +216,23 @@ serve(async (req) => {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_pin_reset") {
+      const { user_id } = body;
+      if (!user_id) return err("Missing user_id");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Your Security PIN Has Been Reset";
+      const html = buildPlanEmailHtml(subject, name, "pin_reset", {});
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
       }).catch(() => {});
       return ok({ sent: true });
     }
@@ -406,6 +423,21 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         </ul>
       </div>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a> to explore all features.</p>`;
+
+  } else if (tmpl === "pin_reset") {
+    const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
+    badge = `<div style="display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#c2410c;">SECURITY ALERT</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your Veloci Global Markets Security PIN has been successfully reset. You will be prompted to create a new PIN the next time you log in to your account.</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;">Action</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">Security PIN Reset</td></tr>
+        <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Date &amp; Time</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${s(now)}</td></tr>
+        <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Status</td><td style="padding:14px 18px;font-size:14px;font-weight:600;color:#166534;border:1px solid #e5e7eb;">Completed</td></tr>
+      </table>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:18px 22px;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;color:#92400e;line-height:1.7;"><strong>Didn't request this?</strong> If you did not initiate this PIN reset, please contact our support team immediately at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#c2410c;text-decoration:none;font-weight:600;">help.velociglobalmarkets@gmail.com</a> or via live chat.</p>
+      </div>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/login-new.html" style="color:#f05a1a;">account</a> to set up your new PIN.</p>`;
 
   } else if (tmpl === "plan_upgraded") {
     const planName = s(data.plan || "Silver");
