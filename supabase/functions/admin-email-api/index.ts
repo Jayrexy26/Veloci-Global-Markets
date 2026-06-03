@@ -261,6 +261,7 @@ serve(async (req) => {
         db.from("profiles").update({
           first_name: regFname || "",
           last_name: regLname || "",
+          full_name: `${regFname || ""} ${regLname || ""}`.trim() || null,
           country: regCountry || null,
           phone: regPhone || null,
         }).eq("id", user_id),
