@@ -734,10 +734,10 @@ async function doRegister() {
   const lname   = document.getElementById('r-lname').value.trim();
   const email   = document.getElementById('r-email').value.trim();
 
-  /* Check for duplicate email at submit time too */
+  /* Check for duplicate email at submit time (RPC bypasses RLS) */
   if (_emailExists) return showErr('An account with this email already exists. Please log in instead.');
   if (email) {
-    const { data: exists } = await window.SV_DB.from('profiles').select('id').eq('email', email).maybeSingle();
+    const { data: exists } = await window.SV_DB.rpc('check_email_exists', { check_email: email });
     if (exists) { _emailExists = true; return showErr('An account with this email already exists. Please log in instead.'); }
   }
   const pwd     = document.getElementById('pwd').value;
@@ -769,6 +769,13 @@ async function doRegister() {
     btn.disabled    = false;
     btn.textContent = 'Create Account';
     return showErr(error.message);
+  }
+
+  /* Supabase returns identities:[] when email already exists (enumeration protection) */
+  if (!data?.user?.identities || data.user.identities.length === 0) {
+    btn.disabled    = false;
+    btn.textContent = 'Create Account';
+    return showErr('An account with this email already exists. Please log in instead.');
   }
 
   await db.from('profiles').upsert({
@@ -810,15 +817,14 @@ async function loginWithGoogle() {
   } catch(e) { showErr(e.message || 'Google sign-in failed.'); btn.disabled = false; btn.innerHTML = orig; }
 }
 
-/* ── Real-time duplicate email check ── */
-let _emailCheckTimer = null;
+/* ── Real-time duplicate email check (uses RPC to bypass RLS) ── */
 let _emailExists = false;
 
 document.getElementById('r-email').addEventListener('blur', async function() {
   const email = this.value.trim();
   if (!email || !/\S+@\S+\.\S+/.test(email)) return;
-  const { data } = await window.SV_DB.from('profiles').select('id').eq('email', email).maybeSingle();
-  _emailExists = !!data;
+  const { data: exists } = await window.SV_DB.rpc('check_email_exists', { check_email: email });
+  _emailExists = !!exists;
   if (_emailExists) {
     const el = document.getElementById('r-error');
     el.textContent = 'An account with this email already exists. Please log in instead.';
