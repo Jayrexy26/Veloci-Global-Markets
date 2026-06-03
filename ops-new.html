@@ -992,10 +992,21 @@
             </div>
             <div class="card__body" style="display:flex;flex-direction:column;gap:16px;">
               <div class="field">
-                <label>To</label>
+                <label>Send To</label>
+                <select id="email-audience-sel" onchange="onEmailAudienceChange()" style="width:100%;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box;">
+                  <option value="specific">Specific User</option>
+                  <option value="all">All Users</option>
+                </select>
+              </div>
+              <div id="email-specific-row" class="field">
+                <label>Recipient</label>
                 <select id="email-recipient-sel">
                   <option value="">&#8212; Select recipient &#8212;</option>
                 </select>
+              </div>
+              <div id="email-all-notice" style="display:none;background:rgba(240,90,26,0.08);border:1px solid rgba(240,90,26,0.3);border-radius:8px;padding:11px 14px;display:flex;align-items:flex-start;gap:8px;">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <p style="margin:0;font-size:12px;color:var(--text);line-height:1.5;"><strong>Broadcast to all users.</strong> This email will be sent to every registered user on the platform. Double-check the content before sending.</p>
               </div>
               <div>
                 <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Subject</label>
@@ -4253,14 +4264,58 @@ window.loadEmailHistory = async function() {
   }).join('');
 };
 
+window.onEmailAudienceChange = function() {
+  const audience = document.getElementById('email-audience-sel').value;
+  const specificRow = document.getElementById('email-specific-row');
+  const allNotice   = document.getElementById('email-all-notice');
+  if (specificRow) specificRow.style.display = audience === 'all' ? 'none' : '';
+  if (allNotice)   allNotice.style.display   = audience === 'all' ? 'flex' : 'none';
+};
+
 window.opsSendEmail = async function() {
-  const sel = document.getElementById('email-recipient-sel');
-  const subject = document.getElementById('email-subject').value.trim();
-  const bodyText = document.getElementById('email-body').value.trim();
-  const btn = document.getElementById('email-send-btn');
-  if (!sel || !sel.value) { showToast('Please select a recipient', 'error'); return; }
-  if (!subject) { showToast('Subject is required', 'error'); return; }
+  const audience  = (document.getElementById('email-audience-sel')?.value || 'specific');
+  const subject   = document.getElementById('email-subject').value.trim();
+  const bodyText  = document.getElementById('email-body').value.trim();
+  const btn       = document.getElementById('email-send-btn');
+  if (!subject)  { showToast('Subject is required', 'error'); return; }
   if (!bodyText) { showToast('Message body is required', 'error'); return; }
+
+  if (audience === 'all') {
+    if (!confirm('Send this email to ALL registered users?\n\nSubject: ' + subject + '\n\nThis cannot be undone.')) return;
+    btn.disabled = true;
+    if (!_emailUsers.length) {
+      btn.textContent = 'Loading users…';
+      const db = window.SV_DB;
+      const { data } = await db.from('profiles').select('id,email,full_name,first_name,last_name').order('email');
+      _emailUsers = data || [];
+    }
+    const users = _emailUsers.filter(function(u) { return u.email; });
+    if (!users.length) { showToast('No users found', 'error'); btn.disabled = false; btn.textContent = 'Send Email'; return; }
+    let sent = 0, failed = 0;
+    for (var i = 0; i < users.length; i++) {
+      const u = users[i];
+      const name = userName(u) !== '—' ? userName(u) : '';
+      btn.textContent = 'Sending ' + (i + 1) + ' of ' + users.length + '…';
+      const result = await _emailApiCall('send_email', {
+        recipient_email: u.email,
+        recipient_name: name || null,
+        recipient_user_id: u.id || null,
+        subject: subject,
+        body_text: bodyText,
+      });
+      result.error ? failed++ : sent++;
+    }
+    btn.disabled = false; btn.textContent = 'Send Email';
+    showToast('Sent to ' + sent + ' user(s)' + (failed ? ', ' + failed + ' failed' : ''), failed ? 'error' : 'success');
+    document.getElementById('email-subject').value = '';
+    document.getElementById('email-body').value = '';
+    logAudit('SEND_EMAIL_ALL', 'All Users', subject + ' | ' + sent + ' sent');
+    loadEmailHistory();
+    return;
+  }
+
+  const sel = document.getElementById('email-recipient-sel');
+  if (!sel || !sel.value) { showToast('Please select a recipient', 'error'); return; }
   let parsed;
   try { parsed = JSON.parse(sel.value); } catch(e) { showToast('Invalid recipient', 'error'); return; }
   btn.disabled = true; btn.textContent = 'Sending…';
