@@ -740,18 +740,22 @@ loadTVChart(activeInst);
   if(!session){window.location.href="login-new.html";return;}
   const user = session.user;
   const email = user.email || '';
-  const { data: profile } = await db.from('profiles').select('first_name,last_name').eq('id', user.id).maybeSingle();
+  const { data: profile } = await db.from('profiles').select('first_name,last_name,avatar_url').eq('id', user.id).maybeSingle();
   const firstName = profile?.first_name || '';
   const displayName = firstName ? [firstName, profile.last_name].filter(Boolean).join(' ') : email.split('@')[0];
   const initials = displayName.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'SV';
   document.getElementById('sb-avatar').textContent    = initials;
   document.getElementById('sb-user-name').textContent = displayName;
   document.getElementById('sb-user-uid').textContent  = email;
-  const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
-  if (_kyc?.selfie_url) {
-    const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
-    if (_signed?.signedUrl) {
-      document.getElementById('sb-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  if (profile?.avatar_url) {
+    document.getElementById('sb-avatar').innerHTML = `<img src="${profile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
+    if (_kyc?.selfie_url) {
+      const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
+      if (_signed?.signedUrl) {
+        document.getElementById('sb-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      }
     }
   }
 })();

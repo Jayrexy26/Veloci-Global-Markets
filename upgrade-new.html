@@ -747,7 +747,7 @@ function applyPlanUI(plan) {
 
   const user  = session.user;
   const email = user.email || '';
-  const { data: p } = await db.from('profiles').select('first_name,last_name,plan').eq('id', user.id).maybeSingle();
+  const { data: p } = await db.from('profiles').select('first_name,last_name,plan,avatar_url').eq('id', user.id).maybeSingle();
 
   const firstName   = p?.first_name || '';
   const displayName = firstName ? [firstName, p.last_name].filter(Boolean).join(' ') : email.split('@')[0];
@@ -757,11 +757,15 @@ function applyPlanUI(plan) {
   document.getElementById('sb-avatar').textContent    = initials;
   document.getElementById('sb-user-name').textContent = displayName;
   document.getElementById('sb-user-uid').textContent  = email;
-  const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
-  if (_kyc?.selfie_url) {
-    const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
-    if (_signed?.signedUrl) {
-      document.getElementById('sb-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  if (p?.avatar_url) {
+    document.getElementById('sb-avatar').innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  } else {
+    const { data: _kyc } = await db.from('kyc_submissions').select('selfie_url').eq('user_id', user.id).maybeSingle();
+    if (_kyc?.selfie_url) {
+      const { data: _signed } = await db.storage.from('kyc-docs').createSignedUrl(_kyc.selfie_url, 3600);
+      if (_signed?.signedUrl) {
+        document.getElementById('sb-avatar').innerHTML = `<img src="${_signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      }
     }
   }
 
