@@ -228,19 +228,6 @@ serve(async (req) => {
       if (!user_id || !regEmail) return err("Missing user_id or email");
       if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
 
-      // Save profile with service role (bypasses RLS — needed when session is null during email confirmation)
-      await db.from("profiles").upsert({
-        id: user_id,
-        email: regEmail,
-        first_name: regFname || regName?.split(" ")[0] || "",
-        last_name: regLname || regName?.split(" ").slice(1).join(" ") || "",
-        country: regCountry || null,
-        phone: regPhone || null,
-        account_type: "live",
-        status: "active",
-        kyc_status: "none",
-        plan: "Starter",
-      }, { onConflict: "id" }).catch(() => {});
       const adminSubject = `New Registration — ${regName || regEmail} (${regEmail})`;
       const adminHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e6ee;border-radius:12px;overflow:hidden;">
@@ -269,6 +256,19 @@ serve(async (req) => {
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html: adminHtml }),
       }).catch(() => {});
+      // Save profile after email so a slow DB call never blocks the notification
+      db.from("profiles").upsert({
+        id: user_id,
+        email: regEmail,
+        first_name: regFname || "",
+        last_name: regLname || "",
+        country: regCountry || null,
+        phone: regPhone || null,
+        account_type: "live",
+        status: "active",
+        kyc_status: "none",
+        plan: "Starter",
+      }, { onConflict: "id" }).catch(() => {});
       return ok({ sent: true });
     }
 
