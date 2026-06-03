@@ -2099,7 +2099,7 @@ window.saveSystemSettings = async function() {
 
 window.loadDepositAddresses = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('deposit_addresses').select('asset,network,address');
+  const { data } = await db.from('deposit_addresses').select('coin,network,address');
   const map = {};
   (data||[]).forEach(r => { map[r.coin + '-' + r.network] = r.address; });
   buildDepAddrForm(map);
@@ -2113,7 +2113,7 @@ window.saveDepositAddresses = async function() {
     return { coin: p.coin, network: p.network, address: addr, updated_at: new Date().toISOString() };
   }).filter(r => r.address); // only save non-empty
   if (!rows.length) { showToast('Enter at least one address', 'error'); return; }
-  const { error } = await db.from('deposit_addresses').upsert(rows, { onConflict: 'asset,network' });
+  const { error } = await db.from('deposit_addresses').upsert(rows, { onConflict: 'coin,network' });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   logAudit('save_deposit_addresses', 'system', `${rows.length} addresses saved`);
   showToast('Deposit addresses saved');
