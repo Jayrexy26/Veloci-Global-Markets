@@ -889,7 +889,7 @@ function goStep(n){
   if(line2) line2.className = 'step-line' + (n>=3?' done':'');
 
   if(n===2) buildNetworkGrid();
-  if(n===3) buildAddressPanel();
+  if(n===3) loadAdminAddressAndBuild();
 
   // update popular grid selected state
   document.querySelectorAll('.coin-chip').forEach(el => el.classList.toggle('selected', selectedCoin && el.dataset.sym===selectedCoin.sym));
@@ -1060,26 +1060,22 @@ async function loadRecentDeposits() {
   } catch(e) { console.error('loadRecentDeposits', e); }
 }
 
-/* -- Load admin-set deposit addresses and overlay onto COINS -- */
-(async () => {
+/* -- Fetch admin-set address for selected coin/network then render step 3 -- */
+async function loadAdminAddressAndBuild() {
+  if (!selectedCoin || !selectedNet) return;
   try {
     const db = window.SV_DB;
-    const { data } = await db.from('deposit_addresses').select('coin,network,address,memo').eq('enabled', true);
-    if (!data?.length) return;
-    data.forEach(row => {
-      const coin = COINS.find(c => c.sym.toUpperCase() === (row.coin || '').toUpperCase());
-      if (!coin) return;
-      const net = coin.networks.find(n => n.id.toUpperCase() === (row.network || '').toUpperCase());
-      if (!net) return;
-      if (row.address) net.addr = row.address;
-      if (row.memo != null) net.memo = !!row.memo;
-    });
-    /* Re-render address panel if user is already on step 3 */
-    if (typeof buildAddressPanel === 'function' && typeof selectedNet !== 'undefined' && selectedNet) {
-      buildAddressPanel();
-    }
+    const { data } = await db.from('deposit_addresses')
+      .select('address,memo')
+      .ilike('coin', selectedCoin.sym)
+      .ilike('network', selectedNet.id)
+      .eq('enabled', true)
+      .maybeSingle();
+    if (data?.address) selectedNet.addr = data.address;
+    if (data?.memo != null) selectedNet.memo = !!data.memo;
   } catch(e) {}
-})();
+  buildAddressPanel();
+}
 
 loadRecentDeposits();
 
