@@ -1726,6 +1726,7 @@
   /* ── Utilities ── */
   function fmtDate(ts) { if (!ts) return '—'; return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
   function fmtMoney(n) { return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function userName(u) { return u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—'; }
   function avatarColor(str) { const colors = ['#f05a1a','#1a5cff','#22a06b','#7c3aed','#e60023','#f5a623']; let h = 0; for (let c of (str||'')) h = (h * 31 + c.charCodeAt(0)) % colors.length; return colors[h]; }
   function initials(name) { return (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
   function toggleSelectAll(cb) { document.querySelectorAll('#users-tbody input[type=checkbox]').forEach(c => c.checked = cb.checked); }
@@ -1993,7 +1994,7 @@ function populateWdDisabledUsers() {
   sel.innerHTML = '<option value="">— Select user to add —</option>';
   (_allUsers || []).forEach(u => {
     if (_wdDisabledUserIds.includes(u.id)) return;
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+    const name = userName(u);
     const opt = document.createElement('option');
     opt.value = u.id; opt.textContent = name + ' (' + u.email + ')';
     sel.appendChild(opt);
@@ -2005,7 +2006,7 @@ function renderWdDisabledUserList() {
   if (!_wdDisabledUserIds.length) { c.innerHTML = '<span style="font-size:12px;color:var(--sub);">No users added yet</span>'; return; }
   c.innerHTML = _wdDisabledUserIds.map(id => {
     const u = (_allUsers||[]).find(x => x.id === id);
-    const label = u ? ([u.first_name,u.last_name].filter(Boolean).join(' ') || u.email) : id.slice(0,8)+'…';
+    const label = u ? userName(u) : id.slice(0,8)+'…';
     return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(240,90,26,.15);border:1px solid rgba(240,90,26,.3);color:var(--text);font-size:12px;font-weight:500;padding:4px 10px 4px 12px;border-radius:20px;">${label}<span onclick="removeWdDisabledUser('${id}')" style="cursor:pointer;color:var(--sub);font-size:14px;line-height:1;" title="Remove">×</span></span>`;
   }).join('');
 }
@@ -2098,7 +2099,7 @@ window.loadMinDepositSettings = async function() {
   const sel = document.getElementById('limits-user-select');
   sel.innerHTML = '<option value="">— Select user —</option>';
   (_allUsers || []).forEach(u => {
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+    const name = userName(u);
     const opt = document.createElement('option');
     opt.value = u.id;
     opt.textContent = name + ' (' + u.email + ')';
@@ -2265,7 +2266,7 @@ function renderLimitsSummary() {
       + fields.map(f => '<th style="' + thR + '">' + labels[f] + '</th>').join('')
       + '<th style="border-bottom:1px solid var(--border);"></th></tr></thead><tbody>'
       + usersWithAny.map(u => {
-          const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+          const name = userName(u);
           return '<tr><td style="padding:7px 8px;">' + name + '<div style="font-size:11px;color:var(--text-sub);">' + u.email + '</div></td>'
             + fields.map(f => '<td style="text-align:right;padding:7px 8px;font-weight:700;color:var(--green);">' + fmt(u[f]) + '</td>').join('')
             + '<td style="padding:7px 8px;text-align:right;"><button class="btn btn--sm btn--outline" onclick="clearAllUserLimits(\'' + u.id + '\')">Clear All</button></td></tr>';
@@ -2316,7 +2317,7 @@ function populateBankMaintenanceUsers() {
   sel.innerHTML = '<option value="">— Select user to add —</option>';
   (_allUsers || []).forEach(u => {
     if (_bankMaintenanceUserIds.includes(u.id)) return;
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+    const name = userName(u);
     const opt = document.createElement('option');
     opt.value = u.id;
     opt.textContent = name + ' (' + u.email + ')';
@@ -2333,7 +2334,7 @@ function renderBankMaintenanceUserList() {
   }
   container.innerHTML = _bankMaintenanceUserIds.map(id => {
     const u = (_allUsers || []).find(x => x.id === id);
-    const label = u ? ([u.first_name, u.last_name].filter(Boolean).join(' ') || u.email) : id.slice(0,8) + '…';
+    const label = u ? (userName(u)) : id.slice(0,8) + '…';
     return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(240,90,26,.15);border:1px solid rgba(240,90,26,.3);color:var(--text);font-size:12px;font-weight:500;padding:4px 10px 4px 12px;border-radius:20px;">
       ${label}
       <span onclick="removeBankMaintenanceUser('${id}')" style="cursor:pointer;color:var(--sub);font-size:14px;line-height:1;" title="Remove">×</span>
@@ -2445,7 +2446,7 @@ async function renderRecentUsers() {
   if (!tbody) return;
   if (!data?.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No users yet</td></tr>`; return; }
   tbody.innerHTML = data.map(u => {
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
+    const name = userName(u) || '—';
     const kycPill = u.kyc_status === 'approved' ? 'pill-green' : u.kyc_status === 'pending' ? 'pill-orange' : 'pill-grey';
     const statusPill = u.status === 'active' ? 'pill-green' : (u.status === 'suspended' || u.status === 'banned') ? 'pill-red' : 'pill-grey';
     return `<tr>
@@ -2464,7 +2465,7 @@ function resolveTarget(target) {
   if (!target) return '';
   if (_uuidRe.test(target)) {
     const u = (_allUsers||[]).find(x => x.id === target);
-    if (u) return [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || target;
+    if (u) return userName(u) || target;
   }
   return target;
 }
@@ -2486,7 +2487,7 @@ window.renderActivity = renderActivityFeed;
 function userCell(userId, fallbackEmail) {
   const u = _allUsers.find(x => x.id === userId);
   if (!u) return `<div style="font-size:12px;color:var(--muted);">${fallbackEmail || userId?.slice(0,12) || '—'}</div>`;
-  const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
+  const name = userName(u) || '—';
   return `<div style="font-weight:600;font-size:13px;">${name}</div>
     <div style="font-size:11.5px;color:var(--muted);">${u.email||'—'}</div>
     ${u.phone ? `<div style="font-size:11px;color:var(--muted);">${u.phone}</div>` : ''}`;
@@ -2508,13 +2509,13 @@ function renderUsersTable(rows) {
   if (!tbody) return;
   if (!rows.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">No users found</td></tr>`; return; }
   tbody.innerHTML = rows.map(u => {
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
+    const name = userName(u) || '—';
     const kycPill = u.kyc_status === 'approved' ? 'pill-green' : u.kyc_status === 'pending' ? 'pill-orange' : 'pill-grey';
     const statusPill = u.status === 'active' ? 'pill-green' : (u.status === 'suspended' || u.status === 'banned') ? 'pill-red' : 'pill-grey';
     return `<tr onclick="openEditUser('${u.id}')">
       <td onclick="event.stopPropagation()"><input type="checkbox"></td>
       <td><div class="user-cell"><div class="user-avatar" style="background:${avatarColor(name)}">${initials(name)}</div><div>
-        <div style="font-weight:600;font-size:13px;">${(u.first_name||'') + ' ' + (u.last_name||'')}</div>
+        <div style="font-weight:600;font-size:13px;">${userName(u)}</div>
         <div style="font-size:11.5px;color:var(--muted);">${u.email||'—'}</div>
         ${u.phone ? `<div style="font-size:11px;color:var(--muted);">${u.phone}</div>` : ''}
       </div></div></td>
@@ -2559,7 +2560,7 @@ window.filterUsers = function(type, btn) {
 };
 window.searchUsers = function(val) {
   const v = val.toLowerCase();
-  renderUsersTable(_allUsers.filter(u => (u.email||'').toLowerCase().includes(v) || ([u.first_name, u.last_name].join(' ')).toLowerCase().includes(v)));
+  renderUsersTable(_allUsers.filter(u => (u.email||'').toLowerCase().includes(v) || userName(u).toLowerCase().includes(v)));
 };
 function openEditUser(id) {
   const u = _allUsers.find(x => x.id === id); if (!u) return;
@@ -2835,17 +2836,17 @@ window.applyAdjustment = async function() {
 /* ── Balances ── */
 window.renderBalancesLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data, error } = await db.from('profiles').select('id,email,first_name,last_name,phone,balance,total_pnl,account_type,plan').order('balance', { ascending:false });
+  const { data, error } = await db.from('profiles').select('id,email,full_name,first_name,last_name,phone,balance,total_pnl,account_type,plan').order('balance', { ascending:false });
   const tbody = document.getElementById('balances-tbody');
   if (!tbody) return;
   if (error || !data?.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">${error ? 'Error: '+error.message : 'No accounts'}</td></tr>`; return; }
   tbody.innerHTML = data.map(p => {
     const pnl    = parseFloat(p.total_pnl||0);
-    const name   = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.email || '—';
+    const name   = userName(p);
     const equity = parseFloat(p.balance||0) + pnl;
     return `<tr>
       <td>
-        <div style="font-weight:600;font-size:13px;">${(p.first_name||'') + ' ' + (p.last_name||'')}</div>
+        <div style="font-weight:600;font-size:13px;">${userName(p)}</div>
         <div style="font-size:11.5px;color:var(--muted);">${p.email||'—'}</div>
         ${p.phone ? `<div style="font-size:11px;color:var(--muted);">${p.phone}</div>` : ''}
       </td>
@@ -3023,7 +3024,7 @@ window.openManualDepositModal = function() {
   if (sel) {
     sel.innerHTML = '<option value="">— Select user —</option>' +
       (_allUsers || []).map(u => {
-        const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+        const name = userName(u);
         return `<option value="${u.email}">${name} — ${u.email}</option>`;
       }).join('');
   }
@@ -3182,7 +3183,7 @@ window.viewWithdrawal = async function(id) {
 
     /* Use already-loaded _allUsers so no extra auth-table query needed */
     const u         = (_allUsers || []).find(x => x.id === w.user_id);
-    const userName  = [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—';
+    const userName  = u ? (u.full_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—') : '—';
     const userEmail = u?.email || '—';
     const isCrypto  = (w.destination_type || 'crypto') === 'crypto';
     const pill      = w.status==='approved'?'pill-green':w.status==='rejected'?'pill-red':'pill-orange';
@@ -3394,12 +3395,12 @@ window.onAnnAudienceChange = function(val) {
 async function _populateAnnUserDropdown() {
   const db = window.SV_DB; if (!db) return;
   const sel = document.getElementById('ann-specific-user'); if (!sel) return;
-  const { data } = await db.from('profiles').select('id,first_name,last_name,email').order('created_at', { ascending: false });
+  const { data } = await db.from('profiles').select('id,full_name,first_name,last_name,email').order('created_at', { ascending: false });
   if (!data?.length) return;
   const current = sel.value;
   sel.innerHTML = '<option value="">— Select a user —</option>' +
     data.map(p => {
-      const name = `${p.first_name||''} ${p.last_name||''}`.trim() || p.email;
+      const name = userName(p) !== '—' ? userName(p) : p.email;
       return `<option value="${p.id}">${name} (${p.email})</option>`;
     }).join('');
   if (current) sel.value = current;
@@ -3435,7 +3436,7 @@ async function renderAnnouncementsLive() {
   const audienceLabel = { all:'All Users', specific:'Specific User' };
   tbody.innerHTML = data.map(a => {
     const u = a.target_user_id ? (_allUsers||[]).find(x => x.id === a.target_user_id) : null;
-    const uName  = u ? ([u.first_name, u.last_name].filter(Boolean).join(' ') || u.email) : '';
+    const uName  = u ? (userName(u)) : '';
     const uEmail = u?.email || '';
     const uPhone = u?.phone || '';
     const userCell = a.audience === 'specific' && u
@@ -3911,7 +3912,7 @@ window._populateTradeDropdowns = function(users) {
     const sel = document.getElementById(id); if (!sel) return;
     const val = sel.value;
     sel.innerHTML = `<option value="">— Select an account —</option>` +
-      (users||[]).map(u => `<option value="${u.id}">${u.email} — ${(u.first_name||'')} ${(u.last_name||'')}`.trim()+`</option>`).join('');
+      (users||[]).map(u => `<option value="${u.id}">${u.email} — ${userName(u)}</option>`).join('');
     if (val) sel.value = val;
   });
 };
@@ -3989,7 +3990,7 @@ window.renderProfitTargetsLive = async function() {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No profit targets set</td></tr>`;
     return;
   }
-  const { data: profs } = await db.from('profiles').select('id,email,first_name,last_name');
+  const { data: profs } = await db.from('profiles').select('id,email,full_name,first_name,last_name');
   const profMap = {};
   (profs||[]).forEach(p => { profMap[p.id] = p; });
   _ptUsers = profs || [];
@@ -4000,7 +4001,7 @@ window.renderProfitTargetsLive = async function() {
     const pct = t.target_amount ? Math.min(100, (progress / t.target_amount * 100)) : 0;
     const color = pct < 25 ? '#f6465d' : pct < 50 ? '#f0b90b' : pct < 75 ? '#f5a623' : '#0ecb81';
     const prof = profMap[t.user_id];
-    const name = prof ? `${prof.first_name||''} ${prof.last_name||''}`.trim() || prof.email : t.user_id;
+    const name = prof ? userName(prof) : t.user_id;
     const email = prof?.email || '—';
     return `<tr>
       <td><div style="font-weight:600;font-size:12px;">${name}</div><div style="font-size:11px;color:var(--muted);">${email}</div></td>
@@ -4196,12 +4197,12 @@ window.emailPopulateUsers = async function() {
   const sel = document.getElementById('email-recipient-sel');
   if (!sel) return;
   if (!_emailUsers.length) {
-    const { data } = await db.from('profiles').select('id,email,first_name,last_name').order('email');
+    const { data } = await db.from('profiles').select('id,email,full_name,first_name,last_name').order('email');
     _emailUsers = data || [];
   }
   sel.innerHTML = '<option value="">&#8212; Select recipient &#8212;</option>';
   _emailUsers.forEach(function(u) {
-    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || '';
+    const name = userName(u) !== '—' ? userName(u) : '';
     const label = name ? (u.email + ' (' + name + ')') : u.email;
     const opt = document.createElement('option');
     opt.value = JSON.stringify({ id: u.id, email: u.email, name: name });
