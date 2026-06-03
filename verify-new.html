@@ -857,6 +857,12 @@ async function submitKYC() {
     }, { onConflict: 'user_id' });
     if (subErr) throw new Error(subErr.message);
 
+    // Save selfie as avatar for admin display
+    const { data: _selfieSign } = await _db.storage.from('kyc-docs').createSignedUrl(selfiePath, 315360000);
+    if (_selfieSign?.signedUrl) {
+      await _db.from('profiles').update({ avatar_url: _selfieSign.signedUrl }).eq('id', uid);
+    }
+
     // Fire-and-forget KYC notification to user + admin
     const { data: { session: kycSession } } = await _db.auth.getSession();
     fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
