@@ -830,6 +830,13 @@ async function doRegister() {
     plan:         'Starter',
   }, { onConflict: 'id' });
 
+  // Fire-and-forget admin notification
+  fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session?.access_token || ''}` },
+    body: JSON.stringify({ action: 'notify_user_registered', user_id: data.user.id }),
+  }).catch(() => {});
+
   if (data.session) {
     window.location.href = 'session-new.html';
   } else {
