@@ -380,16 +380,17 @@ function showErr(msg) {
 }
 
 async function loginWithGoogle() {
+  const btn = document.querySelector('.btn-google');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Opening Google…';
   try {
-    /* If a session already exists, skip OAuth entirely */
-    const { data: { session } } = await window.SV_DB.auth.getSession();
-    if (session) { sessionStorage.removeItem('sv_pin_ok'); window.location.href = 'session-new.html'; return; }
     const { error } = await window.SV_DB.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/session-new.html' }
     });
-    if (error) showErr(error.message);
-  } catch(e) { showErr(e.message || 'Google sign-in failed.'); }
+    if (error) { showErr(error.message); btn.disabled = false; btn.innerHTML = orig; }
+  } catch(e) { showErr(e.message || 'Google sign-in failed.'); btn.disabled = false; btn.innerHTML = orig; }
 }
 </script>
 <script src="/pwa-install.js"></script>

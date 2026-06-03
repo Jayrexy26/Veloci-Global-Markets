@@ -733,6 +733,13 @@ async function doRegister() {
   const fname   = document.getElementById('r-fname').value.trim();
   const lname   = document.getElementById('r-lname').value.trim();
   const email   = document.getElementById('r-email').value.trim();
+
+  /* Check for duplicate email at submit time too */
+  if (_emailExists) return showErr('An account with this email already exists. Please log in instead.');
+  if (email) {
+    const { data: exists } = await window.SV_DB.from('profiles').select('id').eq('email', email).maybeSingle();
+    if (exists) { _emailExists = true; return showErr('An account with this email already exists. Please log in instead.'); }
+  }
   const pwd     = document.getElementById('pwd').value;
   const pwdCfm  = document.getElementById('pwd-confirm').value;
   const phoneNum = document.getElementById('r-phone').value.trim();
@@ -790,17 +797,43 @@ async function doRegister() {
 
 async function loginWithGoogle() {
   if (!_regOpen) return;
+  const btn = document.getElementById('btn-google');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = 'Opening Google…';
   try {
-    /* If a session already exists, skip OAuth entirely */
-    const { data: { session } } = await window.SV_DB.auth.getSession();
-    if (session) { sessionStorage.removeItem('sv_pin_ok'); window.location.href = 'session-new.html'; return; }
     const { error } = await window.SV_DB.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + '/session-new.html' }
     });
-    if (error) showErr(error.message);
-  } catch(e) { showErr(e.message || 'Google sign-in failed.'); }
+    if (error) { showErr(error.message); btn.disabled = false; btn.innerHTML = orig; }
+  } catch(e) { showErr(e.message || 'Google sign-in failed.'); btn.disabled = false; btn.innerHTML = orig; }
 }
+
+/* ── Real-time duplicate email check ── */
+let _emailCheckTimer = null;
+let _emailExists = false;
+
+document.getElementById('r-email').addEventListener('blur', async function() {
+  const email = this.value.trim();
+  if (!email || !/\S+@\S+\.\S+/.test(email)) return;
+  const { data } = await window.SV_DB.from('profiles').select('id').eq('email', email).maybeSingle();
+  _emailExists = !!data;
+  if (_emailExists) {
+    const el = document.getElementById('r-error');
+    el.textContent = 'An account with this email already exists. Please log in instead.';
+    el.style.display = 'block';
+    document.getElementById('r-email').style.borderColor = '#f05a1a';
+  } else {
+    document.getElementById('r-email').style.borderColor = '';
+  }
+});
+
+document.getElementById('r-email').addEventListener('input', function() {
+  _emailExists = false;
+  document.getElementById('r-error').style.display = 'none';
+  this.style.borderColor = '';
+});
 </script>
 <script src="/pwa-install.js"></script>
 </body>
