@@ -8,8 +8,8 @@
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     window.__pwaPrompt = e;
-    try { if (sessionStorage.getItem('pwa-dismissed')) return; } catch (_) {}
-    showPWABanner();
+    try { if (sessionStorage.getItem('ops-pwa-dismissed')) return; } catch (_) {}
+    showBanner();
   });
 
   window.addEventListener('appinstalled', function () {
@@ -26,12 +26,12 @@
     }
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) { showIOSModal(); return; }
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      alert('Veloci is already installed on your device.'); return;
+      alert('Veloci OPS is already installed on your device.'); return;
     }
     showGenericModal();
   };
 
-  function showPWABanner() {
+  function showBanner() {
     if (document.getElementById('pwa-banner')) {
       document.getElementById('pwa-banner').style.display = 'flex';
       return;
@@ -44,12 +44,12 @@
       'background:#111827;border-top:1px solid rgba(255,255,255,.1);' +
       'box-shadow:0 -4px 20px rgba(0,0,0,.5);';
     el.innerHTML =
-      '<img src="/assets/icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" />' +
+      '<img src="/assets/admin-icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" />' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-weight:600;color:#f1f1f1;font-size:14px;font-family:sans-serif;">Veloci</div>' +
+        '<div style="font-weight:600;color:#f1f1f1;font-size:14px;font-family:sans-serif;">Veloci OPS</div>' +
         '<div style="font-size:12px;color:#9ca3af;font-family:sans-serif;">Add to your home screen</div>' +
       '</div>' +
-      '<button id="pwa-install-btn" style="background:#f05a1a;color:#fff;border:none;border-radius:8px;' +
+      '<button id="pwa-install-btn" style="background:#1e3a8a;color:#fff;border:none;border-radius:8px;' +
         'padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:sans-serif;white-space:nowrap;">Install</button>' +
       '<button id="pwa-dismiss-btn" style="background:none;border:none;color:#6b7280;font-size:22px;' +
         'cursor:pointer;padding:2px 6px;line-height:1;font-family:sans-serif;">×</button>';
@@ -61,16 +61,16 @@
     });
     document.getElementById('pwa-dismiss-btn').addEventListener('click', function () {
       el.style.display = 'none';
-      try { sessionStorage.setItem('pwa-dismissed', '1'); } catch (_) {}
+      try { sessionStorage.setItem('ops-pwa-dismissed', '1'); } catch (_) {}
     });
   }
 
   function showIOSModal() {
     showModal(
-      'Add to Home Screen',
+      'Add Veloci OPS to Home Screen',
       '<div style="text-align:center;margin-bottom:16px;">' +
-        '<img src="/assets/icon-192.png" style="width:64px;height:64px;border-radius:14px;margin:0 auto 12px;display:block;" />' +
-        '<div style="font-size:15px;font-weight:600;color:#f1f1f1;margin-bottom:4px;">Veloci</div>' +
+        '<img src="/assets/admin-icon-192.png" style="width:64px;height:64px;border-radius:14px;margin:0 auto 12px;display:block;" />' +
+        '<div style="font-size:15px;font-weight:600;color:#f1f1f1;margin-bottom:4px;">Veloci OPS</div>' +
       '</div>' +
       '<ol style="padding-left:20px;color:#d1d5db;font-size:14px;line-height:1.9;margin:0;">' +
         '<li>Tap the <strong style="color:#fff;">Share</strong> button ' +
@@ -83,7 +83,7 @@
 
   function showGenericModal() {
     showModal(
-      'Install Veloci',
+      'Install Veloci OPS',
       '<div style="color:#d1d5db;font-size:14px;line-height:1.7;">' +
         '<p style="margin-bottom:12px;">To install the app, open this site in <strong style="color:#fff;">Chrome</strong> on Android, then:</p>' +
         '<ol style="padding-left:20px;margin:0;">' +
