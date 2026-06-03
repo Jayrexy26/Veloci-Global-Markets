@@ -1,18 +1,23 @@
 (function () {
+  var manifestLink = document.querySelector('link[rel="manifest"]');
+  var isAdmin = !!(manifestLink && (manifestLink.href || '').includes('manifest-ops'));
+
+  var SW      = isAdmin ? '/sw-ops.js' : '/sw.js';
+  var appName = isAdmin ? 'Veloci OPS' : 'Veloci';
+  var appIcon = isAdmin ? '/assets/admin-icon-192.png' : '/assets/icon-192.png';
+  var accent  = isAdmin ? '#1e3a8a' : '#f05a1a';
+
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register(SW).catch(() => {});
   }
 
   window.__pwaPrompt = null;
-  var isAdmin = !!(document.querySelector('link[rel="manifest"]') || {}).href
-    && (document.querySelector('link[rel="manifest"]').href || '').includes('manifest-ops');
 
   /* ── native install prompt (Android Chrome / Edge / Samsung) ── */
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     window.__pwaPrompt = e;
 
-    /* auto-banner only if not dismissed in this session */
     try { if (sessionStorage.getItem('pwa-dismissed')) return; } catch (_) {}
 
     showPWABanner();
@@ -31,14 +36,11 @@
       window.__pwaPrompt.userChoice.then(function () { window.__pwaPrompt = null; });
       return;
     }
-    /* iOS Safari */
     var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if (isIOS) { showIOSModal(); return; }
-    /* standalone already installed */
     if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-      alert('Veloci is already installed on your device.'); return;
+      alert(appName + ' is already installed on your device.'); return;
     }
-    /* generic fallback */
     showGenericModal();
   };
 
@@ -48,9 +50,6 @@
       document.getElementById('pwa-banner').style.display = 'flex';
       return;
     }
-    var icon  = isAdmin ? '/assets/admin-icon-192.png' : '/assets/icon-192.png';
-    var label = isAdmin ? 'Veloci OPS' : 'Veloci';
-    var accent = isAdmin ? '#1e3a8a' : '#f05a1a';
 
     var el = document.createElement('div');
     el.id = 'pwa-banner';
@@ -60,9 +59,9 @@
       'background:#111827;border-top:1px solid rgba(255,255,255,.1);' +
       'box-shadow:0 -4px 20px rgba(0,0,0,.5);';
     el.innerHTML =
-      '<img src="' + icon + '" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" />' +
+      '<img src="' + appIcon + '" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" />' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-weight:600;color:#f1f1f1;font-size:14px;font-family:sans-serif;">' + label + '</div>' +
+        '<div style="font-weight:600;color:#f1f1f1;font-size:14px;font-family:sans-serif;">' + appName + '</div>' +
         '<div style="font-size:12px;color:#9ca3af;font-family:sans-serif;">Add to your home screen</div>' +
       '</div>' +
       '<button id="pwa-install-btn" style="background:' + accent + ';color:#fff;border:none;border-radius:8px;' +
@@ -86,8 +85,8 @@
     showModal(
       'Add to Home Screen',
       '<div style="text-align:center;margin-bottom:16px;">' +
-        '<img src="/assets/icon-192.png" style="width:64px;height:64px;border-radius:14px;margin:0 auto 12px;" />' +
-        '<div style="font-size:15px;font-weight:600;color:#f1f1f1;margin-bottom:4px;">Veloci</div>' +
+        '<img src="' + appIcon + '" style="width:64px;height:64px;border-radius:14px;margin:0 auto 12px;display:block;" />' +
+        '<div style="font-size:15px;font-weight:600;color:#f1f1f1;margin-bottom:4px;">' + appName + '</div>' +
       '</div>' +
       '<ol style="padding-left:20px;color:#d1d5db;font-size:14px;line-height:1.9;margin:0;">' +
         '<li>Tap the <strong style="color:#fff;">Share</strong> button ' +
@@ -101,7 +100,7 @@
   /* ── generic fallback modal ── */
   function showGenericModal() {
     showModal(
-      'Install Veloci',
+      'Install ' + appName,
       '<div style="color:#d1d5db;font-size:14px;line-height:1.7;">' +
         '<p style="margin-bottom:12px;">To install the app, open this site in <strong style="color:#fff;">Chrome</strong> on Android, then:</p>' +
         '<ol style="padding-left:20px;margin:0;">' +
@@ -140,7 +139,7 @@
     });
   }
 
-  /* ── Auto-show on iOS Safari ─────────────────────────────────────────────── */
+  /* ── Auto-show on iOS Safari ── */
   var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
   var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
