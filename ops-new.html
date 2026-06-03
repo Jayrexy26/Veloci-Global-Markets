@@ -1264,10 +1264,27 @@
       <!-- AUDIT LOG -->
       <div class="page" id="page-audit">
         <div class="page-header">
-          <div><div class="page-header__title">Audit Log</div><div class="page-header__sub">All admin actions</div></div>
-          <button class="btn btn--outline" onclick="renderAuditLive()"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          <div><div class="page-header__title">Audit Log</div><div class="page-header__sub">All admin actions are recorded here</div></div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn--outline" onclick="renderAuditLive()"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+            <button class="btn btn--outline" onclick="exportAuditCSV()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+          </div>
         </div>
-        <div class="card" id="audit-card"></div>
+        <div class="card card__body--p0" id="audit-card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>Time</th>
+                <th>Admin</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+                <th>IP</th>
+              </tr></thead>
+              <tbody id="audit-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </div><!-- /content -->
@@ -2455,50 +2472,7 @@ async function renderActivityFeed() {
 }
 window.renderActivity = renderActivityFeed;
 
-/* ── Audit Log ── */
-window.renderAuditLive = async function() {
-  const db = window.SV_DB; if (!db) return;
-  const card = document.getElementById('audit-card');
-  if (!card) return;
-
-  card.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px 16px;font-size:13px;">Loading…</div>`;
-
-  const { data } = await db.from('audit_log').select('*').order('created_at', { ascending: false }).limit(100);
-
-  if (!data?.length) {
-    card.innerHTML = `<div style="text-align:center;color:var(--muted);padding:48px 16px;font-size:13px;">No audit entries yet.</div>`;
-    return;
-  }
-
-  if (window.innerWidth <= 768) {
-    card.innerHTML = data.map(a => `
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px;">
-          <span style="font-weight:700;font-size:13px;color:var(--orange);word-break:break-all;">${a.action || '—'}</span>
-          <span style="font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;">${fmtDate(a.created_at)}</span>
-        </div>
-        ${a.target  ? `<div style="font-size:12px;color:var(--text);margin-bottom:3px;word-break:break-all;">${a.target}</div>` : ''}
-        ${a.details ? `<div style="font-size:12px;color:var(--muted);margin-bottom:5px;word-break:break-all;">${a.details}</div>` : ''}
-        <div style="font-size:11px;color:var(--muted);">by ${a.admin_email || 'Admin'}</div>
-      </div>`).join('');
-  } else {
-    card.innerHTML = `
-      <div class="card__body--p0 table-wrap">
-        <table class="data-table">
-          <thead><tr><th>Admin</th><th>Action</th><th>Target</th><th>Details</th><th>Date</th></tr></thead>
-          <tbody>${data.map(a => `
-            <tr>
-              <td style="font-size:13px;">${a.admin_email || 'Admin'}</td>
-              <td style="font-weight:600;font-size:13px;">${a.action || '—'}</td>
-              <td style="font-size:12px;color:var(--muted);">${a.target || '—'}</td>
-              <td style="font-size:12px;color:var(--muted);">${a.details || '—'}</td>
-              <td style="font-size:12px;color:var(--muted);">${fmtDate(a.created_at)}</td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  }
-};
+/* ── Audit Log — defined later in the script, placeholder avoids redeclaration errors ── */
 
 /* ── Shared user-cell helper — name (bold) + email + phone stacked ── */
 function userCell(userId, fallbackEmail) {
@@ -4300,20 +4274,42 @@ window.showPage = function(id, btn) {
 };
 
 /* ── Audit Log ── */
+let _auditData = [];
 window.renderAuditLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('audit_log').select('*').order('created_at', { ascending:false }).limit(200);
   const tbody = document.getElementById('audit-tbody');
   if (!tbody) return;
-  if (!data?.length) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No audit entries</td></tr>`; return; }
-  tbody.innerHTML = data.map(a => `<tr>
-    <td>${a.admin_email||'—'}</td>
-    <td><code style="font-size:11px;">${a.action||'—'}</code></td>
-    <td>${a.target||'—'}</td>
-    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.details||'—'}</td>
-    <td>${fmtDate(a.created_at)}</td>
-  </tr>`).join('');
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr>`;
+  const { data } = await db.from('audit_log').select('*').order('created_at', { ascending:false }).limit(200);
+  _auditData = data || [];
+  if (!_auditData.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:48px;">No audit entries yet.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _auditData.map(a => {
+    const email = a.admin_email || 'Admin';
+    const initial = email.charAt(0).toUpperCase();
+    return `<tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${fmtDate(a.created_at)}</td>
+      <td><span class="badge-pill pill-purple" style="font-size:10px;font-weight:700;">${email}</span></td>
+      <td style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;">${a.action || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.target || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.details || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);">${a.ip_address || '—'}</td>
+    </tr>`;
+  }).join('');
 };
+
+function exportAuditCSV() {
+  if (!_auditData.length) { showToast('No audit data to export', 'error'); return; }
+  const rows = [['Time','Admin','Action','Target','Details','IP'],
+    ..._auditData.map(a => [fmtDate(a.created_at), a.admin_email||'', a.action||'', a.target||'', a.details||'', a.ip_address||''])];
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'audit-log.csv';
+  a.click();
+}
 </script>
 <script src="/pwa-install.js"></script>
 </body>

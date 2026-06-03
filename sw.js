@@ -1,4 +1,4 @@
-const CACHE = 'veloci-v3';
+const CACHE = 'veloci-v4';
 
 const PRECACHE = [
   '/',
