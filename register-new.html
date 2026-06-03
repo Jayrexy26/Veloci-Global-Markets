@@ -193,6 +193,20 @@ input,select{font-family:inherit;}
   .form-row{grid-template-columns:1fr;}
 }
 
+/* ── Duplicate email modal ── */
+#dupEmailModal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(10,11,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;}
+.de-card{background:#fff;border-radius:20px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.25);animation:rsIn .45s cubic-bezier(.34,1.56,.64,1) both;}
+.de-ring{width:80px;height:80px;border-radius:50%;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.28);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:rsRing .55s .15s cubic-bezier(.34,1.56,.64,1) both;}
+.de-icon{width:34px;height:34px;stroke:#ef4444;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+.de-title{font-size:20px;font-weight:800;color:#111;margin-bottom:8px;}
+.de-sub{font-size:13px;color:#666;line-height:1.7;margin-bottom:8px;}
+.de-email{font-size:13px;font-weight:700;color:#f05a1a;word-break:break-all;margin-bottom:24px;}
+.de-btns{display:flex;flex-direction:column;gap:10px;}
+.de-btn-login{display:block;padding:13px 28px;background:#f05a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;text-decoration:none;}
+.de-btn-login:hover{background:#c94400;}
+.de-btn-try{display:block;padding:13px 28px;background:#f5f5f5;color:#333;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:background .15s;}
+.de-btn-try:hover{background:#eaeaea;}
+
 /* ── Registration success modal ── */
 #regSuccessModal{display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,11,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px;}
 .rs-card{background:#fff;border-radius:20px;padding:40px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.25);animation:rsIn .45s cubic-bezier(.34,1.56,.64,1) both;}
@@ -226,6 +240,22 @@ window.smartsupp||(function(d) {
 </script>
 </head>
 <body>
+
+<!-- Duplicate email modal -->
+<div id="dupEmailModal">
+  <div class="de-card">
+    <div class="de-ring">
+      <svg class="de-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="de-title">Email Already Registered</div>
+    <div class="de-sub">An account already exists for</div>
+    <div class="de-email" id="de-email-span"></div>
+    <div class="de-btns">
+      <a href="login-new.html" class="de-btn-login">Log In Instead</a>
+      <button class="de-btn-try" onclick="closeDupModal()">Use a Different Email</button>
+    </div>
+  </div>
+</div>
 
 <!-- Registration success modal -->
 <div id="regSuccessModal">
@@ -735,10 +765,15 @@ async function doRegister() {
   const email   = document.getElementById('r-email').value.trim();
 
   /* Check for duplicate email at submit time (RPC bypasses RLS) */
-  if (_emailExists) return showErr('An account with this email already exists. Please log in instead.');
+  function showDupModal(e) {
+    document.getElementById('de-email-span').textContent = e;
+    document.getElementById('dupEmailModal').style.display = 'flex';
+    document.getElementById('r-email').style.borderColor = '#ef4444';
+  }
+  if (_emailExists) { showDupModal(email); return; }
   if (email) {
     const { data: exists } = await window.SV_DB.rpc('check_email_exists', { check_email: email });
-    if (exists) { _emailExists = true; return showErr('An account with this email already exists. Please log in instead.'); }
+    if (exists) { _emailExists = true; showDupModal(email); return; }
   }
   const pwd     = document.getElementById('pwd').value;
   const pwdCfm  = document.getElementById('pwd-confirm').value;
@@ -775,7 +810,11 @@ async function doRegister() {
   if (!data?.user?.identities || data.user.identities.length === 0) {
     btn.disabled    = false;
     btn.textContent = 'Create Account';
-    return showErr('An account with this email already exists. Please log in instead.');
+    _emailExists = true;
+    document.getElementById('de-email-span').textContent = email;
+    document.getElementById('dupEmailModal').style.display = 'flex';
+    document.getElementById('r-email').style.borderColor = '#ef4444';
+    return;
   }
 
   await db.from('profiles').upsert({
@@ -820,24 +859,31 @@ async function loginWithGoogle() {
 /* ── Real-time duplicate email check (uses RPC to bypass RLS) ── */
 let _emailExists = false;
 
+function closeDupModal() {
+  document.getElementById('dupEmailModal').style.display = 'none';
+  const emailInp = document.getElementById('r-email');
+  emailInp.value = '';
+  emailInp.style.borderColor = '';
+  emailInp.focus();
+  _emailExists = false;
+}
+
 document.getElementById('r-email').addEventListener('blur', async function() {
   const email = this.value.trim();
   if (!email || !/\S+@\S+\.\S+/.test(email)) return;
   const { data: exists } = await window.SV_DB.rpc('check_email_exists', { check_email: email });
   _emailExists = !!exists;
   if (_emailExists) {
-    const el = document.getElementById('r-error');
-    el.textContent = 'An account with this email already exists. Please log in instead.';
-    el.style.display = 'block';
-    document.getElementById('r-email').style.borderColor = '#f05a1a';
+    document.getElementById('de-email-span').textContent = email;
+    document.getElementById('dupEmailModal').style.display = 'flex';
+    this.style.borderColor = '#ef4444';
   } else {
-    document.getElementById('r-email').style.borderColor = '';
+    this.style.borderColor = '';
   }
 });
 
 document.getElementById('r-email').addEventListener('input', function() {
   _emailExists = false;
-  document.getElementById('r-error').style.display = 'none';
   this.style.borderColor = '';
 });
 </script>
