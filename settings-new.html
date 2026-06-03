@@ -966,8 +966,9 @@ async function uploadAvatar(input) {
 
   await db.from('kyc_submissions').update({ selfie_url: path }).eq('user_id', uid);
 
-  const { data: signed } = await db.storage.from('kyc-docs').createSignedUrl(path, 3600);
+  const { data: signed } = await db.storage.from('kyc-docs').createSignedUrl(path, 315360000); // ~10 years
   if (signed?.signedUrl) {
+    await db.from('profiles').update({ avatar_url: signed.signedUrl }).eq('id', uid);
     const imgHtml = `<img src="${signed.signedUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
     document.getElementById('set-big-avatar').innerHTML = imgHtml;
     document.getElementById('sb-avatar').innerHTML      = imgHtml;
