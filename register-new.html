@@ -831,9 +831,11 @@ async function doRegister() {
   }, { onConflict: 'id' });
 
   // Fire-and-forget admin notification
+  const _regHeaders = { 'Content-Type': 'application/json' };
+  if (data.session?.access_token) _regHeaders['Authorization'] = `Bearer ${data.session.access_token}`;
   fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session?.access_token || ''}` },
+    headers: _regHeaders,
     body: JSON.stringify({ action: 'notify_user_registered', user_id: data.user.id, name: `${fname} ${lname}`.trim(), email, country: _selectedCountry?.name || '—', phone }),
   }).catch(() => {});
 
