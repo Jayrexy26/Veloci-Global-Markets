@@ -3076,10 +3076,14 @@ window.opsManualDeposit = async function() {
   if (!prof) { showToast('User not found: ' + userEmail, 'error'); return; }
   const userId = prof.id;
 
+  /* Map method to coin/network */
+  const _methodMap = {'USDT TRC-20':{coin:'USDT',network:'TRC-20'},'USDT ERC-20':{coin:'USDT',network:'ERC-20'},'Bitcoin':{coin:'BTC',network:'Bitcoin'},'Ethereum':{coin:'ETH',network:'ERC-20'},'Bank Transfer':{coin:'USD',network:'Bank Transfer'}};
+  const _cn = _methodMap[method] || {coin:'USDT',network:method};
+
   /* Record the deposit request as approved */
   const { error } = await db.from('deposit_requests').insert({
     user_id: userId, user_email: userEmail,
-    amount, method, note, status: 'approved',
+    amount, method, coin: _cn.coin, network: _cn.network, note, status: 'approved',
     created_at: new Date().toISOString()
   });
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
@@ -3087,10 +3091,6 @@ window.opsManualDeposit = async function() {
   /* Credit user balance */
   const newBalance = (parseFloat(prof.balance) || 0) + amount;
   await db.from('profiles').update({ balance: newBalance }).eq('id', userId);
-
-  /* Write transaction for history page */
-  const _methodMap = {'USDT TRC-20':{coin:'USDT',network:'TRC-20'},'USDT ERC-20':{coin:'USDT',network:'ERC-20'},'Bitcoin':{coin:'BTC',network:'Bitcoin'},'Ethereum':{coin:'ETH',network:'ERC-20'},'Bank Transfer':{coin:'USD',network:'Bank Transfer'}};
-  const _cn = _methodMap[method] || {coin:'USDT',network:method};
   await db.from('transactions').insert({
     user_id: userId, user_email: userEmail,
     type: 'deposit', amount,
@@ -3112,6 +3112,15 @@ window.opsManualDeposit = async function() {
   });
 
   logAudit('manual_deposit', userId, `${fmtMoney(amount)} via ${method} for ${userEmail}`);
+
+  /* Send deposit confirmation email */
+  const { data: { session: mdSession } } = await db.auth.getSession();
+  fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mdSession?.access_token}` },
+    body: JSON.stringify({ action: 'notify_deposit_submitted', user_id: userId, amount, coin: _cn.coin, network: _cn.network }),
+  }).catch(() => {});
+
   showToast(`Manual deposit of ${fmtMoney(amount)} credited to ${userEmail}`);
   closeModal('modal-manual-deposit');
   renderDepositsLive(); loadDashStats();
