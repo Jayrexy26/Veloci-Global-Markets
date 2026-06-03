@@ -2459,13 +2459,22 @@ async function renderRecentUsers() {
 }
 
 /* ── Activity Feed ── */
+const _uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function resolveTarget(target) {
+  if (!target) return '';
+  if (_uuidRe.test(target)) {
+    const u = (_allUsers||[]).find(x => x.id === target);
+    if (u) return [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || target;
+  }
+  return target;
+}
 async function renderActivityFeed() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('audit_log').select('*').order('created_at', { ascending:false }).limit(12);
   const el = document.getElementById('dash-activity');
   const el2 = document.getElementById('activity-feed');
   const html = !data?.length ? `<div style="color:var(--muted);font-size:13px;">No activity yet</div>` :
-    data.map(a => `<div class="activity-item"><div class="activity-dot" style="background:var(--orange)"></div><div class="activity-text"><strong>${a.admin_email||'admin'}</strong> ${a.action||''} <span style="color:var(--muted)">${a.target||''}</span></div><div class="activity-time">${fmtDate(a.created_at)}</div></div>`).join('');
+    data.map(a => `<div class="activity-item"><div class="activity-dot" style="background:var(--orange)"></div><div class="activity-text"><strong>${a.admin_email||'admin'}</strong> ${a.action||''} <span style="color:var(--muted)">${resolveTarget(a.target)}</span></div><div class="activity-time">${fmtDate(a.created_at)}</div></div>`).join('');
   if (el)  el.innerHTML  = html;
   if (el2) el2.innerHTML = html;
 }
@@ -4292,7 +4301,7 @@ window.renderAuditLive = async function() {
       <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${fmtDate(a.created_at)}</td>
       <td><span class="badge-pill pill-purple" style="font-size:10px;font-weight:700;">${email}</span></td>
       <td style="font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;">${a.action || '—'}</td>
-      <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.target || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${resolveTarget(a.target) || '—'}</td>
       <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.details || '—'}</td>
       <td style="font-size:12px;color:var(--muted);">${a.ip_address || '—'}</td>
     </tr>`;
