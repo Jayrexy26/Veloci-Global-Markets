@@ -1729,6 +1729,10 @@
   function userName(u) { return u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—'; }
   function avatarColor(str) { const colors = ['#f05a1a','#1a5cff','#22a06b','#7c3aed','#e60023','#f5a623']; let h = 0; for (let c of (str||'')) h = (h * 31 + c.charCodeAt(0)) % colors.length; return colors[h]; }
   function initials(name) { return (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
+  function avatarHtml(u, name) {
+    if (u?.avatar_url) return `<div class="user-avatar" style="background:transparent;padding:0;overflow:hidden;"><img src="${u.avatar_url}" style="width:32px;height:32px;object-fit:cover;border-radius:50%;display:block;" onerror="this.parentElement.style.background='${avatarColor(name||u?.email||'')}';this.parentElement.innerHTML='${initials(name||u?.email||'')}';"></div>`;
+    return `<div class="user-avatar" style="background:${avatarColor(name||u?.email||'')}">${initials(name||u?.email||'')}</div>`;
+  }
   function toggleSelectAll(cb) { document.querySelectorAll('#users-tbody input[type=checkbox]').forEach(c => c.checked = cb.checked); }
   function exportCSV(type) { showToast(`${type}.csv exported`); }
   function globalSearch(v) { if (v.length > 2) { showPage('users', document.querySelector('[onclick*="users"]')); searchUsers(v); } }
@@ -2450,7 +2454,7 @@ async function renderRecentUsers() {
     const kycPill = u.kyc_status === 'approved' ? 'pill-green' : u.kyc_status === 'pending' ? 'pill-orange' : 'pill-grey';
     const statusPill = u.status === 'active' ? 'pill-green' : (u.status === 'suspended' || u.status === 'banned') ? 'pill-red' : 'pill-grey';
     return `<tr>
-      <td><div class="user-cell"><div class="user-avatar" style="background:${avatarColor(name)}">${initials(name)}</div><div><div class="user-name">${name}</div><div class="user-email">${u.email||'—'}</div></div></div></td>
+      <td><div class="user-cell">${avatarHtml(u,name)}<div><div class="user-name">${name}</div><div class="user-email">${u.email||'—'}</div></div></div></td>
       <td>${u.country||'—'}</td>
       <td>${fmtDate(u.created_at)}</td>
       <td><span class="badge-pill ${statusPill}">${u.status||'active'}</span></td>
@@ -2514,7 +2518,7 @@ function renderUsersTable(rows) {
     const statusPill = u.status === 'active' ? 'pill-green' : (u.status === 'suspended' || u.status === 'banned') ? 'pill-red' : 'pill-grey';
     return `<tr onclick="openEditUser('${u.id}')">
       <td onclick="event.stopPropagation()"><input type="checkbox"></td>
-      <td><div class="user-cell"><div class="user-avatar" style="background:${avatarColor(name)}">${initials(name)}</div><div>
+      <td><div class="user-cell">${avatarHtml(u,name)}<div>
         <div style="font-weight:600;font-size:13px;">${userName(u)}</div>
         <div style="font-size:11.5px;color:var(--muted);">${u.email||'—'}</div>
         ${u.phone ? `<div style="font-size:11px;color:var(--muted);">${u.phone}</div>` : ''}
