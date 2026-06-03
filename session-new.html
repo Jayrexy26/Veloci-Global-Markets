@@ -307,12 +307,22 @@ window.smartsupp||(function(d) {
 
     <!-- ── RESET MODE ── -->
     <div class="pin-mode" id="mode-reset">
-      <div class="pin-h2">Reset Security PIN</div>
-      <div class="pin-sub">Enter your account password to verify your identity and reset your PIN</div>
-      <input type="password" id="reset-pass" class="pin-input" placeholder="Account password"/>
+      <div class="pin-h2">Reset Your PIN</div>
+      <div class="pin-sub">We'll email a secure reset link to<br/><strong id="reset-email-show" style="color:var(--text);word-break:break-all;"></strong></div>
       <div class="pin-error" id="reset-error"></div>
-      <button class="pin-submit-btn" id="btn-do-reset">Verify &amp; Reset PIN</button>
+      <button class="pin-submit-btn" id="btn-do-reset">Send Reset Link</button>
       <button class="link-btn" id="btn-back-enter">← Back to PIN</button>
+    </div>
+
+    <!-- ── RESET SENT MODE ── -->
+    <div class="pin-mode" id="mode-reset-sent">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(240,90,26,.12);border:2px solid rgba(240,90,26,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div class="pin-h2">Check Your Email</div>
+      <div class="pin-sub" style="margin-bottom:14px;">A PIN reset link was sent to<br/><strong id="reset-sent-email" style="color:var(--text);word-break:break-all;"></strong></div>
+      <div style="background:rgba(255,255,255,.04);border:1px solid var(--b);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:16px;text-align:left;">The link expires in 1 hour. Check your spam folder if you don't see it.</div>
+      <button class="link-btn" id="btn-reset-signout">Sign out</button>
     </div>
 
     <!-- ── LOCKOUT MODE ── -->
@@ -419,8 +429,10 @@ function showEnter() {
 }
 
 function showReset() {
-  document.getElementById('reset-pass').value = '';
+  document.getElementById('reset-email-show').textContent = _user?.email || '';
   document.getElementById('reset-error').style.display = 'none';
+  const btn = document.getElementById('btn-do-reset');
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
   showMode('mode-reset');
 }
 
@@ -521,41 +533,37 @@ async function checkEnter() {
   }
 }
 
-/* ── Reset via password ── */
+/* ── Reset via email link ── */
 async function doReset() {
-  const pass  = document.getElementById('reset-pass').value;
   const errEl = document.getElementById('reset-error');
   const btn   = document.getElementById('btn-do-reset');
   errEl.style.display = 'none';
-  if (!pass) {
-    errEl.textContent = 'Please enter your account password.';
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  const { data: { session } } = await window.SV_DB.auth.getSession();
+  if (!session) {
+    errEl.textContent = 'Session expired. Please sign in again.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send Reset Link';
+    return;
+  }
+
+  const res = await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action: 'send_pin_reset_link', user_id: _user.id }),
+  }).catch(() => null);
+
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
+
+  if (!res || !res.ok) {
+    errEl.textContent = 'Failed to send reset link. Please try again.';
     errEl.style.display = 'block';
     return;
   }
-  btn.disabled = true; btn.textContent = 'Verifying…';
-  const { error } = await window.SV_DB.auth.signInWithPassword({
-    email: _user.email, password: pass
-  });
-  btn.disabled = false; btn.textContent = 'Verify & Reset PIN';
-  if (error) {
-    errEl.textContent = 'Incorrect password. Please try again.';
-    errEl.style.display = 'block';
-    return;
-  }
-  await window.SV_DB.auth.updateUser({ data: { trading_pin: null } });
-  localStorage.removeItem(`sv_attempts_${_user.id}`);
-  localStorage.removeItem(`sv_lockout_${_user.id}`);
-  const { data: { session: resetSession } } = await window.SV_DB.auth.getSession();
-  const { data: { user: fresh } } = await window.SV_DB.auth.getUser();
-  _user = fresh;
-  if (resetSession?.access_token) {
-    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resetSession.access_token}` },
-      body: JSON.stringify({ action: 'notify_pin_reset', user_id: _user.id }),
-    }).catch(() => {});
-  }
-  showCreate();
+
+  document.getElementById('reset-sent-email').textContent = _user.email;
+  showMode('mode-reset-sent');
 }
 
 /* ── After PIN OK ── */
@@ -596,6 +604,11 @@ document.getElementById('btn-back-create').addEventListener('click', showCreate)
 document.getElementById('btn-forgot').addEventListener('click', showReset);
 document.getElementById('btn-back-enter').addEventListener('click', showEnter);
 document.getElementById('btn-do-reset').addEventListener('click', doReset);
+document.getElementById('btn-reset-signout').addEventListener('click', async () => {
+  sessionStorage.removeItem(SS_KEY);
+  await window.SV_DB.auth.signOut();
+  window.location.href = 'login-new.html';
+});
 document.getElementById('btn-signout').addEventListener('click', async () => {
   sessionStorage.removeItem(SS_KEY);
   await window.SV_DB.auth.signOut();

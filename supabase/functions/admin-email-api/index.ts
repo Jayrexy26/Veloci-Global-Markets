@@ -48,9 +48,12 @@ serve(async (req) => {
   const { action } = body;
 
   // Users can trigger submission notifications for their own account only
-  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_pin_reset"];
+  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_pin_reset", "send_pin_reset_link"];
+  // Token-authenticated actions — no JWT needed, the reset token IS the auth
+  const TOKEN_ONLY_ACTIONS = ["verify_pin_reset_token", "reset_pin_with_token"];
   const authorized = admin_authorized ||
-    (authenticated_user_id !== null && USER_SELF_ACTIONS.includes(action) && body.user_id === authenticated_user_id);
+    (authenticated_user_id !== null && USER_SELF_ACTIONS.includes(action) && body.user_id === authenticated_user_id) ||
+    TOKEN_ONLY_ACTIONS.includes(action);
 
   if (!authorized) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -218,6 +221,82 @@ serve(async (req) => {
         body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
       }).catch(() => {});
       return ok({ sent: true });
+    }
+
+    if (action === "send_pin_reset_link") {
+      const { user_id } = body;
+      if (!user_id) return err("Missing user_id");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+
+      // Generate a random 64-hex-char token (256 bits of entropy)
+      const rawToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+      const hashBuf  = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
+      const tokenHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // Delete any existing unused tokens for this user to avoid accumulation
+      await db.from("pin_reset_tokens").delete().eq("user_id", user_id).eq("used", false);
+
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const { error: insertErr } = await db.from("pin_reset_tokens").insert({ user_id, token_hash: tokenHash, expires_at: expiresAt });
+      if (insertErr) return err("Failed to create reset token");
+
+      const resetLink = `https://velociglobal.pro/reset-pin-new.html?token=${rawToken}`;
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "Reset Your Veloci Security PIN";
+      const html = buildPlanEmailHtml(subject, name, "pin_reset_link", { resetLink });
+      const sendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      });
+      if (!sendRes.ok) {
+        const e = await sendRes.json().catch(() => ({}));
+        return err((e as any).message ?? `Resend HTTP ${sendRes.status}`);
+      }
+      return ok({ sent: true });
+    }
+
+    if (action === "verify_pin_reset_token") {
+      const { token } = body;
+      if (!token) return err("Missing token");
+      const hashBuf   = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const { data: rec } = await db.from("pin_reset_tokens")
+        .select("id,user_id,expires_at,used")
+        .eq("token_hash", tokenHash)
+        .single();
+      if (!rec) return ok({ valid: false, reason: "invalid" });
+      if (rec.used) return ok({ valid: false, reason: "used" });
+      if (new Date(rec.expires_at) < new Date()) return ok({ valid: false, reason: "expired" });
+      return ok({ valid: true, user_id: rec.user_id });
+    }
+
+    if (action === "reset_pin_with_token") {
+      const { token, pin_hash } = body;
+      if (!token || !pin_hash) return err("Missing token or pin_hash");
+      const hashBuf   = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+      const tokenHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      const { data: rec } = await db.from("pin_reset_tokens")
+        .select("id,user_id,expires_at,used")
+        .eq("token_hash", tokenHash)
+        .single();
+      if (!rec) return err("Invalid token");
+      if (rec.used) return err("Token already used");
+      if (new Date(rec.expires_at) < new Date()) return err("Token expired");
+
+      // Fetch current metadata and merge the new PIN hash
+      const { data: { user: existingUser } } = await db.auth.admin.getUserById(rec.user_id);
+      const currentMeta = existingUser?.user_metadata || {};
+      const { error: updateErr } = await db.auth.admin.updateUserById(rec.user_id, {
+        user_metadata: { ...currentMeta, trading_pin: pin_hash },
+      });
+      if (updateErr) return err("Failed to update PIN");
+
+      // Mark token used
+      await db.from("pin_reset_tokens").update({ used: true }).eq("id", rec.id);
+      return ok({ success: true });
     }
 
     if (action === "notify_pin_reset") {
@@ -423,6 +502,22 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         </ul>
       </div>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:${accent};">dashboard</a> to explore all features.</p>`;
+
+  } else if (tmpl === "pin_reset_link") {
+    const link = s(data.resetLink || "");
+    badge = `<div style="display:inline-block;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#c2410c;">PIN RESET REQUEST</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We received a request to reset the Security PIN on your Veloci Global Markets account. Click the button below to set a new 4-digit PIN.</p>
+      <div style="text-align:center;margin-bottom:28px;">
+        <a href="${link}" style="display:inline-block;padding:15px 40px;background:#f05a1a;color:#fff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:.3px;">Reset My PIN</a>
+      </div>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;"/>
+      <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;">If the button doesn't work, copy and paste this link into your browser:</p>
+      <p style="margin:0 0 20px;font-size:12px;color:#f05a1a;word-break:break-all;"><a href="${link}" style="color:#f05a1a;text-decoration:none;">${link}</a></p>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:18px 22px;margin-bottom:8px;">
+        <p style="margin:0;font-size:14px;color:#92400e;line-height:1.7;"><strong>Didn't request this?</strong> If you did not request a PIN reset, please ignore this email. Your PIN will remain unchanged. You may also want to contact our support team at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#c2410c;text-decoration:none;font-weight:600;">help.velociglobalmarkets@gmail.com</a>.</p>
+      </div>
+      <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;">This link expires in <strong>1 hour</strong> and can only be used once.</p>`;
 
   } else if (tmpl === "pin_reset") {
     const now = new Date().toLocaleString("en-US", { year:"numeric", month:"long", day:"numeric", hour:"2-digit", minute:"2-digit", timeZone:"UTC", timeZoneName:"short" });
