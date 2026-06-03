@@ -655,6 +655,24 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
   if (!session) { window.location.href = 'login-new.html'; return; }
   _user = session.user;
 
+  // Detect new Google OAuth registration and notify admin
+  if (_user.app_metadata?.provider === 'google') {
+    const createdMs    = new Date(_user.created_at).getTime();
+    const lastSignInMs = new Date(_user.last_sign_in_at || _user.created_at).getTime();
+    if ((lastSignInMs - createdMs) < 60000) {
+      const _gName   = _user.user_metadata?.full_name || _user.user_metadata?.name || '';
+      const _gParts  = _gName.trim().split(' ');
+      const _gFname  = _user.user_metadata?.given_name  || _gParts[0] || '';
+      const _gLname  = _user.user_metadata?.family_name || _gParts.slice(1).join(' ') || '';
+      const _anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4';
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token || _anonKey}` },
+        body: JSON.stringify({ action: 'notify_user_registered', user_id: _user.id, first_name: _gFname, last_name: _gLname, name: _gName, email: _user.email, country: '', phone: '' }),
+      }).catch(() => {});
+    }
+  }
+
   // Check if account is banned
   const { data: _profCheck } = await db.from('profiles').select('status').eq('id', _user.id).single();
   if (_profCheck?.status === 'banned') {
