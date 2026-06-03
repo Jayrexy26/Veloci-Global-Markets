@@ -857,6 +857,14 @@ async function submitKYC() {
     }, { onConflict: 'user_id' });
     if (subErr) throw new Error(subErr.message);
 
+    // Fire-and-forget KYC notification to user + admin
+    const { data: { session: kycSession } } = await _db.auth.getSession();
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${kycSession?.access_token}` },
+      body: JSON.stringify({ action: 'notify_kyc_submitted', user_id: uid, doc_type: docType, country: countryIssue }),
+    }).catch(() => {});
+
     applyStatus('pending');
     startPolling();
   } catch (e) {

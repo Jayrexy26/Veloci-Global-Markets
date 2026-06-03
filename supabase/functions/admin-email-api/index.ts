@@ -48,7 +48,7 @@ serve(async (req) => {
   const { action } = body;
 
   // Users can trigger submission notifications for their own account only
-  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_pin_reset", "send_pin_reset_link"];
+  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_kyc_submitted", "notify_pin_reset", "send_pin_reset_link"];
   // Token-authenticated actions — no JWT needed, the reset token IS the auth
   const TOKEN_ONLY_ACTIONS = ["verify_pin_reset_token", "reset_pin_with_token"];
   const authorized = admin_authorized ||
@@ -219,6 +219,63 @@ serve(async (req) => {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_kyc_submitted") {
+      const { user_id, doc_type, country } = body;
+      if (!user_id) return err("Missing user_id");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const userSubject = "KYC Documents Received – Under Review";
+      const adminSubject = `KYC Submitted — ${name} (${prof.email})`;
+      const userHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e6ee;border-radius:12px;overflow:hidden;">
+        <div style="background:#0d1117;padding:28px 44px;text-align:center;">
+          <img src="${LOGO_URL}" alt="Veloci Global Markets" style="height:48px;"/>
+        </div>
+        <div style="padding:36px 44px;">
+          <span style="display:inline-block;background:#f05a1a;color:#fff;font-size:11px;font-weight:800;padding:3px 12px;border-radius:4px;letter-spacing:0.08em;margin-bottom:18px;">IDENTITY VERIFICATION</span>
+          <h2 style="margin:0 0 16px;font-size:22px;color:#0d1117;">Documents Received</h2>
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">Hi ${name},</p>
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+            We have received your KYC documents and your verification is now <strong>under review</strong>. Our team typically completes reviews within 1–3 business days.
+          </p>
+          ${doc_type ? `<p style="margin:0 0 8px;font-size:14px;color:#6b7280;"><strong>Document:</strong> ${doc_type}</p>` : ""}
+          ${country ? `<p style="margin:0 0 20px;font-size:14px;color:#6b7280;"><strong>Country of Issue:</strong> ${country}</p>` : ""}
+          <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.7;">
+            You will receive another email once your verification is approved or if any action is required.
+          </p>
+        </div>
+        <div style="background:#f8fafc;border-top:1px solid #e2e6ee;padding:24px 44px;">
+          <p style="margin:0 0 12px;font-size:13px;color:#4b5563;line-height:1.7;">If you have any questions, contact us at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#f05a1a;text-decoration:none;">help.velociglobalmarkets@gmail.com</a>.</p>
+          <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.7;">Warm regards,<br><strong style="color:#0d1117;">Veloci Global Markets</strong><br>Compliance Team</p>
+        </div>
+      </div>`;
+      const adminHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e6ee;border-radius:12px;overflow:hidden;padding:32px 44px;">
+        <h2 style="margin:0 0 16px;font-size:20px;color:#0d1117;">New KYC Submission</h2>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Name:</strong> ${name}</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Email:</strong> ${prof.email}</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>User ID:</strong> ${user_id}</p>
+        ${doc_type ? `<p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Document Type:</strong> ${doc_type}</p>` : ""}
+        ${country ? `<p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Country of Issue:</strong> ${country}</p>` : ""}
+        <p style="margin:24px 0 0;font-size:13px;color:#6b7280;">Review this submission in the admin panel under KYC.</p>
+      </div>`;
+      // Email to user
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject: userSubject, html: userHtml }),
+      }).catch(() => {});
+      // Notify admin
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html: adminHtml }),
       }).catch(() => {});
       return ok({ sent: true });
     }
