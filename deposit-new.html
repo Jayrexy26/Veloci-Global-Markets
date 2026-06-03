@@ -1067,9 +1067,9 @@ async function loadRecentDeposits() {
     const { data } = await db.from('deposit_addresses').select('coin,network,address,memo').eq('enabled', true);
     if (!data?.length) return;
     data.forEach(row => {
-      const coin = COINS.find(c => c.sym === row.coin);
+      const coin = COINS.find(c => c.sym.toUpperCase() === (row.coin || '').toUpperCase());
       if (!coin) return;
-      const net = coin.networks.find(n => n.id === row.network);
+      const net = coin.networks.find(n => n.id.toUpperCase() === (row.network || '').toUpperCase());
       if (!net) return;
       if (row.address) net.addr = row.address;
       if (row.memo != null) net.memo = !!row.memo;
