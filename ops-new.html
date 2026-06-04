@@ -668,7 +668,7 @@
         <div class="card">
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>Account #</th><th>User</th><th>Type</th><th>Balance</th><th>Leverage</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <thead><tr><th>User</th><th>Plan</th><th>Balance</th><th>Equity</th><th>Status</th><th>KYC</th><th>Joined</th><th>Actions</th></tr></thead>
               <tbody id="accounts-tbody"></tbody>
             </table>
           </div>
@@ -2941,32 +2941,44 @@ async function rejectKYC(id, userId, reason) {
 /* ── Accounts ── */
 window.renderAccountsLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('trading_accounts').select('*').order('created_at', { ascending:false });
+  const { data } = await db.from('profiles')
+    .select('id,email,first_name,last_name,balance,equity,plan,account_type,status,kyc_status,currency,created_at')
+    .order('created_at', { ascending: false });
   const tbody = document.getElementById('accounts-tbody');
   if (!tbody) return;
   const rows = data || [];
   const sub = document.getElementById('accts-sub');
-  if (sub) sub.textContent = `${rows.length.toLocaleString()} accounts`;
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No accounts</td></tr>`; return; }
-  tbody.innerHTML = rows.map(a => {
-    const pill = a.status === 'active' ? 'pill-green' : 'pill-red';
+  if (sub) sub.textContent = `${rows.length.toLocaleString()} account${rows.length !== 1 ? 's' : ''}`;
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No accounts found</td></tr>`; return; }
+  const planPill = p => {
+    const m = { Starter:'pill-grey', Silver:'pill-blue', Gold:'pill-orange', Platinum:'pill-purple', Elite:'pill-green' };
+    return m[p] || 'pill-grey';
+  };
+  tbody.innerHTML = rows.map(u => {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
+    const statusPill = u.status === 'active' ? 'pill-green' : u.status === 'suspended' ? 'pill-red' : 'pill-grey';
+    const kycPill = u.kyc_status === 'approved' ? 'pill-green' : u.kyc_status === 'pending' ? 'pill-orange' : 'pill-red';
+    const plan = u.plan || 'Starter';
     return `<tr>
-      <td><code style="font-size:11px;">${a.account_number||a.id.slice(0,8)}</code></td>
-      <td>${a.user_email||a.user_id||'—'}</td>
-      <td><span class="badge-pill ${a.type==='live'?'pill-blue':'pill-grey'}">${a.type||'demo'}</span></td>
-      <td>${fmtMoney(a.balance||0)}</td>
-      <td>${a.leverage||'1:100'}</td>
-      <td><span class="badge-pill ${pill}">${a.status||'active'}</span></td>
-      <td>${fmtDate(a.created_at)}</td>
+      <td>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${_esc(u.email||'—')}</div>
+        ${name ? `<div style="font-size:11px;color:var(--muted);">${_esc(name)}</div>` : ''}
+      </td>
+      <td><span class="badge-pill ${planPill(plan)}">${plan}</span></td>
+      <td style="font-weight:600;">${fmtMoney(u.balance||0)}</td>
+      <td>${fmtMoney(u.equity||0)}</td>
+      <td><span class="badge-pill ${statusPill}">${u.status||'active'}</span></td>
+      <td><span class="badge-pill ${kycPill}">${u.kyc_status||'unverified'}</span></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDate(u.created_at)}</td>
       <td><div class="row-actions">
-        <button class="btn btn--sm btn--outline" onclick="openAdjustBalance('${a.id}','${a.user_email||a.user_id}',${a.balance||0})">Adjust</button>
+        <button class="btn btn--sm btn--outline" onclick="openAdjustBalance('${u.id}','${u.email||u.id}',${u.balance||0})">Adjust</button>
       </div></td>
     </tr>`;
   }).join('');
 };
 function openAdjustBalance(id, user, balance) {
   document.getElementById('adj-account-id').value = id;
-  document.getElementById('adj-info').innerHTML = `Account <strong>${id.slice(0,8)}</strong> &mdash; Current balance: <strong>${fmtMoney(balance)}</strong>`;
+  document.getElementById('adj-info').innerHTML = `<strong>${_esc(user)}</strong> &mdash; Current balance: <strong>${fmtMoney(balance)}</strong>`;
   openModal('modal-adjust-balance');
 }
 window.applyAdjustment = async function() {
@@ -2976,11 +2988,11 @@ window.applyAdjustment = async function() {
   const amount = parseFloat(document.getElementById('adj-amount').value);
   const note   = document.getElementById('adj-note').value;
   if (!amount || amount <= 0) { showToast('Enter a valid amount', 'error'); return; }
-  const { data: acc } = await db.from('trading_accounts').select('balance').eq('id', id).single();
+  const { data: acc } = await db.from('profiles').select('balance').eq('id', id).single();
   const newBal = type === 'credit' ? (parseFloat(acc.balance)||0) + amount : (parseFloat(acc.balance)||0) - amount;
-  const { error } = await db.from('trading_accounts').update({ balance: newBal }).eq('id', id);
+  const { error } = await db.from('profiles').update({ balance: newBal }).eq('id', id);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
-  await db.from('transactions').insert({ account_id: id, type, amount, note, status: 'completed' });
+  await db.from('transactions').insert({ user_id: id, type, amount, note, status: 'completed' });
   logAudit('adjust_balance', id, `${type} ${fmtMoney(amount)} — ${note}`);
   showToast(`Balance adjusted: ${type} ${fmtMoney(amount)}`);
   closeModal('modal-adjust-balance');
