@@ -358,6 +358,11 @@
     .kyc-reject-panel textarea:focus{border-color:#f05a1a;}
     body.dark .kyc-reject-panel textarea{background:#1e2229;border-color:rgba(255,255,255,.1);color:#eaecef;}
     .bf-use-short { display: none; }
+    /* Email history mobile — show only 3 rows */
+    @media (max-width: 900px) {
+      #email-history-table.eh-collapsed tbody tr:nth-child(n+5) { display: none; }
+      #email-history-table.eh-collapsed tbody tr:nth-child(4) { opacity: 0.18; pointer-events: none; }
+    }
     /* Billing formats + email layout mobile */
     @media (max-width: 900px) {
       .email-compose { order: 2 !important; }
@@ -1074,13 +1079,16 @@
               <div class="card__title">Sent History</div>
               <button class="btn btn--outline btn--sm" onclick="loadEmailHistory()">Refresh</button>
             </div>
-            <div class="card__body--p0 table-wrap">
-              <table class="data-table">
+            <div class="card__body--p0 table-wrap" id="email-history-wrap">
+              <table class="data-table" id="email-history-table">
                 <thead><tr><th>Recipient</th><th>Subject</th><th>Sent</th><th></th></tr></thead>
                 <tbody id="email-history-body">
                   <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px;">Loading&hellip;</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div id="email-history-viewall" style="display:none;padding:12px 16px;border-top:1px solid var(--border);">
+              <button class="btn btn--outline" style="width:100%;justify-content:center;" onclick="emailHistoryExpandAll()">View All History</button>
             </div>
           </div>
 
@@ -4408,6 +4416,23 @@ window.loadEmailHistory = async function() {
       '<td><button class="btn btn--sm btn--outline" onclick="viewEmailModal(\'' + e.id + '\')">View</button></td>' +
     '</tr>';
   }).join('');
+
+  const table   = document.getElementById('email-history-table');
+  const viewAll = document.getElementById('email-history-viewall');
+  if (window.innerWidth <= 900 && _emailHistory.length > 3) {
+    table.classList.add('eh-collapsed');
+    if (viewAll) viewAll.style.display = 'block';
+  } else {
+    table.classList.remove('eh-collapsed');
+    if (viewAll) viewAll.style.display = 'none';
+  }
+};
+
+window.emailHistoryExpandAll = function() {
+  const table   = document.getElementById('email-history-table');
+  const viewAll = document.getElementById('email-history-viewall');
+  if (table)   table.classList.remove('eh-collapsed');
+  if (viewAll) viewAll.style.display = 'none';
 };
 
 window.onEmailAudienceChange = function() {
