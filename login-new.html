@@ -299,6 +299,15 @@ async function doLogin() {
       return showErr(error.message === 'Invalid login credentials' ? 'Incorrect email or password.' : error.message);
     }
 
+    /* Ban check — before anything else */
+    const { data: _prof } = await window.SV_DB.from('profiles').select('status').eq('id', loginData.user.id).single();
+    if (_prof?.status === 'banned') {
+      await window.SV_DB.auth.signOut();
+      btn.disabled    = false;
+      btn.textContent = 'Log In';
+      return showErr('Account Deactivated. Kindly contact support via live chat or email for activation guidance.');
+    }
+
     /* Log login activity (fire-and-forget) */
     let ipAddress = '', loginLocation = '';
     try {
