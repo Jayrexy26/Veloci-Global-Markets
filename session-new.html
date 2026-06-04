@@ -570,14 +570,15 @@ async function doReset() {
 async function afterPinSuccess() {
   /* Record login activity if login-new.html hasn't already done so this session */
   if (!sessionStorage.getItem('sv_login_logged')) {
+    sessionStorage.setItem('sv_login_logged', '1');
+    const ua = navigator.userAgent;
+    const isMobile = /Mobi|Android/i.test(ua);
+    const isTablet = /Tablet|iPad/i.test(ua);
+    const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+    const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
+    const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
+    let ipAddress = '', loginLocation = '';
     try {
-      const ua = navigator.userAgent;
-      const isMobile = /Mobi|Android/i.test(ua);
-      const isTablet = /Tablet|iPad/i.test(ua);
-      const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
-      const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
-      const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
-      let ipAddress = '', location = '';
       const geoApis = [
         { url:'https://ipwho.is/',             parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
         { url:'https://ipapi.co/json/',         parse: d=>({ ip:d.ip, loc:[d.city,d.country_name].filter(Boolean).join(', ') }) },
@@ -587,11 +588,11 @@ async function afterPinSuccess() {
         try {
           const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),4000);
           const d = await fetch(api.url,{signal:ctrl.signal}).then(r=>r.json()); clearTimeout(t);
-          const p = api.parse(d); if(p.ip){ipAddress=p.ip;location=p.loc;break;}
+          const p = api.parse(d); if(p.ip){ipAddress=p.ip;loginLocation=p.loc;break;}
         } catch(_){}
       }
-      window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location }).catch(()=>{});
     } catch(_) {}
+    window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location:loginLocation }).catch(()=>{});
     fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -599,15 +600,14 @@ async function afterPinSuccess() {
         email: _user.email,
         event: 'google_login',
         login_time: new Date().toISOString(),
-        user_agent: navigator.userAgent || '',
+        user_agent: ua,
         device_language: navigator.language || '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
         platform: navigator.platform || '',
-        ip_address: ipAddress || '',
-        location: location || '',
+        ip_address: ipAddress,
+        location: loginLocation,
       }),
     }).catch(() => {});
-    sessionStorage.setItem('sv_login_logged', '1');
   }
   const { data: profile } = await window.SV_DB.from('profiles')
     .select('kyc_status').eq('id', _user.id).single();
