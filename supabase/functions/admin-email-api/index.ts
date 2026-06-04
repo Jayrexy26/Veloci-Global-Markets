@@ -128,6 +128,23 @@ serve(async (req) => {
       return ok({ sent: true });
     }
 
+    if (action === "notify_profit_target") {
+      const { user_id, label, target_amount } = body;
+      if (!user_id || !target_amount) return err("Missing user_id or target_amount");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const subject = "A New Profit Target Has Been Set on Your Account";
+      const html = buildPlanEmailHtml(subject, name, "profit_target_set", { label, target_amount });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
     if (action === "notify_plan_upgraded") {
       const { user_id, plan } = body;
       if (!user_id || !plan) return err("Missing user_id or plan");
@@ -664,6 +681,20 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         <p style="margin:0;font-size:14px;color:#92400e;line-height:1.7;"><strong>Didn't request this?</strong> If you did not initiate this PIN reset, please contact our support team immediately at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#c2410c;text-decoration:none;font-weight:600;">help.velociglobalmarkets@gmail.com</a> or via live chat.</p>
       </div>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/login-new.html" style="color:#f05a1a;">account</a> to set up your new PIN.</p>`;
+
+  } else if (tmpl === "profit_target_set") {
+    const fmtAmt = Number(data.target_amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const targetLabel = s(data.label || "Profit Target");
+    badge = `<div style="display:inline-block;background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#854d0e;">PROFIT TARGET SET</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your account manager has set a new profit target on your Veloci Global Markets trading account. Work towards your goal and track your progress from your dashboard.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e6ee;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.1em;color:#6b7280;text-transform:uppercase;">Your Profit Target</p>
+        <p style="margin:0 0 6px;font-size:36px;font-weight:800;color:#166534;">$${s(fmtAmt)}</p>
+        <p style="margin:0;font-size:14px;font-weight:600;color:#374151;">${targetLabel}</p>
+      </div>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your account manager is here to help you reach this goal. If you have any questions about your target or trading strategy, feel free to reach out via live chat or email.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:#f05a1a;">dashboard</a> to track your progress.</p>`;
 
   } else if (tmpl === "plan_upgraded") {
     const planName = s(data.plan || "Silver");
