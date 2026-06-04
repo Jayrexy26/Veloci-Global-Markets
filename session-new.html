@@ -586,16 +586,16 @@ async function afterPinSuccess() {
       ];
       for (const api of geoApis) {
         try {
-          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),4000);
+          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),1500);
           const d = await fetch(api.url,{signal:ctrl.signal}).then(r=>r.json()); clearTimeout(t);
           const p = api.parse(d); if(p.ip){ipAddress=p.ip;loginLocation=p.loc;break;}
         } catch(_){}
       }
     } catch(_) {}
     window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location:loginLocation }).catch(()=>{});
-    await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
+    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON}`, 'apikey': SUPABASE_ANON },
       keepalive: true,
       body: JSON.stringify({
         email: _user.email,
