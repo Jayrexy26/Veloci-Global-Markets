@@ -1,12 +1,12 @@
 /*!
- * smartsupp-genie.js
- * Applies genieIn / genieOut to the Smartsupp chat iframe
- * using Smartsupp's own chat:open / chat:close event API.
+ * smartsupp-genie.js — diagnostic build
+ * Open browser DevTools console and click the chat button.
+ * Look for lines starting with [SG] to see what Smartsupp injects.
  */
 (function () {
   'use strict';
 
-  /* ── Inject keyframes + utility classes ── */
+  /* ── CSS ── */
   var $style = document.createElement('style');
   $style.textContent =
     '@keyframes ssGIn{' +
@@ -27,43 +27,92 @@
     '.ss-go{animation:ssGOut .36s cubic-bezier(.4,0,.8,1) both!important;transform-origin:bottom right;will-change:clip-path,transform}';
   document.head.appendChild($style);
 
-  /* ── Ensure the smartsupp queue exists so we can register events
-        before the widget script has fully loaded ── */
+  /* ── Helpers ── */
+  function genieIn(el) {
+    console.log('[SG] genieIn on', el.tagName, el.id, el.className, el.style.cssText);
+    el.classList.remove('ss-go');
+    void el.offsetWidth;
+    el.classList.add('ss-gi');
+  }
+  function genieOut(el) {
+    console.log('[SG] genieOut on', el.tagName, el.id, el.className, el.style.cssText);
+    el.classList.remove('ss-gi');
+    void el.offsetWidth;
+    el.classList.add('ss-go');
+    el.addEventListener('animationend', function () { el.classList.remove('ss-go'); }, { once: true });
+  }
+
+  /* ── Diagnostic: dump Smartsupp DOM once it appears ── */
+  function dumpContainer(c) {
+    console.log('[SG] #smartsupp-widget-container found. Direct children:', c.children.length);
+    Array.from(c.querySelectorAll('*')).forEach(function (el, i) {
+      var r = el.getBoundingClientRect();
+      console.log('[SG] [' + i + ']', el.tagName,
+        'id=' + (el.id || '-'),
+        'class=' + (el.className || '-'),
+        'style="' + el.style.cssText + '"',
+        'rect=' + Math.round(r.width) + 'x' + Math.round(r.height));
+    });
+  }
+
+  /* ── Main ── */
   window.smartsupp = window.smartsupp || function () {
     (window.smartsupp._ = window.smartsupp._ || []).push(arguments);
   };
 
-  function getWidget() {
+  /* Watch for container injection */
+  function waitForContainer(cb) {
     var c = document.getElementById('smartsupp-widget-container');
-    if (!c) return null;
-    /* Prefer the first iframe; fall back to first element child */
-    return c.querySelector('iframe') || c.firstElementChild || null;
+    if (c) { cb(c); return; }
+    new MutationObserver(function (_, obs) {
+      var el = document.getElementById('smartsupp-widget-container');
+      if (el) { obs.disconnect(); cb(el); }
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
-  function genieIn(el) {
-    el.classList.remove('ss-go');
-    void el.offsetWidth;         /* force reflow so animation restarts */
-    el.classList.add('ss-gi');
-  }
+  waitForContainer(function (container) {
+    /* Dump immediately and again after 3 s (widget may still be loading) */
+    dumpContainer(container);
+    setTimeout(function () {
+      console.log('[SG] --- 3s dump ---');
+      dumpContainer(container);
+    }, 3000);
 
-  function genieOut(el) {
-    el.classList.remove('ss-gi');
-    void el.offsetWidth;
-    el.classList.add('ss-go');
-    el.addEventListener('animationend', function () {
-      el.classList.remove('ss-go');
-    }, { once: true });
-  }
-
-  /* ── Hook Smartsupp events ── */
-  smartsupp('on', 'chat:open', function () {
-    var el = getWidget();
-    if (el) genieIn(el);
+    /* Watch ALL style + class changes in the whole container subtree */
+    new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.type === 'attributes') {
+          console.log('[SG] attr change on', m.target.tagName,
+            'id=' + (m.target.id || '-'),
+            m.attributeName + ':', m.target.getAttribute(m.attributeName),
+            '(was:', m.oldValue + ')');
+        }
+        if (m.type === 'childList') {
+          m.addedNodes.forEach(function (n) {
+            if (n.nodeType === 1) console.log('[SG] node added:', n.tagName, n.id, n.className);
+          });
+          m.removedNodes.forEach(function (n) {
+            if (n.nodeType === 1) console.log('[SG] node removed:', n.tagName, n.id, n.className);
+          });
+        }
+      });
+    }).observe(container, {
+      subtree: true, childList: true,
+      attributes: true, attributeOldValue: true,
+      attributeFilter: ['style', 'class', 'width', 'height']
+    });
   });
 
+  /* Also log API events */
+  smartsupp('on', 'chat:open', function () {
+    console.log('[SG] smartsupp event: chat:open');
+    var c = document.getElementById('smartsupp-widget-container');
+    if (c) dumpContainer(c);
+  });
   smartsupp('on', 'chat:close', function () {
-    var el = getWidget();
-    if (el) genieOut(el);
+    console.log('[SG] smartsupp event: chat:close');
+    var c = document.getElementById('smartsupp-widget-container');
+    if (c) dumpContainer(c);
   });
 
 })();
