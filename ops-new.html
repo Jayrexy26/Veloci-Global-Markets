@@ -1115,6 +1115,13 @@
               <label>Email Body</label>
               <textarea id="bf-body" rows="9" placeholder="Write the full email body here…" style="font-family:inherit;line-height:1.7;"></textarea>
             </div>
+            <div class="field" style="margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:6px;">
+                <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Manager Explanation <span style="font-weight:400;color:var(--muted);font-size:11px;">(private — not shown to users)</span>
+              </label>
+              <textarea id="bf-explanation" rows="4" placeholder="Write your internal explanation or talking points here…" style="font-family:inherit;line-height:1.7;"></textarea>
+            </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn btn--outline btn--sm" onclick="toggleBillingForm()">Cancel</button>
               <button class="btn btn--primary btn--sm" id="bf-save-btn" onclick="saveBillingFormat()">Save Format</button>
@@ -1701,6 +1708,22 @@
 </div>
 
 <!-- View Email Modal -->
+<div class="modal-overlay" id="modal-bf-explanation">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal__head">
+      <div class="modal__title" style="display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Manager Explanation
+      </div>
+      <button class="modal__close" onclick="closeModal('modal-bf-explanation')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="bf-expl-format-name"></div>
+      <div id="bf-expl-body" style="font-size:14px;color:var(--text);line-height:1.75;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;min-height:80px;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-view-email">
   <div class="modal" style="max-width:680px;">
     <div class="modal__head">
@@ -4500,6 +4523,7 @@ function toggleBillingForm(clear = true) {
       document.getElementById('bf-name').value = '';
       document.getElementById('bf-subject').value = '';
       document.getElementById('bf-body').value = '';
+      document.getElementById('bf-explanation').value = '';
       _bfEditingId = null;
       document.getElementById('bf-form-title').textContent = 'New Format';
       document.getElementById('bf-save-btn').textContent = 'Save Format';
@@ -4513,9 +4537,10 @@ function editBillingFormat(id) {
   const fmt = _bfCache.find(f => f.id === id);
   if (!fmt) return;
   _bfEditingId = id;
-  document.getElementById('bf-name').value    = fmt.name;
-  document.getElementById('bf-subject').value = fmt.subject;
-  document.getElementById('bf-body').value    = fmt.body;
+  document.getElementById('bf-name').value        = fmt.name;
+  document.getElementById('bf-subject').value     = fmt.subject;
+  document.getElementById('bf-body').value        = fmt.body;
+  document.getElementById('bf-explanation').value = fmt.manager_explanation || '';
   document.getElementById('bf-form-title').textContent = 'Edit Format';
   document.getElementById('bf-save-btn').textContent   = 'Update Format';
   const form = document.getElementById('bf-form');
@@ -4525,20 +4550,21 @@ function editBillingFormat(id) {
 }
 
 async function saveBillingFormat() {
-  const name    = document.getElementById('bf-name').value.trim();
-  const subject = document.getElementById('bf-subject').value.trim();
-  const body    = document.getElementById('bf-body').value.trim();
+  const name               = document.getElementById('bf-name').value.trim();
+  const subject            = document.getElementById('bf-subject').value.trim();
+  const body               = document.getElementById('bf-body').value.trim();
+  const manager_explanation = document.getElementById('bf-explanation').value.trim();
   if (!name)    { showToast('Template name is required', 'error'); return; }
   if (!subject) { showToast('Subject is required', 'error'); return; }
   if (!body)    { showToast('Body is required', 'error'); return; }
   const btn = document.getElementById('bf-save-btn');
   btn.disabled = true;
   if (_bfEditingId) {
-    await _bfDb().from('billing_formats').update({ name, subject, body }).eq('id', _bfEditingId);
+    await _bfDb().from('billing_formats').update({ name, subject, body, manager_explanation }).eq('id', _bfEditingId);
     showToast('Format updated', 'success');
   } else {
     const maxOrder = _bfCache.length ? Math.max(..._bfCache.map(f => f.sort_order || 0)) : -1;
-    await _bfDb().from('billing_formats').insert({ name, subject, body, sort_order: maxOrder + 1 });
+    await _bfDb().from('billing_formats').insert({ name, subject, body, manager_explanation, sort_order: maxOrder + 1 });
     showToast('Format saved', 'success');
   }
   btn.disabled = false;
@@ -4576,6 +4602,17 @@ function loadFormatIntoCompose(id) {
   document.getElementById('email-body').value    = fmt.body;
   showPage('emails', document.querySelector('.nav-item[onclick*="emails"]'));
   showToast('Loaded into compose', 'success');
+}
+
+function viewManagerExplanation(id) {
+  const fmt = _bfCache.find(f => f.id === id);
+  if (!fmt) return;
+  document.getElementById('bf-expl-format-name').textContent = fmt.name;
+  const body = document.getElementById('bf-expl-body');
+  const text = (fmt.manager_explanation || '').trim();
+  body.textContent = text || 'No explanation saved for this format yet. Click Edit to add one.';
+  body.style.color = text ? 'var(--text)' : 'var(--muted)';
+  openModal('modal-bf-explanation');
 }
 
 function renderBillingFormats() {
@@ -4616,6 +4653,7 @@ function renderBillingFormats() {
               Body
             </button>
             <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})">Edit</button>
+            <button class="btn btn--outline btn--sm" onclick="viewManagerExplanation(${f.id})" style="color:#7c3aed;border-color:rgba(124,58,237,.3);">Manager Explanation</button>
             <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);"><span class="bf-use-full">Use in Compose</span><span class="bf-use-short">Use</span></button>
             <button class="btn btn--outline btn--sm" onclick="deleteBillingFormat(${f.id})" style="color:var(--red);border-color:rgba(229,57,53,.25);">Delete</button>
           </div>
