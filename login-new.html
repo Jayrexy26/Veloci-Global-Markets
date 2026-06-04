@@ -334,24 +334,6 @@ async function doLogin() {
     } catch(_) {}
     window.SV_DB.from('login_activity').insert({ user_id: loginData.user.id, ip_address: ipAddress, device_type: deviceType, browser, os, location: loginLocation }).catch(()=>{});
 
-    /* Login alert email — fire-and-forget */
-    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.session?.access_token || SUPABASE_ANON}`, 'apikey': SUPABASE_ANON },
-      keepalive: true,
-      body: JSON.stringify({
-        email: loginData.user.email,
-        event: 'password_login',
-        login_time: new Date().toISOString(),
-        user_agent: navigator.userAgent || '',
-        device_language: navigator.language || '',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-        platform: navigator.platform || '',
-        ip_address: ipAddress || '',
-        location: loginLocation || '',
-      }),
-    }).catch(() => {});
-
     /* Ban check is handled by session-new.html — go straight there */
     sessionStorage.removeItem('sv_pin_ok');
     document.getElementById('loginSuccessModal').style.display = 'flex';

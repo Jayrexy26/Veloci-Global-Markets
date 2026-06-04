@@ -594,22 +594,6 @@ async function afterPinSuccess() {
       ipAddress = geo.ip; loginLocation = geo.loc;
     } catch(_) {}
     window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location:loginLocation }).catch(()=>{});
-    fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON}`, 'apikey': SUPABASE_ANON },
-      keepalive: true,
-      body: JSON.stringify({
-        email: _user.email,
-        event: 'google_login',
-        login_time: new Date().toISOString(),
-        user_agent: ua,
-        device_language: navigator.language || '',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-        platform: navigator.platform || '',
-        ip_address: ipAddress,
-        location: loginLocation,
-      }),
-    }).catch(() => {});
   }
   const { data: profile } = await window.SV_DB.from('profiles')
     .select('kyc_status').eq('id', _user.id).single();
