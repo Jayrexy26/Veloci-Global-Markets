@@ -889,7 +889,7 @@ function goStep(n){
   if(line2) line2.className = 'step-line' + (n>=3?' done':'');
 
   if(n===2) buildNetworkGrid();
-  if(n===3) loadAdminAddressAndBuild();
+  if(n===3){ buildAddressPanel(); loadAdminAddressAndBuild(); }
 
   // update popular grid selected state
   document.querySelectorAll('.coin-chip').forEach(el => el.classList.toggle('selected', selectedCoin && el.dataset.sym===selectedCoin.sym));
@@ -1071,9 +1071,11 @@ async function loadAdminAddressAndBuild() {
       .ilike('network', selectedNet.id)
       .eq('enabled', true)
       .maybeSingle();
-    if (data?.address) selectedNet.addr = data.address;
+    if (data?.address && data.address !== selectedNet.addr) {
+      selectedNet.addr = data.address;
+      buildAddressPanel();
+    }
   } catch(e) {}
-  buildAddressPanel();
 }
 
 loadRecentDeposits();
