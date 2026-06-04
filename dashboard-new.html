@@ -1846,25 +1846,18 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
   renderMarketPerf();
   loadPerfChart(user.id);
 
-  /* Clear stale popup localStorage keys left by old code versions */
-  Object.keys(localStorage).filter(k => k.startsWith('pu_shown_') || k.startsWith('pt_shown_')).forEach(k => localStorage.removeItem(k));
-
   /* Check for one-time upgrade congrats popup */
   try {
     const { data: popups } = await db.from('notifications')
       .select('id,message')
       .eq('user_id', user.id)
-      .eq('type', 'plan_upgrade_popup')
-      .eq('read', false)
-      .order('created_at', { ascending: false });
+      .eq('type', 'plan_upgrade_popup');
     if (popups?.length) {
-      const popup = popups[0];
-      /* Mark all read — users have UPDATE permission on their own notifications */
-      db.from('notifications').update({ read: true })
-        .eq('user_id', user.id)
+      const plan = popups[0].message || '';
+      await db.from('notifications').delete()
         .eq('type', 'plan_upgrade_popup')
-        .eq('read', false).catch(() => {});
-      setTimeout(() => showPlanUpgradePopup(popup.message || ''), 900);
+        .eq('user_id', user.id);
+      setTimeout(() => showPlanUpgradePopup(plan), 900);
     }
   } catch(e) {}
 
@@ -1938,12 +1931,12 @@ async function checkProfitTargetPopup(userId) {
       .eq('user_id', userId)
       .eq('type', 'profit_target_set')
       .eq('read', false)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
       .limit(1);
     if (!notifs?.length) return;
     const n = notifs[0];
-    /* Mark as read immediately — users have UPDATE permission on their own notifications */
-    db.from('notifications').update({ read: true }).eq('id', n.id).catch(() => {});
+    /* Mark read immediately so it won't show again */
+    await db.from('notifications').update({ read: true }).eq('id', n.id);
     const labelMatch  = n.message.match(/"(.+?)"/);
     const amountMatch = n.message.match(/\$([0-9,]+(?:\.\d+)?)/);
     document.getElementById('pt-popup-label').textContent  = labelMatch  ? labelMatch[1]        : 'Profit Target';
