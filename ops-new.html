@@ -4548,41 +4548,105 @@ function loadFormatIntoCompose(id) {
 }
 
 function renderBillingFormats() {
-  const list    = document.getElementById('bf-list');
+  const list = document.getElementById('bf-list');
   if (!list) return;
   const formats = _bfGet();
   if (!formats.length) {
     list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:13px;">No formats saved yet. Click <strong>+ New Format</strong> to create one.</div>';
     return;
   }
-  list.innerHTML = formats.map(f => {
+  list.innerHTML = formats.map((f, idx) => {
     const preview = f.body.length > 180 ? f.body.slice(0, 180) + '…' : f.body;
     const dateStr = new Date(f.created).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const isFirst = idx === 0, isLast = idx === formats.length - 1;
     return `
-    <div style="border-bottom:1px solid var(--border);padding:16px 20px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_esc(f.name)}</div>
-          <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;">Subject: ${_esc(f.subject)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${dateStr}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;">
-          <button class="btn btn--outline btn--sm" onclick="copyBillingField(${f.id},'subject')" title="Copy subject line">
-            <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Subject
-          </button>
-          <button class="btn btn--outline btn--sm" onclick="copyBillingField(${f.id},'body')" title="Copy body">
-            <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Body
-          </button>
-          <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})" title="Edit this format">Edit</button>
-          <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" title="Load into compose form" style="color:var(--orange);border-color:rgba(240,90,26,.3);">Use in Compose</button>
-          <button class="btn btn--outline btn--sm" onclick="deleteBillingFormat(${f.id})" style="color:var(--red);border-color:rgba(229,57,53,.25);">Delete</button>
-        </div>
+    <div class="bf-row" draggable="true" data-id="${f.id}" style="border-bottom:1px solid var(--border);padding:16px 20px;transition:opacity .15s,background .15s;display:flex;gap:12px;align-items:flex-start;">
+      <div class="bf-handle" title="Drag to reorder" style="cursor:grab;padding:4px 2px;color:var(--muted);flex-shrink:0;margin-top:2px;user-select:none;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
       </div>
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.65;white-space:pre-wrap;">${_esc(preview)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_esc(f.name)}</div>
+            <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;">Subject: ${_esc(f.subject)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${dateStr}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;align-items:center;">
+            <div style="display:flex;gap:2px;">
+              <button class="btn btn--outline btn--sm" onclick="moveBillingFormat(${f.id},-1)" ${isFirst?'disabled style="opacity:.35;cursor:default;"':''} title="Move up">↑</button>
+              <button class="btn btn--outline btn--sm" onclick="moveBillingFormat(${f.id},1)"  ${isLast ?'disabled style="opacity:.35;cursor:default;"':''} title="Move down">↓</button>
+            </div>
+            <button class="btn btn--outline btn--sm" onclick="copyBillingField(${f.id},'subject')" title="Copy subject line">
+              <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Subject
+            </button>
+            <button class="btn btn--outline btn--sm" onclick="copyBillingField(${f.id},'body')" title="Copy body">
+              <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Body
+            </button>
+            <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})">Edit</button>
+            <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);">Use in Compose</button>
+            <button class="btn btn--outline btn--sm" onclick="deleteBillingFormat(${f.id})" style="color:var(--red);border-color:rgba(229,57,53,.25);">Delete</button>
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--muted);line-height:1.65;white-space:pre-wrap;">${_esc(preview)}</div>
+      </div>
     </div>`;
   }).join('');
+
+  _bfInitDrag(list);
+}
+
+function moveBillingFormat(id, dir) {
+  const formats = _bfGet();
+  const idx = formats.findIndex(f => f.id === id);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= formats.length) return;
+  const moved = formats.splice(idx, 1)[0];
+  formats.splice(newIdx, 0, moved);
+  _bfSave(formats);
+  renderBillingFormats();
+}
+
+let _bfDragSrc = null;
+function _bfInitDrag(list) {
+  const rows = list.querySelectorAll('.bf-row');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => {
+      _bfDragSrc = row;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', row.dataset.id);
+      setTimeout(() => row.style.opacity = '0.4', 0);
+    });
+    row.addEventListener('dragend', () => {
+      rows.forEach(r => { r.style.opacity = ''; r.style.borderTop = ''; });
+      _bfDragSrc = null;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      rows.forEach(r => r.style.borderTop = '');
+      if (row !== _bfDragSrc) row.style.borderTop = '2px solid var(--orange)';
+    });
+    row.addEventListener('dragleave', () => { row.style.borderTop = ''; });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.style.borderTop = '';
+      if (!_bfDragSrc || _bfDragSrc === row) return;
+      const formats = _bfGet();
+      const fromId  = parseInt(_bfDragSrc.dataset.id);
+      const toId    = parseInt(row.dataset.id);
+      const fromIdx = formats.findIndex(f => f.id === fromId);
+      const toIdx   = formats.findIndex(f => f.id === toId);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const moved = formats.splice(fromIdx, 1)[0];
+      formats.splice(toIdx, 0, moved);
+      _bfSave(formats);
+      renderBillingFormats();
+      showToast('Order saved', 'success');
+    });
+  });
 }
 
 // Init billing formats when email page loads
