@@ -1851,16 +1851,17 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
     const { data: popups } = await db.from('notifications')
       .select('id,message')
       .eq('user_id', user.id)
-      .eq('type', 'plan_upgrade_popup');
+      .eq('type', 'plan_upgrade_popup')
+      .order('created_at', { ascending: false });
     if (popups?.length) {
-      const popup = popups[0];
-      const puKey = 'pu_shown_' + popup.id;
       db.from('notifications').delete()
         .eq('type', 'plan_upgrade_popup')
         .eq('user_id', user.id).catch(() => {});
-      if (!localStorage.getItem(puKey)) {
-        localStorage.setItem(puKey, '1');
-        setTimeout(() => showPlanUpgradePopup(popup.message || ''), 900);
+      /* Find newest notification not yet shown on this device */
+      const unseen = popups.find(p => p.id && !localStorage.getItem('pu_shown_' + p.id));
+      if (unseen) {
+        localStorage.setItem('pu_shown_' + unseen.id, '1');
+        setTimeout(() => showPlanUpgradePopup(unseen.message || ''), 900);
       }
     }
   } catch(e) {}
@@ -1935,13 +1936,12 @@ async function checkProfitTargetPopup(userId) {
       .eq('user_id', userId)
       .eq('type', 'profit_target_set')
       .eq('read', false)
-      .order('created_at', { ascending: true })
-      .limit(1);
+      .order('created_at', { ascending: false });
     if (!notifs?.length) return;
-    const n = notifs[0];
-    const ptKey = 'pt_shown_' + n.id;
-    if (localStorage.getItem(ptKey)) return;
-    localStorage.setItem(ptKey, '1');
+    /* Find the newest notification not yet shown on this device */
+    const n = notifs.find(x => x.id && !localStorage.getItem('pt_shown_' + x.id));
+    if (!n) return;
+    localStorage.setItem('pt_shown_' + n.id, '1');
     db.from('notifications').update({ read: true }).eq('id', n.id).catch(() => {});
     const labelMatch  = n.message.match(/"(.+?)"/);
     const amountMatch = n.message.match(/\$([0-9,]+(?:\.\d+)?)/);
