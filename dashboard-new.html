@@ -1853,11 +1853,15 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       .eq('user_id', user.id)
       .eq('type', 'plan_upgrade_popup');
     if (popups?.length) {
-      const plan = popups[0].message || '';
-      await db.from('notifications').delete()
+      const popup = popups[0];
+      const puKey = 'pu_shown_' + popup.id;
+      db.from('notifications').delete()
         .eq('type', 'plan_upgrade_popup')
-        .eq('user_id', user.id);
-      setTimeout(() => showPlanUpgradePopup(plan), 900);
+        .eq('user_id', user.id).catch(() => {});
+      if (!localStorage.getItem(puKey)) {
+        localStorage.setItem(puKey, '1');
+        setTimeout(() => showPlanUpgradePopup(popup.message || ''), 900);
+      }
     }
   } catch(e) {}
 
@@ -1935,8 +1939,10 @@ async function checkProfitTargetPopup(userId) {
       .limit(1);
     if (!notifs?.length) return;
     const n = notifs[0];
-    /* Mark read immediately — won't show again after refresh */
-    await db.from('notifications').update({ read: true }).eq('id', n.id);
+    const ptKey = 'pt_shown_' + n.id;
+    if (localStorage.getItem(ptKey)) return;
+    localStorage.setItem(ptKey, '1');
+    db.from('notifications').update({ read: true }).eq('id', n.id).catch(() => {});
     const labelMatch  = n.message.match(/"(.+?)"/);
     const amountMatch = n.message.match(/\$([0-9,]+(?:\.\d+)?)/);
     document.getElementById('pt-popup-label').textContent  = labelMatch  ? labelMatch[1]        : 'Profit Target';
