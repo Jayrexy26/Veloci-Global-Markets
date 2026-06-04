@@ -474,6 +474,10 @@
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Audit Log
       </button>
+      <button class="nav-item" onclick="showPage('users-log',this)">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Users Log
+      </button>
       <a class="nav-item" href="admin-guide.html" target="_blank" style="text-decoration:none;color:inherit;margin-top:4px;">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         How to Use Admin
@@ -1386,6 +1390,36 @@
         </div>
       </div>
 
+      <!-- USERS LOG -->
+      <div class="page" id="page-users-log">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Users Log</div>
+            <div class="page-header__sub">Login activity across all user accounts</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="ul-search" placeholder="Filter by email or name…" oninput="ulFilter()" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;width:220px;outline:none;">
+            <button class="btn btn--outline" onclick="loadUsersLog()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          </div>
+        </div>
+        <div class="card card__body--p0">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>User</th>
+                <th>Time</th>
+                <th>Location</th>
+                <th>IP Address</th>
+                <th>Device</th>
+                <th>Browser</th>
+                <th>OS</th>
+              </tr></thead>
+              <tbody id="ul-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /layout -->
@@ -1747,7 +1781,7 @@
   /* ── Navigation ── */
   const PAGE_TITLES = {
     dashboard:'Dashboard', activity:'Live Activity', users:'User Management',
-    verification:'KYC / Verification', accounts:'Trading Accounts',
+    verification:'KYC / Verification', accounts:'Trading Accounts', 'users-log':'Users Log',
     balances:'Balances & P&L', positions:'Trades', 'profit-targets':'Profit Targets',
     deposits:'Deposits', withdrawals:'Withdrawals', transactions:'All Transactions',
     announcements:'Announcements', 'markets-control':'Markets Control',
@@ -4769,6 +4803,81 @@ function exportAuditCSV() {
   a.download = 'audit-log.csv';
   a.click();
 }
+
+/* ── USERS LOG ── */
+let _ulData = [];
+let _ulFiltered = [];
+
+window.loadUsersLog = async function() {
+  const db = window.SV_DB; if (!db) return;
+  const tbody = document.getElementById('ul-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr>`;
+
+  const { data: logs, error } = await db
+    .from('login_activity')
+    .select('id, user_id, ip_address, device_type, browser, os, location, created_at')
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  if (error || !logs) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">Failed to load logs</td></tr>`;
+    return;
+  }
+
+  const userIds = [...new Set(logs.map(l => l.user_id).filter(Boolean))];
+  let profileMap = {};
+  if (userIds.length) {
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, email, first_name, last_name')
+      .in('id', userIds);
+    (profiles || []).forEach(p => { profileMap[p.id] = p; });
+  }
+
+  _ulData = logs.map(l => {
+    const p = profileMap[l.user_id] || {};
+    const name = [p.first_name, p.last_name].filter(Boolean).join(' ');
+    return { ...l, email: p.email || '—', name: name || '' };
+  });
+
+  _ulFiltered = _ulData;
+  ulRender();
+};
+
+function ulRender() {
+  const tbody = document.getElementById('ul-tbody');
+  if (!tbody) return;
+  if (!_ulFiltered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px;">No login activity found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = _ulFiltered.map(l => `
+    <tr>
+      <td>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${_esc(l.email)}</div>
+        ${l.name ? `<div style="font-size:11px;color:var(--muted);">${_esc(l.name)}</div>` : ''}
+      </td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${fmtDate(l.created_at)}</td>
+      <td style="font-size:12px;">${_esc(l.location || '—')}</td>
+      <td style="font-size:12px;font-family:monospace;">${_esc(l.ip_address || '—')}</td>
+      <td style="font-size:12px;">${_esc(l.device_type || '—')}</td>
+      <td style="font-size:12px;">${_esc(l.browser || '—')}</td>
+      <td style="font-size:12px;">${_esc(l.os || '—')}</td>
+    </tr>`).join('');
+}
+
+window.ulFilter = function() {
+  const q = (document.getElementById('ul-search')?.value || '').toLowerCase().trim();
+  _ulFiltered = q ? _ulData.filter(l => l.email.toLowerCase().includes(q) || l.name.toLowerCase().includes(q)) : _ulData;
+  ulRender();
+};
+
+const _origUlShowPage = window.showPage;
+window.showPage = function(id, el) {
+  _origUlShowPage && _origUlShowPage(id, el);
+  if (id === 'users-log') window.loadUsersLog();
+};
 </script>
 <script src="/pwa-install-ops.js"></script>
 </body>
