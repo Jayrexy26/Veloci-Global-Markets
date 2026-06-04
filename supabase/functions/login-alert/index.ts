@@ -59,15 +59,26 @@ serve(async (req) => {
     const subject = "New Login to Your Veloci Global Markets Account";
     const html    = buildLoginAlertHtml(email, loginTime, ipAddress, location, deviceType, browser, os, timezone || "UTC");
 
-    if (RESEND_KEY) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM_ADDR, to: [email], subject, html }),
-      }).catch(() => {});
+    if (!RESEND_KEY) {
+      return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), {
+        status: 500, headers: { ...cors, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ sent: true }), {
+    const resendResp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: FROM_ADDR, to: [email], subject, html }),
+    });
+    const resendBody = await resendResp.json().catch(() => ({}));
+
+    if (!resendResp.ok) {
+      return new Response(JSON.stringify({ error: "Resend failed", status: resendResp.status, detail: resendBody }), {
+        status: 502, headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ sent: true, id: resendBody.id }), {
       status: 200, headers: { ...cors, "Content-Type": "application/json" },
     });
 
