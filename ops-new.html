@@ -357,6 +357,15 @@
     .kyc-reject-panel textarea{width:100%;min-height:72px;padding:10px 12px;border:1.5px solid #e0e3e8;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;outline:none;}
     .kyc-reject-panel textarea:focus{border-color:#f05a1a;}
     body.dark .kyc-reject-panel textarea{background:#1e2229;border-color:rgba(255,255,255,.1);color:#eaecef;}
+    /* Billing formats mobile */
+    @media (max-width: 600px) {
+      .bf-form-grid { grid-template-columns: 1fr !important; }
+      .bf-row { padding: 12px 14px !important; }
+      .bf-handle { display: none !important; }
+      .bf-meta-row { flex-direction: column; align-items: flex-start !important; }
+      .bf-btns { flex-shrink: 0; width: 100%; }
+      .bf-btns button { font-size: 11px !important; padding: 4px 8px !important; }
+    }
   </style>
 </head>
 <body>
@@ -1085,7 +1094,7 @@
           <!-- Add/Edit form (hidden by default) -->
           <div id="bf-form" style="display:none;padding:20px;border-bottom:1px solid var(--border);background:var(--bg);">
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="bf-form-title">New Format</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="bf-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
               <div class="field">
                 <label>Template Name</label>
                 <input type="text" id="bf-name" placeholder="e.g. Upgrade Fee Request">
@@ -4570,7 +4579,7 @@ function renderBillingFormats() {
   }
   list.innerHTML = formats.map((f, idx) => {
     const preview = f.body.length > 180 ? f.body.slice(0, 180) + '…' : f.body;
-    const dateStr = new Date(f.created).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const dateStr = new Date(f.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     const isFirst = idx === 0, isLast = idx === formats.length - 1;
     return `
     <div class="bf-row" draggable="true" data-id="${f.id}" style="border-bottom:1px solid var(--border);padding:16px 20px;transition:opacity .15s,background .15s;display:flex;gap:12px;align-items:flex-start;">
@@ -4578,13 +4587,13 @@ function renderBillingFormats() {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
       </div>
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+        <div class="bf-meta-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_esc(f.name)}</div>
             <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px;">Subject: ${_esc(f.subject)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">${dateStr}</div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;align-items:center;">
+          <div class="bf-btns" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
             <div style="display:flex;gap:2px;">
               <button class="btn btn--outline btn--sm" onclick="moveBillingFormat(${f.id},-1)" ${isFirst?'disabled style="opacity:.35;cursor:default;"':''} title="Move up">↑</button>
               <button class="btn btn--outline btn--sm" onclick="moveBillingFormat(${f.id},1)"  ${isLast ?'disabled style="opacity:.35;cursor:default;"':''} title="Move down">↓</button>
@@ -4598,7 +4607,7 @@ function renderBillingFormats() {
               Body
             </button>
             <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})">Edit</button>
-            <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);">Use in Compose</button>
+            <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);">Use</button>
             <button class="btn btn--outline btn--sm" onclick="deleteBillingFormat(${f.id})" style="color:var(--red);border-color:rgba(229,57,53,.25);">Delete</button>
           </div>
         </div>
