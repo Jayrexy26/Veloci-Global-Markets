@@ -309,43 +309,35 @@ async function doLogin() {
     }
 
     /* Log login activity (fire-and-forget) */
+    sessionStorage.setItem('sv_login_logged', '1');
     let ipAddress = '', loginLocation = '';
+    const ua = navigator.userAgent;
+    const isMobile = /Mobi|Android/i.test(ua);
+    const isTablet = /Tablet|iPad/i.test(ua);
+    const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
+    const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
+    const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
     try {
-      const ua = navigator.userAgent;
-      const isMobile = /Mobi|Android/i.test(ua);
-      const isTablet = /Tablet|iPad/i.test(ua);
-      const deviceType = isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop';
-      const browser = /Edg/.test(ua) ? 'Edge' : /Chrome/.test(ua) ? 'Chrome' : /Firefox/.test(ua) ? 'Firefox' : /Safari/.test(ua) ? 'Safari' : /Opera|OPR/.test(ua) ? 'Opera' : 'Unknown';
-      const os = /Windows/.test(ua) ? 'Windows' : /Mac/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'Unknown';
-      try {
-        const geoApis = [
-          { url:'https://ip-api.com/json?fields=status,city,country,query', parse: d=>({ ip:d.query, loc:d.status==='success'?[d.city,d.country].filter(Boolean).join(', '):'' }) },
-          { url:'https://ipinfo.io/json',          parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
-          { url:'https://ipwho.is/',               parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
-          { url:'https://ipapi.co/json/',           parse: d=>({ ip:d.ip, loc:[d.city,d.country_name].filter(Boolean).join(', ') }) },
-        ];
-        for (const api of geoApis) {
-          try {
-            const ctrl = new AbortController();
-            const t = setTimeout(() => ctrl.abort(), 4000);
-            const d = await fetch(api.url, { signal: ctrl.signal }).then(r => r.json());
-            clearTimeout(t);
-            const parsed = api.parse(d);
-            if (parsed.ip) { ipAddress = parsed.ip; loginLocation = parsed.loc; break; }
-          } catch(_) {}
-        }
-      } catch(_) {}
-      await window.SV_DB.from('login_activity').insert({
-        user_id: loginData.user.id, ip_address: ipAddress,
-        device_type: deviceType, browser, os, location: loginLocation
-      });
-      sessionStorage.setItem('sv_login_logged', '1');
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 3000);
+      const geoApis = [
+        { url:'https://ip-api.com/json?fields=status,city,country,query', parse: d=>({ ip:d.query, loc:d.status==='success'?[d.city,d.country].filter(Boolean).join(', '):'' }) },
+        { url:'https://ipwho.is/', parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
+        { url:'https://ipapi.co/json/', parse: d=>({ ip:d.ip, loc:[d.city,d.country_name].filter(Boolean).join(', ') }) },
+      ];
+      const geo = await Promise.any(geoApis.map(api =>
+        fetch(api.url, { signal: ctrl.signal }).then(r => r.json()).then(d => {
+          const p = api.parse(d); if (!p.ip) throw new Error('no ip'); return p;
+        })
+      ));
+      ipAddress = geo.ip; loginLocation = geo.loc;
     } catch(_) {}
+    window.SV_DB.from('login_activity').insert({ user_id: loginData.user.id, ip_address: ipAddress, device_type: deviceType, browser, os, location: loginLocation }).catch(()=>{});
 
     /* Login alert email — fire-and-forget */
     fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON}`, 'apikey': SUPABASE_ANON },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loginData.session?.access_token || SUPABASE_ANON}`, 'apikey': SUPABASE_ANON },
       keepalive: true,
       body: JSON.stringify({
         email: loginData.user.email,

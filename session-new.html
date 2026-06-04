@@ -579,18 +579,19 @@ async function afterPinSuccess() {
     const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
     let ipAddress = '', loginLocation = '';
     try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 3000);
       const geoApis = [
         { url:'https://ipwho.is/',             parse: d=>({ ip:d.ip, loc:[d.city,d.country].filter(Boolean).join(', ') }) },
         { url:'https://ipapi.co/json/',         parse: d=>({ ip:d.ip, loc:[d.city,d.country_name].filter(Boolean).join(', ') }) },
         { url:'https://freeipapi.com/api/json', parse: d=>({ ip:d.ipAddress, loc:[d.cityName,d.countryName].filter(Boolean).join(', ') }) },
       ];
-      for (const api of geoApis) {
-        try {
-          const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort(),1500);
-          const d = await fetch(api.url,{signal:ctrl.signal}).then(r=>r.json()); clearTimeout(t);
-          const p = api.parse(d); if(p.ip){ipAddress=p.ip;loginLocation=p.loc;break;}
-        } catch(_){}
-      }
+      const geo = await Promise.any(geoApis.map(api =>
+        fetch(api.url, { signal: ctrl.signal }).then(r => r.json()).then(d => {
+          const p = api.parse(d); if (!p.ip) throw new Error('no ip'); return p;
+        })
+      ));
+      ipAddress = geo.ip; loginLocation = geo.loc;
     } catch(_) {}
     window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location:loginLocation }).catch(()=>{});
     fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
