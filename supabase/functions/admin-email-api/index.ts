@@ -25,6 +25,9 @@ serve(async (req) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  const ok  = (data: object) => new Response(JSON.stringify(data), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+  const err = (msg: string)  => new Response(JSON.stringify({ error: msg }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+
   const db = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const xSecret = req.headers.get("x-admin-secret");
@@ -434,13 +437,6 @@ serve(async (req) => {
     });
   }
 });
-
-function ok(data: object) {
-  return new Response(JSON.stringify(data), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
-}
-function err(msg: string) {
-  return new Response(JSON.stringify({ error: msg }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
-}
 
 function buildPlainText(subject: string, recipientName: string, bodyText: string): string {
   const greeting = recipientName ? `Dear ${recipientName},` : "Dear Valued Client,";
