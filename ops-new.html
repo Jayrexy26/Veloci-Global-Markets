@@ -891,7 +891,7 @@
         <div class="card">
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Currency</th><th>Date</th><th>Status</th></tr></thead>
+              <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Coin</th><th>Date</th><th>Status</th></tr></thead>
               <tbody id="transactions-tbody"></tbody>
             </table>
           </div>
@@ -1807,7 +1807,8 @@
     localStorage.setItem('sv-ops-page', id);
     if (id === 'audit')    { if (window.renderAuditLive)    window.renderAuditLive(); }
     if (id === 'activity') { if (window.renderActivity)     window.renderActivity(); }
-    if (id === 'accounts') { if (window.renderAccountsLive) window.renderAccountsLive(); }
+    if (id === 'accounts')      { if (window.renderAccountsLive)      window.renderAccountsLive(); }
+    if (id === 'transactions')  { if (window.renderTransactionsLive)  window.renderTransactionsLive(); }
   }
 
   /* ── Modals ── */
@@ -3549,19 +3550,68 @@ window.saveCreditDebit = async function() {
 /* ── Transactions ── */
 window.renderTransactionsLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data } = await db.from('transactions').select('*').order('created_at', { ascending:false }).limit(200);
   const tbody = document.getElementById('transactions-tbody');
   if (!tbody) return;
-  if (!data?.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No transactions</td></tr>`; return; }
-  tbody.innerHTML = data.map(t => {
-    const pill = t.status==='completed'?'pill-green':t.status==='failed'?'pill-red':'pill-orange';
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">Loading…</td></tr>`;
+
+  const [depRes, wdRes, txRes] = await Promise.all([
+    db.from('deposit_requests').select('id,user_id,user_email,amount,coin,status,created_at').order('created_at',{ascending:false}).limit(300),
+    db.from('withdrawal_requests').select('id,user_id,amount,status,created_at').order('created_at',{ascending:false}).limit(300),
+    db.from('transactions').select('id,user_id,user_email,type,amount,currency,coin,status,created_at').order('created_at',{ascending:false}).limit(300),
+  ]);
+
+  /* Build profile map for user_ids that have no email */
+  const allUserIds = [...new Set([
+    ...(depRes.data||[]).map(r=>r.user_id),
+    ...(wdRes.data||[]).map(r=>r.user_id),
+    ...(txRes.data||[]).map(r=>r.user_id),
+  ].filter(Boolean))];
+  let profileMap = {};
+  if (allUserIds.length) {
+    const { data: profs } = await db.from('profiles').select('id,email,first_name,last_name').in('id', allUserIds);
+    (profs||[]).forEach(p => { profileMap[p.id] = p; });
+  }
+
+  const userLabel = (r) => {
+    const p = profileMap[r.user_id] || {};
+    const email = r.user_email || p.email || '—';
+    const name = [p.first_name, p.last_name].filter(Boolean).join(' ');
+    return { email, name };
+  };
+
+  const rows = [
+    ...(depRes.data||[]).map(r => ({ ...r, _kind: 'Deposit',    _coin: r.coin||'—' })),
+    ...(wdRes.data||[]).map(r => ({ ...r, _kind: 'Withdrawal',  _coin: '—' })),
+    ...(txRes.data||[]).map(r => ({ ...r, _kind: r.type||'Transaction', _coin: r.coin||r.currency||'—' })),
+  ].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 500);
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No transactions found</td></tr>`;
+    return;
+  }
+
+  const kindPill = k => {
+    const l = k.toLowerCase();
+    if (l==='deposit')    return 'pill-green';
+    if (l==='withdrawal') return 'pill-red';
+    if (l==='credit')     return 'pill-blue';
+    if (l==='debit')      return 'pill-orange';
+    return 'pill-grey';
+  };
+  const statusPill = s => s==='completed'||s==='approved'?'pill-green':s==='failed'||s==='rejected'?'pill-red':'pill-orange';
+
+  tbody.innerHTML = rows.map(t => {
+    const { email, name } = userLabel(t);
     return `<tr>
-      <td>${t.user_email||t.user_id||'—'}</td>
-      <td>${t.type||'—'}</td>
-      <td>${fmtMoney(t.amount||0)}</td>
-      <td>${t.currency||'USD'}</td>
-      <td>${fmtDate(t.created_at)}</td>
-      <td><span class="badge-pill ${pill}">${t.status||'pending'}</span></td>
+      <td>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${_esc(email)}</div>
+        ${name?`<div style="font-size:11px;color:var(--muted);">${_esc(name)}</div>`:''}
+      </td>
+      <td><span class="badge-pill ${kindPill(t._kind)}">${_esc(t._kind)}</span></td>
+      <td style="font-weight:600;">${fmtMoney(t.amount||0)}</td>
+      <td style="font-size:12px;color:var(--muted);">${_esc(t._coin)}</td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${fmtDate(t.created_at)}</td>
+      <td><span class="badge-pill ${statusPill(t.status)}">${_esc(t.status||'pending')}</span></td>
     </tr>`;
   }).join('');
 };
