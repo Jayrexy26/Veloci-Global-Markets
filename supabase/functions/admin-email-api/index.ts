@@ -311,16 +311,41 @@ serve(async (req) => {
           <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.7;">Warm regards,<br><strong style="color:#0d1117;">Veloci Global Markets</strong><br>Compliance Team</p>
         </div>
       </div>`;
-      const adminHtml = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e6ee;border-radius:12px;overflow:hidden;padding:32px 44px;">
-        <h2 style="margin:0 0 16px;font-size:20px;color:#0d1117;">New KYC Submission</h2>
-        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Name:</strong> ${name}</p>
-        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Email:</strong> ${prof.email}</p>
-        <p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>User ID:</strong> ${user_id}</p>
-        ${doc_type ? `<p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Document Type:</strong> ${doc_type}</p>` : ""}
-        ${country ? `<p style="margin:0 0 8px;font-size:14px;color:#374151;"><strong>Country of Issue:</strong> ${country}</p>` : ""}
-        <p style="margin:24px 0 0;font-size:13px;color:#6b7280;">Review this submission in the admin panel under KYC.</p>
-      </div>`;
+      const adminHtml = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>${adminSubject}</title></head>
+<body style="margin:0;padding:0;background:#eef1f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef1f6;padding:48px 16px;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+      <tr><td style="background:#0a0e1a;border-radius:14px 14px 0 0;padding:20px 40px;text-align:center;">
+        <img src="${LOGO_URL}" alt="Veloci Global Markets" height="80" style="display:block;margin:0 auto;height:80px;">
+      </td></tr>
+      <tr><td style="background:linear-gradient(90deg,#f05a1a 0%,#f05a1abb 100%);height:4px;font-size:0;">&nbsp;</td></tr>
+      <tr><td style="background:#ffffff;padding:44px 44px 32px;border-left:1px solid #e2e6ee;border-right:1px solid #e2e6ee;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.1em;color:#f05a1a;text-transform:uppercase;">Admin Notification</p>
+        <h1 style="margin:0 0 20px;font-size:24px;font-weight:700;color:#0d1117;line-height:1.3;">New KYC Submission</h1>
+        <div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 16px;margin-bottom:24px;"><span style="font-size:13px;font-weight:700;color:#92400e;">KYC UNDER REVIEW</span></div>
+        <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">A user has submitted KYC documents and is awaiting verification.</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+          <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:40%;">Name</td><td style="padding:14px 18px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${name}</td></tr>
+          <tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Email</td><td style="padding:14px 18px;font-size:14px;color:#0d1117;border:1px solid #e5e7eb;">${prof.email}</td></tr>
+          ${doc_type ? `<tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Document Type</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${doc_type}</td></tr>` : ""}
+          ${country ? `<tr><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">Country of Issue</td><td style="padding:14px 18px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;">${country}</td></tr>` : ""}
+          <tr style="background:#f8fafc;"><td style="padding:14px 18px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;">User ID</td><td style="padding:14px 18px;font-size:12px;font-family:monospace;color:#6b7280;border:1px solid #e5e7eb;">${user_id}</td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#6b7280;">Review this submission in the <a href="https://velociglobal.pro/ops-new.html" style="color:#f05a1a;text-decoration:none;">admin panel</a> under KYC.</p>
+      </td></tr>
+      <tr><td style="background:#f8fafc;border-left:1px solid #e2e6ee;border-right:1px solid #e2e6ee;padding:24px 44px;">
+        <p style="margin:0;font-size:13px;color:#4b5563;line-height:1.7;">Warm regards,<br><strong style="color:#0d1117;">Veloci Global Markets</strong><br>Automated Notification</p>
+      </td></tr>
+      <tr><td style="background:#0a0e1a;border-radius:0 0 14px 14px;padding:28px 44px;text-align:center;">
+        <p style="margin:0 0 8px;font-size:13px;color:#8b9cb3;">Veloci Global Markets Ltd &bull; International Financial Services</p>
+        <p style="margin:0;font-size:12px;"><a href="https://velociglobal.pro" style="color:#f05a1a;text-decoration:none;">velociglobal.pro</a></p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
       // Email to user
       await fetch("https://api.resend.com/emails", {
         method: "POST",
