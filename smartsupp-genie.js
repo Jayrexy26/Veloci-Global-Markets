@@ -1,7 +1,7 @@
 /*!
  * smartsupp-genie.js
- * Applies genieIn / genieOut animation to the Smartsupp chat window.
- * Works by watching #smartsupp-widget-container children for display changes.
+ * Applies genieIn / genieOut to the Smartsupp chat iframe
+ * using Smartsupp's own chat:open / chat:close event API.
  */
 (function () {
   'use strict';
@@ -27,77 +27,43 @@
     '.ss-go{animation:ssGOut .36s cubic-bezier(.4,0,.8,1) both!important;transform-origin:bottom right;will-change:clip-path,transform}';
   document.head.appendChild($style);
 
-  var _guard = false;
+  /* ── Ensure the smartsupp queue exists so we can register events
+        before the widget script has fully loaded ── */
+  window.smartsupp = window.smartsupp || function () {
+    (window.smartsupp._ = window.smartsupp._ || []).push(arguments);
+  };
+
+  function getWidget() {
+    var c = document.getElementById('smartsupp-widget-container');
+    if (!c) return null;
+    /* Prefer the first iframe; fall back to first element child */
+    return c.querySelector('iframe') || c.firstElementChild || null;
+  }
 
   function genieIn(el) {
     el.classList.remove('ss-go');
-    void el.offsetWidth;
+    void el.offsetWidth;         /* force reflow so animation restarts */
     el.classList.add('ss-gi');
   }
 
-  function genieOut(el, done) {
+  function genieOut(el) {
     el.classList.remove('ss-gi');
     void el.offsetWidth;
     el.classList.add('ss-go');
     el.addEventListener('animationend', function () {
       el.classList.remove('ss-go');
-      if (done) done();
     }, { once: true });
   }
 
-  function watchChild(el) {
-    new MutationObserver(function (muts) {
-      if (_guard) return;
-      for (var i = 0; i < muts.length; i++) {
-        var m = muts[i];
-        if (m.attributeName !== 'style') continue;
-        var nowHidden = el.style.display === 'none';
-        var wasHidden = /display\s*:\s*none/.test(m.oldValue || '');
-        if (nowHidden && !wasHidden) {
-          /* Going hidden — play genieOut first, then truly hide */
-          _guard = true;
-          el.style.display = 'block';
-          genieOut(el, function () {
-            el.style.display = 'none';
-            _guard = false;
-          });
-          return;
-        }
-        if (!nowHidden && wasHidden) {
-          /* Appearing — play genieIn */
-          genieIn(el);
-          return;
-        }
-      }
-    }).observe(el, { attributes: true, attributeFilter: ['style'], attributeOldValue: true });
-  }
+  /* ── Hook Smartsupp events ── */
+  smartsupp('on', 'chat:open', function () {
+    var el = getWidget();
+    if (el) genieIn(el);
+  });
 
-  function setup(container) {
-    /* Watch all current direct children */
-    Array.from(container.children).forEach(watchChild);
-    /* Watch for any children Smartsupp adds later */
-    new MutationObserver(function (muts) {
-      muts.forEach(function (m) {
-        m.addedNodes.forEach(function (n) {
-          if (n.nodeType === 1) watchChild(n);
-        });
-      });
-    }).observe(container, { childList: true });
-  }
+  smartsupp('on', 'chat:close', function () {
+    var el = getWidget();
+    if (el) genieOut(el);
+  });
 
-  function init() {
-    var c = document.getElementById('smartsupp-widget-container');
-    if (c) { setup(c); return; }
-    /* Wait for Smartsupp to inject its container */
-    new MutationObserver(function (muts, obs) {
-      var el = document.getElementById('smartsupp-widget-container');
-      if (el) { obs.disconnect(); setup(el); }
-    }).observe(document.body, { childList: true, subtree: true });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
 })();
