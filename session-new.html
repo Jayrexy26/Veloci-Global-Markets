@@ -591,6 +591,20 @@ async function afterPinSuccess() {
         } catch(_){}
       }
       await window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location });
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/login-alert', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: _user.email,
+          event: 'google_login',
+          login_time: new Date().toISOString(),
+          user_agent: navigator.userAgent || '',
+          device_language: navigator.language || '',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+          platform: navigator.platform || '',
+          ip_address: ipAddress || '',
+          location: location || '',
+        }),
+      }).catch(() => {});
     } catch(_) {}
     sessionStorage.setItem('sv_login_logged', '1');
   }
