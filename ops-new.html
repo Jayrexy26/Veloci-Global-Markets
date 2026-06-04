@@ -4668,14 +4668,39 @@ function _bfInitDrag(list) {
   });
 }
 
+// One-time migration: import any formats still sitting in localStorage into Supabase
+async function _bfMigrateFromLocalStorage() {
+  const BF_KEY = 'vgm_billing_formats';
+  let old = [];
+  try { old = JSON.parse(localStorage.getItem(BF_KEY) || '[]'); } catch { return; }
+  if (!old.length) return;
+  // Only migrate if Supabase table is currently empty
+  const { data } = await _bfDb().from('billing_formats').select('id').limit(1);
+  if (data && data.length > 0) { localStorage.removeItem(BF_KEY); return; }
+  // Insert all old formats preserving order
+  const rows = old.map((f, i) => ({
+    name: f.name || 'Untitled',
+    subject: f.subject || '',
+    body: f.body || '',
+    sort_order: i,
+    created_at: f.created || f.created_at || new Date().toISOString()
+  }));
+  await _bfDb().from('billing_formats').insert(rows);
+  localStorage.removeItem(BF_KEY);
+  showToast('Your saved formats have been restored ✓', 'success');
+}
+
 // Init billing formats when email page loads
 const _origShowPage = window.showPage;
 window.showPage = function(id, el) {
   _origShowPage && _origShowPage(id, el);
   if (id === 'emails') _bfLoadAndRender();
 };
-document.addEventListener('DOMContentLoaded', function() {
-  if (document.getElementById('bf-list')) _bfLoadAndRender();
+document.addEventListener('DOMContentLoaded', async function() {
+  if (document.getElementById('bf-list')) {
+    await _bfMigrateFromLocalStorage();
+    _bfLoadAndRender();
+  }
 });
 
 function exportAuditCSV() {
