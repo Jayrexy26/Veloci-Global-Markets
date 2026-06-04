@@ -357,13 +357,17 @@
     .kyc-reject-panel textarea{width:100%;min-height:72px;padding:10px 12px;border:1.5px solid #e0e3e8;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;outline:none;}
     .kyc-reject-panel textarea:focus{border-color:#f05a1a;}
     body.dark .kyc-reject-panel textarea{background:#1e2229;border-color:rgba(255,255,255,.1);color:#eaecef;}
-    /* Billing formats mobile */
+    /* Billing formats + email layout mobile */
+    @media (max-width: 900px) {
+      .email-compose { order: 2 !important; }
+      .email-history-card { order: 1 !important; }
+    }
     @media (max-width: 600px) {
       .bf-form-grid { grid-template-columns: 1fr !important; }
       .bf-row { padding: 12px 14px !important; }
       .bf-handle { display: none !important; }
-      .bf-meta-row { flex-direction: column; align-items: flex-start !important; }
-      .bf-btns { flex-shrink: 0; width: 100%; }
+      .bf-meta-row { flex-direction: column !important; justify-content: flex-start !important; align-items: flex-start !important; }
+      .bf-btns { flex-shrink: 0 !important; width: 100% !important; }
       .bf-btns button { font-size: 11px !important; padding: 4px 8px !important; }
     }
   </style>
@@ -1058,7 +1062,7 @@
           </div>
 
           <!-- History panel -->
-          <div class="card">
+          <div class="card email-history-card">
             <div class="card__head" style="display:flex;align-items:center;justify-content:space-between;">
               <div class="card__title">Sent History</div>
               <button class="btn btn--outline btn--sm" onclick="loadEmailHistory()">Refresh</button>
@@ -4314,7 +4318,9 @@ window.loadEmailHistory = async function() {
   const tbody = document.getElementById('email-history-body');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">Loading&hellip;</td></tr>';
-  const data = await _emailApiCall('get_email_history');
+  let data;
+  try { data = await _emailApiCall('get_email_history'); } catch(e) { data = {}; }
+  if (data.error) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">Could not load history — please refresh</td></tr>'; return; }
   _emailHistory = data.emails || [];
   if (!_emailHistory.length) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px;">No emails sent yet</td></tr>';
