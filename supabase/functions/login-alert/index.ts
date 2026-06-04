@@ -22,7 +22,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { email, event, login_time, user_agent, device_language, timezone, platform, ip_address, location: userLocation } = body;
+    const { email, event, login_time, user_agent, device_language, timezone, platform, ip_address, location: userLocation,
+            device_type: preDevice, browser_name: preBrowser, os_name: preOs } = body;
 
     if (!email) {
       return new Response(JSON.stringify({ error: "Missing email" }), {
@@ -30,23 +31,23 @@ serve(async (req) => {
       });
     }
 
-    /* ── Device / browser detection ── */
+    /* ── Device / browser detection (use pre-computed fields from DB trigger if available) ── */
     const ua = user_agent || "";
     const isMobile = /Mobi|Android/i.test(ua);
     const isTablet = /Tablet|iPad/i.test(ua);
-    const deviceType = isTablet ? "Tablet" : isMobile ? "Mobile" : "Desktop";
-    const browser = /Edg/.test(ua) ? "Edge"
+    const deviceType = preDevice || (isTablet ? "Tablet" : isMobile ? "Mobile" : "Desktop");
+    const browser = preBrowser || (/Edg/.test(ua) ? "Edge"
       : /Chrome/.test(ua) ? "Chrome"
       : /Firefox/.test(ua) ? "Firefox"
       : /Safari/.test(ua) ? "Safari"
       : /Opera|OPR/.test(ua) ? "Opera"
-      : "Unknown";
-    const os = /Windows/.test(ua) ? "Windows"
+      : "Unknown");
+    const os = preOs || (/Windows/.test(ua) ? "Windows"
       : /Mac/.test(ua) ? "macOS"
       : /Android/.test(ua) ? "Android"
       : /iPhone|iPad/.test(ua) ? "iOS"
       : /Linux/.test(ua) ? "Linux"
-      : "Unknown";
+      : "Unknown");
 
     /* Use client-supplied IP/location (already resolved by the browser) */
     const ipAddress = ip_address || "Unknown";
