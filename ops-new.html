@@ -1625,7 +1625,12 @@
       <input type="hidden" id="pt-target-id">
       <input type="hidden" id="pt-user-id">
       <div class="form-grid" style="grid-template-columns:1fr;">
-        <div class="field"><label>User Email</label><input type="text" id="pt-user-email" placeholder="user@email.com"></div>
+        <div class="field"><label>User</label>
+          <select id="pt-user-sel" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;" onchange="(function(s){var o=s.options[s.selectedIndex];document.getElementById('pt-user-id').value=o?o.dataset.uid||'':'';document.getElementById('pt-user-email').value=o?o.dataset.email||'':'';})(this)">
+            <option value="">— Select user —</option>
+          </select>
+          <input type="hidden" id="pt-user-email">
+        </div>
         <div class="field"><label>Target Label</label><input type="text" id="pt-label" placeholder="e.g. Q2 Growth Target"></div>
         <div class="field"><label>Target Amount (USD)</label><input type="number" id="pt-target-amount" placeholder="e.g. 10000" step="any"></div>
       </div>
@@ -4262,12 +4267,33 @@ window.renderProfitTargetsLive = async function() {
   }).join('');
 };
 
-window.openSetProfitTarget = function(targetId, userEmail, targetAmount, label, userId) {
+window.openSetProfitTarget = async function(targetId, userEmail, targetAmount, label, userId) {
   document.getElementById('pt-target-id').value = targetId || '';
   document.getElementById('pt-user-id').value = userId || '';
   document.getElementById('pt-user-email').value = userEmail || '';
   document.getElementById('pt-label').value = label || '';
   document.getElementById('pt-target-amount').value = targetAmount || '';
+
+  const sel = document.getElementById('pt-user-sel');
+  // Load users if not cached
+  if (sel.options.length <= 1) {
+    const db = window.SV_DB; if (!db) return;
+    const { data: users } = await db.from('profiles')
+      .select('id,email,first_name,last_name').order('email');
+    sel.innerHTML = '<option value="">— Select user —</option>';
+    (users || []).forEach(function(u) {
+      const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
+      const opt = document.createElement('option');
+      opt.value = u.email || '';
+      opt.dataset.uid = u.id;
+      opt.dataset.email = u.email || '';
+      opt.textContent = name ? name + ' (' + u.email + ')' : u.email;
+      sel.appendChild(opt);
+    });
+  }
+  // Pre-select user when editing
+  sel.value = userEmail || '';
+  sel.disabled = !!(targetId); // lock user when editing existing target
   openModal('modal-set-profit-target');
 };
 
@@ -4279,7 +4305,7 @@ window.saveSetProfitTarget = async function() {
   const label       = document.getElementById('pt-label').value.trim() || 'Profit Target';
   const targetAmt   = parseFloat(document.getElementById('pt-target-amount').value);
 
-  if (!userEmail)  { showToast('User email required', 'error'); return; }
+  if (!userEmail)  { showToast('Please select a user', 'error'); return; }
   if (!targetAmt)  { showToast('Target amount required', 'error'); return; }
 
   if (!userId) {
