@@ -1135,8 +1135,14 @@ async function doSignOut() {
 }
 </script>
 <!-- Change Password Info Modal -->
+<style>
+@keyframes genieIn{0%{opacity:.7;clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);}18%{opacity:1;clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.58);}50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);}78%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}100%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}}
+@keyframes genieOut{0%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}20%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);opacity:1;}80%{clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.56);opacity:.8;}100%{clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);opacity:0;}}
+.cpw-genie-in{animation:genieIn 0.54s cubic-bezier(0.34,1.1,0.64,1) both;}
+.cpw-genie-out{animation:genieOut 0.36s cubic-bezier(0.4,0,0.8,1) both;}
+</style>
 <div id="change-pw-modal" style="display:none;position:fixed;inset:0;z-index:9000;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);">
-  <div style="background:var(--s2);border:1px solid var(--b);border-radius:16px;padding:36px 32px;max-width:420px;width:calc(100% - 32px);box-shadow:0 24px 64px rgba(0,0,0,.5);text-align:center;position:relative;">
+  <div id="change-pw-box" style="background:var(--s2);border:1px solid var(--b);border-radius:16px;padding:36px 32px;max-width:420px;width:calc(100% - 32px);box-shadow:0 24px 64px rgba(0,0,0,.5);text-align:center;position:relative;transform-origin:center 85%;will-change:clip-path,transform;">
     <div style="width:56px;height:56px;border-radius:50%;background:rgba(240,90,26,.12);border:1.5px solid rgba(240,90,26,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </div>
@@ -1145,23 +1151,35 @@ async function doSignOut() {
     <p style="margin:0 0 28px;font-size:13px;color:var(--sub);line-height:1.7;">Sign out of your account, then click <em>"Forgot Password"</em> on the login page to receive a reset link in your email.</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button onclick="doSignOutAndForgot()" style="padding:12px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='#d94e10'" onmouseout="this.style.background='var(--accent)'">Sign Out &amp; Reset Password</button>
-      <button onclick="document.getElementById('change-pw-modal').style.display='none'" style="padding:11px 24px;background:transparent;color:var(--sub);border:1.5px solid var(--b2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+      <button onclick="closeChangePwModal()" style="padding:11px 24px;background:transparent;color:var(--sub);border:1.5px solid var(--b2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
     </div>
   </div>
 </div>
 
 <script>
 function showChangePwModal() {
-  document.getElementById('change-pw-modal').style.display = 'flex';
+  const overlay = document.getElementById('change-pw-modal');
+  const box = document.getElementById('change-pw-box');
+  overlay.style.display = 'flex';
+  box.classList.remove('cpw-genie-out');
+  void box.offsetWidth;
+  box.classList.add('cpw-genie-in');
+}
+function closeChangePwModal() {
+  const overlay = document.getElementById('change-pw-modal');
+  const box = document.getElementById('change-pw-box');
+  box.classList.remove('cpw-genie-in');
+  void box.offsetWidth;
+  box.classList.add('cpw-genie-out');
+  box.addEventListener('animationend', () => { overlay.style.display = 'none'; }, { once: true });
 }
 async function doSignOutAndForgot() {
   sessionStorage.removeItem('sv_pin_ok');
   await window.SV_DB.auth.signOut();
   window.location.href = 'forgot-password-new.html';
 }
-// Close on backdrop click
 document.getElementById('change-pw-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.style.display = 'none';
+  if (e.target === this) closeChangePwModal();
 });
 </script>
 <script src="notif-popup.js"></script>
