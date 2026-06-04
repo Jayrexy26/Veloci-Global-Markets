@@ -1077,8 +1077,9 @@
             </button>
           </div>
 
-          <!-- Add form (hidden by default) -->
+          <!-- Add/Edit form (hidden by default) -->
           <div id="bf-form" style="display:none;padding:20px;border-bottom:1px solid var(--border);background:var(--bg);">
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="bf-form-title">New Format</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
               <div class="field">
                 <label>Template Name</label>
@@ -1095,7 +1096,7 @@
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn btn--outline btn--sm" onclick="toggleBillingForm()">Cancel</button>
-              <button class="btn btn--primary btn--sm" onclick="saveBillingFormat()">Save Format</button>
+              <button class="btn btn--primary btn--sm" id="bf-save-btn" onclick="saveBillingFormat()">Save Format</button>
             </div>
           </div>
 
@@ -4450,18 +4451,43 @@ function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function toggleBillingForm() {
+let _bfEditingId = null;
+
+function toggleBillingForm(clear = true) {
   const form = document.getElementById('bf-form');
   const isOpen = form.style.display !== 'none';
-  if (isOpen) {
+  if (isOpen && clear) {
     form.style.display = 'none';
+    _bfEditingId = null;
+    document.getElementById('bf-form-title').textContent = 'New Format';
+    document.getElementById('bf-save-btn').textContent = 'Save Format';
   } else {
-    document.getElementById('bf-name').value = '';
-    document.getElementById('bf-subject').value = '';
-    document.getElementById('bf-body').value = '';
+    if (clear) {
+      document.getElementById('bf-name').value = '';
+      document.getElementById('bf-subject').value = '';
+      document.getElementById('bf-body').value = '';
+      _bfEditingId = null;
+      document.getElementById('bf-form-title').textContent = 'New Format';
+      document.getElementById('bf-save-btn').textContent = 'Save Format';
+    }
     form.style.display = 'block';
     document.getElementById('bf-name').focus();
   }
+}
+
+function editBillingFormat(id) {
+  const fmt = _bfGet().find(f => f.id === id);
+  if (!fmt) return;
+  _bfEditingId = id;
+  document.getElementById('bf-name').value    = fmt.name;
+  document.getElementById('bf-subject').value = fmt.subject;
+  document.getElementById('bf-body').value    = fmt.body;
+  document.getElementById('bf-form-title').textContent = 'Edit Format';
+  document.getElementById('bf-save-btn').textContent   = 'Update Format';
+  const form = document.getElementById('bf-form');
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('bf-name').focus();
 }
 
 function saveBillingFormat() {
@@ -4471,12 +4497,17 @@ function saveBillingFormat() {
   if (!name)    { showToast('Template name is required', 'error'); return; }
   if (!subject) { showToast('Subject is required', 'error'); return; }
   if (!body)    { showToast('Body is required', 'error'); return; }
-  const formats = _bfGet();
-  formats.unshift({ id: Date.now(), name, subject, body, created: new Date().toISOString() });
+  let formats = _bfGet();
+  if (_bfEditingId) {
+    formats = formats.map(f => f.id === _bfEditingId ? { ...f, name, subject, body } : f);
+    showToast('Format updated', 'success');
+  } else {
+    formats.unshift({ id: Date.now(), name, subject, body, created: new Date().toISOString() });
+    showToast('Format saved', 'success');
+  }
   _bfSave(formats);
   toggleBillingForm();
   renderBillingFormats();
-  showToast('Format saved', 'success');
 }
 
 function deleteBillingFormat(id) {
@@ -4539,6 +4570,7 @@ function renderBillingFormats() {
             <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             Body
           </button>
+          <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})" title="Edit this format">Edit</button>
           <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" title="Load into compose form" style="color:var(--orange);border-color:rgba(240,90,26,.3);">Use in Compose</button>
           <button class="btn btn--outline btn--sm" onclick="deleteBillingFormat(${f.id})" style="color:var(--red);border-color:rgba(229,57,53,.25);">Delete</button>
         </div>
