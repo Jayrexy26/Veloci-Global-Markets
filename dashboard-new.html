@@ -1852,12 +1852,14 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       .select('id,message')
       .eq('user_id', user.id)
       .eq('type', 'plan_upgrade_popup')
+      .eq('read', false)
       .order('created_at', { ascending: false });
     if (popups?.length) {
       const plan = popups[0].message || '';
-      await db.from('notifications').delete()
+      await db.from('notifications').update({ read: true })
         .eq('type', 'plan_upgrade_popup')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .eq('read', false);
       setTimeout(() => showPlanUpgradePopup(plan), 900);
     }
   } catch(e) {}
