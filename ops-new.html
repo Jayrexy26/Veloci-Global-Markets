@@ -4444,16 +4444,27 @@ window.renderAuditLive = async function() {
 };
 
 /* ── BILLING FORMATS ── */
-const BF_KEY = 'vgm_billing_formats';
+let _bfCache = [];
 
-function _bfGet() {
-  try { return JSON.parse(localStorage.getItem(BF_KEY) || '[]'); } catch { return []; }
-}
-function _bfSave(arr) {
-  localStorage.setItem(BF_KEY, JSON.stringify(arr));
-}
 function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _bfDb() { return window._opsDb || window.SV_DB; }
+
+async function _bfLoad() {
+  const { data, error } = await _bfDb()
+    .from('billing_formats')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  _bfCache = error ? [] : (data || []);
+  return _bfCache;
+}
+
+async function _bfLoadAndRender() {
+  await _bfLoad();
+  renderBillingFormats();
 }
 
 let _bfEditingId = null;
@@ -4481,7 +4492,7 @@ function toggleBillingForm(clear = true) {
 }
 
 function editBillingFormat(id) {
-  const fmt = _bfGet().find(f => f.id === id);
+  const fmt = _bfCache.find(f => f.id === id);
   if (!fmt) return;
   _bfEditingId = id;
   document.getElementById('bf-name').value    = fmt.name;
@@ -4495,35 +4506,37 @@ function editBillingFormat(id) {
   document.getElementById('bf-name').focus();
 }
 
-function saveBillingFormat() {
+async function saveBillingFormat() {
   const name    = document.getElementById('bf-name').value.trim();
   const subject = document.getElementById('bf-subject').value.trim();
   const body    = document.getElementById('bf-body').value.trim();
   if (!name)    { showToast('Template name is required', 'error'); return; }
   if (!subject) { showToast('Subject is required', 'error'); return; }
   if (!body)    { showToast('Body is required', 'error'); return; }
-  let formats = _bfGet();
+  const btn = document.getElementById('bf-save-btn');
+  btn.disabled = true;
   if (_bfEditingId) {
-    formats = formats.map(f => f.id === _bfEditingId ? { ...f, name, subject, body } : f);
+    await _bfDb().from('billing_formats').update({ name, subject, body }).eq('id', _bfEditingId);
     showToast('Format updated', 'success');
   } else {
-    formats.unshift({ id: Date.now(), name, subject, body, created: new Date().toISOString() });
+    const maxOrder = _bfCache.length ? Math.max(..._bfCache.map(f => f.sort_order || 0)) : -1;
+    await _bfDb().from('billing_formats').insert({ name, subject, body, sort_order: maxOrder + 1 });
     showToast('Format saved', 'success');
   }
-  _bfSave(formats);
+  btn.disabled = false;
   toggleBillingForm();
-  renderBillingFormats();
+  await _bfLoadAndRender();
 }
 
-function deleteBillingFormat(id) {
+async function deleteBillingFormat(id) {
   if (!confirm('Delete this format?')) return;
-  _bfSave(_bfGet().filter(f => f.id !== id));
-  renderBillingFormats();
+  await _bfDb().from('billing_formats').delete().eq('id', id);
+  await _bfLoadAndRender();
   showToast('Format deleted');
 }
 
 function copyBillingField(id, field) {
-  const fmt = _bfGet().find(f => f.id === id);
+  const fmt = _bfCache.find(f => f.id === id);
   if (!fmt) return;
   navigator.clipboard.writeText(fmt[field]).then(() => {
     showToast('Copied to clipboard ✓', 'success');
@@ -4539,7 +4552,7 @@ function copyBillingField(id, field) {
 }
 
 function loadFormatIntoCompose(id) {
-  const fmt = _bfGet().find(f => f.id === id);
+  const fmt = _bfCache.find(f => f.id === id);
   if (!fmt) return;
   document.getElementById('email-subject').value = fmt.subject;
   document.getElementById('email-body').value    = fmt.body;
@@ -4550,7 +4563,7 @@ function loadFormatIntoCompose(id) {
 function renderBillingFormats() {
   const list = document.getElementById('bf-list');
   if (!list) return;
-  const formats = _bfGet();
+  const formats = _bfCache;
   if (!formats.length) {
     list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:13px;">No formats saved yet. Click <strong>+ New Format</strong> to create one.</div>';
     return;
@@ -4597,16 +4610,22 @@ function renderBillingFormats() {
   _bfInitDrag(list);
 }
 
-function moveBillingFormat(id, dir) {
-  const formats = _bfGet();
+async function moveBillingFormat(id, dir) {
+  const formats = [..._bfCache];
   const idx = formats.findIndex(f => f.id === id);
   if (idx < 0) return;
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= formats.length) return;
   const moved = formats.splice(idx, 1)[0];
   formats.splice(newIdx, 0, moved);
-  _bfSave(formats);
-  renderBillingFormats();
+  await _bfPersistOrder(formats);
+  await _bfLoadAndRender();
+}
+
+async function _bfPersistOrder(formats) {
+  await Promise.all(formats.map((f, i) =>
+    _bfDb().from('billing_formats').update({ sort_order: i }).eq('id', f.id)
+  ));
 }
 
 let _bfDragSrc = null;
@@ -4630,11 +4649,11 @@ function _bfInitDrag(list) {
       if (row !== _bfDragSrc) row.style.borderTop = '2px solid var(--orange)';
     });
     row.addEventListener('dragleave', () => { row.style.borderTop = ''; });
-    row.addEventListener('drop', e => {
+    row.addEventListener('drop', async e => {
       e.preventDefault();
       row.style.borderTop = '';
       if (!_bfDragSrc || _bfDragSrc === row) return;
-      const formats = _bfGet();
+      const formats = [..._bfCache];
       const fromId  = parseInt(_bfDragSrc.dataset.id);
       const toId    = parseInt(row.dataset.id);
       const fromIdx = formats.findIndex(f => f.id === fromId);
@@ -4642,8 +4661,8 @@ function _bfInitDrag(list) {
       if (fromIdx < 0 || toIdx < 0) return;
       const moved = formats.splice(fromIdx, 1)[0];
       formats.splice(toIdx, 0, moved);
-      _bfSave(formats);
-      renderBillingFormats();
+      await _bfPersistOrder(formats);
+      await _bfLoadAndRender();
       showToast('Order saved', 'success');
     });
   });
@@ -4653,10 +4672,10 @@ function _bfInitDrag(list) {
 const _origShowPage = window.showPage;
 window.showPage = function(id, el) {
   _origShowPage && _origShowPage(id, el);
-  if (id === 'emails') renderBillingFormats();
+  if (id === 'emails') _bfLoadAndRender();
 };
 document.addEventListener('DOMContentLoaded', function() {
-  if (document.getElementById('bf-list')) renderBillingFormats();
+  if (document.getElementById('bf-list')) _bfLoadAndRender();
 });
 
 function exportAuditCSV() {
