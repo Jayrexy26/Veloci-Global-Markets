@@ -1852,17 +1852,16 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       .select('id,message')
       .eq('user_id', user.id)
       .eq('type', 'plan_upgrade_popup')
+      .eq('read', false)
       .order('created_at', { ascending: false });
     if (popups?.length) {
-      db.from('notifications').delete()
+      const popup = popups[0];
+      /* Mark all read — users have UPDATE permission on their own notifications */
+      db.from('notifications').update({ read: true })
+        .eq('user_id', user.id)
         .eq('type', 'plan_upgrade_popup')
-        .eq('user_id', user.id).catch(() => {});
-      /* Find newest notification not yet shown on this device */
-      const unseen = popups.find(p => p.id && !localStorage.getItem('pu_shown_' + p.id));
-      if (unseen) {
-        localStorage.setItem('pu_shown_' + unseen.id, '1');
-        setTimeout(() => showPlanUpgradePopup(unseen.message || ''), 900);
-      }
+        .eq('read', false).catch(() => {});
+      setTimeout(() => showPlanUpgradePopup(popup.message || ''), 900);
     }
   } catch(e) {}
 
@@ -1936,12 +1935,11 @@ async function checkProfitTargetPopup(userId) {
       .eq('user_id', userId)
       .eq('type', 'profit_target_set')
       .eq('read', false)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1);
     if (!notifs?.length) return;
-    /* Find the newest notification not yet shown on this device */
-    const n = notifs.find(x => x.id && !localStorage.getItem('pt_shown_' + x.id));
-    if (!n) return;
-    localStorage.setItem('pt_shown_' + n.id, '1');
+    const n = notifs[0];
+    /* Mark as read immediately — users have UPDATE permission on their own notifications */
     db.from('notifications').update({ read: true }).eq('id', n.id).catch(() => {});
     const labelMatch  = n.message.match(/"(.+?)"/);
     const amountMatch = n.message.match(/\$([0-9,]+(?:\.\d+)?)/);
