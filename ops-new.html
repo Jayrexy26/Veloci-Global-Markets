@@ -1771,6 +1771,12 @@
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="bf-expl-format-name"></div>
       <div id="bf-expl-body" style="font-size:14px;color:var(--text);line-height:1.75;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;min-height:80px;"></div>
     </div>
+    <div class="modal__foot" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);">
+      <button id="bf-expl-copy-btn" class="btn btn--primary btn--sm" onclick="copyManagerExplanation()" style="display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Text
+      </button>
+    </div>
   </div>
 </div>
 
@@ -4805,7 +4811,21 @@ function viewManagerExplanation(id) {
   const text = (fmt.manager_explanation || '').trim();
   body.textContent = text || 'No explanation saved for this format yet. Click Edit to add one.';
   body.style.color = text ? 'var(--text)' : 'var(--muted)';
+  const btn = document.getElementById('bf-expl-copy-btn');
+  if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Text'; btn.style.background = ''; }
   openModal('modal-bf-explanation');
+}
+
+function copyManagerExplanation() {
+  const text = document.getElementById('bf-expl-body').textContent;
+  if (!text || text.startsWith('No explanation')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('bf-expl-copy-btn');
+    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!'; btn.style.background = 'var(--green)'; }
+    setTimeout(() => {
+      if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Text'; btn.style.background = ''; }
+    }, 2000);
+  }).catch(() => showToast('Could not copy — please select and copy manually', 'error'));
 }
 
 function renderBillingFormats() {
