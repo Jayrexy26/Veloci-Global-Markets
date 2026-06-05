@@ -13,7 +13,7 @@
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
     <div class="modalBody" id="modalBody"></div>
-    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+    <div class="modalFoot" id="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
   </div>
 </div>
 
@@ -48,238 +48,217 @@
     </aside>
 
     <div class="main" id="mainScroll">
-      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok" id="connChip">CONNECTED</div></div>
-
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
       <div class="topbar" id="topbar">
-        <div class="topLeft">
-          <div class="chip ok" id="connChip2">CONNECTED</div>
-          <div class="chip" id="adminChip">ADMIN: —</div>
-          <div class="chip" id="autoChip">AUTO: OFF</div>
-          <div class="chip" id="lastChip">LAST: —</div>
-        </div>
-        <div class="topRight">
-          <input id="globalSearch" class="searchBox" placeholder="Search users…" autocomplete="off" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)"/>
-          <div class="searchWrap" style="position:relative;">
-            <div class="suggBox" id="searchSugg" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:200;">
-              <div class="suggTitle" id="suggTitle">Matches</div>
-              <div id="suggList"></div>
-            </div>
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
           </div>
           <button class="btnGhost" onclick="refreshAll()">Refresh</button>
           <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
-          <button class="btnGhost" onclick="lockConsole()">Lock</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
         </div>
       </div>
 
-      <div class="sysRow"><span id="sysBox">Not connected.</span><span id="debugBox" class="small muted">No errors yet.</span></div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
 
-      <div style="padding:20px;">
-        <!-- Filter bar -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-          <h2 style="font-size:18px;font-weight:700;flex:1;min-width:140px;">Signal Activations</h2>
-          <select id="filter-status" onchange="applyFilter()" style="padding:7px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;cursor:pointer;">
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <select id="filter-signal" onchange="applyFilter()" style="padding:7px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;cursor:pointer;">
-            <option value="">All Signals</option>
-            <option value="1">Signal 1 — Basic</option>
-            <option value="2">Signal 2 — Advanced</option>
-            <option value="3">Signal 3 — Elite</option>
-          </select>
-          <button class="btnGhost" onclick="loadSignals()">Refresh</button>
-        </div>
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">📡 Signal Activations</div><div class="small" id="signalsStatus">Not loaded.</div></div>
+            <div class="rowTools">
+              <select id="filter-status" onchange="applyFilter()" style="height:34px;padding:0 10px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#eaf0ff;font-size:12px;cursor:pointer;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <select id="filter-signal" onchange="applyFilter()" style="height:34px;padding:0 10px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#eaf0ff;font-size:12px;cursor:pointer;">
+                <option value="">All Signals</option>
+                <option value="1">Signal 1 — Basic</option>
+                <option value="2">Signal 2 — Advanced</option>
+                <option value="3">Signal 3 — Elite</option>
+              </select>
+              <button class="btnGhost" onclick="safeLoad(loadSignals)">Refresh</button>
+            </div>
+          </div>
 
-        <!-- Stats row -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;" id="stats-row">
-          <div class="sideCard" style="margin:0;"><div class="small">Total Requests</div><div style="font-size:22px;font-weight:700;margin-top:4px;" id="stat-total">—</div></div>
-          <div class="sideCard" style="margin:0;"><div class="small">Pending</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#f0b90b;" id="stat-pending">—</div></div>
-          <div class="sideCard" style="margin:0;"><div class="small">Active</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#0ecb81;" id="stat-active">—</div></div>
-          <div class="sideCard" style="margin:0;"><div class="small">Rejected</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#f6465d;" id="stat-rejected">—</div></div>
-        </div>
+          <div class="inline" style="gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;">
+              <div class="small">Total</div><div style="font-size:20px;font-weight:700;margin-top:3px;" id="stat-total">—</div>
+            </div>
+            <div style="flex:1;min-width:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;">
+              <div class="small">Pending</div><div style="font-size:20px;font-weight:700;margin-top:3px;color:#f0b90b;" id="stat-pending">—</div>
+            </div>
+            <div style="flex:1;min-width:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;">
+              <div class="small">Active</div><div style="font-size:20px;font-weight:700;margin-top:3px;color:#0ecb81;" id="stat-active">—</div>
+            </div>
+            <div style="flex:1;min-width:90px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;">
+              <div class="small">Rejected</div><div style="font-size:20px;font-weight:700;margin-top:3px;color:#f6465d;" id="stat-rejected">—</div>
+            </div>
+          </div>
 
-        <!-- Table -->
-        <div class="tableWrap">
-          <table class="dataTable" id="signals-table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Signal</th>
-                <th>Status</th>
-                <th>Requested</th>
-                <th>Updated</th>
-                <th>Admin Note</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="signals-tbody">
-              <tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(234,240,255,.4);">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:300px">User</th>
+                <th style="width:200px">Signal</th>
+                <th style="width:120px">Status</th>
+                <th style="width:200px">Requested</th>
+                <th style="width:200px">Updated</th>
+                <th style="width:200px">Admin Note</th>
+                <th style="width:120px">Actions</th>
+              </tr></thead>
+              <tbody id="signals-tbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(234,240,255,.4);">Loading…</td></tr></tbody>
+            </table>
+          </div></div>
+        </div></div>
       </div>
-    </div><!-- /main -->
-  </div><!-- /shell -->
-</div><!-- /app -->
-
-<!-- Update Status Modal -->
-<div id="updateModalOverlay" class="modalOverlay" onclick="document.getElementById('updateModalOverlay').style.display='none'" style="display:none;">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modalHead"><div class="modalTitle">Update Signal Status</div><button class="btnGhost" onclick="document.getElementById('updateModalOverlay').style.display='none'">Close</button></div>
-    <div class="modalBody">
-      <div style="margin-bottom:14px;">
-        <div class="small" style="margin-bottom:6px;">User</div>
-        <div id="update-user-label" style="font-weight:600;"></div>
-      </div>
-      <div style="margin-bottom:14px;">
-        <div class="small" style="margin-bottom:6px;">Signal</div>
-        <div id="update-signal-label" style="font-weight:600;"></div>
-      </div>
-      <div style="margin-bottom:14px;">
-        <label class="small" style="display:block;margin-bottom:6px;">New Status</label>
-        <select id="update-status" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;">
-          <option value="pending">Pending</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="rejected">Rejected</option>
-        </select>
-      </div>
-      <div>
-        <label class="small" style="display:block;margin-bottom:6px;">Admin Note (optional)</label>
-        <textarea id="update-note" rows="3" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;resize:vertical;" placeholder="Internal note…"></textarea>
-      </div>
-    </div>
-    <div class="modalFoot">
-      <button class="btnGhost" onclick="document.getElementById('updateModalOverlay').style.display='none'">Cancel</button>
-      <button class="btn" onclick="confirmUpdateStatus()" id="update-confirm-btn">Update Status</button>
     </div>
   </div>
 </div>
 
-<style>
-.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;}
-.status-badge.pending{background:rgba(240,185,11,.12);color:#f0b90b;border:1px solid rgba(240,185,11,.3);}
-.status-badge.active{background:rgba(14,203,129,.12);color:#0ecb81;border:1px solid rgba(14,203,129,.3);}
-.status-badge.inactive{background:rgba(132,142,156,.1);color:#848e9c;border:1px solid rgba(132,142,156,.2);}
-.status-badge.rejected{background:rgba(246,70,93,.1);color:#f6465d;border:1px solid rgba(246,70,93,.2);}
-.signal-pill-1{color:#3b82f6;font-weight:600;}
-.signal-pill-2{color:#8b5cf6;font-weight:600;}
-.signal-pill-3{color:#f59e0b;font-weight:600;}
-</style>
-
 <script src="admin-shared.js"></script>
 <script>
+ACTIVE_VIEW = 'signals';
+window.loadCurrentPage = function(){ safeLoad(loadSignals); };
+
 let _allSignals = [];
 let _updateId = null;
 
 const SIGNAL_NAMES = { 1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite' };
 
-async function loadSignals() {
-  try {
-    const db = window.VELOCI_DB;
-    if (!db) { setSysBox('DB not ready'); return; }
-
-    const { data, error } = await db.rpc('admin_get_signal_activations');
-    if (error) throw error;
-
-    _allSignals = data || [];
-
-    const stat_total   = document.getElementById('stat-total');
-    const stat_pending = document.getElementById('stat-pending');
-    const stat_active  = document.getElementById('stat-active');
-    const stat_rejected= document.getElementById('stat-rejected');
-    if (stat_total)    stat_total.textContent   = _allSignals.length;
-    if (stat_pending)  stat_pending.textContent = _allSignals.filter(s=>s.status==='pending').length;
-    if (stat_active)   stat_active.textContent  = _allSignals.filter(s=>s.status==='active').length;
-    if (stat_rejected) stat_rejected.textContent= _allSignals.filter(s=>s.status==='rejected').length;
-
-    const cnt = document.getElementById('cnt-signals');
-    if (cnt) cnt.textContent = _allSignals.filter(s=>s.status==='pending').length || _allSignals.length;
-
-    applyFilter();
-    feed('Loaded ' + _allSignals.length + ' signal activation records');
-    setSysBox('OK • ' + nowStamp());
-  } catch(e) {
-    setSysBox('ERROR • ' + e.message);
-    feed('ERROR loading signals: ' + e.message);
-  }
+function sigBadge(status){
+  const map = {
+    pending:  { bg:'rgba(240,185,11,.12)',  color:'#f0b90b',  border:'rgba(240,185,11,.3)'  },
+    active:   { bg:'rgba(14,203,129,.12)',  color:'#0ecb81',  border:'rgba(14,203,129,.3)'  },
+    inactive: { bg:'rgba(132,142,156,.10)', color:'#848e9c',  border:'rgba(132,142,156,.2)' },
+    rejected: { bg:'rgba(246,70,93,.10)',   color:'#f6465d',  border:'rgba(246,70,93,.25)'  },
+  };
+  const s = map[status] || map.inactive;
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${s.bg};color:${s.color};border:1px solid ${s.border};">${esc(status)}</span>`;
 }
 
-function applyFilter() {
-  const statusF = document.getElementById('filter-status').value;
-  const signalF = document.getElementById('filter-signal').value;
-  let filtered = _allSignals;
-  if (statusF) filtered = filtered.filter(s => s.status === statusF);
-  if (signalF) filtered = filtered.filter(s => String(s.signal_number) === signalF);
-  renderTable(filtered);
+function sigColor(n){ return {1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'}[n]||'#eaf0ff'; }
+
+async function loadSignals(){
+  const db = window.VELOCI_DB;
+  if(!db){ setSysBox('DB not ready'); return; }
+  const st = document.getElementById('signalsStatus');
+  if(st) st.innerHTML = '<span class="spin"></span>Loading…';
+
+  const { data, error } = await db.rpc('admin_get_signal_activations');
+  if(error) throw error;
+
+  _allSignals = data || [];
+
+  const tot  = _allSignals.length;
+  const pend = _allSignals.filter(s=>s.status==='pending').length;
+  const act  = _allSignals.filter(s=>s.status==='active').length;
+  const rej  = _allSignals.filter(s=>s.status==='rejected').length;
+
+  document.getElementById('stat-total').textContent   = tot;
+  document.getElementById('stat-pending').textContent = pend;
+  document.getElementById('stat-active').textContent  = act;
+  document.getElementById('stat-rejected').textContent= rej;
+
+  const cnt = document.getElementById('cnt-signals');
+  if(cnt) cnt.textContent = pend || tot;
+
+  if(st) st.textContent = `Loaded ${tot} record(s) ✅`;
+  applyFilter();
+  feed('Loaded ' + tot + ' signal activation records');
 }
 
-function renderTable(rows) {
+function applyFilter(){
+  const sf = (document.getElementById('filter-status')||{value:''}).value;
+  const nf = (document.getElementById('filter-signal')||{value:''}).value;
+  let rows = _allSignals.filter(matchSearch);
+  if(sf) rows = rows.filter(s=>s.status===sf);
+  if(nf) rows = rows.filter(s=>String(s.signal_number)===nf);
+  renderTable(rows);
+}
+
+function renderTable(rows){
   const tbody = document.getElementById('signals-tbody');
-  if (!rows.length) {
+  if(!rows.length){
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(234,240,255,.4);">No records found.</td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(s => {
+  tbody.innerHTML = rows.map(s=>{
     const sn = s.signal_number;
-    const cls = 'signal-pill-' + sn;
+    const note = esc(s.admin_note||'—');
+    const noteShort = note.length > 40 ? note.slice(0,40)+'…' : note;
     return `<tr>
       <td>${userPillHtml(s.user_email)}</td>
-      <td><span class="${cls}">${esc(SIGNAL_NAMES[sn] || 'Signal '+sn)}</span></td>
-      <td><span class="status-badge ${esc(s.status)}">${esc(s.status)}</span></td>
-      <td style="font-size:12px;">${fmtDate(s.requested_at)}</td>
-      <td style="font-size:12px;">${fmtDate(s.updated_at)}</td>
-      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(s.admin_note||'')}">${esc(s.admin_note || '—')}</td>
-      <td>
-        <button class="btnGhost" style="font-size:12px;" onclick="openUpdateModal('${esc(s.id)}','${esc(s.user_email||'')}',${sn},'${esc(s.status)}','${esc(s.admin_note||'')}')">Update</button>
-      </td>
+      <td style="font-weight:600;color:${sigColor(sn)};">${esc(SIGNAL_NAMES[sn]||'Signal '+sn)}</td>
+      <td>${sigBadge(s.status)}</td>
+      <td class="mono" style="font-size:12px;">${esc(s.requested_at?new Date(s.requested_at).toLocaleString():'—')}</td>
+      <td class="mono" style="font-size:12px;">${esc(s.updated_at?new Date(s.updated_at).toLocaleString():'—')}</td>
+      <td style="font-size:12px;" title="${esc(s.admin_note||'')}">${noteShort}</td>
+      <td><button class="btnGhost" style="font-size:12px;" onclick="openUpdateModal('${esc(s.id)}','${esc(s.user_email||'')}',${sn},'${esc(s.status)}','${esc((s.admin_note||'').replace(/'/g,"\\'"))}')">Update</button></td>
     </tr>`;
   }).join('');
 }
 
-function openUpdateModal(id, email, signalNum, currentStatus, currentNote) {
+function openUpdateModal(id, email, signalNum, currentStatus, currentNote){
   _updateId = id;
-  document.getElementById('update-user-label').textContent = email;
-  document.getElementById('update-signal-label').textContent = SIGNAL_NAMES[signalNum] || 'Signal ' + signalNum;
-  document.getElementById('update-status').value = currentStatus;
-  document.getElementById('update-note').value = currentNote || '';
-  document.getElementById('updateModalOverlay').style.display = 'flex';
+  document.getElementById('modalTitle').textContent = 'Update Signal Status';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="small" style="margin-bottom:3px;">User</div>
+    <div style="font-weight:600;margin-bottom:14px;">${esc(email)}</div>
+    <div class="small" style="margin-bottom:3px;">Signal</div>
+    <div style="font-weight:600;color:${sigColor(signalNum)};margin-bottom:14px;">${esc(SIGNAL_NAMES[signalNum]||'Signal '+signalNum)}</div>
+    <div style="margin-bottom:14px;">
+      <label class="small" style="display:block;margin-bottom:6px;">New Status</label>
+      <select id="update-status" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#eaf0ff;font-size:13px;">
+        <option value="pending"${currentStatus==='pending'?' selected':''}>Pending</option>
+        <option value="active"${currentStatus==='active'?' selected':''}>Active</option>
+        <option value="inactive"${currentStatus==='inactive'?' selected':''}>Inactive</option>
+        <option value="rejected"${currentStatus==='rejected'?' selected':''}>Rejected</option>
+      </select>
+    </div>
+    <label class="small" style="display:block;margin-bottom:6px;">Admin Note (optional)</label>
+    <textarea id="update-note" rows="3" placeholder="Internal note…" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#eaf0ff;font-size:13px;resize:vertical;font-family:inherit;">${esc(currentNote)}</textarea>
+  `;
+  document.getElementById('modalFoot').innerHTML = `
+    <button class="btnGhost" onclick="modalClose()">Cancel</button>
+    <button class="btnOk" id="update-confirm-btn" onclick="confirmUpdateStatus()">Update Status</button>
+  `;
+  document.getElementById('modalOverlay').style.display = 'flex';
 }
 
-async function confirmUpdateStatus() {
-  if (!_updateId) return;
+async function confirmUpdateStatus(){
+  if(!_updateId) return;
+  const db = window.VELOCI_DB;
   const newStatus = document.getElementById('update-status').value;
-  const note = document.getElementById('update-note').value.trim();
+  const note = (document.getElementById('update-note').value||'').trim()||null;
   const btn = document.getElementById('update-confirm-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
-  try {
-    const db = window.VELOCI_DB;
-    const { error } = await db.rpc('admin_update_signal_status', {
-      p_id: _updateId,
-      p_status: newStatus,
-      p_note: note || null
-    });
-    if (error) throw error;
-    document.getElementById('updateModalOverlay').style.display = 'none';
-    feed('Signal ' + _updateId + ' status → ' + newStatus);
-    logAudit('SIGNAL_STATUS_UPDATE', _updateId, 'status:' + newStatus + (note ? ' note:'+note : '')).catch(()=>{});
-    await loadSignals();
-  } catch(e) {
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const { error } = await db.rpc('admin_update_signal_status',{ p_id:_updateId, p_status:newStatus, p_note:note });
+    if(error) throw error;
+    modalClose();
+    feed('Signal '+_updateId+' → '+newStatus);
+    logAudit('SIGNAL_STATUS_UPDATE', _updateId, 'status:'+newStatus+(note?' note:'+note:'')).catch(()=>{});
+    await safeLoad(loadSignals);
+  }catch(e){
     modalShow('Update failed', e.message);
-    feed('ERROR update signal: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Update Status';
+    feed('ERROR update signal: '+e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Update Status';
   }
 }
 
-function loadCurrentPage() { return loadSignals(); }
-
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', ()=>{
   requireAuth();
   initTopbar();
   safeLoad(loadSignals);
