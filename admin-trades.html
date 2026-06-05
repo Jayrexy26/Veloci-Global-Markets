@@ -106,7 +106,10 @@
                 <option value="sell">SELL</option>
               </select>
               <input id="tradeSize" class="w140" type="number" step="0.0001" placeholder="Size" required>
-              <input id="tradePnl" class="w140" type="number" step="0.01" placeholder="P/L" required>
+              <div style="display:inline-flex;align-items:center;gap:4px;">
+                <button type="button" id="pnlSignBtn" onclick="togglePnlSign()" title="Toggle positive/negative" style="height:38px;padding:0 10px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#eaf0ff;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;">+</button>
+                <input id="tradePnl" class="w140" type="text" inputmode="decimal" placeholder="P/L (e.g. 250)" required>
+              </div>
               <button class="btnOk" type="submit">Add Trade</button>
             </div>
           </form>
@@ -251,6 +254,21 @@ function renderTrades(data){
   });
 }
 
+function togglePnlSign() {
+  const inp = document.getElementById('tradePnl');
+  const btn = document.getElementById('pnlSignBtn');
+  const val = inp.value.trim();
+  if (val.startsWith('-')) {
+    inp.value = val.slice(1);
+    btn.textContent = '+';
+    btn.style.color = '#22c55e';
+  } else {
+    inp.value = val ? '-' + val : '';
+    btn.textContent = '−';
+    btn.style.color = '#f87171';
+  }
+}
+
 function viewTrade(t){ modalShow("Trade", JSON.stringify(t, null, 2)); }
 
 async function createTrade(ev){
@@ -276,6 +294,7 @@ async function createTrade(ev){
   document.getElementById("tradePair").value = "";
   document.getElementById("tradeSize").value = "";
   document.getElementById("tradePnl").value = "";
+  const _sb = document.getElementById("pnlSignBtn"); if(_sb){ _sb.textContent='+'; _sb.style.color=''; }
   safeLoad(loadTrades);
 }
 
