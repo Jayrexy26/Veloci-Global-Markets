@@ -179,10 +179,23 @@ html.mob .sb-overlay.open{display:block;}
 .what-cta-note{display:inline-block;font-size:12px;color:var(--text3);margin-top:8px;}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;}
-.modal-overlay.open{display:flex;}
-.modal-box{background:var(--s2);border:1px solid var(--b);border-radius:16px;width:100%;max-width:480px;overflow:hidden;animation:modalIn .22s cubic-bezier(0.4,0,0.2,1);}
-@keyframes modalIn{from{transform:scale(.95);opacity:0;}to{transform:scale(1);opacity:1;}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;transition:background .28s ease;}
+.modal-overlay.open{display:flex;background:rgba(0,0,0,.75);}
+.modal-overlay.closing{background:rgba(0,0,0,0);}
+.modal-box{background:var(--s2);border:1px solid var(--b);border-radius:16px;width:100%;max-width:480px;overflow:hidden;}
+.modal-overlay.open .modal-box{animation:genieIn .42s cubic-bezier(0.34,1.45,0.64,1) both;}
+.modal-overlay.closing .modal-box{animation:genieOut .28s cubic-bezier(0.4,0,0.8,0.6) both;}
+@keyframes genieIn{
+  0%  {transform:scale(0.08) translateY(56px);opacity:0;filter:blur(6px);border-radius:50%;}
+  55% {transform:scale(1.06) translateY(-6px);opacity:1;filter:blur(0);border-radius:16px;}
+  75% {transform:scale(0.97) translateY(3px);}
+  100%{transform:scale(1) translateY(0);}
+}
+@keyframes genieOut{
+  0%  {transform:scale(1) translateY(0);opacity:1;filter:blur(0);}
+  35% {transform:scale(1.04) translateY(-4px);opacity:.9;}
+  100%{transform:scale(0.08) translateY(56px);opacity:0;filter:blur(6px);border-radius:50%;}
+}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--b);}
 .modal-head-title{font-size:15px;font-weight:700;color:var(--text);}
 .modal-close{width:28px;height:28px;border:none;background:var(--s3);border-radius:6px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
@@ -472,7 +485,7 @@ window.smartsupp||(function(d) {
     </div>
     <div class="modal-foot">
       <button class="modal-btn ghost" onclick="closeInfoModal(1)">Close</button>
-      <button class="modal-btn primary" onclick="closeInfoModal(1);openImplementModal(1);">Implement Now</button>
+      <button class="modal-btn primary" onclick="closeInfoModal(1);setTimeout(()=>openImplementModal(1),300);">Implement Now</button>
     </div>
   </div>
 </div>
@@ -496,7 +509,7 @@ window.smartsupp||(function(d) {
     </div>
     <div class="modal-foot">
       <button class="modal-btn ghost" onclick="closeInfoModal(2)">Close</button>
-      <button class="modal-btn primary" onclick="closeInfoModal(2);openImplementModal(2);">Implement Now</button>
+      <button class="modal-btn primary" onclick="closeInfoModal(2);setTimeout(()=>openImplementModal(2),300);">Implement Now</button>
     </div>
   </div>
 </div>
@@ -520,7 +533,7 @@ window.smartsupp||(function(d) {
     </div>
     <div class="modal-foot">
       <button class="modal-btn ghost" onclick="closeInfoModal(3)">Close</button>
-      <button class="modal-btn primary" onclick="closeInfoModal(3);openImplementModal(3);">Implement Now</button>
+      <button class="modal-btn primary" onclick="closeInfoModal(3);setTimeout(()=>openImplementModal(3),300);">Implement Now</button>
     </div>
   </div>
 </div>
@@ -589,9 +602,26 @@ function showToast(msg, dur) {
 }
 
 /* ── Modal helpers ── */
-function openInfoModal(n) { document.getElementById('info-modal-'+n).classList.add('open'); }
-function closeInfoModal(n) { document.getElementById('info-modal-'+n).classList.remove('open'); }
-function closeImplementModal() { document.getElementById('implement-modal').classList.remove('open'); }
+function openModal(id) {
+  const ov = document.getElementById(id);
+  if (!ov) return;
+  ov.classList.remove('closing');
+  ov.style.display = 'flex';
+  requestAnimationFrame(() => ov.classList.add('open'));
+}
+function closeModal(id) {
+  const ov = document.getElementById(id);
+  if (!ov || !ov.classList.contains('open')) return;
+  ov.classList.add('closing');
+  ov.classList.remove('open');
+  const box = ov.querySelector('.modal-box');
+  const done = () => { ov.style.display = 'none'; ov.classList.remove('closing'); };
+  if (box) box.addEventListener('animationend', done, { once: true });
+  else setTimeout(done, 300);
+}
+function openInfoModal(n) { openModal('info-modal-'+n); }
+function closeInfoModal(n) { closeModal('info-modal-'+n); }
+function closeImplementModal() { closeModal('implement-modal'); }
 
 function openImplementModal(n) {
   _currentImplSignal = n;
