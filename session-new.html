@@ -594,6 +594,7 @@ function afterPinSuccess() {
         ipAddress = geo.ip; loginLocation = geo.loc;
       } catch(_) {}
       window.SV_DB.from('login_activity').insert({ user_id:_user.id, ip_address:ipAddress, device_type:deviceType, browser, os, location:loginLocation }).catch(()=>{});
+      if (_user?.last_sign_in_at) localStorage.setItem('sv_last_login_' + _user.id, _user.last_sign_in_at);
     })();
   }
   /* Navigate immediately — kyc_status cached during init */
@@ -631,6 +632,35 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
         sessionStorage.removeItem(SS_KEY);
         window.location.href = 'login-new.html?banned=1';
         return;
+      }
+      // Log if Supabase recorded a new sign-in since we last captured it
+      const lsi = session.user.last_sign_in_at;
+      const lsiKey = 'sv_last_login_' + session.user.id;
+      if (lsi && lsi !== localStorage.getItem(lsiKey)) {
+        localStorage.setItem(lsiKey, lsi);
+        (async () => {
+          const ua = navigator.userAgent;
+          const deviceType = /Tablet|iPad/i.test(ua)?'Tablet':/Mobi|Android/i.test(ua)?'Mobile':'Desktop';
+          const browser = /Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':/Opera|OPR/.test(ua)?'Opera':'Unknown';
+          const os = /Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'Unknown';
+          let ipAddress = '', loginLocation = '';
+          try {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), 3000);
+            const geoApis = [
+              { url:'https://ipwho.is/',             parse: d=>({ ip:d.ip,        loc:[d.city,d.country].filter(Boolean).join(', ')       }) },
+              { url:'https://ipapi.co/json/',         parse: d=>({ ip:d.ip,        loc:[d.city,d.country_name].filter(Boolean).join(', ')  }) },
+              { url:'https://freeipapi.com/api/json', parse: d=>({ ip:d.ipAddress, loc:[d.cityName,d.countryName].filter(Boolean).join(', ')}) },
+            ];
+            const geo = await Promise.any(geoApis.map(api =>
+              fetch(api.url, { signal: ctrl.signal }).then(r => r.json()).then(d => {
+                const parsed = api.parse(d); if (!parsed.ip) throw new Error('no ip'); return parsed;
+              })
+            ));
+            ipAddress = geo.ip; loginLocation = geo.loc;
+          } catch(_) {}
+          db.from('login_activity').insert({ user_id: session.user.id, ip_address: ipAddress, device_type: deviceType, browser, os, location: loginLocation }).catch(()=>{});
+        })();
       }
       window.location.href = p?.kyc_status === 'verified' ? 'dashboard-new.html' : 'verify-new.html';
       return;
