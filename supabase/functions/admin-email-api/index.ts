@@ -506,12 +506,16 @@ serve(async (req) => {
       const sigNames: Record<string, string> = { "1": "Signal 1 — Basic", "2": "Signal 2 — Advanced", "3": "Signal 3 — Elite" };
       const sigName = sigNames[String(signal_number)] || `Signal ${signal_number}`;
       const subject = `Your ${sigName} Has Been Activated`;
-      const html = buildPlanEmailHtml(subject, name, "signal_approved", { signal_name: sigName });
-      await fetch("https://api.resend.com/emails", {
+      const html = buildPlanEmailHtml(subject, name, "signal_approved", { signal_name: sigName, signal_number: String(signal_number) });
+      const sendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
-      }).catch(() => {});
+      });
+      if (!sendRes.ok) {
+        const resendErr = await sendRes.text().catch(() => "");
+        return err("Resend error: " + resendErr);
+      }
       return ok({ sent: true });
     }
 

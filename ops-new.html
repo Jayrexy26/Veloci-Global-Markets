@@ -5228,13 +5228,19 @@ window.showPage = function(id, el) {
       try {
         const {data:{session:s}}=await db.auth.getSession();
         if(s?.access_token){
-          fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api',{
+          const emailRes = await fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api',{
             method:'POST',
             headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`},
             body:JSON.stringify({action:'notify_signal_approved',user_id:row.user_id,signal_number:row.signal_number}),
-          }).catch(()=>{});
+          });
+          if(!emailRes.ok){
+            const e=await emailRes.json().catch(()=>({}));
+            showToast('Email error: '+(e.error||emailRes.status),'error');
+          }
+        } else {
+          showToast('Email skipped: no admin session','error');
         }
-      } catch(_){}
+      } catch(emailErr){ showToast('Email failed: '+emailErr.message,'error'); }
     }
     showToast('Signal activated','success');
     await window.loadSignalsPage();
