@@ -585,3 +585,10 @@ async function renderAuditLive(){
       <td style="font-size:11px;color:rgba(234,240,255,.60);">${esc(a.ip_address||'—')}</td>
     </tr>`).join('');
 }
+
+/* ── Swipe gesture (mobile sidebar) ── */
+(function(){
+  var s = document.createElement('script');
+  s.src = '/swipe-nav-ops.js';
+  document.head.appendChild(s);
+})();
