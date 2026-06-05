@@ -5210,8 +5210,32 @@ window.showPage = function(id, el) {
   window.sigApprove = async function(id){
     if(!confirm('Approve this signal activation?')) return;
     const db=window.SV_DB; if(!db) return;
+    const row=_sigAll.find(r=>r.id===id);
     const {error}=await db.rpc('admin_update_signal_status',{p_id:id,p_status:'active',p_note:null});
     if(error){ showToast('Failed: '+error.message,'error'); return; }
+    // Insert in-app notification
+    if(row?.user_id) {
+      const sigNames={1:'Signal 1 — Basic',2:'Signal 2 — Advanced',3:'Signal 3 — Elite'};
+      const sigName=sigNames[row.signal_number]||'Signal '+row.signal_number;
+      db.from('notifications').insert({
+        user_id:row.user_id,
+        title:'Signal Activated',
+        message:`Your ${sigName} has been activated on your account.`,
+        type:'success',read:false,
+        created_at:new Date().toISOString(),
+      }).then(null,()=>{});
+      // Send approval email to user
+      try {
+        const {data:{session:s}}=await db.auth.getSession();
+        if(s?.access_token){
+          fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`},
+            body:JSON.stringify({action:'notify_signal_approved',user_id:row.user_id,signal_number:row.signal_number}),
+          }).catch(()=>{});
+        }
+      } catch(_){}
+    }
     showToast('Signal activated','success');
     await window.loadSignalsPage();
   };

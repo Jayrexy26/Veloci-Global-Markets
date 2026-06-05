@@ -528,6 +528,29 @@ window.smartsupp||(function(d) {
   </div>
 </div>
 
+<!-- Signal Approved Modal (one-time, shown when admin activates signal) -->
+<div class="modal-backdrop" id="sig-approved-modal" onclick="closeModal('sig-approved-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-head-title" style="color:#0ecb81;">🎉 Signal Activated!</div>
+      <button class="modal-close" onclick="closeModal('sig-approved-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:16px 0 8px;">
+        <div style="width:64px;height:64px;background:rgba(14,203,129,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">📡</div>
+        <p style="font-size:17px;font-weight:700;color:var(--text);margin:0 0 4px;" id="sig-approved-name">Signal Activated</p>
+        <p style="font-size:13px;color:var(--muted);margin:0;">has been activated on your account</p>
+      </div>
+      <div style="background:rgba(14,203,129,.07);border:1px solid rgba(14,203,129,.2);border-radius:10px;padding:16px 18px;margin-top:16px;">
+        <p style="margin:0;font-size:13px;color:var(--text);line-height:1.7;">Your signal is now live. Our expert team is actively managing signal execution on your behalf. You can monitor your signal status at any time from this page.</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn primary" onclick="closeModal('sig-approved-modal')">Got It</button>
+    </div>
+  </div>
+</div>
+
 <!-- Pending Warning Modal -->
 <div class="modal-backdrop" id="pending-modal" onclick="closeModal('pending-modal')">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -635,7 +658,7 @@ function closeModal(id) {
 function openInfoModal(n) { openModal('info-modal-'+n); }
 function closeInfoModal(n) { closeModal('info-modal-'+n); }
 function closeImplementModal() { closeModal('implement-modal'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal('implement-modal');closeModal('pending-modal');closeModal('info-modal-1');closeModal('info-modal-2');closeModal('info-modal-3'); } });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal('implement-modal');closeModal('pending-modal');closeModal('sig-approved-modal');closeModal('info-modal-1');closeModal('info-modal-2');closeModal('info-modal-3'); } });
 
 function openImplementModal(n) {
   _currentImplSignal = n;
@@ -694,6 +717,15 @@ async function submitSignalRequest() {
     updateCardStatus(n, 'pending');
     closeImplementModal();
     showToast('Request submitted! Our team will contact you within 24–48 hours.');
+    // Fire-and-forget confirmation emails (user + admin)
+    const { data: { session: _sess } } = await db.auth.getSession();
+    if (_sess?.access_token) {
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_sess.access_token}` },
+        body: JSON.stringify({ action: 'notify_signal_submitted', user_id: _sgUser.id, signal_number: n }),
+      }).catch(() => {});
+    }
   } catch(e) {
     showToast('Failed to submit request. Please contact support.');
     console.error(e);
@@ -788,7 +820,16 @@ function updateCardStatus(n, status) {
       if (n && s) {
         _sgActivations[n] = { signal_number: n, status: s };
         updateCardStatus(n, s);
-        if (s === 'active') showToast('Signal ' + n + ' has been activated on your account!', 5000);
+        if (s === 'active') {
+          const lsKey = `sv_sig_approved_${_sgUser.id}_${n}`;
+          if (!localStorage.getItem(lsKey)) {
+            localStorage.setItem(lsKey, '1');
+            const sigNames = {1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite'};
+            const el = document.getElementById('sig-approved-name');
+            if (el) el.textContent = sigNames[n] || ('Signal ' + n);
+            openModal('sig-approved-modal');
+          }
+        }
       }
     })
     .subscribe();

@@ -58,7 +58,7 @@ serve(async (req) => {
   const { action } = body;
 
   // Users can trigger submission notifications for their own account only
-  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_kyc_submitted", "notify_pin_reset", "send_pin_reset_link"];
+  const USER_SELF_ACTIONS = ["notify_deposit_submitted", "notify_withdrawal_submitted", "notify_kyc_submitted", "notify_pin_reset", "send_pin_reset_link", "notify_signal_submitted"];
   // Token-authenticated actions — no JWT needed, the reset token IS the auth
   const TOKEN_ONLY_ACTIONS = ["verify_pin_reset_token", "reset_pin_with_token", "notify_user_registered"];
   const authorized = admin_authorized ||
@@ -471,6 +471,50 @@ serve(async (req) => {
       return ok({ sent: true });
     }
 
+    if (action === "notify_signal_submitted") {
+      const { user_id, signal_number } = body;
+      if (!user_id || !signal_number) return err("Missing user_id or signal_number");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const sigNames: Record<string, string> = { "1": "Signal 1 — Basic", "2": "Signal 2 — Advanced", "3": "Signal 3 — Elite" };
+      const sigName = sigNames[String(signal_number)] || `Signal ${signal_number}`;
+      const userSubject = "Your Signal Activation Request Has Been Received";
+      const adminSubject = `${name} submitted a signal activation request — ${sigName}`;
+      const html = buildPlanEmailHtml(userSubject, name, "signal_submitted", { signal_name: sigName });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject: userSubject, html }),
+      }).catch(() => {});
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: ["help.velociglobalmarkets@gmail.com"], subject: adminSubject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
+    if (action === "notify_signal_approved") {
+      const { user_id, signal_number } = body;
+      if (!user_id || !signal_number) return err("Missing user_id or signal_number");
+      if (!RESEND_KEY) return err("RESEND_API_KEY not configured");
+      const { data: prof } = await db.from("profiles").select("email,first_name,last_name").eq("id", user_id).single();
+      if (!prof?.email) return err("User not found");
+      const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ") || prof.email;
+      const sigNames: Record<string, string> = { "1": "Signal 1 — Basic", "2": "Signal 2 — Advanced", "3": "Signal 3 — Elite" };
+      const sigName = sigNames[String(signal_number)] || `Signal ${signal_number}`;
+      const subject = `Your ${sigName} Has Been Activated`;
+      const html = buildPlanEmailHtml(subject, name, "signal_approved", { signal_name: sigName });
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: FROM_ADDR, to: [prof.email], subject, html }),
+      }).catch(() => {});
+      return ok({ sent: true });
+    }
+
     return err("Unknown action: " + action);
 
   } catch (e: any) {
@@ -695,6 +739,37 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
       </div>
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your account manager is here to help you reach this goal. If you have any questions about your target or trading strategy, feel free to reach out via live chat or email.</p>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/dashboard-new.html" style="color:#f05a1a;">dashboard</a> to track your progress.</p>`;
+
+  } else if (tmpl === "signal_submitted") {
+    const sigName = s(data.signal_name || "Signal");
+    badge = `<div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#92400e;">SIGNAL REQUEST RECEIVED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We have received your request to activate <strong>${sigName}</strong> on your trading account. Our operations team is reviewing your request and will get back to you within <strong>24–48 hours</strong>.</p>
+      <div style="background:#f8fafc;border:1px solid #e2e6ee;border-radius:12px;padding:20px 24px;margin-bottom:24px;text-align:center;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.12em;color:#6b7280;text-transform:uppercase;">Signal Requested</p>
+        <p style="margin:0;font-size:22px;font-weight:800;color:#0d1117;">${sigName}</p>
+      </div>
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">While your request is being reviewed, you can monitor the status of your signal activation from the <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> in your account.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;">If you have any questions, our support team is available 24/7 at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#f05a1a;text-decoration:none;">help.velociglobalmarkets@gmail.com</a>.</p>`;
+
+  } else if (tmpl === "signal_approved") {
+    const sigName = s(data.signal_name || "Signal");
+    badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">SIGNAL ACTIVATED</span></div>`;
+    content = `
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Congratulations! Your <strong>${sigName}</strong> has been successfully activated on your Veloci Global Markets trading account.</p>
+      <div style="background:linear-gradient(135deg,#14532d,#166534);border-radius:12px;padding:28px;margin-bottom:24px;text-align:center;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.12em;color:rgba(255,255,255,0.7);text-transform:uppercase;">Now Active</p>
+        <p style="margin:0;font-size:26px;font-weight:800;color:#fff;">${sigName}</p>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:20px 24px;margin-bottom:24px;">
+        <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#166534;">What this means for you:</p>
+        <ul style="margin:0;padding-left:20px;font-size:14px;color:#4b5563;line-height:2.2;">
+          <li>Professional trading signals are now live on your account</li>
+          <li>Our expert team will manage signal execution on your behalf</li>
+          <li>You can monitor performance from your trading dashboard</li>
+        </ul>
+      </div>
+      <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> to see your active signal.</p>`;
 
   } else if (tmpl === "plan_upgraded") {
     const planName = s(data.plan || "Silver");
