@@ -142,6 +142,37 @@ input{font-family:inherit;border:none;outline:none;background:none;color:var(--t
 .wcd-lbl{font-size:8.5px;color:var(--sub);}
 .wcd-val{font-size:10px;font-weight:700;color:var(--text);}
 
+/* ── Active Signal Badge ── */
+.sig-live{position:absolute;bottom:14px;right:16px;background:linear-gradient(135deg,rgba(8,11,20,.96) 0%,rgba(14,18,34,.92) 100%);border:1.5px solid rgba(240,185,11,.42);border-radius:10px;padding:8px 13px 8px 10px;z-index:3;display:none;align-items:center;gap:8px;animation:elecGlow 2.6s ease-in-out infinite;overflow:visible;}
+.sig-live.visible{display:flex;}
+@keyframes elecGlow{
+  0%,100%{border-color:rgba(240,185,11,.35);box-shadow:0 0 8px rgba(240,185,11,.16),0 2px 18px rgba(0,0,0,.55);}
+  38%{border-color:rgba(240,185,11,.92);box-shadow:0 0 22px rgba(240,185,11,.62),0 0 44px rgba(240,185,11,.26),0 2px 18px rgba(0,0,0,.55);}
+  40%{border-color:rgba(240,185,11,.28);box-shadow:0 0 5px rgba(240,185,11,.1),0 2px 18px rgba(0,0,0,.55);}
+  42%{border-color:rgba(240,185,11,.88);box-shadow:0 0 18px rgba(240,185,11,.55),0 0 36px rgba(240,185,11,.22),0 2px 18px rgba(0,0,0,.55);}
+}
+.sig-live-bolt{font-size:22px;line-height:1;display:block;flex-shrink:0;animation:boltZap 2.6s ease-in-out infinite;filter:drop-shadow(0 0 5px #f0b90b) drop-shadow(0 0 12px rgba(240,185,11,.55));}
+@keyframes boltZap{
+  0%,100%{transform:scale(1) rotate(-4deg);filter:drop-shadow(0 0 5px #f0b90b) drop-shadow(0 0 10px rgba(240,185,11,.4));}
+  38%{transform:scale(1.28) rotate(6deg);filter:drop-shadow(0 0 14px #ffd700) drop-shadow(0 0 26px #f0b90b);}
+  40%{transform:scale(0.92) rotate(-6deg);filter:drop-shadow(0 0 4px #f0b90b);}
+  42%{transform:scale(1.22) rotate(4deg);filter:drop-shadow(0 0 11px #ffd700) drop-shadow(0 0 22px #f0b90b);}
+}
+.sig-live-text{display:flex;flex-direction:column;gap:2px;}
+.sig-live-label{font-size:8px;font-weight:700;letter-spacing:.15em;color:rgba(240,185,11,.82);text-transform:uppercase;}
+.sig-live-name{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;}
+.sig-arc{position:absolute;font-size:11px;line-height:1;color:#f0b90b;filter:drop-shadow(0 0 5px #f0b90b) drop-shadow(0 0 10px rgba(240,185,11,.6));pointer-events:none;opacity:0;}
+.sig-arc-tl{top:-8px;left:-8px;transform:rotate(180deg);animation:arcFlash 2.6s steps(1,end) infinite 0s;}
+.sig-arc-tr{top:-8px;right:-8px;transform:rotate(270deg);animation:arcFlash 2.6s steps(1,end) infinite .65s;}
+.sig-arc-bl{bottom:-8px;left:-8px;transform:rotate(90deg);animation:arcFlash 2.6s steps(1,end) infinite 1.3s;}
+.sig-arc-br{bottom:-8px;right:-8px;animation:arcFlash 2.6s steps(1,end) infinite 1.95s;}
+.sig-arc-ml{top:50%;left:-10px;transform:translateY(-50%) rotate(90deg);animation:arcFlash 2.6s steps(1,end) infinite .32s;}
+.sig-arc-mr{top:50%;right:-10px;transform:translateY(-50%) rotate(-90deg);animation:arcFlash 2.6s steps(1,end) infinite 1.62s;}
+@keyframes arcFlash{
+  0%{opacity:1;}7%{opacity:0;}36%{opacity:0;}38%{opacity:.95;}40%{opacity:0;}42%{opacity:.75;}50%{opacity:0;}100%{opacity:0;}
+}
+@media(max-width:500px){.sig-live{bottom:10px;right:10px;padding:6px 10px 6px 8px;gap:6px;}.sig-live-bolt{font-size:18px;}.sig-live-name{font-size:11px;}.sig-live-label{font-size:7px;}}
+
 /* STAT STRIP */
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 20px 16px;}
 
@@ -696,6 +727,21 @@ window.smartsupp||(function(d) {
       <div class="wc-actions">
         <a href="deposit-new.html"><button class="wc-btn primary">Deposit</button></a>
         <a href="withdraw-new.html"><button class="wc-btn outline">Withdraw</button></a>
+      </div>
+    </div>
+
+    <!-- Active Signal Badge (bottom-right of portfolio card) -->
+    <div class="sig-live" id="sig-live">
+      <span class="sig-arc sig-arc-tl">⚡</span>
+      <span class="sig-arc sig-arc-tr">⚡</span>
+      <span class="sig-arc sig-arc-bl">⚡</span>
+      <span class="sig-arc sig-arc-br">⚡</span>
+      <span class="sig-arc sig-arc-ml">⚡</span>
+      <span class="sig-arc sig-arc-mr">⚡</span>
+      <span class="sig-live-bolt">⚡</span>
+      <div class="sig-live-text">
+        <span class="sig-live-label">Active Signal</span>
+        <span class="sig-live-name" id="sig-live-name">—</span>
       </div>
     </div>
   </div>
@@ -2003,6 +2049,34 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
     if (typeof renderAccountSummary === 'function') renderAccountSummary();
   }
   applyBalance(profile?.balance, profile?.total_pnl);
+
+  /* Load active signal badge on portfolio card */
+  (async () => {
+    try {
+      const { data: sigs } = await db.from('signal_activations')
+        .select('signal_number').eq('user_id', user.id).eq('status', 'active')
+        .order('created_at', { ascending: false }).limit(1);
+      const sigNames = {1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite'};
+      function applySigBadge(sn) {
+        const badgeEl = document.getElementById('sig-live');
+        const nameEl  = document.getElementById('sig-live-name');
+        if (!badgeEl || !nameEl) return;
+        if (sn) { nameEl.textContent = sigNames[sn] || ('Signal ' + sn); badgeEl.classList.add('visible'); }
+        else { badgeEl.classList.remove('visible'); }
+      }
+      applySigBadge(sigs?.[0]?.signal_number ?? null);
+      // Real-time: update badge instantly if admin approves/rejects
+      db.channel('sig-badge-' + user.id)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'signal_activations', filter: `user_id=eq.${user.id}` },
+          async () => {
+            const { data: s2 } = await db.from('signal_activations')
+              .select('signal_number').eq('user_id', user.id).eq('status', 'active')
+              .order('created_at', { ascending: false }).limit(1);
+            applySigBadge(s2?.[0]?.signal_number ?? null);
+          })
+        .subscribe();
+    } catch(_) {}
+  })();
 
   /* Fade out loading screen — minimum 1.4s so the animation is actually visible */
   const _dashEl = document.getElementById('dash-loading');
