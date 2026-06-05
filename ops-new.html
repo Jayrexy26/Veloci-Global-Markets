@@ -1445,8 +1445,8 @@
         <div class="card">
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>User</th><th>Signal</th><th>Status</th><th>Requested</th><th>Admin Note</th><th>Actions</th></tr></thead>
-              <tbody id="sig-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
+              <thead><tr><th>User</th><th>Signal</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
+              <tbody id="sig-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -5188,18 +5188,16 @@ window.showPage = function(id, el) {
 
   function sigRender(rows){
     const tbody = document.getElementById('sig-tbody'); if(!tbody) return;
-    if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>'; return; }
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>'; return; }
     const nameColors={1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
     tbody.innerHTML = rows.map(r=>{
       const sn=r.signal_number;
       const pill=r.status==='active'?'pill-green':r.status==='rejected'?'pill-red':r.status==='pending'?'pill-orange':'pill-grey';
-      const note=(r.admin_note||'—').length>40?(r.admin_note||'').slice(0,40)+'…':(r.admin_note||'—');
       return `<tr>
         <td>${userCell(r.user_id, r.user_email)}</td>
         <td style="font-weight:600;color:${nameColors[sn]||'var(--text)'};">${SIG_NAMES[sn]||'Signal '+sn}</td>
         <td><span class="badge-pill ${pill}">${r.status||'pending'}</span></td>
         <td style="font-size:12px;color:var(--muted);">${fmtDate(r.requested_at)}</td>
-        <td style="font-size:12px;color:var(--muted);" title="${(r.admin_note||'').replace(/"/g,'&quot;')}">${note}</td>
         <td><div class="row-actions">
           ${r.status==='pending'?`<button class="btn btn--sm btn--green" onclick="sigApprove('${r.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="sigReject('${r.id}')">Reject</button>`:''}
           <button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>
