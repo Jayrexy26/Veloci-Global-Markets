@@ -699,18 +699,18 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
   } else if (tmpl === "plan_upgraded") {
     const planName = s(data.plan || "Silver");
     const planKey  = (data.plan || "").toUpperCase().trim();
-    type PlanInfo = { minDeposit: string; leverage: string; gradient: string; features: string[] };
+    type PlanInfo = { minDeposit: string; leverage: string; balanceLimit: string; gradient: string; features: string[] };
     const PLANS: Record<string, PlanInfo> = {
-      "ELITE":    { minDeposit: "$250,000+", leverage: "125×", gradient: "linear-gradient(135deg,#1d4ed8,#3b82f6)", features: ["Personal Account Manager","Advanced AI Integration","Copy Trading Access","24/7 Priority Support","Professional Charts & Analytics","SMS & Email Trade Alerts"] },
-      "PLATINUM": { minDeposit: "$50,000",   leverage: "100×", gradient: "linear-gradient(135deg,#6d28d9,#8b5cf6)", features: ["Copy Trading Access","24/7 Priority Support","Professional Charts & Analytics","SMS & Email Trade Alerts"] },
-      "GOLD":     { minDeposit: "$10,000",   leverage: "50×",  gradient: "linear-gradient(135deg,#c2410c,#f05a1a)", features: ["24/7 Priority Support","Professional Charts & Analytics","Advanced Analytics Dashboard"] },
-      "SILVER":   { minDeposit: "$1,000",    leverage: "25×",  gradient: "linear-gradient(135deg,#2563eb,#7eb8f7)", features: ["Priority Support","Basic Analytics Dashboard","Access to 150+ Instruments"] },
+      "ELITE":    { minDeposit: "$250,000+", leverage: "125×", balanceLimit: "$1,000,000", gradient: "linear-gradient(135deg,#1d4ed8,#3b82f6)", features: ["Personal Account Manager","Advanced AI Integration","Copy Trading Access","24/7 Priority Support","Professional Charts & Analytics","SMS & Email Trade Alerts"] },
+      "PLATINUM": { minDeposit: "$50,000",   leverage: "100×", balanceLimit: "$100,000",   gradient: "linear-gradient(135deg,#6d28d9,#8b5cf6)", features: ["Copy Trading Access","24/7 Priority Support","Professional Charts & Analytics","SMS & Email Trade Alerts"] },
+      "GOLD":     { minDeposit: "$10,000",   leverage: "50×",  balanceLimit: "$50,000",    gradient: "linear-gradient(135deg,#c2410c,#f05a1a)", features: ["24/7 Priority Support","Professional Charts & Analytics","Advanced Analytics Dashboard"] },
+      "SILVER":   { minDeposit: "$1,000",    leverage: "25×",  balanceLimit: "$10,000",    gradient: "linear-gradient(135deg,#2563eb,#7eb8f7)", features: ["Priority Support","Basic Analytics Dashboard","Access to 150+ Instruments"] },
     };
     const info: PlanInfo | undefined = PLANS[planKey];
     const featuresHtml = info ? info.features.map(f =>
       `<li style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:14px;color:#374151;"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${accent};flex-shrink:0;margin-top:1px;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>${s(f)}</span></li>`
     ).join("") : "";
-    const metaBadges = info ? `<div style="display:flex;align-items:center;gap:10px;background:${accent}18;border:1px solid ${accent}44;border-radius:8px;padding:12px 16px;margin-top:20px;"><span style="font-size:13px;font-weight:700;color:${accent};">Min Deposit: ${s(info.minDeposit)} &nbsp;·&nbsp; Max Leverage: ${s(info.leverage)}</span></div>` : "";
+    const metaBadges = info ? `<div style="background:${accent}18;border:1px solid ${accent}44;border-radius:8px;padding:12px 16px;margin-top:20px;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="text-align:center;border-right:1px solid ${accent}33;padding:0 12px 0 0;"><p style="margin:0;font-size:11px;color:#9ca3af;">Min Deposit</p><p style="margin:4px 0 0;font-size:13px;font-weight:700;color:${accent};">${s(info.minDeposit)}</p></td><td style="text-align:center;border-right:1px solid ${accent}33;padding:0 12px;"><p style="margin:0;font-size:11px;color:#9ca3af;">Max Leverage</p><p style="margin:4px 0 0;font-size:13px;font-weight:700;color:${accent};">${s(info.leverage)}</p></td><td style="text-align:center;padding:0 0 0 12px;"><p style="margin:0;font-size:11px;color:#9ca3af;">Balance Limit</p><p style="margin:4px 0 0;font-size:13px;font-weight:700;color:${accent};">${s(info.balanceLimit)}</p></td></tr></table></div>` : "";
     badge = `<div style="display:inline-block;background:${accent}18;border:1px solid ${accent}55;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:${accent};">ACCOUNT UPGRADED</span></div>`;
     content = `
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Your Veloci Global Markets account has been upgraded to the <strong style="color:${accent};">${planName}</strong> tier. Welcome to an enhanced trading experience.</p>
