@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Signal Activations</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="closeSidebar();location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="closeSidebar();location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="closeSidebar();location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="closeSidebar();location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="closeSidebar();location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="closeSidebar();location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="closeSidebar();location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="closeSidebar();location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="closeSidebar();location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn active" id="nav-signals" onclick="closeSidebar();location.href='admin-signals.html'"><div class="navLeft"><div class="navIcon">📡</div><div class="navText">Signals</div></div><div class="countPill" id="cnt-signals">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="closeSidebar();location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="closeSidebar();location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="closeSidebar();location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="closeSidebar();location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="closeSidebar();location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="closeSidebar();location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+        <div class="navBtn" id="nav-activity" onclick="closeSidebar();location.href='admin-activity.html'"><div class="navLeft"><div class="navIcon">📡</div><div class="navText">Live Activity</div></div><div class="countPill" id="cnt-activity">•</div></div>
+        <div class="navBtn" id="nav-audit" onclick="closeSidebar();location.href='admin-audit.html'"><div class="navLeft"><div class="navIcon">📋</div><div class="navText">Audit Log</div></div><div class="countPill" id="cnt-audit">•</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok" id="connChip">CONNECTED</div></div>
+
+      <div class="topbar" id="topbar">
+        <div class="topLeft">
+          <div class="chip ok" id="connChip2">CONNECTED</div>
+          <div class="chip" id="adminChip">ADMIN: —</div>
+          <div class="chip" id="autoChip">AUTO: OFF</div>
+          <div class="chip" id="lastChip">LAST: —</div>
+        </div>
+        <div class="topRight">
+          <input id="globalSearch" class="searchBox" placeholder="Search users…" autocomplete="off" oninput="onSearchInput()" onkeydown="onSearchKeydown(event)"/>
+          <div class="searchWrap" style="position:relative;">
+            <div class="suggBox" id="searchSugg" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:200;">
+              <div class="suggTitle" id="suggTitle">Matches</div>
+              <div id="suggList"></div>
+            </div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="lockConsole()">Lock</button>
+        </div>
+      </div>
+
+      <div class="sysRow"><span id="sysBox">Not connected.</span><span id="debugBox" class="small muted">No errors yet.</span></div>
+
+      <div style="padding:20px;">
+        <!-- Filter bar -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+          <h2 style="font-size:18px;font-weight:700;flex:1;min-width:140px;">Signal Activations</h2>
+          <select id="filter-status" onchange="applyFilter()" style="padding:7px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;cursor:pointer;">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select id="filter-signal" onchange="applyFilter()" style="padding:7px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;cursor:pointer;">
+            <option value="">All Signals</option>
+            <option value="1">Signal 1 — Basic</option>
+            <option value="2">Signal 2 — Advanced</option>
+            <option value="3">Signal 3 — Elite</option>
+          </select>
+          <button class="btnGhost" onclick="loadSignals()">Refresh</button>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;" id="stats-row">
+          <div class="sideCard" style="margin:0;"><div class="small">Total Requests</div><div style="font-size:22px;font-weight:700;margin-top:4px;" id="stat-total">—</div></div>
+          <div class="sideCard" style="margin:0;"><div class="small">Pending</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#f0b90b;" id="stat-pending">—</div></div>
+          <div class="sideCard" style="margin:0;"><div class="small">Active</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#0ecb81;" id="stat-active">—</div></div>
+          <div class="sideCard" style="margin:0;"><div class="small">Rejected</div><div style="font-size:22px;font-weight:700;margin-top:4px;color:#f6465d;" id="stat-rejected">—</div></div>
+        </div>
+
+        <!-- Table -->
+        <div class="tableWrap">
+          <table class="dataTable" id="signals-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Signal</th>
+                <th>Status</th>
+                <th>Requested</th>
+                <th>Updated</th>
+                <th>Admin Note</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="signals-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(234,240,255,.4);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /main -->
+  </div><!-- /shell -->
+</div><!-- /app -->
+
+<!-- Update Status Modal -->
+<div id="updateModalOverlay" class="modalOverlay" onclick="document.getElementById('updateModalOverlay').style.display='none'" style="display:none;">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle">Update Signal Status</div><button class="btnGhost" onclick="document.getElementById('updateModalOverlay').style.display='none'">Close</button></div>
+    <div class="modalBody">
+      <div style="margin-bottom:14px;">
+        <div class="small" style="margin-bottom:6px;">User</div>
+        <div id="update-user-label" style="font-weight:600;"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div class="small" style="margin-bottom:6px;">Signal</div>
+        <div id="update-signal-label" style="font-weight:600;"></div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label class="small" style="display:block;margin-bottom:6px;">New Status</label>
+        <select id="update-status" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;">
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div>
+        <label class="small" style="display:block;margin-bottom:6px;">Admin Note (optional)</label>
+        <textarea id="update-note" rows="3" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:#1e2229;color:#e8eaed;font-size:13px;resize:vertical;" placeholder="Internal note…"></textarea>
+      </div>
+    </div>
+    <div class="modalFoot">
+      <button class="btnGhost" onclick="document.getElementById('updateModalOverlay').style.display='none'">Cancel</button>
+      <button class="btn" onclick="confirmUpdateStatus()" id="update-confirm-btn">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;}
+.status-badge.pending{background:rgba(240,185,11,.12);color:#f0b90b;border:1px solid rgba(240,185,11,.3);}
+.status-badge.active{background:rgba(14,203,129,.12);color:#0ecb81;border:1px solid rgba(14,203,129,.3);}
+.status-badge.inactive{background:rgba(132,142,156,.1);color:#848e9c;border:1px solid rgba(132,142,156,.2);}
+.status-badge.rejected{background:rgba(246,70,93,.1);color:#f6465d;border:1px solid rgba(246,70,93,.2);}
+.signal-pill-1{color:#3b82f6;font-weight:600;}
+.signal-pill-2{color:#8b5cf6;font-weight:600;}
+.signal-pill-3{color:#f59e0b;font-weight:600;}
+</style>
+
+<script src="admin-shared.js"></script>
+<script>
+let _allSignals = [];
+let _updateId = null;
+
+const SIGNAL_NAMES = { 1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite' };
+
+async function loadSignals() {
+  try {
+    const db = window.VELOCI_DB;
+    if (!db) { setSysBox('DB not ready'); return; }
+
+    const { data, error } = await db.rpc('admin_get_signal_activations');
+    if (error) throw error;
+
+    _allSignals = data || [];
+
+    const stat_total   = document.getElementById('stat-total');
+    const stat_pending = document.getElementById('stat-pending');
+    const stat_active  = document.getElementById('stat-active');
+    const stat_rejected= document.getElementById('stat-rejected');
+    if (stat_total)    stat_total.textContent   = _allSignals.length;
+    if (stat_pending)  stat_pending.textContent = _allSignals.filter(s=>s.status==='pending').length;
+    if (stat_active)   stat_active.textContent  = _allSignals.filter(s=>s.status==='active').length;
+    if (stat_rejected) stat_rejected.textContent= _allSignals.filter(s=>s.status==='rejected').length;
+
+    const cnt = document.getElementById('cnt-signals');
+    if (cnt) cnt.textContent = _allSignals.filter(s=>s.status==='pending').length || _allSignals.length;
+
+    applyFilter();
+    feed('Loaded ' + _allSignals.length + ' signal activation records');
+    setSysBox('OK • ' + nowStamp());
+  } catch(e) {
+    setSysBox('ERROR • ' + e.message);
+    feed('ERROR loading signals: ' + e.message);
+  }
+}
+
+function applyFilter() {
+  const statusF = document.getElementById('filter-status').value;
+  const signalF = document.getElementById('filter-signal').value;
+  let filtered = _allSignals;
+  if (statusF) filtered = filtered.filter(s => s.status === statusF);
+  if (signalF) filtered = filtered.filter(s => String(s.signal_number) === signalF);
+  renderTable(filtered);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('signals-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:rgba(234,240,255,.4);">No records found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(s => {
+    const sn = s.signal_number;
+    const cls = 'signal-pill-' + sn;
+    return `<tr>
+      <td>${userPillHtml(s.user_email)}</td>
+      <td><span class="${cls}">${esc(SIGNAL_NAMES[sn] || 'Signal '+sn)}</span></td>
+      <td><span class="status-badge ${esc(s.status)}">${esc(s.status)}</span></td>
+      <td style="font-size:12px;">${fmtDate(s.requested_at)}</td>
+      <td style="font-size:12px;">${fmtDate(s.updated_at)}</td>
+      <td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(s.admin_note||'')}">${esc(s.admin_note || '—')}</td>
+      <td>
+        <button class="btnGhost" style="font-size:12px;" onclick="openUpdateModal('${esc(s.id)}','${esc(s.user_email||'')}',${sn},'${esc(s.status)}','${esc(s.admin_note||'')}')">Update</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openUpdateModal(id, email, signalNum, currentStatus, currentNote) {
+  _updateId = id;
+  document.getElementById('update-user-label').textContent = email;
+  document.getElementById('update-signal-label').textContent = SIGNAL_NAMES[signalNum] || 'Signal ' + signalNum;
+  document.getElementById('update-status').value = currentStatus;
+  document.getElementById('update-note').value = currentNote || '';
+  document.getElementById('updateModalOverlay').style.display = 'flex';
+}
+
+async function confirmUpdateStatus() {
+  if (!_updateId) return;
+  const newStatus = document.getElementById('update-status').value;
+  const note = document.getElementById('update-note').value.trim();
+  const btn = document.getElementById('update-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const db = window.VELOCI_DB;
+    const { error } = await db.rpc('admin_update_signal_status', {
+      p_id: _updateId,
+      p_status: newStatus,
+      p_note: note || null
+    });
+    if (error) throw error;
+    document.getElementById('updateModalOverlay').style.display = 'none';
+    feed('Signal ' + _updateId + ' status → ' + newStatus);
+    logAudit('SIGNAL_STATUS_UPDATE', _updateId, 'status:' + newStatus + (note ? ' note:'+note : '')).catch(()=>{});
+    await loadSignals();
+  } catch(e) {
+    modalShow('Update failed', e.message);
+    feed('ERROR update signal: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update Status';
+  }
+}
+
+function loadCurrentPage() { return loadSignals(); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  requireAuth();
+  initTopbar();
+  safeLoad(loadSignals);
+});
+</script>
+</body>
+</html>
