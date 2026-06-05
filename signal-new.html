@@ -807,6 +807,15 @@ function updateCardStatus(n, status) {
       _sgActivations[a.signal_number] = a;
       updateCardStatus(a.signal_number, a.status);
     });
+    // One-time approved modal: show if any signal is active and hasn't been shown yet
+    const sigNamesInit = {1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite'};
+    const toShow = activations.find(a => a.status === 'active' && !localStorage.getItem(`sv_sig_approved_${_sgUser.id}_${a.signal_number}`));
+    if (toShow) {
+      localStorage.setItem(`sv_sig_approved_${_sgUser.id}_${toShow.signal_number}`, '1');
+      const nameEl = document.getElementById('sig-approved-name');
+      if (nameEl) nameEl.textContent = sigNamesInit[toShow.signal_number] || ('Signal ' + toShow.signal_number);
+      openModal('sig-approved-modal');
+    }
   }
 
   /* real-time updates */

@@ -749,8 +749,7 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
         <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.12em;color:#6b7280;text-transform:uppercase;">Signal Requested</p>
         <p style="margin:0;font-size:22px;font-weight:800;color:#0d1117;">${sigName}</p>
       </div>
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">While your request is being reviewed, you can monitor the status of your signal activation from the <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> in your account.</p>
-      <p style="margin:0;font-size:14px;color:#6b7280;">If you have any questions, our support team is available 24/7 at <a href="mailto:help.velociglobalmarkets@gmail.com" style="color:#f05a1a;text-decoration:none;">help.velociglobalmarkets@gmail.com</a>.</p>`;
+      <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">While your request is being reviewed, you can monitor the status of your signal activation from the <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> in your account.</p>`;
 
   } else if (tmpl === "signal_approved") {
     const sigName = s(data.signal_name || "Signal");
