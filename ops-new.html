@@ -5166,12 +5166,6 @@ window.showPage = function(id, el) {
   let _sigAll = [];
   let _sigUpdateId = null;
 
-  function sigStatusBadge(s){
-    const map={pending:'#f0b90b',active:'#0ecb81',inactive:'#848e9c',rejected:'#f6465d'};
-    const c=map[s]||'#848e9c';
-    return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}22;color:${c};border:1px solid ${c}44;">${s}</span>`;
-  }
-
   window.loadSignalsPage = async function(){
     const db = window.SV_DB; if(!db) return;
     const tbody = document.getElementById('sig-tbody');
@@ -5184,7 +5178,7 @@ window.showPage = function(id, el) {
       const pend = _sigAll.filter(s=>s.status==='pending').length;
       const badge = document.getElementById('signals-badge');
       if(badge){ if(pend>0){badge.style.display='';badge.textContent=pend;}else badge.style.display='none'; }
-      if(sub) sub.textContent = `${_sigAll.length} record(s) loaded`;
+      if(sub) sub.textContent = `${pend} pending`;
       sigRender(_sigAll);
     } catch(e){
       if(sub) sub.textContent = 'Error loading';
@@ -5194,27 +5188,44 @@ window.showPage = function(id, el) {
 
   function sigRender(rows){
     const tbody = document.getElementById('sig-tbody'); if(!tbody) return;
-    if(!rows.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>';
-      return;
-    }
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>'; return; }
+    const nameColors={1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
     tbody.innerHTML = rows.map(r=>{
       const sn=r.signal_number;
-      const nameColors={1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
-      const nc=nameColors[sn]||'var(--text)';
-      const dt = r.requested_at ? new Date(r.requested_at).toLocaleString() : '—';
-      const note = (r.admin_note||'—').slice(0,40) + ((r.admin_note||'').length>40?'…':'');
-      const email = r.user_email||'—';
+      const pill=r.status==='active'?'pill-green':r.status==='rejected'?'pill-red':r.status==='pending'?'pill-orange':'pill-grey';
+      const note=(r.admin_note||'—').length>40?(r.admin_note||'').slice(0,40)+'…':(r.admin_note||'—');
       return `<tr>
-        <td style="font-size:13px;">${email}</td>
-        <td style="font-weight:600;color:${nc};">${SIG_NAMES[sn]||'Signal '+sn}</td>
-        <td>${sigStatusBadge(r.status)}</td>
-        <td style="font-size:12px;color:var(--muted);">${dt}</td>
+        <td>${userCell(r.user_id, r.user_email)}</td>
+        <td style="font-weight:600;color:${nameColors[sn]||'var(--text)'};">${SIG_NAMES[sn]||'Signal '+sn}</td>
+        <td><span class="badge-pill ${pill}">${r.status||'pending'}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${fmtDate(r.requested_at)}</td>
         <td style="font-size:12px;color:var(--muted);" title="${(r.admin_note||'').replace(/"/g,'&quot;')}">${note}</td>
-        <td><button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(email).replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Update</button></td>
+        <td><div class="row-actions">
+          ${r.status==='pending'?`<button class="btn btn--sm btn--green" onclick="sigApprove('${r.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="sigReject('${r.id}')">Reject</button>`:''}
+          <button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>
+        </div></td>
       </tr>`;
     }).join('');
   }
+
+  window.sigApprove = async function(id){
+    if(!confirm('Approve this signal activation?')) return;
+    const db=window.SV_DB; if(!db) return;
+    const {error}=await db.rpc('admin_update_signal_status',{p_id:id,p_status:'active',p_note:null});
+    if(error){ showToast('Failed: '+error.message,'error'); return; }
+    showToast('Signal activated','success');
+    await window.loadSignalsPage();
+  };
+
+  window.sigReject = async function(id){
+    const note=prompt('Rejection reason (optional):','');
+    if(note===null) return;
+    const db=window.SV_DB; if(!db) return;
+    const {error}=await db.rpc('admin_update_signal_status',{p_id:id,p_status:'rejected',p_note:note||null});
+    if(error){ showToast('Failed: '+error.message,'error'); return; }
+    showToast('Signal rejected','success');
+    await window.loadSignalsPage();
+  };
 
   window.sigOpenUpdate = function(id, email, sn, status, note){
     _sigUpdateId = id;
@@ -5234,12 +5245,12 @@ window.showPage = function(id, el) {
     const btn=document.getElementById('sig-upd-btn');
     btn.disabled=true; btn.textContent='Saving…';
     try{
-      const {error} = await db.rpc('admin_update_signal_status',{p_id:_sigUpdateId,p_status:newStatus,p_note:note});
+      const {error}=await db.rpc('admin_update_signal_status',{p_id:_sigUpdateId,p_status:newStatus,p_note:note});
       if(error) throw error;
       closeModal('modal-signal-update');
       await window.loadSignalsPage();
     }catch(e){
-      alert('Failed: '+e.message);
+      showToast('Failed: '+e.message,'error');
     }finally{
       btn.disabled=false; btn.textContent='Update Status';
     }
