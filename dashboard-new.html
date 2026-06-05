@@ -1706,11 +1706,14 @@ function toggleBalance(){
     icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
   }
 }
+function tvTheme() { return document.body.classList.contains('light') ? 'light' : 'dark'; }
+function reloadTvWidgets() { loadCalWidget(_activeCalTab); loadNewsWidget(_activeNewsTab); initMwWidget(); }
 function toggleTheme() {
   const light = document.body.classList.toggle('light');
   localStorage.setItem('sv_theme', light ? 'light' : 'dark');
   document.getElementById('theme-icon-dark').style.display = light ? 'none' : '';
   document.getElementById('theme-icon-light').style.display = light ? '' : 'none';
+  reloadTvWidgets();
 }
 (function applyTheme() {
   if (localStorage.getItem('sv_theme') === 'light') {
@@ -1723,9 +1726,10 @@ function toggleTheme() {
 document.addEventListener('DOMContentLoaded', init);
 
 // Market Watch TradingView widget
-(function() {
+function initMwWidget() {
   var wrap = document.getElementById('mw-container');
   if (!wrap) return;
+  wrap.innerHTML = '';
   var container = document.createElement('div');
   container.className = 'tradingview-widget-container';
   container.style.cssText = 'height:100%;width:100%';
@@ -1737,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', init);
   script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
   script.async = true;
   script.textContent = JSON.stringify({
-    colorTheme: 'dark',
+    colorTheme: tvTheme(),
     dateRange: '1D',
     showChart: true,
     locale: 'en',
@@ -1762,7 +1766,8 @@ document.addEventListener('DOMContentLoaded', init);
   container.appendChild(inner);
   container.appendChild(script);
   wrap.appendChild(container);
-})();
+}
+initMwWidget();
 
 // Shared TradingView widget loader — uses iframe srcdoc for reliable re-init on every tab switch
 function tvWidget(containerId, widgetSrc, widgetCfg) {
@@ -1788,7 +1793,8 @@ var _calTabs = {
   'earnings':  { src:'embed-widget-screener.js', cfg:{ width:'100%', height:'400', defaultColumn:'overview', defaultScreen:'earnings_this_week', market:'america', showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
   'ipo':       { src:'embed-widget-screener.js', cfg:{ width:'100%', height:'400', defaultColumn:'overview', defaultScreen:'ipo', market:'america', showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
 };
-function loadCalWidget(tab) { var d=_calTabs[tab]; if(d) tvWidget('econ-cal-container', d.src, d.cfg); }
+var _activeCalTab = 'economic';
+function loadCalWidget(tab) { _activeCalTab = tab; var d=_calTabs[tab]; if(d) tvWidget('econ-cal-container', d.src, Object.assign({}, d.cfg, {colorTheme: tvTheme()})); }
 loadCalWidget('economic');
 document.querySelectorAll('[data-cal]').forEach(function(btn) {
   btn.addEventListener('click', function() {
@@ -1816,7 +1822,8 @@ var _newsTabs = {
   'stock-loss':  { src:'embed-widget-screener.js',          cfg:{ width:'100%', height:'500', defaultColumn:'overview', defaultScreen:'top_losers',  market:'america',  showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
   'stock-vol':   { src:'embed-widget-screener.js',          cfg:{ width:'100%', height:'500', defaultColumn:'overview', defaultScreen:'most_active', market:'america',  showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
 };
-function loadNewsWidget(tab) { var d=_newsTabs[tab]; if(d) tvWidget('forex-news-container', d.src, d.cfg); }
+var _activeNewsTab = 'forex';
+function loadNewsWidget(tab) { _activeNewsTab = tab; var d=_newsTabs[tab]; if(d) tvWidget('forex-news-container', d.src, Object.assign({}, d.cfg, {colorTheme: tvTheme()})); }
 loadNewsWidget('forex');
 /* ── Community Ideas Card Grid ── */
 (function(){
