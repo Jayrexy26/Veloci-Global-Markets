@@ -885,6 +885,21 @@ window.smartsupp||(function(d) {
       </div>
     </div>
 
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">Recent Trades <span class="sec-title-sub" id="ro-count"></span></div>
+        <span style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;"><span class="live-dot"></span>Live</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="pos-table">
+          <thead><tr>
+            <th>Pair</th><th>Direction</th><th>Lots</th><th>P&amp;L</th><th>Status</th>
+          </tr></thead>
+          <tbody id="recent-orders-tbody"><tr><td colspan="5" style="text-align:center;color:var(--sub);padding:20px;font-size:12.5px;">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="sec-card" style="overflow:hidden;">
       <div class="sec-head">
         <div class="sec-title">Calendars</div>
@@ -1577,21 +1592,42 @@ async function loadProfitTarget(userId) {
 }
 
 /* --------------------------------------------------------
-   RENDER — RECENT ORDERS
+   RENDER — RECENT TRADES (live from DB)
    -------------------------------------------------------- */
-function renderRecentOrders() {
-  const rows = RECENT_ORDERS.map(o => {
-    const d = marketData[o.priceRef] || {};
-    const isBuy = o.side === 'BUY';
-    return `<tr>
-      <td><div class="pos-pair" style="font-size:12.5px;">${o.pair}</div></td>
-      <td><span class="pos-type ${isBuy?'pos-long':'pos-short'}">${o.side}</span></td>
-      <td><div class="pos-num">${fmtPrice(d.price)}</div></td>
-      <td><div class="pos-num">${o.amount}</div></td>
-      <td><span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:${o.statusBg};color:${o.statusColor};">${o.status}</span></td>
-    </tr>`;
-  }).join('');
-  document.getElementById('recent-orders-tbody').innerHTML = rows;
+async function renderRecentOrders() {
+  const db = window.SV_DB;
+  const tbody = document.getElementById('recent-orders-tbody');
+  if (!tbody || !db) return;
+  try {
+    const { data: user } = await db.auth.getUser();
+    if (!user?.user) return;
+    const { data: positions } = await db.from('positions')
+      .select('pair,direction,size,pnl,status,created_at')
+      .eq('user_id', user.user.id)
+      .order('created_at', { ascending: false }).limit(8);
+    const countEl = document.getElementById('ro-count');
+    if (!positions?.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:20px;font-size:12.5px;">No trades yet</td></tr>`;
+      if (countEl) countEl.textContent = '';
+      return;
+    }
+    if (countEl) countEl.textContent = positions.length + ' recent';
+    tbody.innerHTML = positions.map(p => {
+      const pnl   = parseFloat(p.pnl || 0);
+      const pnlUp = pnl >= 0;
+      const isLong = (p.direction||'buy') === 'buy';
+      const st    = (p.status||'open').toLowerCase();
+      const stColor = st === 'closed' ? 'var(--green)' : 'var(--gold)';
+      const stBg    = st === 'closed' ? 'rgba(14,203,129,.12)' : 'rgba(240,185,11,.12)';
+      return `<tr>
+        <td><div class="pos-pair" style="font-size:12.5px;">${p.pair||'—'}</div></td>
+        <td><span class="pos-type ${isLong?'pos-long':'pos-short'}">${isLong?'BUY':'SELL'}</span></td>
+        <td><div class="pos-num">${p.size||'—'}</div></td>
+        <td><div class="${pnlUp?'pos-pos':'pos-neg'}">${pnlUp?'+':'-'}$${Math.abs(pnl).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></td>
+        <td><span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:${stBg};color:${stColor};">${p.status||'open'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error('renderRecentOrders', e); }
 }
 
 /* --------------------------------------------------------
@@ -2091,9 +2127,10 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
     }, delay);
   }
 
-  /* Load profit target, positions, and performance chart from DB */
+  /* Load profit target, positions, recent trades, and performance chart from DB */
   loadProfitTarget(user.id);
   renderPositions();
+  renderRecentOrders();
   renderMarketPerf();
   loadPerfChart(user.id);
 
@@ -2140,20 +2177,20 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
     }, () => { loadProfitTarget(user.id); })
     .subscribe();
 
-  /* Real-time: reload positions/trades table whenever admin adds or updates */
+  /* Real-time: reload positions + recent trades whenever admin adds/updates/deletes */
   db.channel('positions-live-' + user.id)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'positions',
       filter: `user_id=eq.${user.id}`
-    }, () => { renderPositions(); })
+    }, () => { renderPositions(); renderRecentOrders(); })
     .on('postgres_changes', {
       event: 'UPDATE', schema: 'public', table: 'positions',
       filter: `user_id=eq.${user.id}`
-    }, () => { renderPositions(); })
+    }, () => { renderPositions(); renderRecentOrders(); })
     .on('postgres_changes', {
       event: 'DELETE', schema: 'public', table: 'positions',
       filter: `user_id=eq.${user.id}`
-    }, () => { renderPositions(); })
+    }, () => { renderPositions(); renderRecentOrders(); })
     .subscribe();
 })();
 
