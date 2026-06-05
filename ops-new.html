@@ -5202,6 +5202,7 @@ window.showPage = function(id, el) {
         <td><div class="row-actions">
           ${r.status==='pending'?`<button class="btn btn--sm btn--green" onclick="sigApprove('${r.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="sigReject('${r.id}')">Reject</button>`:''}
           <button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>
+          <button class="btn btn--sm btn--red" onclick="sigDelete('${r.id}')">Delete</button>
         </div></td>
       </tr>`;
     }).join('');
@@ -5253,6 +5254,16 @@ window.showPage = function(id, el) {
     const {error}=await db.rpc('admin_update_signal_status',{p_id:id,p_status:'rejected',p_note:note||null});
     if(error){ showToast('Failed: '+error.message,'error'); return; }
     showToast('Signal rejected','success');
+    await window.loadSignalsPage();
+  };
+
+  window.sigDelete = async function(id){
+    if(!confirm('Permanently delete this signal activation record? This cannot be undone.')) return;
+    const db=window.SV_DB; if(!db) return;
+    const {error}=await db.from('signal_activations').delete().eq('id',id);
+    if(error){ showToast('Failed: '+error.message,'error'); return; }
+    logAudit('delete_signal_activation', id, '');
+    showToast('Signal record deleted','success');
     await window.loadSignalsPage();
   };
 
