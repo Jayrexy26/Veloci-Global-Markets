@@ -742,30 +742,67 @@ function buildPlanEmailHtml(subject: string, recipientName: string, tmpl: string
 
   } else if (tmpl === "signal_submitted") {
     const sigName = s(data.signal_name || "Signal");
+    const sigNum = String(data.signal_number || "1");
+    type SigInfo = { subtitle: string; roi: string; strength: string; charge: string; sigType: string; risk: string };
+    const SIG_DATA: Record<string, SigInfo> = {
+      "1": { subtitle: "Entry Signal", roi: "Up to 35% per cycle", strength: "40 / 100", charge: "$500",   sigType: "Trend-following, single timeframe",  risk: "Conservative" },
+      "2": { subtitle: "Pro Signal",   roi: "Up to 50% per cycle", strength: "75 / 100", charge: "$1,600", sigType: "Multi-timeframe, confluence-based",   risk: "Moderate to High" },
+      "3": { subtitle: "Premium Signal", roi: "Up to 75% per cycle", strength: "99 / 100", charge: "$3,000", sigType: "AI-enhanced, institutional-grade", risk: "Aggressive (Managed)" },
+    };
+    const sig = SIG_DATA[sigNum] || SIG_DATA["1"];
+    const td1 = `style="padding:13px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;background:#f8fafc;"`;
+    const td2 = `style="padding:13px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;"`;
     badge = `<div style="display:inline-block;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#92400e;">SIGNAL REQUEST RECEIVED</span></div>`;
     content = `
-      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We have received your request to activate <strong>${sigName}</strong> on your trading account. Our operations team is reviewing your request and will get back to you within <strong>24–48 hours</strong>.</p>
-      <div style="background:#f8fafc;border:1px solid #e2e6ee;border-radius:12px;padding:20px 24px;margin-bottom:24px;text-align:center;">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.12em;color:#6b7280;text-transform:uppercase;">Signal Requested</p>
-        <p style="margin:0;font-size:22px;font-weight:800;color:#0d1117;">${sigName}</p>
-      </div>
-      <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">While your request is being reviewed, you can monitor the status of your signal activation from the <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> in your account.</p>`;
+      <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">We have received your request to activate <strong>${sigName}</strong> on your trading account. Our operations team is reviewing your request and will contact you within <strong>24–48 hours</strong>.</p>
+      <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#0d1117;">Signal Details</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr><td ${td1}>Signal</td><td style="padding:13px 16px;font-size:14px;font-weight:700;color:#0d1117;border:1px solid #e5e7eb;">${sigName}</td></tr>
+        <tr><td ${td1}>Tier</td><td ${td2}>${s(sig.subtitle)}</td></tr>
+        <tr><td ${td1}>Projected ROI</td><td style="padding:13px 16px;font-size:14px;font-weight:700;color:#2563eb;border:1px solid #e5e7eb;">${s(sig.roi)}</td></tr>
+        <tr><td ${td1}>Signal Strength</td><td ${td2}>${s(sig.strength)}</td></tr>
+        <tr><td ${td1}>Implementation Charge</td><td style="padding:13px 16px;font-size:14px;font-weight:600;color:#0d1117;border:1px solid #e5e7eb;">${s(sig.charge)}</td></tr>
+        <tr><td ${td1}>Signal Type</td><td ${td2}>${s(sig.sigType)}</td></tr>
+        <tr><td ${td1}>Risk Level</td><td ${td2}>${s(sig.risk)}</td></tr>
+        <tr><td ${td1}>Activation Time</td><td ${td2}>24–48 hours after approval</td></tr>
+        <tr><td ${td1}>Status</td><td style="padding:13px 16px;font-size:14px;font-weight:600;color:#d97706;border:1px solid #e5e7eb;">Pending Review</td></tr>
+      </table>
+      <p style="margin:0;font-size:15px;color:#4b5563;line-height:1.7;">You can monitor the status of your request at any time from the <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> in your account.</p>`;
 
   } else if (tmpl === "signal_approved") {
     const sigName = s(data.signal_name || "Signal");
+    const sigNum = String(data.signal_number || "1");
+    type SigInfo2 = { subtitle: string; roi: string; strength: string; charge: string; sigType: string; risk: string };
+    const SIG_DATA2: Record<string, SigInfo2> = {
+      "1": { subtitle: "Entry Signal", roi: "Up to 35% per cycle", strength: "40 / 100", charge: "$500",   sigType: "Trend-following, single timeframe",  risk: "Conservative" },
+      "2": { subtitle: "Pro Signal",   roi: "Up to 50% per cycle", strength: "75 / 100", charge: "$1,600", sigType: "Multi-timeframe, confluence-based",   risk: "Moderate to High" },
+      "3": { subtitle: "Premium Signal", roi: "Up to 75% per cycle", strength: "99 / 100", charge: "$3,000", sigType: "AI-enhanced, institutional-grade", risk: "Aggressive (Managed)" },
+    };
+    const sig2 = SIG_DATA2[sigNum] || SIG_DATA2["1"];
+    const td1a = `style="padding:13px 16px;font-size:13px;font-weight:600;color:#374151;border:1px solid #e5e7eb;width:45%;background:#f8fafc;"`;
+    const td2a = `style="padding:13px 16px;font-size:14px;color:#4b5563;border:1px solid #e5e7eb;"`;
     badge = `<div style="display:inline-block;background:#dcfce7;border:1px solid #86efac;border-radius:6px;padding:6px 16px;margin-bottom:20px;"><span style="font-size:13px;font-weight:700;color:#166534;">SIGNAL ACTIVATED</span></div>`;
     content = `
       <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Congratulations! Your <strong>${sigName}</strong> has been successfully activated on your Veloci Global Markets trading account.</p>
-      <div style="background:linear-gradient(135deg,#14532d,#166534);border-radius:12px;padding:28px;margin-bottom:24px;text-align:center;">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.12em;color:rgba(255,255,255,0.7);text-transform:uppercase;">Now Active</p>
-        <p style="margin:0;font-size:26px;font-weight:800;color:#fff;">${sigName}</p>
+      <div style="background:linear-gradient(135deg,#14532d,#166534);border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+        <p style="margin:0 0 4px;font-size:11px;font-weight:600;letter-spacing:.12em;color:rgba(255,255,255,0.6);text-transform:uppercase;">Now Active</p>
+        <p style="margin:0 0 2px;font-size:24px;font-weight:800;color:#fff;">${sigName}</p>
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);">${s(sig2.subtitle)}</p>
       </div>
-      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:20px 24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#0d1117;">Your Active Signal</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr><td ${td1a}>Projected ROI</td><td style="padding:13px 16px;font-size:14px;font-weight:700;color:#2563eb;border:1px solid #e5e7eb;">${s(sig2.roi)}</td></tr>
+        <tr><td ${td1a}>Signal Strength</td><td ${td2a}>${s(sig2.strength)}</td></tr>
+        <tr><td ${td1a}>Signal Type</td><td ${td2a}>${s(sig2.sigType)}</td></tr>
+        <tr><td ${td1a}>Risk Level</td><td ${td2a}>${s(sig2.risk)}</td></tr>
+        <tr><td ${td1a}>Status</td><td style="padding:13px 16px;font-size:14px;font-weight:700;color:#166534;border:1px solid #e5e7eb;">Active</td></tr>
+      </table>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:18px 22px;margin-bottom:24px;">
         <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#166534;">What this means for you:</p>
         <ul style="margin:0;padding-left:20px;font-size:14px;color:#4b5563;line-height:2.2;">
           <li>Professional trading signals are now live on your account</li>
           <li>Our expert team will manage signal execution on your behalf</li>
-          <li>You can monitor performance from your trading dashboard</li>
+          <li>You can monitor your signal status at any time from the Signals page</li>
         </ul>
       </div>
       <p style="margin:0;font-size:14px;color:#6b7280;">Log in to your <a href="https://velociglobal.pro/signal-new.html" style="color:#f05a1a;text-decoration:none;">Signals page</a> to see your active signal.</p>`;
