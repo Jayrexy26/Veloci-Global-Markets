@@ -2139,6 +2139,22 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       filter: `user_id=eq.${user.id}`
     }, () => { loadProfitTarget(user.id); })
     .subscribe();
+
+  /* Real-time: reload positions/trades table whenever admin adds or updates */
+  db.channel('positions-live-' + user.id)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'positions',
+      filter: `user_id=eq.${user.id}`
+    }, () => { renderPositions(); })
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'positions',
+      filter: `user_id=eq.${user.id}`
+    }, () => { renderPositions(); })
+    .on('postgres_changes', {
+      event: 'DELETE', schema: 'public', table: 'positions',
+      filter: `user_id=eq.${user.id}`
+    }, () => { renderPositions(); })
+    .subscribe();
 })();
 
 async function doSignOut() {
