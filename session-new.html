@@ -621,6 +621,14 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
   const _sessionLoadStart = Date.now();
   const db = window.SV_DB;
 
+  // OAuth callback (Google, etc.) lands here with ?code= in URL — this is a fresh login.
+  // Clear sv_pin_ok so the fast-path is never taken and login_activity is always logged.
+  const _loc = new URL(window.location.href);
+  if (_loc.searchParams.has('code') || window.location.hash.includes('access_token')) {
+    sessionStorage.removeItem(SS_KEY);
+    sessionStorage.removeItem('sv_login_logged');
+  }
+
   // If PIN already passed this session, skip to next page
   if (sessionStorage.getItem(SS_KEY)) {
     const { data: { session } } = await db.auth.getSession();
