@@ -826,10 +826,15 @@ window.smartsupp||(function(d) {
 
     <div class="sec-card" style="overflow:hidden;">
       <div class="sec-head">
-        <div class="sec-title">Economic Calendar</div>
+        <div class="sec-title">Calendars</div>
         <span style="font-size:11px;color:var(--sub);display:flex;align-items:center;gap:4px;"><span class="live-dot"></span>Live</span>
       </div>
-      <div id="econ-cal-container" style="height:360px;width:100%;"></div>
+      <div style="display:flex;gap:5px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;">
+        <button class="news-tab active" data-cal="economic">Economic</button>
+        <button class="news-tab" data-cal="earnings">Earnings</button>
+        <button class="news-tab" data-cal="ipo">IPO</button>
+      </div>
+      <div id="econ-cal-container" style="height:400px;width:100%;"></div>
     </div>
 
     <div class="sec-card" style="overflow:hidden;">
@@ -1720,10 +1725,16 @@ document.addEventListener('DOMContentLoaded', init);
   wrap.appendChild(container);
 })();
 
-// Economic Calendar TradingView widget
-(function() {
-  var wrap = document.getElementById('econ-cal-container');
-  if (!wrap) return;
+// Calendar widget — tab config map
+var _calTabs = {
+  'economic': { src:'embed-widget-events.js',   cfg:{ colorTheme:'dark', isTransparent:true, width:'100%', height:'400', locale:'en', importanceFilter:'-1,0,1', countryFilter:'us,eu,gb,jp,cn,ca,au' } },
+  'earnings':  { src:'embed-widget-screener.js', cfg:{ width:'100%', height:'400', defaultColumn:'overview', defaultScreen:'earnings_this_week', market:'america', showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
+  'ipo':       { src:'embed-widget-screener.js', cfg:{ width:'100%', height:'400', defaultColumn:'overview', defaultScreen:'ipo',                 market:'america', showToolbar:true, colorTheme:'dark', locale:'en', isTransparent:true } },
+};
+function loadCalWidget(tab) {
+  var def = _calTabs[tab]; if (!def) return;
+  var wrap = document.getElementById('econ-cal-container'); if (!wrap) return;
+  wrap.innerHTML = '';
   var container = document.createElement('div');
   container.className = 'tradingview-widget-container';
   container.style.cssText = 'height:100%;width:100%';
@@ -1732,21 +1743,21 @@ document.addEventListener('DOMContentLoaded', init);
   inner.style.cssText = 'height:100%;width:100%';
   var script = document.createElement('script');
   script.type = 'text/javascript';
-  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-events.js';
+  script.src = 'https://s3.tradingview.com/external-embedding/' + def.src;
   script.async = true;
-  script.textContent = JSON.stringify({
-    colorTheme: 'dark',
-    isTransparent: true,
-    width: '100%',
-    height: '360',
-    locale: 'en',
-    importanceFilter: '-1,0,1',
-    countryFilter: 'us,eu,gb,jp,cn,ca,au'
-  });
+  script.textContent = JSON.stringify(def.cfg);
   container.appendChild(inner);
   container.appendChild(script);
   wrap.appendChild(container);
-})();
+}
+loadCalWidget('economic');
+document.querySelectorAll('[data-cal]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('[data-cal]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    loadCalWidget(btn.dataset.cal);
+  });
+});
 
 // Market News widget — tab config map
 var _newsTabs = {
