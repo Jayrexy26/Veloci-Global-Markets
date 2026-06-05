@@ -528,6 +528,23 @@ window.smartsupp||(function(d) {
   </div>
 </div>
 
+<!-- Pending Warning Modal -->
+<div class="modal-backdrop" id="pending-modal" onclick="closeModal('pending-modal')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-head-title" style="color:#f0b90b;">⏳ Request Already Pending</div>
+      <button class="modal-close" onclick="closeModal('pending-modal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p id="pending-modal-msg">You already have a signal activation request pending review. Our operations team will contact you shortly to complete the process.</p>
+      <p>Once your current request has been reviewed and processed, you will be able to submit a new signal activation request.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn ghost" onclick="closeModal('pending-modal')">Got It</button>
+    </div>
+  </div>
+</div>
+
 <!-- Implement Modal -->
 <div class="modal-backdrop" id="implement-modal" onclick="closeImplementModal()">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -618,30 +635,42 @@ function closeModal(id) {
 function openInfoModal(n) { openModal('info-modal-'+n); }
 function closeInfoModal(n) { closeModal('info-modal-'+n); }
 function closeImplementModal() { closeModal('implement-modal'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal('implement-modal');closeModal('info-modal-1');closeModal('info-modal-2');closeModal('info-modal-3'); } });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal('implement-modal');closeModal('pending-modal');closeModal('info-modal-1');closeModal('info-modal-2');closeModal('info-modal-3'); } });
 
 function openImplementModal(n) {
   _currentImplSignal = n;
-  const titles = { 1:'Implement Signal 1 — Entry Signal', 2:'Implement Signal 2 — Pro Signal', 3:'Implement Signal 3 — Premium Signal' };
-  document.getElementById('impl-modal-title').textContent = titles[n] || 'Implement Signal';
 
+  // Check if this specific card is already active or pending
   const existing = _sgActivations[n];
-  const alreadyMsg = document.getElementById('impl-already-msg');
-  const confirmBtn = document.getElementById('impl-confirm-btn');
-
-  if (existing && existing.status === 'active') {
+  if (existing && (existing.status === 'active' || existing.status === 'pending')) {
+    const alreadyMsg = document.getElementById('impl-already-msg');
+    const confirmBtn = document.getElementById('impl-confirm-btn');
+    const titles = { 1:'Implement Signal 1 — Entry Signal', 2:'Implement Signal 2 — Pro Signal', 3:'Implement Signal 3 — Premium Signal' };
+    document.getElementById('impl-modal-title').textContent = titles[n] || 'Implement Signal';
     alreadyMsg.style.display = 'block';
-    alreadyMsg.textContent = 'This signal is already active on your account.';
+    alreadyMsg.textContent = existing.status === 'active'
+      ? 'This signal is already active on your account.'
+      : 'Your activation request is pending review. Our team will contact you shortly.';
     confirmBtn.style.display = 'none';
-  } else if (existing && existing.status === 'pending') {
-    alreadyMsg.style.display = 'block';
-    alreadyMsg.textContent = 'Your activation request is pending review. Our team will contact you shortly.';
-    confirmBtn.style.display = 'none';
-  } else {
-    alreadyMsg.style.display = 'none';
-    confirmBtn.style.display = '';
+    openModal('implement-modal');
+    return;
   }
 
+  // Check if any OTHER signal has a pending request
+  const pendingSignal = Object.entries(_sgActivations).find(([k, v]) => Number(k) !== n && v.status === 'pending');
+  if (pendingSignal) {
+    const sigNames = { 1:'Signal 1 — Entry Signal', 2:'Signal 2 — Pro Signal', 3:'Signal 3 — Premium Signal' };
+    document.getElementById('pending-modal-msg').textContent =
+      `You already have a pending activation request for ${sigNames[pendingSignal[0]] || 'another signal'}. Our operations team will contact you shortly to complete the process. Please wait for that request to be reviewed before submitting a new one.`;
+    openModal('pending-modal');
+    return;
+  }
+
+  // No conflicts — show the implement modal normally
+  const titles = { 1:'Implement Signal 1 — Entry Signal', 2:'Implement Signal 2 — Pro Signal', 3:'Implement Signal 3 — Premium Signal' };
+  document.getElementById('impl-modal-title').textContent = titles[n] || 'Implement Signal';
+  document.getElementById('impl-already-msg').style.display = 'none';
+  document.getElementById('impl-confirm-btn').style.display = '';
   openModal('implement-modal');
 }
 
