@@ -439,6 +439,11 @@
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         Profit Targets
       </button>
+      <button class="nav-item" onclick="showPage('signals',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Signal Activations
+        <span class="nav-item__badge badge-orange" id="signals-badge" style="display:none;">0</span>
+      </button>
 
       <div class="sidebar__section-label">Finance</div>
       <button class="nav-item" onclick="showPage('deposits',this)">
@@ -1431,9 +1436,101 @@
         </div>
       </div>
 
+      <!-- SIGNAL ACTIVATIONS -->
+      <div class="page" id="page-signals">
+        <div class="page-header">
+          <div>
+            <div class="page-header__title">Signal Activations</div>
+            <div class="page-header__sub">Review and manage user signal activation requests</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="sig-filter-status" onchange="sigApplyFilter()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;outline:none;">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select id="sig-filter-signal" onchange="sigApplyFilter()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;outline:none;">
+              <option value="">All Signals</option>
+              <option value="1">Signal 1 — Basic</option>
+              <option value="2">Signal 2 — Advanced</option>
+              <option value="3">Signal 3 — Elite</option>
+            </select>
+            <button class="btn btn--outline" onclick="loadSignalsPage()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+          <div class="card" style="padding:16px 20px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Total</div>
+            <div style="font-size:24px;font-weight:700;" id="sig-stat-total">—</div>
+          </div>
+          <div class="card" style="padding:16px 20px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Pending</div>
+            <div style="font-size:24px;font-weight:700;color:#f0b90b;" id="sig-stat-pending">—</div>
+          </div>
+          <div class="card" style="padding:16px 20px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Active</div>
+            <div style="font-size:24px;font-weight:700;color:#0ecb81;" id="sig-stat-active">—</div>
+          </div>
+          <div class="card" style="padding:16px 20px;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Rejected</div>
+            <div style="font-size:24px;font-weight:700;color:#f6465d;" id="sig-stat-rejected">—</div>
+          </div>
+        </div>
+
+        <div class="card card__body--p0">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>User</th>
+                <th>Signal</th>
+                <th>Status</th>
+                <th>Requested</th>
+                <th>Admin Note</th>
+                <th>Actions</th>
+              </tr></thead>
+              <tbody id="sig-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /layout -->
+
+<!-- Signal Update Modal -->
+<div class="modal-overlay" id="modal-signal-update">
+  <div class="modal">
+    <div class="modal__head"><div class="modal__title">Update Signal Status</div><button class="modal__close" onclick="closeModal('modal-signal-update')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal__body">
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="field"><label>User</label><div id="sig-upd-user" style="font-weight:600;font-size:13px;padding:8px 0;"></div></div>
+        <div class="field"><label>Signal</label><div id="sig-upd-signal" style="font-weight:600;font-size:13px;padding:8px 0;"></div></div>
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>New Status</label>
+        <select id="sig-upd-status" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;outline:none;">
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Admin Note (optional)</label>
+        <textarea id="sig-upd-note" rows="3" placeholder="Internal note…" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;resize:vertical;outline:none;font-family:inherit;"></textarea>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modal-signal-update')">Cancel</button>
+      <button class="btn btn--primary" onclick="sigConfirmUpdate()" id="sig-upd-btn">Update Status</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODALS -->
 <div class="modal-overlay" id="modal-add-user">
@@ -1831,6 +1928,7 @@
     deposits:'Deposits', withdrawals:'Withdrawals', transactions:'All Transactions',
     announcements:'Announcements', 'markets-control':'Markets Control',
     emails:'Email Users', settings:'System Settings', audit:'Audit Log',
+    signals:'Signal Activations',
   };
   function showPage(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5106,6 +5204,119 @@ window.showPage = function(id, el) {
   _origUlShowPage && _origUlShowPage(id, el);
   if (id === 'users-log') window.loadUsersLog();
 };
+</script>
+<script>
+/* ── Signal Activations ── */
+(function(){
+  const SIG_NAMES = {1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite'};
+  let _sigAll = [];
+  let _sigUpdateId = null;
+
+  function sigStatusBadge(s){
+    const map={pending:'#f0b90b',active:'#0ecb81',inactive:'#848e9c',rejected:'#f6465d'};
+    const c=map[s]||'#848e9c';
+    return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${c}22;color:${c};border:1px solid ${c}44;">${s}</span>`;
+  }
+
+  window.loadSignalsPage = async function(){
+    const db = window.SV_DB; if(!db) return;
+    const tbody = document.getElementById('sig-tbody');
+    if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr>';
+    try {
+      const { data, error } = await db.rpc('admin_get_signal_activations');
+      if(error) throw error;
+      _sigAll = data || [];
+
+      const tot = _sigAll.length;
+      const pend = _sigAll.filter(s=>s.status==='pending').length;
+      const act  = _sigAll.filter(s=>s.status==='active').length;
+      const rej  = _sigAll.filter(s=>s.status==='rejected').length;
+
+      const el=id=>document.getElementById(id);
+      if(el('sig-stat-total'))   el('sig-stat-total').textContent   = tot;
+      if(el('sig-stat-pending')) el('sig-stat-pending').textContent = pend;
+      if(el('sig-stat-active'))  el('sig-stat-active').textContent  = act;
+      if(el('sig-stat-rejected'))el('sig-stat-rejected').textContent= rej;
+
+      const badge = document.getElementById('signals-badge');
+      if(badge){ if(pend>0){badge.style.display='';badge.textContent=pend;}else badge.style.display='none'; }
+
+      sigApplyFilter();
+    } catch(e){
+      const tb=document.getElementById('sig-tbody');
+      if(tb) tb.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Error: ${e.message}</td></tr>`;
+    }
+  };
+
+  window.sigApplyFilter = function(){
+    const sf = (document.getElementById('sig-filter-status')||{}).value || '';
+    const nf = (document.getElementById('sig-filter-signal')||{}).value || '';
+    let rows = _sigAll;
+    if(sf) rows = rows.filter(r=>r.status===sf);
+    if(nf) rows = rows.filter(r=>String(r.signal_number)===nf);
+    sigRender(rows);
+  };
+
+  function sigRender(rows){
+    const tbody = document.getElementById('sig-tbody'); if(!tbody) return;
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r=>{
+      const sn=r.signal_number;
+      const nameColors={1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
+      const nc=nameColors[sn]||'var(--text)';
+      const dt = r.requested_at ? new Date(r.requested_at).toLocaleString() : '—';
+      const note = (r.admin_note||'—').slice(0,40) + ((r.admin_note||'').length>40?'…':'');
+      const email = r.user_email||'—';
+      return `<tr>
+        <td style="font-size:13px;">${email}</td>
+        <td style="font-weight:600;color:${nc};">${SIG_NAMES[sn]||'Signal '+sn}</td>
+        <td>${sigStatusBadge(r.status)}</td>
+        <td style="font-size:12px;color:var(--muted);">${dt}</td>
+        <td style="font-size:12px;color:var(--muted);" title="${(r.admin_note||'').replace(/"/g,'&quot;')}">${note}</td>
+        <td><button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(email).replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Update</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.sigOpenUpdate = function(id, email, sn, status, note){
+    _sigUpdateId = id;
+    const el=i=>document.getElementById(i);
+    if(el('sig-upd-user'))   el('sig-upd-user').textContent   = email;
+    if(el('sig-upd-signal')) el('sig-upd-signal').textContent = SIG_NAMES[sn]||'Signal '+sn;
+    if(el('sig-upd-status')) el('sig-upd-status').value       = status;
+    if(el('sig-upd-note'))   el('sig-upd-note').value         = note||'';
+    openModal('modal-signal-update');
+  };
+
+  window.sigConfirmUpdate = async function(){
+    if(!_sigUpdateId) return;
+    const db=window.SV_DB; if(!db) return;
+    const newStatus=(document.getElementById('sig-upd-status')||{}).value;
+    const note=(document.getElementById('sig-upd-note')||{}).value.trim()||null;
+    const btn=document.getElementById('sig-upd-btn');
+    btn.disabled=true; btn.textContent='Saving…';
+    try{
+      const {error} = await db.rpc('admin_update_signal_status',{p_id:_sigUpdateId,p_status:newStatus,p_note:note});
+      if(error) throw error;
+      closeModal('modal-signal-update');
+      await window.loadSignalsPage();
+    }catch(e){
+      alert('Failed: '+e.message);
+    }finally{
+      btn.disabled=false; btn.textContent='Update Status';
+    }
+  };
+
+  /* Hook into showPage */
+  const _origShowPage2 = window.showPage;
+  window.showPage = function(id, el){
+    _origShowPage2 && _origShowPage2(id, el);
+    if(id==='signals') window.loadSignalsPage();
+  };
+})();
 </script>
 <script src="/pwa-install-ops.js"></script>
 <script src="/swipe-nav-ops.js"></script>
