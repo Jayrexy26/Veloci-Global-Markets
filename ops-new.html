@@ -1757,6 +1757,29 @@
   </div>
 </div>
 
+<!-- View Body Modal -->
+<div class="modal-overlay" id="modal-bf-body">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal__head">
+      <div class="modal__title" style="display:flex;align-items:center;gap:8px;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:var(--orange);stroke-width:2;flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Email Body
+      </div>
+      <button class="modal__close" onclick="closeModal('modal-bf-body')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="bf-body-format-name"></div>
+      <div id="bf-body-content" style="font-size:14px;color:var(--text);line-height:1.75;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;min-height:80px;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal__foot" style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);">
+      <button id="bf-body-copy-btn" class="btn btn--primary btn--sm" onclick="copyBillingBody()" style="display:flex;align-items:center;gap:6px;">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Body
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- View Email Modal -->
 <div class="modal-overlay" id="modal-bf-explanation">
   <div class="modal" style="max-width:540px;">
@@ -4828,6 +4851,31 @@ function copyManagerExplanation() {
   }).catch(() => showToast('Could not copy — please select and copy manually', 'error'));
 }
 
+function viewBillingBody(id) {
+  const fmt = _bfCache.find(f => f.id === id);
+  if (!fmt) return;
+  document.getElementById('bf-body-format-name').textContent = fmt.name + (fmt.subject ? ' · ' + fmt.subject : '');
+  const el = document.getElementById('bf-body-content');
+  const text = (fmt.body || '').trim();
+  el.textContent = text || 'No body saved for this format.';
+  el.style.color = text ? 'var(--text)' : 'var(--muted)';
+  const btn = document.getElementById('bf-body-copy-btn');
+  if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Body'; btn.style.background = ''; }
+  openModal('modal-bf-body');
+}
+
+function copyBillingBody() {
+  const text = document.getElementById('bf-body-content').textContent;
+  if (!text || text.startsWith('No body')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('bf-body-copy-btn');
+    if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!'; btn.style.background = 'var(--green)'; }
+    setTimeout(() => {
+      if (btn) { btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Body'; btn.style.background = ''; }
+    }, 2000);
+  }).catch(() => showToast('Could not copy — please select and copy manually', 'error'));
+}
+
 function renderBillingFormats() {
   const list = document.getElementById('bf-list');
   if (!list) return;
@@ -4865,6 +4913,7 @@ function renderBillingFormats() {
               <svg viewBox="0 0 24 24" style="width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               Body
             </button>
+            <button class="btn btn--outline btn--sm" onclick="viewBillingBody(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);">View Body</button>
             <button class="btn btn--outline btn--sm" onclick="editBillingFormat(${f.id})">Edit</button>
             <button class="btn btn--outline btn--sm" onclick="viewManagerExplanation(${f.id})" style="color:#7c3aed;border-color:rgba(124,58,237,.3);">Manager Explanation</button>
             <button class="btn btn--outline btn--sm" onclick="loadFormatIntoCompose(${f.id})" style="color:var(--orange);border-color:rgba(240,90,26,.3);"><span class="bf-use-full">Use in Compose</span><span class="bf-use-short">Use</span></button>
