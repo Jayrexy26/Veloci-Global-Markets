@@ -2102,8 +2102,27 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
           badgeEl.classList.remove('visible');
         }
       }
+      const sigModalNames = {1:'Signal 1 — Basic', 2:'Signal 2 — Advanced', 3:'Signal 3 — Elite'};
+
+      function showSigApprovedPopup(sn) {
+        const el = document.getElementById('sa-popup-name');
+        if (el) el.textContent = sigModalNames[sn] || ('Signal ' + sn);
+        const ov = document.getElementById('sig-approved-overlay');
+        if (ov) { ov.classList.add('open'); ov.querySelector('.pu-box').classList.add('genie-in'); }
+      }
+
+      // Page-load: show modal for any newly approved signal not yet acknowledged
+      (sigs || []).forEach(sig => {
+        const key = `sv_sig_approved_${user.id}_${sig.signal_number}`;
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, '1');
+          setTimeout(() => showSigApprovedPopup(sig.signal_number), 800);
+        }
+      });
+
       applySigBadge(sigs?.[0]?.signal_number ?? null);
-      // Real-time: update badge instantly if admin approves/rejects
+
+      // Real-time: update badge + show modal when admin approves
       db.channel('sig-badge-' + user.id)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'signal_activations', filter: `user_id=eq.${user.id}` },
           async () => {
@@ -2111,6 +2130,13 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
               .select('signal_number').eq('user_id', user.id).eq('status', 'active')
               .order('requested_at', { ascending: false }).limit(1);
             applySigBadge(s2?.[0]?.signal_number ?? null);
+            if (s2?.[0]) {
+              const key = `sv_sig_approved_${user.id}_${s2[0].signal_number}`;
+              if (!localStorage.getItem(key)) {
+                localStorage.setItem(key, '1');
+                showSigApprovedPopup(s2[0].signal_number);
+              }
+            }
           })
         .subscribe();
     } catch(_) {}
@@ -2226,6 +2252,10 @@ function showPlanUpgradePopup(plan) {
   box.classList.add('genie-in');
   box.addEventListener('animationend', () => box.classList.remove('genie-in'), { once: true });
 }
+function closeSigApprovedPopup() {
+  const overlay = document.getElementById('sig-approved-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
 function closePlanPopup() {
   const overlay = document.getElementById('pu-overlay');
   const box     = overlay.querySelector('.pu-box');
@@ -2289,6 +2319,20 @@ function closePTPopup() {
     <div class="pt-desc">A new profit target has been assigned to your account. Work towards it and track your progress on the dashboard!</div>
     <button class="pt-cta" onclick="closePTPopup()">🚀 Let's Go!</button>
     <button class="pt-dismiss" onclick="closePTPopup()">Dismiss</button>
+  </div>
+</div>
+
+<!-- Signal Activated popup (one-time, shown when admin approves) -->
+<div class="pu-overlay" id="sig-approved-overlay" onclick="closeSigApprovedPopup()" style="z-index:10000;">
+  <div class="pu-box" onclick="event.stopPropagation()" style="max-width:400px;text-align:center;">
+    <div style="width:68px;height:68px;background:rgba(14,203,129,.12);border:1.5px solid rgba(14,203,129,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px;">📡</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#0ecb81;text-transform:uppercase;margin-bottom:8px;">Signal Activated</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;" id="sa-popup-name">—</div>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:20px;">has been activated on your account</div>
+    <div style="background:rgba(14,203,129,.07);border:1px solid rgba(14,203,129,.18);border-radius:10px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:var(--text2);line-height:1.7;text-align:left;">
+      Your signal is now live. Our expert team is actively managing signal execution on your behalf. Monitor your signal status anytime from the <a href="signal-new.html" style="color:#0ecb81;text-decoration:none;">Signals page</a>.
+    </div>
+    <button onclick="closeSigApprovedPopup()" style="width:100%;padding:13px;background:linear-gradient(135deg,#0ecb81,#05a660);border:none;border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;">🎉 Got It!</button>
   </div>
 </div>
 
