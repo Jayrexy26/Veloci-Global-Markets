@@ -2131,6 +2131,14 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
       applyBalance(payload.new.balance, payload.new.total_pnl);
     })
     .subscribe();
+
+  /* Real-time: reload profit target card whenever admin adds a trade entry */
+  db.channel('ptt-live-' + user.id)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'profit_target_trades',
+      filter: `user_id=eq.${user.id}`
+    }, () => { loadProfitTarget(user.id); })
+    .subscribe();
 })();
 
 async function doSignOut() {
