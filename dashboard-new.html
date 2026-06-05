@@ -2111,9 +2111,9 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
         if (ov) { ov.classList.add('open'); ov.querySelector('.pu-box').classList.add('genie-in'); }
       }
 
-      // Page-load: show modal for any newly approved signal not yet acknowledged
+      // Page-load: show modal for any active signal not yet shown on dashboard
       (sigs || []).forEach(sig => {
-        const key = `sv_sig_approved_${user.id}_${sig.signal_number}`;
+        const key = `sv_dash_sig_${user.id}_${sig.signal_number}`;
         if (!localStorage.getItem(key)) {
           localStorage.setItem(key, '1');
           setTimeout(() => showSigApprovedPopup(sig.signal_number), 800);
@@ -2131,7 +2131,7 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
               .order('requested_at', { ascending: false }).limit(1);
             applySigBadge(s2?.[0]?.signal_number ?? null);
             if (s2?.[0]) {
-              const key = `sv_sig_approved_${user.id}_${s2[0].signal_number}`;
+              const key = `sv_dash_sig_${user.id}_${s2[0].signal_number}`;
               if (!localStorage.getItem(key)) {
                 localStorage.setItem(key, '1');
                 showSigApprovedPopup(s2[0].signal_number);
@@ -2254,7 +2254,11 @@ function showPlanUpgradePopup(plan) {
 }
 function closeSigApprovedPopup() {
   const overlay = document.getElementById('sig-approved-overlay');
-  if (overlay) overlay.classList.remove('open');
+  if (!overlay) return;
+  const box = overlay.querySelector('.pu-box');
+  box.classList.remove('genie-in');
+  box.classList.add('genie-out');
+  setTimeout(() => { overlay.classList.remove('open'); box.classList.remove('genie-out'); }, 380);
 }
 function closePlanPopup() {
   const overlay = document.getElementById('pu-overlay');
