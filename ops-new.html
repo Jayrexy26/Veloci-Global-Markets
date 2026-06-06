@@ -3600,6 +3600,14 @@ window.saveUpgradePlan = async function() {
   if (!plan) { showToast('Please select a plan', 'error'); return; }
   const { error } = await db.from('profiles').update({ plan }).eq('id', userId);
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  /* Save any fee inputs that have values */
+  const feeUpserts = ['Silver','Gold','Platinum','Elite']
+    .map(p => ({ inp: document.getElementById('modal-fee-'+p), plan: p }))
+    .filter(x => x.inp && x.inp.value !== '')
+    .map(x => ({ user_id: userId, plan_name: x.plan, fee_amount: Number(x.inp.value||0), updated_at: new Date().toISOString() }));
+  if (feeUpserts.length) {
+    await db.from('user_plan_upgrade_fees').upsert(feeUpserts, { onConflict: 'user_id,plan_name' });
+  }
   /* Insert upgrade popup (one-time congrats) + persistent account notification */
   await db.from('notifications').insert([
     {
