@@ -677,25 +677,11 @@
           <button class="btn btn--outline" onclick="renderUpgradeUsersPage()"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
         </div>
 
-        <!-- Plan Fee Settings -->
-        <div class="card" style="margin-bottom:16px;">
-          <div class="card__head">
-            <div class="card__title">💰 Plan Upgrade Fees</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="fee-settings-sub">Set the upgrade fee charged per plan type.</div>
-          </div>
-          <div class="card__body--p0 table-wrap">
-            <table class="data-table">
-              <thead><tr><th>Plan</th><th>Description</th><th>Upgrade Fee (USD)</th><th>Action</th></tr></thead>
-              <tbody id="plan-fees-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
         <!-- Users Upgrade Table -->
         <div class="card">
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>User</th><th>Balance</th><th>Current Plan</th><th>Upgrade To</th><th>Fee</th><th>Action</th></tr></thead>
+              <thead><tr><th>User</th><th>Balance</th><th>Current Plan</th><th>Fee</th><th>Action</th></tr></thead>
               <tbody id="upgrade-users-tbody"></tbody>
             </table>
           </div>
@@ -5370,50 +5356,6 @@ window.showPage = function(id, el) {
     (data||[]).forEach(r => { _upgFees[r.plan_name] = Number(r.fee_amount||0); });
   }
 
-  function renderFeeRows(){
-    const tbody = document.getElementById('plan-fees-tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    PLANS.forEach(p => {
-      const fee = _upgFees[p.key] !== undefined ? _upgFees[p.key] : 0;
-      tbody.innerHTML += `<tr>
-        <td><strong style="color:${PLAN_COLORS[p.key]||'inherit'}">${p.key}</strong></td>
-        <td style="color:var(--muted);font-size:12px;">${p.desc}</td>
-        <td><input type="number" min="0" step="0.01" value="${fee}" id="upg-fee-${p.key}"
-          style="width:110px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card2,#1a1a1a);color:inherit;font-size:13px;"></td>
-        <td><button class="btn btn--sm btn--outline" onclick="window.saveUpgradeFee('${p.key}')">Save</button></td>
-      </tr>`;
-    });
-  }
-
-  window.saveUpgradeFee = async function(planKey){
-    const db = window.SV_DB; if (!db) return;
-    const input = document.getElementById('upg-fee-'+planKey);
-    if (!input) return;
-    const val = Number(input.value||0);
-    if (!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
-    const { error } = await db.from('plan_upgrade_fees')
-      .upsert({ plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() }, { onConflict: 'plan_name' });
-    if (error){ showToast('Save failed: '+error.message,'error'); return; }
-    _upgFees[planKey] = val;
-    showToast(`${planKey} fee set to $${val.toFixed(2)}`);
-    refreshFeeDisplays();
-  };
-
-  function refreshFeeDisplays(){
-    document.querySelectorAll('[data-upg-fee]').forEach(el => {
-      const uid = el.getAttribute('data-uid');
-      const sel = document.getElementById('upg-to-'+uid);
-      if (sel) el.textContent = '$' + (_upgFees[sel.value]||0).toFixed(2);
-    });
-  }
-
-  window.onUpgPlanChange = function(uid){
-    const sel = document.getElementById('upg-to-'+uid);
-    const el  = document.querySelector(`[data-upg-fee][data-uid="${uid}"]`);
-    if (sel && el) el.textContent = '$' + (_upgFees[sel.value]||0).toFixed(2);
-  };
-
   async function loadUpgradeUsersList(){
     const db = window.SV_DB; if (!db) return;
     const sub = document.getElementById('upgrade-users-sub');
@@ -5437,8 +5379,7 @@ window.showPage = function(id, el) {
       const uid  = u.id;
       const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
       const cur  = u.plan || 'Starter';
-      const defFee = (_upgFees[cur]||0).toFixed(2);
-      const planOpts = PLANS.map(p=>`<option value="${p.key}" ${p.key===cur?'selected':''}>${p.key}</option>`).join('');
+      const fee  = (_upgFees[cur]||0).toFixed(2);
       tbody.innerHTML += `<tr>
         <td>
           <div style="font-weight:600;font-size:13px;">${name}</div>
@@ -5446,13 +5387,7 @@ window.showPage = function(id, el) {
         </td>
         <td><strong style="color:var(--green);">$${Number(u.balance||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
         <td><span style="color:${PLAN_COLORS[cur]||'inherit'};font-weight:700;">${cur}</span></td>
-        <td>
-          <select id="upg-to-${uid}" onchange="window.onUpgPlanChange('${uid}')"
-            style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card2,#1a1a1a);color:inherit;font-size:12px;">
-            ${planOpts}
-          </select>
-        </td>
-        <td><span data-upg-fee data-uid="${uid}" style="font-weight:700;color:var(--green);">$${defFee}</span></td>
+        <td><strong style="color:var(--green);">$${fee}</strong></td>
         <td>
           <button class="btn btn--sm btn--primary"
             onclick="window.doUpgradeUser('${uid}','${(name).replace(/'/g,"\\'")}','${cur}')">
@@ -5464,9 +5399,7 @@ window.showPage = function(id, el) {
   }
 
   window.doUpgradeUser = async function(userId, userName, currentPlan){
-    const sel  = document.getElementById('upg-to-'+userId);
-    const plan = sel?.value;
-    if (!plan){ showToast('Select a plan','error'); return; }
+    const plan = currentPlan;
     const fee  = _upgFees[plan]||0;
     const feeNote = fee>0 ? `\nUpgrade Fee: $${fee.toFixed(2)}` : '\nUpgrade Fee: Free';
     if (!confirm(`Upgrade ${userName} to ${plan}?${feeNote}\n\nProceed?`)) return;
@@ -5492,7 +5425,6 @@ window.showPage = function(id, el) {
 
   window.renderUpgradeUsersPage = async function(){
     await loadFees();
-    renderFeeRows();
     await loadUpgradeUsersList();
   };
 })();
