@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Veloci Admin • Upgrade Users</title>
+  <link rel="stylesheet" href="admin-styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .fee-table td,.fee-table th{padding:8px 12px;}
+    .fee-input{width:110px;padding:6px 10px;border-radius:6px;border:1px solid var(--border,#2a2a2a);background:var(--card,#141414);color:inherit;font-size:13px;}
+    .fee-input:focus{outline:none;border-color:#4ade80;}
+    .cur-plan-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);}
+    .cur-plan-none{color:#555;font-size:12px;}
+    .fee-display{font-size:13px;font-weight:700;color:#4ade80;min-width:60px;display:inline-block;}
+  </style>
+</head>
+<body>
+
+<div id="modalOverlay" class="modalOverlay" onclick="modalClose()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modalHead"><div class="modalTitle" id="modalTitle">Notice</div><button class="btnGhost" onclick="modalClose()">Close</button></div>
+    <div class="modalBody" id="modalBody"></div>
+    <div class="modalFoot"><button class="btnGhost" onclick="modalClose()">Dismiss</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="sideOverlay" onclick="closeSidebar()"></div>
+
+<div class="app" id="appView" style="display:flex;">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brandDot"></div><div class="brandName"><strong>Veloci Admin</strong><span id="subAdmin">Operator • —</span></div></div>
+      <div class="nav">
+        <div class="navBtn" id="nav-overview" onclick="closeSidebar();location.href='admin-overview.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">Overview</div></div><div class="countPill" id="cnt-overview">✓</div></div>
+        <div class="navBtn" id="nav-settings" onclick="closeSidebar();location.href='admin-settings.html'"><div class="navLeft"><div class="navIcon">⚙️</div><div class="navText">Settings</div></div><div class="countPill" id="cnt-settings">•</div></div>
+        <div class="navBtn" id="nav-users" onclick="closeSidebar();location.href='admin-users.html'"><div class="navLeft"><div class="navIcon">👤</div><div class="navText">Users</div></div><div class="countPill" id="cnt-users">0</div></div>
+        <div class="navBtn" id="nav-cryptoops" onclick="closeSidebar();location.href='admin-crypto-ops.html'"><div class="navLeft"><div class="navIcon">🪙</div><div class="navText">Crypto Ops</div></div><div class="countPill" id="cnt-cryptoops">0</div></div>
+        <div class="navBtn" id="nav-plans" onclick="closeSidebar();location.href='admin-plans.html'"><div class="navLeft"><div class="navIcon">📈</div><div class="navText">Plans</div></div><div class="countPill" id="cnt-plans">0</div></div>
+        <div class="navBtn" id="nav-wallets" onclick="closeSidebar();location.href='admin-wallets.html'"><div class="navLeft"><div class="navIcon">🏦</div><div class="navText">Wallets</div></div><div class="countPill" id="cnt-wallets">0</div></div>
+        <div class="navBtn" id="nav-walletlinks" onclick="closeSidebar();location.href='admin-wallet-links.html'"><div class="navLeft"><div class="navIcon">🔗</div><div class="navText">Wallet Links</div></div><div class="countPill" id="cnt-walletlinks">0</div></div>
+        <div class="navBtn" id="nav-pamms" onclick="closeSidebar();location.href='admin-pamms.html'"><div class="navLeft"><div class="navIcon">⚡</div><div class="navText">PAMMs</div></div><div class="countPill" id="cnt-pamms">0</div></div>
+        <div class="navBtn" id="nav-trades" onclick="closeSidebar();location.href='admin-trades.html'"><div class="navLeft"><div class="navIcon">📒</div><div class="navText">Trades</div></div><div class="countPill" id="cnt-trades">0</div></div>
+        <div class="navBtn" id="nav-signals" onclick="closeSidebar();location.href='admin-signals.html'"><div class="navLeft"><div class="navIcon">📡</div><div class="navText">Signals</div></div><div class="countPill" id="cnt-signals">0</div></div>
+        <div class="navBtn" id="nav-emailhistory" onclick="closeSidebar();location.href='admin-email-history.html'"><div class="navLeft"><div class="navIcon">📧</div><div class="navText">Email History</div></div><div class="countPill" id="cnt-emailhistory">0</div></div>
+        <div class="navBtn" id="nav-notification" onclick="closeSidebar();location.href='admin-notifications.html'"><div class="navLeft"><div class="navIcon">🔔</div><div class="navText">Notification</div></div><div class="countPill" id="cnt-notification">0</div></div>
+        <div class="navBtn" id="nav-support" onclick="closeSidebar();location.href='admin-support.html'"><div class="navLeft"><div class="navIcon">🎫</div><div class="navText">Support</div></div><div class="countPill" id="cnt-support">0</div></div>
+        <div class="navBtn" id="nav-deposits" onclick="closeSidebar();location.href='admin-deposits.html'"><div class="navLeft"><div class="navIcon">➕</div><div class="navText">Deposits</div></div><div class="countPill" id="cnt-deposits">0</div></div>
+        <div class="navBtn" id="nav-withdrawals" onclick="closeSidebar();location.href='admin-withdrawals.html'"><div class="navLeft"><div class="navIcon">➖</div><div class="navText">Withdrawals</div></div><div class="countPill" id="cnt-withdrawals">0</div></div>
+        <div class="navBtn" id="nav-kyc" onclick="closeSidebar();location.href='admin-kyc.html'"><div class="navLeft"><div class="navIcon">🛡️</div><div class="navText">KYC</div></div><div class="countPill" id="cnt-kyc">0</div></div>
+        <div class="navBtn active" id="nav-upgradeusers" onclick="closeSidebar();location.href='admin-upgrade-users.html'"><div class="navLeft"><div class="navIcon">⬆️</div><div class="navText">Upgrade Users</div></div><div class="countPill" id="cnt-upgradeusers">0</div></div>
+        <div class="navBtn" id="nav-activity" onclick="closeSidebar();location.href='admin-activity.html'"><div class="navLeft"><div class="navIcon">📡</div><div class="navText">Live Activity</div></div><div class="countPill" id="cnt-activity">•</div></div>
+        <div class="navBtn" id="nav-audit" onclick="closeSidebar();location.href='admin-audit.html'"><div class="navLeft"><div class="navIcon">📋</div><div class="navText">Audit Log</div></div><div class="countPill" id="cnt-audit">•</div></div>
+      </div>
+      <div class="sideCard"><strong>Live Feed</strong><div class="small">Actions + errors.</div><div class="debug" id="feedBox">No activity yet.</div></div>
+      <div class="sideCard"><strong>Session</strong><div class="small">Lock returns to login.</div><div class="inline" style="margin-top:10px;"><button class="btnErr" style="width:100%" onclick="lockConsole()">Lock</button></div></div>
+    </aside>
+
+    <div class="main" id="mainScroll">
+      <div class="mobileTop"><button class="burger" onclick="openSidebar()">☰</button><div class="chip ok">CONNECTED</div></div>
+      <div class="topbar" id="topbar">
+        <div class="chips"><span class="chip ok" id="connChip">CONNECTED</span><span class="chip" id="autoChip">AUTO: OFF</span><span class="chip" id="lastChip">LAST: —</span><span class="chip" id="adminChip">ADMIN: —</span></div>
+        <div class="inline" style="min-width:0">
+          <div class="searchWrap">
+            <div class="searchBtnIcon" onclick="focusSearch()" title="Search">⌕</div>
+            <input id="globalSearch" class="searchInput" placeholder="Search users by name/email…" oninput="onSearchInput()" onfocus="onSearchInput()" onkeydown="onSearchKeydown(event)" autocomplete="off">
+            <div id="searchSugg" class="sugg"><div class="suggHead"><div class="suggTitle" id="suggTitle">Matches</div><button class="btnGhost" style="height:34px" onclick="clearSearch()">Clear</button></div><div class="suggList" id="suggList"></div></div>
+          </div>
+          <button class="btnGhost" onclick="refreshAll()">Refresh</button>
+          <button class="btnGhost" onclick="toggleAutoRefresh()">Auto</button>
+          <button class="btnGhost" onclick="ping()">Ping</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">
+
+        <!-- Ops Intelligence -->
+        <div class="gridOps"><div class="card" id="opsCard">
+          <div class="cardHead"><div><div class="cardTitle">🧠 Ops Intelligence</div><div class="small">System + last error/response.</div></div><div class="rowTools"><button class="btnGhost" onclick="clearDebug()">Clear</button></div></div>
+          <div class="small"><strong>System Status</strong></div><div class="debug" id="sysBox">Not connected.</div>
+          <div class="small" style="margin-top:12px;"><strong>Last API Error / Response</strong></div><div class="debug" id="debugBox">No errors yet.</div>
+        </div></div>
+
+        <!-- Plan Fee Settings -->
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">💰 Plan Upgrade Fees</div><div class="small" id="feeStatus">Not loaded.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="loadFees()">Refresh</button></div>
+          </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table class="fee-table">
+              <thead><tr>
+                <th style="width:180px">Plan</th>
+                <th style="width:160px">Min. Investment</th>
+                <th style="width:100px">Returns</th>
+                <th style="width:80px">Duration</th>
+                <th style="width:180px">Upgrade Fee (USD)</th>
+                <th style="width:120px">Action</th>
+              </tr></thead>
+              <tbody id="feeRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+
+        <!-- Users Table -->
+        <div class="gridMain"><div class="card">
+          <div class="cardHead">
+            <div><div class="cardTitle">⬆️ Upgrade Users</div><div class="small" id="upgradeStatus">Not loaded.</div></div>
+            <div class="rowTools"><button class="btnGhost" onclick="safeLoad(loadUpgradeUsers)">Refresh</button></div>
+          </div>
+          <div class="tableWrap"><div class="tableScroll">
+            <table>
+              <thead><tr>
+                <th style="width:320px">User</th>
+                <th style="width:150px">Balance</th>
+                <th style="width:180px">Current Plan</th>
+                <th style="width:240px">Upgrade To</th>
+                <th style="width:130px">Fee</th>
+                <th style="width:180px">Actions</th>
+              </tr></thead>
+              <tbody id="upgradeRows"></tbody>
+            </table>
+          </div></div>
+        </div></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="admin-shared.js"></script>
+<script>
+ACTIVE_VIEW = 'upgradeusers';
+window.loadCurrentPage = function(){ safeLoad(loadUpgradeUsers); };
+
+/* ── Fee data ── */
+const FEES = {}; // plan_key → fee_amount
+
+async function loadFees(){
+  const st = document.getElementById('feeStatus');
+  if(st) st.innerHTML = `<span class="spin"></span>Loading fees…`;
+  const db = window.VELOCI_DB;
+  if(!db){ if(st) st.textContent = 'DB not ready.'; return; }
+  const { data, error } = await db.from('plan_upgrade_fees').select('*');
+  if(error){ if(st) st.textContent = 'Error loading fees: ' + error.message; return; }
+  (data||[]).forEach(row=>{ FEES[row.plan_name] = Number(row.fee_amount||0); });
+  renderFees();
+  if(st) st.textContent = 'Fees loaded ✅';
+}
+
+function renderFees(){
+  const tbody = document.getElementById('feeRows');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  PLAN_TEMPLATES.forEach(p=>{
+    const fee = FEES[p.key] !== undefined ? FEES[p.key] : 0;
+    tbody.innerHTML += `
+      <tr>
+        <td><strong>${esc(p.plan_name)}</strong></td>
+        <td>$${Number(p.amount).toLocaleString()}</td>
+        <td>X${p.x_times}</td>
+        <td>${p.duration_days}d</td>
+        <td><input class="fee-input" type="number" step="0.01" min="0" id="fee-${esc(p.key)}" value="${fee}" placeholder="0.00"></td>
+        <td><button class="btnOk" onclick="saveFee('${esc(p.key)}','${esc(p.plan_name)}')">Save Fee</button></td>
+      </tr>`;
+  });
+}
+
+async function saveFee(planKey, planName){
+  const input = document.getElementById('fee-'+planKey);
+  if(!input){ return; }
+  const val = Number(input.value||0);
+  if(!Number.isFinite(val)||val<0){ modalShow('Invalid','Enter a fee ≥ 0.'); return; }
+  const db = window.VELOCI_DB;
+  if(!db){ modalShow('Error','DB not ready.'); return; }
+  const { error } = await db.from('plan_upgrade_fees')
+    .upsert({ plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() }, { onConflict: 'plan_name' });
+  if(error){ modalShow('Save Failed', error.message); return; }
+  FEES[planKey] = val;
+  feed('plan_fee saved: ' + planKey + ' = $' + val);
+  modalShow('Fee Saved', `${planName} upgrade fee set to $${val.toFixed(2)}.`);
+  refreshFeeDisplays();
+}
+
+function refreshFeeDisplays(){
+  document.querySelectorAll('[data-fee-display]').forEach(el=>{
+    const uid = el.getAttribute('data-uid');
+    const sel = document.getElementById('upgto-'+uid);
+    if(sel) el.textContent = '$' + getFeeForKey(sel.value).toFixed(2);
+  });
+}
+
+function getFeeForKey(planKey){
+  return FEES[planKey] !== undefined ? FEES[planKey] : 0;
+}
+
+/* ── Users ── */
+let _upgradeUsers = [];
+let _activePlanMap = {}; // email → plan_name string
+
+async function loadUpgradeUsers(){
+  const st = document.getElementById('upgradeStatus');
+  if(st) st.innerHTML = `<span class="spin"></span>Loading…`;
+
+  const [usersRes, plansRes] = await Promise.all([
+    apiCall('users_list'),
+    apiCall('plans_list')
+  ]);
+
+  _upgradeUsers = (usersRes.data||[]).filter(u=>!String(u.label||'').toLowerCase().includes('pamm'));
+  _upgradeUsers.forEach(u=>{
+    const email = String(u.email||'').trim().toLowerCase();
+    const name = String(u.username||u.full_name||u.name||u.display_name||'').trim() || inferUsernameFromEmail(email);
+    if(email) USERNAME_MAP[email] = name || inferUsernameFromEmail(email) || 'User';
+  });
+
+  // Build active plan map: email → most recent active plan_name
+  _activePlanMap = {};
+  const plans = plansRes.data||[];
+  const active = plans.filter(p=>{ const s=String(p.status||'').toLowerCase(); return s==='active'||s==='approved'; });
+  // Sort ascending so last one wins (most recent)
+  active.sort((a,b)=> new Date(a.created_at||0) - new Date(b.created_at||0));
+  active.forEach(p=>{
+    const email = String(p.user_email||'').trim().toLowerCase();
+    if(email) _activePlanMap[email] = String(p.plan_name||'');
+  });
+
+  renderUpgradeUsers(_upgradeUsers);
+  feed('upgrade users loaded ('+_upgradeUsers.length+')');
+  const el = document.getElementById('cnt-upgradeusers');
+  if(el) el.textContent = _upgradeUsers.length;
+  if(st) st.textContent = `Loaded ${_upgradeUsers.length} user(s) ✅`;
+  onSearchInput();
+}
+
+function planOptionsHtml(){
+  return PLAN_TEMPLATES.map(p=>`<option value="${esc(p.key)}">${esc(p.plan_name)}</option>`).join('');
+}
+
+function renderUpgradeUsers(data){
+  const st = document.getElementById('upgradeStatus');
+  const tbody = document.getElementById('upgradeRows');
+  const filtered = (data||[]).filter(matchSearch);
+  if(filtered.length===0){ if(st) st.textContent='No users found.'; tbody.innerHTML=''; return; }
+  if(st) st.textContent=`Loaded ${filtered.length} user(s) ✅`;
+  tbody.innerHTML='';
+  filtered.forEach(u=>{
+    const uid = esc(u.id||'');
+    const email = String(u.email||'').trim().toLowerCase();
+    const curPlan = _activePlanMap[email] || '';
+    const curPlanHtml = curPlan
+      ? `<span class="cur-plan-badge">${esc(curPlan)}</span>`
+      : `<span class="cur-plan-none">No plan</span>`;
+    const defaultKey = PLAN_TEMPLATES[0]?.key||'silver';
+    const defaultFee = getFeeForKey(defaultKey);
+    tbody.innerHTML += `
+      <tr>
+        <td>${userPillHtml(email)}</td>
+        <td><strong>$${Number(u.balance||0).toFixed(2)}</strong></td>
+        <td>${curPlanHtml}</td>
+        <td>
+          <select id="upgto-${uid}" onchange="onPlanChange('${uid}')">
+            ${planOptionsHtml()}
+          </select>
+        </td>
+        <td><span class="fee-display" data-fee-display data-uid="${uid}">$${defaultFee.toFixed(2)}</span></td>
+        <td><div class="rowTools">
+          <button class="btnPrimary" onclick="doUpgrade('${esc(email)}','${uid}')">Upgrade</button>
+        </div></td>
+      </tr>`;
+  });
+}
+
+function onPlanChange(uid){
+  const sel = document.getElementById('upgto-'+uid);
+  if(!sel) return;
+  const fee = getFeeForKey(sel.value);
+  const disp = document.querySelector(`[data-fee-display][data-uid="${uid}"]`);
+  if(disp) disp.textContent = '$' + fee.toFixed(2);
+}
+
+async function doUpgrade(email, uid){
+  const sel = document.getElementById('upgto-'+uid);
+  if(!sel){ return; }
+  const key = sel.value;
+  const tpl = PLAN_TEMPLATES.find(p=>p.key===key);
+  if(!tpl){ modalShow('Error','Invalid plan selection.'); return; }
+  const fee = getFeeForKey(key);
+  const feeNote = fee>0 ? `\nUpgrade Fee: $${fee.toFixed(2)}` : '\nUpgrade Fee: Free';
+  if(!confirm(`Upgrade ${email} to:\n${tpl.plan_name}\nMin. Investment: $${tpl.amount}\nReturns: X${tpl.x_times}\nDuration: ${tpl.duration_days} days${feeNote}\n\nProceed?`)) return;
+  await apiCall('plan_assign',{ email, plan_name: tpl.plan_name, amount: tpl.amount, x_times: tpl.x_times, duration_days: tpl.duration_days });
+  feed('plan_assign -> '+email+' -> '+tpl.plan_name);
+  logAudit('upgrade_user_plan', email, tpl.plan_name + (fee>0?' fee:$'+fee:''));
+  modalShow('Upgraded', `User: ${email}\nPlan: ${tpl.plan_name}\nAmount: $${tpl.amount}\nReturns: X${tpl.x_times}\nDuration: ${tpl.duration_days} days${feeNote}`);
+  safeLoad(loadUpgradeUsers);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  requireAuth();
+  initTopbar();
+  loadFees().then(()=> safeLoad(loadUpgradeUsers));
+});
+</script>
+</body>
+</html>
