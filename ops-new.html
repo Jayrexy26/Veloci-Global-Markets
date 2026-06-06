@@ -3178,7 +3178,8 @@ window.applyAdjustment = async function() {
 /* ── Balances ── */
 window.renderBalancesLive = async function() {
   const db = window.SV_DB; if (!db) return;
-  const { data, error } = await db.from('profiles').select('id,email,full_name,first_name,last_name,phone,balance,total_pnl,account_type,plan').order('balance', { ascending:false });
+  const { data: rawData, error } = await db.from('profiles').select('id,email,full_name,first_name,last_name,phone,balance,total_pnl,account_type,plan');
+  const data = rawData?.slice().sort((a,b) => (parseFloat(b.balance||0)+parseFloat(b.total_pnl||0)) - (parseFloat(a.balance||0)+parseFloat(a.total_pnl||0)));
   const tbody = document.getElementById('balances-tbody');
   if (!tbody) return;
   if (error || !data?.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">${error ? 'Error: '+error.message : 'No accounts'}</td></tr>`; return; }
@@ -3192,8 +3193,8 @@ window.renderBalancesLive = async function() {
         <div style="font-size:11.5px;color:var(--muted);">${p.email||'—'}</div>
         ${p.phone ? `<div style="font-size:11px;color:var(--muted);">${p.phone}</div>` : ''}
       </td>
-      <td>${fmtMoney(p.balance||0)}</td>
-      <td style="color:${equity>=0?'var(--green)':'var(--red)'}">${fmtMoney(equity)}</td>
+      <td style="font-weight:600;">${fmtMoney(equity)}</td>
+      <td style="color:var(--muted);">${fmtMoney(parseFloat(p.balance||0))}</td>
       <td><span class="badge-pill ${p.plan==='Elite'?'pill-blue':p.plan==='Platinum'?'pill-purple':p.plan==='Gold'?'pill-orange':p.plan==='Silver'?'pill-blue':'pill-grey'}">${p.plan||'Starter'}</span></td>
       <td style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</td>
       <td onclick="event.stopPropagation()"><button class="btn btn--sm btn--primary" onclick="openCreditDebit('${p.id}','${(name).replace(/'/g,"\\'")}',${equity})">Credit / Debit</button></td>
