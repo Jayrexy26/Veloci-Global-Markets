@@ -1414,9 +1414,7 @@ async function doWithdraw(){
     });
     if (txErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
-    /* Deduct from profiles.balance only (not pnl) */
-    const { data: _p1 } = await db.from('profiles').select('balance').eq('id', _svUserId).maybeSingle();
-    await db.from('profiles').update({ balance: parseFloat(_p1?.balance || 0) - usdAmt }).eq('id', _svUserId);
+    /* Trigger on withdrawal_requests handles balance deduction automatically */
     _svBalance -= usdAmt;
     setBalDisplays();
 
@@ -1468,9 +1466,7 @@ async function doWithdraw(){
     });
     if (txErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
 
-    /* Deduct from profiles.balance only (not pnl) */
-    const { data: _p2 } = await db.from('profiles').select('balance').eq('id', _svUserId).maybeSingle();
-    await db.from('profiles').update({ balance: parseFloat(_p2?.balance || 0) - amt }).eq('id', _svUserId);
+    /* Trigger on withdrawal_requests handles balance deduction automatically */
     _svBalance -= amt;
     setBalDisplays();
 
