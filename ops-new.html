@@ -2052,6 +2052,12 @@
   /* ── Utilities ── */
   function fmtDate(ts) { if (!ts) return '—'; return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
   function fmtMoney(n) { return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtMoneyCompact(n) {
+    const v = parseFloat(n || 0);
+    if (v >= 1e9)  return '$' + (v / 1e9).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'B';
+    if (v >= 1e6)  return '$' + (v / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + 'M';
+    return fmtMoney(v);
+  }
   function userTotalBal(u) { return parseFloat(u.balance||0) + parseFloat(u.total_pnl||0); }
   function userName(u) { return u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—'; }
   function avatarColor(str) { const colors = ['#f05a1a','#1a5cff','#22a06b','#7c3aed','#e60023','#f5a623']; let h = 0; for (let c of (str||'')) h = (h * 31 + c.charCodeAt(0)) % colors.length; return colors[h]; }
@@ -2743,12 +2749,12 @@ window.loadDashStats = async function() {
     const fmt = n => n == null ? '—' : n.toLocaleString();
     document.getElementById('stat-users').textContent = fmt(userCount);
     document.getElementById('stat-live').textContent  = fmt(liveCount);
-    document.getElementById('stat-aum').textContent   = fmtMoney(totalAUM);
+    document.getElementById('stat-aum').textContent   = fmtMoneyCompact(totalAUM);
     document.getElementById('stat-pos').textContent   = fmt(openPos);
     document.getElementById('stat-dep').textContent   = fmt(pendingDep);
     document.getElementById('stat-wd').textContent    = fmt(pendingWd);
     document.getElementById('stat-kyc').textContent   = fmt(pendingKyc);
-    document.getElementById('stat-vol').textContent   = fmtMoney(todayVol);
+    document.getElementById('stat-vol').textContent   = fmtMoneyCompact(todayVol);
     const badge = id => document.getElementById(id);
     if (badge('dep-badge'))   badge('dep-badge').textContent   = pendingDep  ?? '—';
     if (badge('wd-badge'))    badge('wd-badge').textContent    = pendingWd   ?? '—';
