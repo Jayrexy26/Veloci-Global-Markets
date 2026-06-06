@@ -5390,38 +5390,13 @@ window.showPage = function(id, el) {
         <td><strong style="color:var(--green);">$${fee}</strong></td>
         <td>
           <button class="btn btn--sm btn--primary"
-            onclick="window.doUpgradeUser('${uid}','${(name).replace(/'/g,"\\'")}','${cur}')">
+            onclick="window.openUpgradePlan('${uid}','${(name).replace(/'/g,"\\'")}','${cur}')">
             Upgrade
           </button>
         </td>
       </tr>`;
     });
   }
-
-  window.doUpgradeUser = async function(userId, userName, currentPlan){
-    const plan = currentPlan;
-    const fee  = _upgFees[plan]||0;
-    const feeNote = fee>0 ? `\nUpgrade Fee: $${fee.toFixed(2)}` : '\nUpgrade Fee: Free';
-    if (!confirm(`Upgrade ${userName} to ${plan}?${feeNote}\n\nProceed?`)) return;
-    const db = window.SV_DB; if (!db) return;
-    const { error } = await db.from('profiles').update({ plan }).eq('id', userId);
-    if (error){ showToast('Error: '+error.message,'error'); return; }
-    await db.from('notifications').insert([
-      { user_id:userId, title:`Account Upgraded to ${plan}`, message:plan, type:'plan_upgrade_popup', enabled:true },
-      { user_id:userId, title:`Account Upgraded to ${plan}`, message:`Your account has been successfully upgraded to the ${plan} plan. You now have access to all ${plan} features and limits.`, type:'account', enabled:true },
-    ]);
-    if (window.logAudit) logAudit('upgrade_plan', userId, `Plan set to ${plan}${fee>0?' | fee:$'+fee:''}`);
-    db.auth.getSession().then(({ data: { session: s } }) => {
-      if (!s?.access_token) return;
-      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}` },
-        body: JSON.stringify({ action:'notify_plan_upgraded', user_id:userId, plan }),
-      }).catch(()=>{});
-    }).catch(()=>{});
-    showToast(`${userName} upgraded to ${plan} ✓`);
-    await loadUpgradeUsersList();
-  };
 
   window.renderUpgradeUsersPage = async function(){
     await loadFees();
