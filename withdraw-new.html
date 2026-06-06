@@ -1086,12 +1086,15 @@ function pickCoin(sym){
 function buildNetworkGrid(){
   if(!selCoin) return;
   const g = document.getElementById('wd-network-grid');
-  g.innerHTML = selCoin.networks.map(n => `
-    <div class="net-chip${selNet&&selNet.id===n.id?' selected':''}" onclick="pickNet('${n.id}')">
+  g.innerHTML = selCoin.networks.map(n => {
+    const feeUsd = n.fee * (selCoin.price || 1);
+    const feeStr = feeUsd > 0 ? '$' + feeUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD' : '—';
+    return `<div class="net-chip${selNet&&selNet.id===n.id?' selected':''}" onclick="pickNet('${n.id}')">
       <div class="net-chip-name">${n.id}</div>
-      <div class="net-chip-fee">Fee: ${n.fee} ${selCoin.sym}</div>
+      <div class="net-chip-fee">Fee: ${feeStr}</div>
       <div class="net-chip-eta">${n.eta}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const d = document.getElementById('wd-sel-coin-display');
   d.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">${coinIconHTML(selCoin,28)}</div><div><div style="font-size:13.5px;font-weight:700;color:var(--text);">${selCoin.sym}</div><div style="font-size:11.5px;color:var(--sub);">${selCoin.name}</div></div>`;
 }
@@ -1124,16 +1127,12 @@ function buildDetailsPanel(){
   nd.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span style="font-size:12.5px;font-weight:700;color:var(--accent);">${selNet.id}</span>`;
   const bal = typeof _svBalance !== 'undefined' ? _svBalance : 0;
   document.getElementById('avail-bal').textContent = bal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-  document.getElementById('avail-sym').textContent = selCoin.sym;
-  document.getElementById('amount-sym').textContent = selCoin.sym;
+  document.getElementById('avail-sym').textContent = 'USD';
+  document.getElementById('amount-sym').textContent = 'USD';
   /* Min */
-  if (_minWithdrawal > 0) {
-    const netMinUsd = (selNet.min || 0) * (selCoin.price || 1);
-    const effMinUsd = Math.max(_minWithdrawal, netMinUsd);
-    document.getElementById('min-wd').textContent = '$' + effMinUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD';
-  } else {
-    document.getElementById('min-wd').textContent = selNet.min + ' ' + selCoin.sym;
-  }
+  const netMinUsd = (selNet.min || 0) * (selCoin.price || 1);
+  const effMinUsd = _minWithdrawal > 0 ? Math.max(_minWithdrawal, netMinUsd) : netMinUsd;
+  document.getElementById('min-wd').textContent = '$' + effMinUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD';
   /* Max */
   const maxWrap = document.getElementById('max-wd-wrap');
   if (_maxWithdrawal > 0) {
@@ -1142,7 +1141,8 @@ function buildDetailsPanel(){
   } else {
     maxWrap.style.display = 'none';
   }
-  document.getElementById('fee-val').textContent = selNet.fee + ' ' + selCoin.sym;
+  const feeUsd = selNet.fee * (selCoin.price || 1);
+  document.getElementById('fee-val').textContent = '$' + feeUsd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD';
   document.getElementById('eta-val').textContent = selNet.eta;
   document.getElementById('memo-field').style.display = selNet.memo ? '' : 'none';
   document.getElementById('addr-input').value = '';
@@ -1172,24 +1172,24 @@ function wdGoStep(n){
 
 function setMax(){
   const bal = typeof _svBalance !== 'undefined' ? _svBalance : 0;
-  const fee = selNet?.fee || 0;
-  const max = Math.max(0, bal - fee);
+  const feeUsd = (selNet?.fee || 0) * ((selCoin?.price) || 1);
+  const max = Math.max(0, bal - feeUsd);
   document.getElementById('amount-input').value = max.toFixed(2);
   updateCryptoSummary();
 }
 
 function updateCryptoSummary(){
-  const amt  = parseFloat(document.getElementById('amount-input')?.value) || 0;
+  const amt  = parseFloat(document.getElementById('amount-input')?.value) || 0; // USD
   const addr = document.getElementById('addr-input')?.value || '';
-  const fee  = selNet ? selNet.fee : 0;
-  const rcv  = Math.max(0, amt - fee);
-  const equiv = selCoin ? (amt * selCoin.price) : 0;
+  const feeUsd = selNet && selCoin ? selNet.fee * (selCoin.price || 1) : 0;
+  const rcv  = Math.max(0, amt - feeUsd); // USD after fee
 
-  document.getElementById('receive-val').textContent = selNet ? (rcv > 0 ? `${rcv.toFixed(6)} ${selCoin.sym}` : '—') : '—';
-  document.getElementById('usd-equiv').textContent = '$' + equiv.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('modal-amount').textContent = amt > 0 ? `${amt} ${selCoin?.sym||''}` : '—';
-  document.getElementById('modal-fee').textContent = selNet ? `${fee} ${selCoin.sym}` : '—';
-  document.getElementById('modal-receive').textContent = rcv > 0 ? `${rcv.toFixed(6)} ${selCoin.sym}` : '—';
+  const fmt = v => '$' + v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD';
+  document.getElementById('receive-val').textContent = selNet ? (rcv > 0 ? fmt(rcv) : '—') : '—';
+  document.getElementById('usd-equiv').textContent = '';
+  document.getElementById('modal-amount').textContent = amt > 0 ? fmt(amt) : '—';
+  document.getElementById('modal-fee').textContent = selNet ? fmt(feeUsd) : '—';
+  document.getElementById('modal-receive').textContent = rcv > 0 ? fmt(rcv) : '—';
   /* Show truncated address in summary */
   const toRow = document.getElementById('modal-to-row');
   const toEl  = document.getElementById('modal-to');
@@ -1199,8 +1199,9 @@ function updateCryptoSummary(){
     toRow.style.display = addr.length > 3 ? '' : 'none';
   }
 
-  const effMax = cryptoEffectiveMax();
-  const ok = selCoin && selNet && addr.length > 5 && amt > 0 && amt >= cryptoEffectiveMin() && (effMax <= 0 || amt <= effMax);
+  const netMinUsd2 = (selNet?.min || 0) * (selCoin?.price || 1);
+  const effMinUsd2 = _minWithdrawal > 0 ? Math.max(_minWithdrawal, netMinUsd2) : netMinUsd2;
+  const ok = selCoin && selNet && addr.length > 5 && amt > 0 && amt >= effMinUsd2 && (_maxWithdrawal <= 0 || amt <= _maxWithdrawal);
   document.getElementById('crypto-submit-btn').disabled = !ok;
 }
 
@@ -1383,10 +1384,11 @@ async function doWithdraw(){
     const memo = document.getElementById('memo-input')?.value.trim() || null;
     if (!selCoin || !selNet || amt <= 0 || addr.length < 5) return;
 
-    const usdAmt = amt * selCoin.price;
+    const usdAmt = amt; // amt is already USD
+    const coinAmt = selCoin.price > 0 ? amt / selCoin.price : 0;
     _submittedAmt = usdAmt;
     _wdDestType = 'crypto';
-    _wdDestName = `${amt} ${selCoin.sym}`;
+    _wdDestName = `$${usdAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} USD`;
     _wdDestRef  = addr + (memo ? ' | Memo: ' + memo : '');
 
     const { data: wrData, error: wrErr } = await db.from('withdrawal_requests').insert({
@@ -1407,7 +1409,7 @@ async function doWithdraw(){
       currency:   'USD',
       coin:       selCoin.sym,
       network:    selNet.id,
-      note:       `Crypto withdrawal — ${amt} ${selCoin.sym} via ${selNet.id}`,
+      note:       `Crypto withdrawal — $${usdAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} USD (≈ ${coinAmt.toFixed(6)} ${selCoin.sym}) via ${selNet.id}`,
       status:     'pending',
     });
     if (txErr) { _wdSubmitting=false; document.getElementById('wd-processing-overlay').classList.remove('active'); showToastWd('Submission failed — please try again.', true); return; }
@@ -1421,7 +1423,7 @@ async function doWithdraw(){
     db.from('notifications').insert({
       user_id: _svUserId,
       title:   'Withdrawal Submitted',
-      message: `Your withdrawal of ${amt} ${selCoin.sym} (≈ $${usdAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}) is pending admin review.`,
+      message: `Your withdrawal of $${usdAmt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} USD (≈ ${coinAmt.toFixed(6)} ${selCoin.sym}) is pending admin review.`,
       type:    'info',
     }).then(null,()=>{});
 
