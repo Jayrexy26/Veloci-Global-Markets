@@ -421,6 +421,10 @@
         KYC / Verification
         <span class="nav-item__badge badge-orange" id="kyc-badge">—</span>
       </button>
+      <button class="nav-item" onclick="showPage('upgrade-users',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+        Upgrade Users
+      </button>
 
       <div class="sidebar__section-label">Accounts</div>
       <button class="nav-item" onclick="showPage('accounts',this)">
@@ -661,6 +665,38 @@
             <table class="data-table">
               <thead><tr><th>User</th><th>Submitted</th><th>Doc Type</th><th>Country</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="kyc-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPGRADE USERS -->
+      <div class="page" id="page-upgrade-users">
+        <div class="page-header">
+          <div><div class="page-header__title">Upgrade Users</div><div class="page-header__sub" id="upgrade-users-sub">Set plan fees and upgrade user accounts.</div></div>
+          <button class="btn btn--outline" onclick="renderUpgradeUsersPage()"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        </div>
+
+        <!-- Plan Fee Settings -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card__head">
+            <div class="card__title">💰 Plan Upgrade Fees</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="fee-settings-sub">Set the upgrade fee charged per plan type.</div>
+          </div>
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Plan</th><th>Description</th><th>Upgrade Fee (USD)</th><th>Action</th></tr></thead>
+              <tbody id="plan-fees-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Users Upgrade Table -->
+        <div class="card">
+          <div class="card__body--p0 table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Balance</th><th>Current Plan</th><th>Upgrade To</th><th>Fee</th><th>Action</th></tr></thead>
+              <tbody id="upgrade-users-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -1883,6 +1919,7 @@
     announcements:'Announcements', 'markets-control':'Markets Control',
     emails:'Email Users', settings:'System Settings', audit:'Audit Log',
     signals:'Signal Activations',
+    'upgrade-users':'Upgrade Users',
   };
   function showPage(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5308,6 +5345,155 @@ window.showPage = function(id, el) {
   window.showPage = function(id, el){
     _origShowPage2 && _origShowPage2(id, el);
     if(id==='signals') window.loadSignalsPage();
+    if(id==='upgrade-users') window.renderUpgradeUsersPage();
+  };
+})();
+
+</script>
+<script>
+/* ── Upgrade Users Page ── */
+(function(){
+  const PLANS = [
+    { key:'Starter',  desc:'Default free tier · $2,000 balance limit' },
+    { key:'Silver',   desc:'$1,000 min · 25× leverage · $10,000 limit' },
+    { key:'Gold',     desc:'$10,000 min · 50× leverage · $50,000 limit' },
+    { key:'Platinum', desc:'$50,000 min · 100× leverage · $100,000 limit' },
+    { key:'Elite',    desc:'$250,000+ · 125× leverage · $1,000,000 limit' },
+  ];
+  const PLAN_COLORS = { Starter:'var(--muted)', Silver:'#7eb8f7', Gold:'var(--orange)', Platinum:'var(--purple)', Elite:'var(--blue)' };
+  let _upgFees = {};
+  let _upgUsers = [];
+
+  async function loadFees(){
+    const db = window.SV_DB; if (!db) return;
+    const { data } = await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
+    (data||[]).forEach(r => { _upgFees[r.plan_name] = Number(r.fee_amount||0); });
+  }
+
+  function renderFeeRows(){
+    const tbody = document.getElementById('plan-fees-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    PLANS.forEach(p => {
+      const fee = _upgFees[p.key] !== undefined ? _upgFees[p.key] : 0;
+      tbody.innerHTML += `<tr>
+        <td><strong style="color:${PLAN_COLORS[p.key]||'inherit'}">${p.key}</strong></td>
+        <td style="color:var(--muted);font-size:12px;">${p.desc}</td>
+        <td><input type="number" min="0" step="0.01" value="${fee}" id="upg-fee-${p.key}"
+          style="width:110px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card2,#1a1a1a);color:inherit;font-size:13px;"></td>
+        <td><button class="btn btn--sm btn--outline" onclick="window.saveUpgradeFee('${p.key}')">Save</button></td>
+      </tr>`;
+    });
+  }
+
+  window.saveUpgradeFee = async function(planKey){
+    const db = window.SV_DB; if (!db) return;
+    const input = document.getElementById('upg-fee-'+planKey);
+    if (!input) return;
+    const val = Number(input.value||0);
+    if (!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+    const { error } = await db.from('plan_upgrade_fees')
+      .upsert({ plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() }, { onConflict: 'plan_name' });
+    if (error){ showToast('Save failed: '+error.message,'error'); return; }
+    _upgFees[planKey] = val;
+    showToast(`${planKey} fee set to $${val.toFixed(2)}`);
+    refreshFeeDisplays();
+  };
+
+  function refreshFeeDisplays(){
+    document.querySelectorAll('[data-upg-fee]').forEach(el => {
+      const uid = el.getAttribute('data-uid');
+      const sel = document.getElementById('upg-to-'+uid);
+      if (sel) el.textContent = '$' + (_upgFees[sel.value]||0).toFixed(2);
+    });
+  }
+
+  window.onUpgPlanChange = function(uid){
+    const sel = document.getElementById('upg-to-'+uid);
+    const el  = document.querySelector(`[data-upg-fee][data-uid="${uid}"]`);
+    if (sel && el) el.textContent = '$' + (_upgFees[sel.value]||0).toFixed(2);
+  };
+
+  async function loadUpgradeUsersList(){
+    const db = window.SV_DB; if (!db) return;
+    const sub = document.getElementById('upgrade-users-sub');
+    if (sub) sub.textContent = 'Loading users…';
+    const { data, error } = await db.from('profiles')
+      .select('id,email,first_name,last_name,balance,plan')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error){ if(sub) sub.textContent='Error: '+error.message; return; }
+    _upgUsers = (data||[]);
+    renderUpgradeUserRows(_upgUsers);
+    if (sub) sub.textContent = `Loaded ${_upgUsers.length} user(s) ✅`;
+  }
+
+  function renderUpgradeUserRows(users){
+    const tbody = document.getElementById('upgrade-users-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!users.length){ tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No users found.</td></tr>'; return; }
+    users.forEach(u => {
+      const uid  = u.id;
+      const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
+      const cur  = u.plan || 'Starter';
+      const defFee = (_upgFees[cur]||0).toFixed(2);
+      const planOpts = PLANS.map(p=>`<option value="${p.key}" ${p.key===cur?'selected':''}>${p.key}</option>`).join('');
+      tbody.innerHTML += `<tr>
+        <td>
+          <div style="font-weight:600;font-size:13px;">${name}</div>
+          <div style="font-size:11px;color:var(--muted);">${u.email||'—'}</div>
+        </td>
+        <td><strong style="color:var(--green);">$${Number(u.balance||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+        <td><span style="color:${PLAN_COLORS[cur]||'inherit'};font-weight:700;">${cur}</span></td>
+        <td>
+          <select id="upg-to-${uid}" onchange="window.onUpgPlanChange('${uid}')"
+            style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card2,#1a1a1a);color:inherit;font-size:12px;">
+            ${planOpts}
+          </select>
+        </td>
+        <td><span data-upg-fee data-uid="${uid}" style="font-weight:700;color:var(--green);">$${defFee}</span></td>
+        <td>
+          <button class="btn btn--sm btn--primary"
+            onclick="window.doUpgradeUser('${uid}','${(name).replace(/'/g,"\\'")}','${cur}')">
+            Upgrade
+          </button>
+        </td>
+      </tr>`;
+    });
+  }
+
+  window.doUpgradeUser = async function(userId, userName, currentPlan){
+    const sel  = document.getElementById('upg-to-'+userId);
+    const plan = sel?.value;
+    if (!plan){ showToast('Select a plan','error'); return; }
+    const fee  = _upgFees[plan]||0;
+    const feeNote = fee>0 ? `\nUpgrade Fee: $${fee.toFixed(2)}` : '\nUpgrade Fee: Free';
+    if (!confirm(`Upgrade ${userName} to ${plan}?${feeNote}\n\nProceed?`)) return;
+    const db = window.SV_DB; if (!db) return;
+    const { error } = await db.from('profiles').update({ plan }).eq('id', userId);
+    if (error){ showToast('Error: '+error.message,'error'); return; }
+    await db.from('notifications').insert([
+      { user_id:userId, title:`Account Upgraded to ${plan}`, message:plan, type:'plan_upgrade_popup', enabled:true },
+      { user_id:userId, title:`Account Upgraded to ${plan}`, message:`Your account has been successfully upgraded to the ${plan} plan. You now have access to all ${plan} features and limits.`, type:'account', enabled:true },
+    ]);
+    if (window.logAudit) logAudit('upgrade_plan', userId, `Plan set to ${plan}${fee>0?' | fee:$'+fee:''}`);
+    db.auth.getSession().then(({ data: { session: s } }) => {
+      if (!s?.access_token) return;
+      fetch('https://xdcscknfomlzwysczegc.supabase.co/functions/v1/admin-email-api', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}` },
+        body: JSON.stringify({ action:'notify_plan_upgraded', user_id:userId, plan }),
+      }).catch(()=>{});
+    }).catch(()=>{});
+    showToast(`${userName} upgraded to ${plan} ✓`);
+    await loadUpgradeUsersList();
+  };
+
+  window.renderUpgradeUsersPage = async function(){
+    await loadFees();
+    renderFeeRows();
+    await loadUpgradeUsersList();
   };
 })();
 </script>
