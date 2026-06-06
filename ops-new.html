@@ -3119,7 +3119,7 @@ async function rejectKYC(id, userId, reason) {
 window.renderAccountsLive = async function() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('profiles')
-    .select('id,email,first_name,last_name,balance,equity,plan,account_type,status,kyc_status,currency,created_at')
+    .select('id,email,first_name,last_name,balance,total_pnl,equity,plan,account_type,status,kyc_status,currency,created_at')
     .order('created_at', { ascending: false });
   const tbody = document.getElementById('accounts-tbody');
   if (!tbody) return;
@@ -5687,7 +5687,7 @@ window.showPage = function(id, el) {
     const sub = document.getElementById('upgrade-users-sub');
     if (sub) sub.textContent = 'Loading users…';
     const [profilesRes, userFeesRes] = await Promise.all([
-      db.from('profiles').select('id,email,first_name,last_name,balance,plan').order('created_at',{ascending:false}).limit(500),
+      db.from('profiles').select('id,email,first_name,last_name,balance,total_pnl,plan').order('created_at',{ascending:false}).limit(500),
       db.from('user_plan_upgrade_fees').select('user_id,plan_name,fee_amount'),
     ]);
     if (profilesRes.error){ if(sub) sub.textContent='Error: '+profilesRes.error.message; return; }
