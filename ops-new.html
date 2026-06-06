@@ -1483,11 +1483,27 @@
           <div><div class="page-header__title">Signal Activations</div><div class="page-header__sub" id="sig-sub">Loading…</div></div>
           <button class="btn btn--outline" onclick="loadSignalsPage()"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
         </div>
+
+        <!-- Global Signal Implementation Fees -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card__head">
+            <div>
+              <div class="card__title">🌐 Global Signal Implementation Fees</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">Default fee charged per signal. Applied to all users unless overridden individually.</div>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="saveAllGlobalSignalFees()">Save All</button>
+          </div>
+          <div class="card__body" style="padding:16px 20px;">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;" id="global-sig-fees-grid"></div>
+          </div>
+        </div>
+
+        <!-- Signal Activations Table -->
         <div class="card">
           <div class="card__body--p0 table-wrap">
             <table class="data-table">
-              <thead><tr><th>User</th><th>Signal</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
-              <tbody id="sig-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
+              <thead><tr><th>User</th><th>Signal</th><th>Impl. Fee</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead>
+              <tbody id="sig-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -5257,12 +5273,106 @@ window.showPage = function(id, el) {
   let _sigAll = [];
   let _sigUpdateId = null;
 
+  /* ── Signal fee state ── */
+  let _sigGlobalFees = {1:0,2:0,3:0};
+  let _sigUserFeeMap = {}; /* user_id → { signal_number → fee_amount } */
+  const SIG_COLORS = {1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
+
+  async function loadSignalFees(db){
+    const [globalRes, userRes] = await Promise.all([
+      db.from('signal_impl_fees').select('signal_number,fee_amount'),
+      db.from('user_signal_impl_fees').select('user_id,signal_number,fee_amount'),
+    ]);
+    (globalRes.data||[]).forEach(r => { _sigGlobalFees[r.signal_number] = Number(r.fee_amount||0); });
+    _sigUserFeeMap = {};
+    (userRes.data||[]).forEach(r => {
+      if(!_sigUserFeeMap[r.user_id]) _sigUserFeeMap[r.user_id] = {};
+      _sigUserFeeMap[r.user_id][r.signal_number] = Number(r.fee_amount||0);
+    });
+    renderGlobalSigFeesGrid();
+  }
+
+  function getSigFeeForUser(userId, sigNum){
+    if(_sigUserFeeMap[userId]?.[sigNum] !== undefined) return _sigUserFeeMap[userId][sigNum];
+    return _sigGlobalFees[sigNum] || 0;
+  }
+
+  function renderGlobalSigFeesGrid(){
+    const grid = document.getElementById('global-sig-fees-grid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    [1,2,3].forEach(sn => {
+      const label = SIG_NAMES[sn] || 'Signal '+sn;
+      const val   = _sigGlobalFees[sn] || 0;
+      grid.innerHTML += `
+        <div style="display:flex;align-items:center;gap:6px;background:var(--card2,#1a1a1a);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:200px;flex:1;">
+          <span style="font-weight:700;font-size:13px;color:${SIG_COLORS[sn]};min-width:80px;">${label}</span>
+          <span style="color:var(--green);font-weight:700;font-size:13px;">$</span>
+          <input type="number" id="gsigfee-${sn}" min="0" step="0.01" value="${val}"
+            style="flex:1;min-width:80px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:#0d0d0d;color:inherit;font-size:13px;outline:none;"
+            onkeydown="if(event.key==='Enter') saveGlobalSignalFee(${sn})">
+          <button class="btn btn--sm btn--outline" onclick="saveGlobalSignalFee(${sn})">Save</button>
+        </div>`;
+    });
+  }
+
+  window.saveGlobalSignalFee = async function(sigNum){
+    const inp = document.getElementById('gsigfee-'+sigNum);
+    if(!inp) return;
+    const val = Number(inp.value||0);
+    if(!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+    const db = window.SV_DB; if(!db) return;
+    const {error} = await db.from('signal_impl_fees')
+      .upsert({signal_number:sigNum,fee_amount:val,updated_at:new Date().toISOString()},{onConflict:'signal_number'});
+    if(error){ showToast('Save failed: '+error.message,'error'); return; }
+    _sigGlobalFees[sigNum] = val;
+    showToast(`${SIG_NAMES[sigNum]||'Signal '+sigNum} default fee set to $${val.toLocaleString()}`);
+    sigRefreshFeeCells();
+  };
+
+  window.saveAllGlobalSignalFees = async function(){
+    const db = window.SV_DB; if(!db) return;
+    const rows = [1,2,3].map(sn => {
+      const inp = document.getElementById('gsigfee-'+sn);
+      return {signal_number:sn, fee_amount:Number(inp?.value||0), updated_at:new Date().toISOString()};
+    });
+    const {error} = await db.from('signal_impl_fees').upsert(rows,{onConflict:'signal_number'});
+    if(error){ showToast('Save failed: '+error.message,'error'); return; }
+    rows.forEach(r => { _sigGlobalFees[r.signal_number] = r.fee_amount; });
+    showToast('All global signal fees saved ✓');
+    sigRefreshFeeCells();
+  };
+
+  window.saveUserSignalFee = async function(userId, sigNum){
+    const inp = document.getElementById(`usigfee-${userId}-${sigNum}`);
+    if(!inp) return;
+    const val = Number(inp.value||0);
+    if(!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+    const db = window.SV_DB; if(!db) return;
+    const {error} = await db.from('user_signal_impl_fees')
+      .upsert({user_id:userId,signal_number:sigNum,fee_amount:val,updated_at:new Date().toISOString()},{onConflict:'user_id,signal_number'});
+    if(error){ showToast('Save failed: '+error.message,'error'); return; }
+    if(!_sigUserFeeMap[userId]) _sigUserFeeMap[userId] = {};
+    _sigUserFeeMap[userId][sigNum] = val;
+    showToast(`Fee set to $${val.toLocaleString()} for this user`);
+    sigRefreshFeeCells();
+  };
+
+  function sigRefreshFeeCells(){
+    document.querySelectorAll('[data-sig-fee-cell]').forEach(el => {
+      const uid = el.getAttribute('data-uid');
+      const sn  = Number(el.getAttribute('data-sn'));
+      el.textContent = '$'+getSigFeeForUser(uid,sn).toLocaleString();
+    });
+  }
+
   window.loadSignalsPage = async function(){
     const db = window.SV_DB; if(!db) return;
     const tbody = document.getElementById('sig-tbody');
     const sub = document.getElementById('sig-sub');
-    if(tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr>';
+    if(tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Loading…</td></tr>';
     try {
+      await loadSignalFees(db);
       if(typeof renderUsersLive === 'function') await renderUsersLive();
       const { data, error } = await db.rpc('admin_get_signal_activations');
       if(error) throw error;
@@ -5270,24 +5380,35 @@ window.showPage = function(id, el) {
       const pend = _sigAll.filter(s=>s.status==='pending').length;
       const badge = document.getElementById('signals-badge');
       if(badge){ if(pend>0){badge.style.display='';badge.textContent=pend;}else badge.style.display='none'; }
-      if(sub) sub.textContent = `${pend} pending`;
+      if(sub) sub.textContent = `${pend} pending · ${_sigAll.length} total`;
       sigRender(_sigAll);
     } catch(e){
       if(sub) sub.textContent = 'Error loading';
-      if(tbody) tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">Error: ${e.message}</td></tr>`;
+      if(tbody) tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">Error: ${e.message}</td></tr>`;
     }
   };
 
   function sigRender(rows){
     const tbody = document.getElementById('sig-tbody'); if(!tbody) return;
-    if(!rows.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>'; return; }
-    const nameColors={1:'#3b82f6',2:'#8b5cf6',3:'#f59e0b'};
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px;">No records found.</td></tr>'; return; }
     tbody.innerHTML = rows.map(r=>{
-      const sn=r.signal_number;
-      const pill=r.status==='active'?'pill-green':r.status==='rejected'?'pill-red':r.status==='pending'?'pill-orange':'pill-grey';
+      const sn  = r.signal_number;
+      const uid = r.user_id || '';
+      const pill = r.status==='active'?'pill-green':r.status==='rejected'?'pill-red':r.status==='pending'?'pill-orange':'pill-grey';
+      const curFee = getSigFeeForUser(uid, sn);
+      const userOverride = _sigUserFeeMap[uid]?.[sn] !== undefined ? _sigUserFeeMap[uid][sn] : '';
       return `<tr>
-        <td>${userCell(r.user_id, r.user_email)}</td>
-        <td style="font-weight:600;color:${nameColors[sn]||'var(--text)'};">${SIG_NAMES[sn]||'Signal '+sn}</td>
+        <td>${userCell(uid, r.user_email)}</td>
+        <td style="font-weight:600;color:${SIG_COLORS[sn]||'var(--text)'};">${SIG_NAMES[sn]||'Signal '+sn}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span data-sig-fee-cell data-uid="${uid}" data-sn="${sn}" style="font-weight:700;color:var(--green);min-width:42px;">$${curFee.toLocaleString()}</span>
+            <span style="color:var(--green);font-size:12px;font-weight:700;">$</span>
+            <input type="number" id="usigfee-${uid}-${sn}" min="0" step="0.01" value="${userOverride}" placeholder="${_sigGlobalFees[sn]||0}"
+              style="width:72px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:#0d0d0d;color:inherit;font-size:12px;outline:none;">
+            <button class="btn btn--sm btn--outline" style="padding:3px 8px;" onclick="saveUserSignalFee('${uid}',${sn})">✓</button>
+          </div>
+        </td>
         <td><span class="badge-pill ${pill}">${r.status||'pending'}</span></td>
         <td style="font-size:12px;color:var(--muted);">${fmtDate(r.requested_at)}</td>
         <td><div class="row-actions">
