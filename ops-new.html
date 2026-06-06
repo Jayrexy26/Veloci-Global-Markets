@@ -3196,7 +3196,7 @@ window.renderBalancesLive = async function() {
       <td style="color:${equity>=0?'var(--green)':'var(--red)'}">${fmtMoney(equity)}</td>
       <td><span class="badge-pill ${p.plan==='Elite'?'pill-blue':p.plan==='Platinum'?'pill-purple':p.plan==='Gold'?'pill-orange':p.plan==='Silver'?'pill-blue':'pill-grey'}">${p.plan||'Starter'}</span></td>
       <td style="color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}${fmtMoney(pnl)}</td>
-      <td onclick="event.stopPropagation()"><button class="btn btn--sm btn--primary" onclick="openCreditDebit('${p.id}','${(name).replace(/'/g,"\\'")}',${p.balance||0})">Credit / Debit</button></td>
+      <td onclick="event.stopPropagation()"><button class="btn btn--sm btn--primary" onclick="openCreditDebit('${p.id}','${(name).replace(/'/g,"\\'")}',${equity})">Credit / Debit</button></td>
     </tr>`;
   }).join('');
 };
@@ -3744,12 +3744,13 @@ window.saveCreditDebit = async function() {
   });
 
   /* Notify user */
+  const newTotal = newBalance + newPnl; // total visible to user = balance + P&L
   const displayName = prof.first_name || prof.email || 'User';
   const notifTitle = type === 'credit'   ? `Account Credited $${amount.toLocaleString()}` :
                      type === 'debit'    ? `Account Debited $${amount.toLocaleString()}`  :
                                            `Account P&L Updated`;
-  const notifMsg   = type === 'credit'   ? `$${amount.toLocaleString()} has been added to your account. New balance: $${newBalance.toLocaleString()}.${note ? ' Note: ' + note : ''}` :
-                     type === 'debit'    ? `$${amount.toLocaleString()} has been deducted from your account. New balance: $${newBalance.toLocaleString()}.${note ? ' Note: ' + note : ''}` :
+  const notifMsg   = type === 'credit'   ? `$${amount.toLocaleString()} has been added to your account. New balance: $${newTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}.${note ? ' Note: ' + note : ''}` :
+                     type === 'debit'    ? `$${amount.toLocaleString()} has been deducted from your account. New balance: $${newTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}.${note ? ' Note: ' + note : ''}` :
                                            `Your account P&L has been updated to $${newPnl.toLocaleString()}.${note ? ' Note: ' + note : ''}`;
   await db.from('notifications').insert({
     user_id: userId, title: notifTitle, message: notifMsg, type: 'account', enabled: true,
