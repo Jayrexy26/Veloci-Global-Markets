@@ -2052,6 +2052,7 @@
   /* ── Utilities ── */
   function fmtDate(ts) { if (!ts) return '—'; return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
   function fmtMoney(n) { return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function userTotalBal(u) { return parseFloat(u.balance||0) + parseFloat(u.total_pnl||0); }
   function userName(u) { return u?.full_name || [u?.first_name, u?.last_name].filter(Boolean).join(' ') || u?.email || '—'; }
   function avatarColor(str) { const colors = ['#f05a1a','#1a5cff','#22a06b','#7c3aed','#e60023','#f5a623']; let h = 0; for (let c of (str||'')) h = (h * 31 + c.charCodeAt(0)) % colors.length; return colors[h]; }
   function initials(name) { return (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
@@ -2737,7 +2738,7 @@ window.loadDashStats = async function() {
       db.from('positions').select('*', { count:'exact', head:true }).eq('status','open'),
       db.from('transactions').select('amount').gte('created_at', todayStart.toISOString()),
     ]);
-    const totalAUM = (balData||[]).reduce((s,a) => s + parseFloat(a.balance||0), 0);
+    const totalAUM = (balData||[]).reduce((s,a) => s + userTotalBal(a), 0);
     const todayVol = (volData||[]).reduce((s,t) => s + Math.abs(parseFloat(t.amount||0)), 0);
     const fmt = n => n == null ? '—' : n.toLocaleString();
     document.getElementById('stat-users').textContent = fmt(userCount);
@@ -2851,7 +2852,7 @@ function renderUsersTable(rows) {
       </div></div></td>
       <td>${u.country||'—'}</td>
       <td><span class="badge-pill ${u.account_type==='live'?'pill-blue':'pill-grey'}">${u.account_type||'demo'}</span></td>
-      <td>${fmtMoney(u.balance||0)}</td>
+      <td>${fmtMoney(userTotalBal(u))}</td>
       <td>${fmtDate(u.created_at)}</td>
       <td><span class="badge-pill ${statusPill}">${u.status||'active'}</span></td>
       <td><span class="badge-pill ${kycPill}">${u.kyc_status||'none'}</span></td>
@@ -2859,7 +2860,7 @@ function renderUsersTable(rows) {
       <td onclick="event.stopPropagation()"><div class="row-actions">
         <button class="btn btn--sm btn--outline" onclick="openEditUser('${u.id}')">Edit</button>
         <button class="btn btn--sm btn--primary" onclick="openUpgradePlan('${u.id}','${(u.first_name||u.email||'User').replace(/'/g,"\\'")}','${u.plan||'Starter'}')">Upgrade</button>
-        <button class="btn btn--sm btn--green" onclick="openCreditDebit('${u.id}','${(u.first_name||u.email||'User').replace(/'/g,"\\'")}',${u.balance||0})">Credit/Debit</button>
+        <button class="btn btn--sm btn--green" onclick="openCreditDebit('${u.id}','${(u.first_name||u.email||'User').replace(/'/g,"\\'")}',${userTotalBal(u)})">Credit/Debit</button>
         <button class="btn btn--sm btn--primary" onclick="openAddPosition('${u.id}','${(u.email||'').replace(/'/g,"\\'")}')">+ Trade</button>
         <button class="btn btn--sm ${u.status==='banned'?'btn--green':'btn--red'}" style="background:${u.status==='banned'?'':'#7c3aed'};border-color:${u.status==='banned'?'':'#7c3aed'}" onclick="event.stopPropagation();banUser('${u.id}','${u.status}')">${u.status==='banned'?'Unban':'Ban'}</button>
         <button class="btn btn--sm btn--red" onclick="event.stopPropagation();deleteUser('${u.id}','${(name).replace(/'/g,"\\'")}')">Delete</button>
@@ -3141,13 +3142,13 @@ window.renderAccountsLive = async function() {
         ${name ? `<div style="font-size:11px;color:var(--muted);">${_esc(name)}</div>` : ''}
       </td>
       <td><span class="badge-pill ${planPill(plan)}">${plan}</span></td>
-      <td style="font-weight:600;">${fmtMoney(u.balance||0)}</td>
-      <td>${fmtMoney(u.equity||0)}</td>
+      <td style="font-weight:600;">${fmtMoney(userTotalBal(u))}</td>
+      <td>${fmtMoney(parseFloat(u.balance||0))}</td>
       <td><span class="badge-pill ${statusPill}">${u.status||'active'}</span></td>
       <td><span class="badge-pill ${kycPill}">${u.kyc_status||'unverified'}</span></td>
       <td style="font-size:12px;color:var(--muted);">${fmtDate(u.created_at)}</td>
       <td><div class="row-actions">
-        <button class="btn btn--sm btn--outline" onclick="openAdjustBalance('${u.id}','${u.email||u.id}',${u.balance||0})">Adjust</button>
+        <button class="btn btn--sm btn--outline" onclick="openAdjustBalance('${u.id}','${u.email||u.id}',${userTotalBal(u)})">Adjust</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -5720,7 +5721,7 @@ window.showPage = function(id, el) {
           <div style="font-weight:600;font-size:13px;">${name}</div>
           <div style="font-size:11px;color:var(--muted);">${u.email||'—'}</div>
         </td>
-        <td><strong style="color:var(--green);">$${Number(u.balance||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
+        <td><strong style="color:var(--green);">$${userTotalBal(u).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
         <td><span style="color:${PLAN_COLORS[cur]||'inherit'};font-weight:700;">${cur}</span></td>
         <td><strong data-upg-fee data-uid="${uid}" data-plan="${cur}" style="color:var(--green);">$${fee}</strong></td>
         <td>
