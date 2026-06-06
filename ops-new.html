@@ -682,6 +682,20 @@
           <button class="btn btn--outline" onclick="renderUpgradeUsersPage()"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
         </div>
 
+        <!-- Global Upgrade Fees -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card__head">
+            <div>
+              <div class="card__title">🌐 Global Upgrade Fees</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">Default fees shown to all users unless overridden individually.</div>
+            </div>
+            <button class="btn btn--primary btn--sm" onclick="saveAllGlobalFees()">Save All</button>
+          </div>
+          <div class="card__body" style="padding:16px 20px;">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;" id="global-fees-grid"></div>
+          </div>
+        </div>
+
         <!-- Users Upgrade Table -->
         <div class="card">
           <div class="card__body--p0 table-wrap">
@@ -5404,10 +5418,70 @@ window.showPage = function(id, el) {
   if (!window._upgFees) window._upgFees = {};
   let _upgUsers = [];
 
+  const GLOBAL_PLANS = ['Silver','Gold','Platinum','Elite'];
+  const GLOBAL_PLAN_COLORS = { Silver:'#7eb8f7', Gold:'var(--orange)', Platinum:'var(--purple)', Elite:'var(--blue)' };
+
   async function loadFees(){
     const db = window.SV_DB; if (!db) return;
     const { data } = await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
     (data||[]).forEach(r => { window._upgFees[r.plan_name] = Number(r.fee_amount||0); });
+    renderGlobalFeesGrid();
+  }
+
+  function renderGlobalFeesGrid(){
+    const grid = document.getElementById('global-fees-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    GLOBAL_PLANS.forEach(p => {
+      const val = window._upgFees[p] !== undefined ? window._upgFees[p] : 0;
+      grid.innerHTML += `
+        <div style="display:flex;align-items:center;gap:6px;background:var(--card2,#1a1a1a);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:200px;flex:1;">
+          <span style="font-weight:700;font-size:13px;color:${GLOBAL_PLAN_COLORS[p]};min-width:60px;">${p}</span>
+          <span style="color:var(--green);font-weight:700;font-size:13px;">$</span>
+          <input type="number" id="gfee-${p}" min="0" step="0.01" value="${val}"
+            style="flex:1;min-width:80px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:#0d0d0d;color:inherit;font-size:13px;outline:none;"
+            onkeydown="if(event.key==='Enter') saveGlobalFee('${p}')">
+          <button class="btn btn--sm btn--outline" onclick="saveGlobalFee('${p}')">Save</button>
+        </div>`;
+    });
+  }
+
+  window.saveGlobalFee = async function(planKey){
+    const inp = document.getElementById('gfee-'+planKey);
+    if (!inp) return;
+    const val = Number(inp.value||0);
+    if (!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+    const db = window.SV_DB; if (!db) return;
+    const { error } = await db.from('plan_upgrade_fees')
+      .upsert({ plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() }, { onConflict: 'plan_name' });
+    if (error){ showToast('Save failed: '+error.message,'error'); return; }
+    window._upgFees[planKey] = val;
+    showToast(`${planKey} default fee set to $${val.toLocaleString()}`);
+    refreshUsersTableFees();
+  };
+
+  window.saveAllGlobalFees = async function(){
+    const db = window.SV_DB; if (!db) return;
+    const rows = GLOBAL_PLANS.map(p => {
+      const inp = document.getElementById('gfee-'+p);
+      return { plan_name: p, fee_amount: Number(inp?.value||0), updated_at: new Date().toISOString() };
+    });
+    const { error } = await db.from('plan_upgrade_fees').upsert(rows, { onConflict: 'plan_name' });
+    if (error){ showToast('Save failed: '+error.message,'error'); return; }
+    rows.forEach(r => { window._upgFees[r.plan_name] = r.fee_amount; });
+    showToast('All global fees saved ✓');
+    refreshUsersTableFees();
+  };
+
+  function refreshUsersTableFees(){
+    /* Update fee cells for users who don't have a custom fee */
+    document.querySelectorAll('[data-upg-fee]').forEach(el => {
+      const uid  = el.getAttribute('data-uid');
+      const plan = el.getAttribute('data-plan');
+      if (!_userFeeMap[uid]?.[plan]) {
+        el.textContent = '$'+(window._upgFees[plan]||0).toFixed(2);
+      }
+    });
   }
 
   /* user_id → { plan_name → fee_amount } */
