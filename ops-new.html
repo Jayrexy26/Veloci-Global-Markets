@@ -3550,16 +3550,25 @@ window.openUpgradePlan = async function(userId, userName, currentPlan) {
   document.querySelectorAll('input[name=up-plan]').forEach(r => {
     r.checked = r.value === (currentPlan || 'Starter');
   });
-  /* Load fees into inputs */
   if (!window._upgFees) window._upgFees = {};
   const db = window.SV_DB;
   if (db) {
-    const { data } = await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
-    (data||[]).forEach(r => { window._upgFees[r.plan_name] = Number(r.fee_amount||0); });
+    /* Load global defaults */
+    const { data: globals } = await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
+    (globals||[]).forEach(r => { window._upgFees[r.plan_name] = Number(r.fee_amount||0); });
+    /* Override with user-specific fees where set */
+    const { data: userFees } = await db.from('user_plan_upgrade_fees')
+      .select('plan_name,fee_amount').eq('user_id', userId);
+    (userFees||[]).forEach(r => { window._upgFees['user_'+r.plan_name] = Number(r.fee_amount||0); });
   }
   ['Starter','Silver','Gold','Platinum','Elite'].forEach(p => {
     const inp = document.getElementById('modal-fee-'+p);
-    if (inp) inp.value = window._upgFees[p] !== undefined ? window._upgFees[p] : '';
+    if (!inp) return;
+    /* User-specific fee takes priority over global */
+    const val = window._upgFees['user_'+p] !== undefined
+      ? window._upgFees['user_'+p]
+      : (window._upgFees[p] !== undefined ? window._upgFees[p] : '');
+    inp.value = val;
   });
   openModal('modal-upgrade-plan');
 };
@@ -3568,18 +3577,20 @@ window.saveModalPlanFee = async function(planKey) {
   if (!input) return;
   const val = Number(input.value||0);
   if (!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+  const userId = document.getElementById('up-user-id').value;
+  if (!userId){ showToast('No user selected','error'); return; }
   const db = window.SV_DB; if (!db) return;
-  const { error } = await db.from('plan_upgrade_fees')
-    .upsert({ plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() }, { onConflict: 'plan_name' });
+  const { error } = await db.from('user_plan_upgrade_fees')
+    .upsert({ user_id: userId, plan_name: planKey, fee_amount: val, updated_at: new Date().toISOString() },
+            { onConflict: 'user_id,plan_name' });
   if (error){ showToast('Save failed: '+error.message,'error'); return; }
   if (!window._upgFees) window._upgFees = {};
-  window._upgFees[planKey] = val;
-  showToast(`${planKey} fee set to $${val.toFixed(2)}`);
-  /* Refresh fee column in upgrade users table if visible */
+  window._upgFees['user_'+planKey] = val;
+  showToast(`${planKey} fee set to $${val.toFixed(2)} for this user`);
+  /* Refresh fee column for this user's row in upgrade users table */
   const tbody = document.getElementById('upgrade-users-tbody');
-  if (tbody) tbody.querySelectorAll('[data-upg-fee]').forEach(el => {
-    const plan = el.getAttribute('data-plan');
-    if (plan === planKey) el.textContent = '$'+val.toFixed(2);
+  if (tbody) tbody.querySelectorAll(`[data-upg-fee][data-uid="${userId}"]`).forEach(el => {
+    el.textContent = '$'+val.toFixed(2);
   });
 };
 
@@ -5392,18 +5403,31 @@ window.showPage = function(id, el) {
     (data||[]).forEach(r => { window._upgFees[r.plan_name] = Number(r.fee_amount||0); });
   }
 
+  /* user_id → { plan_name → fee_amount } */
+  let _userFeeMap = {};
+
   async function loadUpgradeUsersList(){
     const db = window.SV_DB; if (!db) return;
     const sub = document.getElementById('upgrade-users-sub');
     if (sub) sub.textContent = 'Loading users…';
-    const { data, error } = await db.from('profiles')
-      .select('id,email,first_name,last_name,balance,plan')
-      .order('created_at', { ascending: false })
-      .limit(500);
-    if (error){ if(sub) sub.textContent='Error: '+error.message; return; }
-    _upgUsers = (data||[]);
+    const [profilesRes, userFeesRes] = await Promise.all([
+      db.from('profiles').select('id,email,first_name,last_name,balance,plan').order('created_at',{ascending:false}).limit(500),
+      db.from('user_plan_upgrade_fees').select('user_id,plan_name,fee_amount'),
+    ]);
+    if (profilesRes.error){ if(sub) sub.textContent='Error: '+profilesRes.error.message; return; }
+    _upgUsers = (profilesRes.data||[]);
+    _userFeeMap = {};
+    (userFeesRes.data||[]).forEach(r => {
+      if (!_userFeeMap[r.user_id]) _userFeeMap[r.user_id] = {};
+      _userFeeMap[r.user_id][r.plan_name] = Number(r.fee_amount||0);
+    });
     renderUpgradeUserRows(_upgUsers);
     if (sub) sub.textContent = `${_upgUsers.length} users`;
+  }
+
+  function getFeeForUser(userId, planName){
+    if (_userFeeMap[userId]?.[planName] !== undefined) return _userFeeMap[userId][planName];
+    return window._upgFees[planName] || 0;
   }
 
   function renderUpgradeUserRows(users){
@@ -5415,7 +5439,7 @@ window.showPage = function(id, el) {
       const uid  = u.id;
       const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email || '—';
       const cur  = u.plan || 'Starter';
-      const fee  = (window._upgFees[cur]||0).toFixed(2);
+      const fee  = getFeeForUser(uid, cur).toFixed(2);
       tbody.innerHTML += `<tr>
         <td>
           <div style="font-weight:600;font-size:13px;">${name}</div>
@@ -5423,7 +5447,7 @@ window.showPage = function(id, el) {
         </td>
         <td><strong style="color:var(--green);">$${Number(u.balance||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
         <td><span style="color:${PLAN_COLORS[cur]||'inherit'};font-weight:700;">${cur}</span></td>
-        <td><strong data-upg-fee data-plan="${cur}" style="color:var(--green);">$${fee}</strong></td>
+        <td><strong data-upg-fee data-uid="${uid}" data-plan="${cur}" style="color:var(--green);">$${fee}</strong></td>
         <td>
           <button class="btn btn--sm btn--primary"
             onclick="window.openUpgradePlan('${uid}','${(name).replace(/'/g,"\\'")}','${cur}')">

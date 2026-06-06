@@ -742,17 +742,29 @@ function toggleTheme(){var light=document.body.classList.toggle('light');localSt
 function toggleFaq(item){item.classList.toggle('open');}
 
 const _planFees={Silver:400,Gold:700,Platinum:5000,Elite:10000};
-async function loadPlanFees(){
+async function loadPlanFees(userId){
   const db=window.SV_DB; if(!db) return;
-  const {data}=await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
-  (data||[]).forEach(r=>{
-    const key=r.plan_name;
-    const val=Number(r.fee_amount||0);
-    if(_planFees[key]!==undefined||['Silver','Gold','Platinum','Elite'].includes(key)){
-      _planFees[key]=val;
-      const el=document.getElementById('fee-val-'+key);
-      if(el) el.textContent='$'+val.toLocaleString();
+  /* Load global defaults */
+  const {data:globals}=await db.from('plan_upgrade_fees').select('plan_name,fee_amount');
+  (globals||[]).forEach(r=>{
+    if(['Silver','Gold','Platinum','Elite'].includes(r.plan_name)){
+      _planFees[r.plan_name]=Number(r.fee_amount||0);
     }
+  });
+  /* Override with this user's specific fees */
+  if(userId){
+    const {data:userFees}=await db.from('user_plan_upgrade_fees')
+      .select('plan_name,fee_amount').eq('user_id',userId);
+    (userFees||[]).forEach(r=>{
+      if(['Silver','Gold','Platinum','Elite'].includes(r.plan_name)){
+        _planFees[r.plan_name]=Number(r.fee_amount||0);
+      }
+    });
+  }
+  /* Update the fee cards */
+  ['Silver','Gold','Platinum','Elite'].forEach(k=>{
+    const el=document.getElementById('fee-val-'+k);
+    if(el) el.textContent='$'+_planFees[k].toLocaleString();
   });
 }
 
@@ -857,7 +869,7 @@ function applyPlanUI(plan) {
   }
 
   applyPlanUI(p?.plan || 'Starter');
-  loadPlanFees();
+  loadPlanFees(user.id);
 
   /* Real-time: reflect admin plan changes instantly */
   db.channel('upgrade-plan-' + user.id)
