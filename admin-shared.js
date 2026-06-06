@@ -40,6 +40,7 @@ const CACHE = {
 };
 
 const USERNAME_MAP = {};
+const PHONE_MAP = {};
 let SEARCH_RESULTS = [];
 let SEARCH_CURSOR = -1;
 
@@ -96,7 +97,22 @@ function usernameForEmail(email){
 function userPillHtml(email){
   const em = String(email||"").trim().toLowerCase();
   const nm = usernameForEmail(em);
-  return `<span class="namePill"><span class="nm">${esc(nm)}</span><span class="em">${esc(em)}</span></span>`;
+  const ph = PHONE_MAP[em] || '';
+  return `<span class="namePill"><span class="nm">${esc(nm)}</span><span class="em">${esc(em)}</span>${ph?`<span class="ph">${esc(ph)}</span>`:''}</span>`;
+}
+async function loadUserMaps(){
+  const db = window.VELOCI_DB;
+  if(!db) return;
+  try{
+    const { data } = await db.from('profiles').select('email,first_name,last_name,full_name,phone');
+    (data||[]).forEach(u=>{
+      const em = String(u.email||'').trim().toLowerCase();
+      if(!em) return;
+      const name = [u.first_name,u.last_name].filter(Boolean).join(' ') || u.full_name || '';
+      if(name) USERNAME_MAP[em] = name;
+      if(u.phone) PHONE_MAP[em] = u.phone;
+    });
+  }catch(e){}
 }
 
 function openProof(url){
@@ -176,6 +192,7 @@ function lockConsole(){
   if(AUTO_TIMER){ clearInterval(AUTO_TIMER); AUTO_TIMER=null; }
   Object.keys(CACHE).forEach(k=> Array.isArray(CACHE[k]) ? (CACHE[k]=[]) : (CACHE[k]=null));
   Object.keys(USERNAME_MAP).forEach(k=>delete USERNAME_MAP[k]);
+  Object.keys(PHONE_MAP).forEach(k=>delete PHONE_MAP[k]);
   window.location.href = "admin-login.html";
 }
 
@@ -193,6 +210,7 @@ function requireAuth(){
   if(adminChip) adminChip.textContent = "ADMIN: " + ADMIN_ID;
   const subAdmin = document.getElementById("subAdmin");
   if(subAdmin) subAdmin.textContent = "Operator • " + ADMIN_ID;
+  loadUserMaps();
 }
 
 /* ── Search ── */

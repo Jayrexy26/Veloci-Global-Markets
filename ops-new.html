@@ -2781,7 +2781,7 @@ async function renderRecentUsers() {
     const kycPill = u.kyc_status === 'approved' ? 'pill-green' : u.kyc_status === 'pending' ? 'pill-orange' : 'pill-grey';
     const statusPill = u.status === 'active' ? 'pill-green' : (u.status === 'suspended' || u.status === 'banned') ? 'pill-red' : 'pill-grey';
     return `<tr>
-      <td><div class="user-cell">${avatarHtml(u,name)}<div><div class="user-name">${name}</div><div class="user-email">${u.email||'—'}</div></div></div></td>
+      <td><div class="user-cell">${avatarHtml(u,name)}<div><div class="user-name">${name}</div><div class="user-email">${u.email||'—'}</div>${u.phone?`<div style="font-size:11px;color:var(--muted);">${u.phone}</div>`:''}</div></div></td>
       <td>${u.country||'—'}</td>
       <td>${fmtDate(u.created_at)}</td>
       <td><span class="badge-pill ${statusPill}">${u.status||'active'}</span></td>
@@ -3119,7 +3119,7 @@ async function rejectKYC(id, userId, reason) {
 window.renderAccountsLive = async function() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('profiles')
-    .select('id,email,first_name,last_name,balance,total_pnl,equity,plan,account_type,status,kyc_status,currency,created_at')
+    .select('id,email,first_name,last_name,phone,balance,total_pnl,equity,plan,account_type,status,kyc_status,currency,created_at')
     .order('created_at', { ascending: false });
   const tbody = document.getElementById('accounts-tbody');
   if (!tbody) return;
@@ -3138,8 +3138,9 @@ window.renderAccountsLive = async function() {
     const plan = u.plan || 'Starter';
     return `<tr>
       <td>
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${_esc(u.email||'—')}</div>
-        ${name ? `<div style="font-size:11px;color:var(--muted);">${_esc(name)}</div>` : ''}
+        ${name ? `<div style="font-size:13px;font-weight:600;color:var(--text);">${_esc(name)}</div>` : ''}
+        <div style="font-size:11.5px;color:var(--muted);">${_esc(u.email||'—')}</div>
+        ${u.phone ? `<div style="font-size:11px;color:var(--muted);">${_esc(u.phone)}</div>` : ''}
       </td>
       <td><span class="badge-pill ${planPill(plan)}">${plan}</span></td>
       <td style="font-weight:600;">${fmtMoney(userTotalBal(u))}</td>
@@ -5687,7 +5688,7 @@ window.showPage = function(id, el) {
     const sub = document.getElementById('upgrade-users-sub');
     if (sub) sub.textContent = 'Loading users…';
     const [profilesRes, userFeesRes] = await Promise.all([
-      db.from('profiles').select('id,email,first_name,last_name,balance,total_pnl,plan').order('created_at',{ascending:false}).limit(500),
+      db.from('profiles').select('id,email,first_name,last_name,phone,balance,total_pnl,plan').order('created_at',{ascending:false}).limit(500),
       db.from('user_plan_upgrade_fees').select('user_id,plan_name,fee_amount'),
     ]);
     if (profilesRes.error){ if(sub) sub.textContent='Error: '+profilesRes.error.message; return; }
@@ -5719,7 +5720,8 @@ window.showPage = function(id, el) {
       tbody.innerHTML += `<tr>
         <td>
           <div style="font-weight:600;font-size:13px;">${name}</div>
-          <div style="font-size:11px;color:var(--muted);">${u.email||'—'}</div>
+          <div style="font-size:11.5px;color:var(--muted);">${u.email||'—'}</div>
+          ${u.phone ? `<div style="font-size:11px;color:var(--muted);">${u.phone}</div>` : ''}
         </td>
         <td><strong style="color:var(--green);">$${userTotalBal(u).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></td>
         <td><span style="color:${PLAN_COLORS[cur]||'inherit'};font-weight:700;">${cur}</span></td>
