@@ -1543,6 +1543,35 @@
   </div>
 </div>
 
+<!-- Signal Implementation Fee Modal -->
+<div class="modal-overlay" id="modal-sig-impl-fee">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal__head">
+      <div class="modal__title">Signal Implementation Fee</div>
+      <button class="modal__close" onclick="closeModal('modal-sig-impl-fee')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="sif-user-id"/>
+      <input type="hidden" id="sif-sig-num"/>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:6px;">Setting implementation fee for <strong id="sif-user-name" style="color:var(--text)"></strong></p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Signal: <strong id="sif-sig-name" style="color:var(--text)"></strong></p>
+      <div style="background:var(--card2,#1a1a1a);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:6px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">IMPLEMENTATION CHARGE</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:22px;font-weight:800;color:var(--green);">$</span>
+          <input type="number" id="sif-fee-input" min="0" step="0.01" placeholder="0.00"
+            style="flex:1;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:#0d0d0d;color:inherit;font-size:18px;font-weight:700;outline:none;">
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;" id="sif-global-note"></div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn btn--outline" onclick="closeModal('modal-sig-impl-fee')">Cancel</button>
+      <button class="btn btn--primary" onclick="sigSaveImplFee()">Save Fee</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODALS -->
 <div class="modal-overlay" id="modal-add-user">
   <div class="modal">
@@ -5412,8 +5441,12 @@ window.showPage = function(id, el) {
         <td><span class="badge-pill ${pill}">${r.status||'pending'}</span></td>
         <td style="font-size:12px;color:var(--muted);">${fmtDate(r.requested_at)}</td>
         <td><div class="row-actions">
-          ${r.status==='pending'?`<button class="btn btn--sm btn--green" onclick="sigApprove('${r.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="sigReject('${r.id}')">Reject</button>`:''}
-          <button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>
+          ${r.status==='pending'
+            ? `<button class="btn btn--sm btn--green" onclick="sigApprove('${r.id}')">Approve</button><button class="btn btn--sm btn--red" onclick="sigReject('${r.id}')">Reject</button><button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>`
+            : r.status==='active'
+              ? `<button class="btn btn--sm btn--primary" onclick="sigOpenImplFee('${uid}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn})">Update</button>`
+              : `<button class="btn btn--sm btn--outline" onclick="sigOpenUpdate('${r.id}','${(r.user_email||'').replace(/'/g,"\\'")}',${sn},'${r.status}','${(r.admin_note||'').replace(/'/g,"\\'")}')">Edit</button>`
+          }
           <button class="btn btn--sm btn--red" onclick="sigDelete('${r.id}')">Delete</button>
         </div></td>
       </tr>`;
@@ -5484,6 +5517,35 @@ window.showPage = function(id, el) {
     logAudit('delete_signal_activation', id, '');
     showToast('Signal record deleted','success');
     await window.loadSignalsPage();
+  };
+
+  window.sigOpenImplFee = function(userId, email, sigNum){
+    document.getElementById('sif-user-id').value = userId;
+    document.getElementById('sif-sig-num').value = sigNum;
+    document.getElementById('sif-user-name').textContent = email;
+    document.getElementById('sif-sig-name').textContent = SIG_NAMES[sigNum] || 'Signal '+sigNum;
+    const userFee  = _sigUserFeeMap[userId]?.[sigNum];
+    const globalFee = _sigGlobalFees[sigNum] || 0;
+    document.getElementById('sif-fee-input').value = userFee !== undefined ? userFee : '';
+    document.getElementById('sif-global-note').textContent = `Global default: $${globalFee.toLocaleString()}`;
+    openModal('modal-sig-impl-fee');
+  };
+
+  window.sigSaveImplFee = async function(){
+    const userId = document.getElementById('sif-user-id').value;
+    const sigNum = Number(document.getElementById('sif-sig-num').value);
+    const val    = Number(document.getElementById('sif-fee-input').value||0);
+    if(!Number.isFinite(val)||val<0){ showToast('Enter a fee ≥ 0','error'); return; }
+    const db = window.SV_DB; if(!db) return;
+    const {error} = await db.from('user_signal_impl_fees')
+      .upsert({user_id:userId, signal_number:sigNum, fee_amount:val, updated_at:new Date().toISOString()},
+              {onConflict:'user_id,signal_number'});
+    if(error){ showToast('Save failed: '+error.message,'error'); return; }
+    if(!_sigUserFeeMap[userId]) _sigUserFeeMap[userId] = {};
+    _sigUserFeeMap[userId][sigNum] = val;
+    showToast(`Implementation fee set to $${val.toLocaleString()} for this user`);
+    closeModal('modal-sig-impl-fee');
+    sigRefreshFeeCells();
   };
 
   window.sigOpenUpdate = function(id, email, sn, status, note){
