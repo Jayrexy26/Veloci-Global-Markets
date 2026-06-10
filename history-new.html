@@ -805,6 +805,35 @@ document.addEventListener('click',function(e){if(!e.target.closest('.hdr-drop'))
         _raw:      w,
       });
     });
+    /* Render withdrawal_requests not already covered by a transactions entry */
+    const _coveredWd = new Set();
+    TRANSACTIONS.forEach(function(tx) {
+      if (tx.type === 'withdrawal') {
+        _coveredWd.add(Math.abs(tx.amount).toFixed(2) + '_' + (tx._raw.created_at || '').slice(0, 16));
+      }
+    });
+    WD_LIST.forEach(function(w) {
+      const key = parseFloat(w.amount || 0).toFixed(2) + '_' + (w.created_at || '').slice(0, 16);
+      if (_coveredWd.has(key)) return;
+      const amt = parseFloat(w.amount || 0);
+      const dt  = new Date(w.created_at || Date.now());
+      const isCrypto = w.destination_type === 'crypto';
+      TRANSACTIONS.push({
+        type:      'withdrawal',
+        asset:     isCrypto ? 'USDT' : 'USD',
+        assetName: w.destination_name || (isCrypto ? 'Crypto' : 'Bank Transfer'),
+        network:   isCrypto ? 'Crypto' : 'Bank',
+        wdMethod:  isCrypto ? 'Crypto' : 'Bank',
+        amount:    -Math.abs(amt),
+        price:     1,
+        status:    w.status || 'pending',
+        date:      dt.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+        time:      dt.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}),
+        txid:      w.id?.slice(0, 12) || '—',
+        _raw:      w,
+      });
+    });
+
     TRANSACTIONS.sort(function(a,b){ return new Date(b._raw.created_at||0) - new Date(a._raw.created_at||0); });
     renderHistory();
     /* Apply URL filter param (e.g. ?filter=withdrawal from withdraw-new.html View All) */
