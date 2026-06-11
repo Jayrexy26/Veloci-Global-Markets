@@ -3895,6 +3895,12 @@ async function renderAnnouncementsLive() {
   if (!data?.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted);">No announcements yet</td></tr>'; return; }
   const typePill = { info:'pill-blue', warning:'pill-orange', success:'pill-green', urgent:'pill-red' };
   const audienceLabel = { all:'All Users', specific:'Specific User' };
+  /* For specific-audience announcements, fetch any users not yet in _allUsers */
+  const missingIds = [...new Set(data.filter(a => a.audience === 'specific' && a.target_user_id && !(_allUsers||[]).find(x => x.id === a.target_user_id)).map(a => a.target_user_id))];
+  if (missingIds.length) {
+    const { data: fetched } = await db.from('profiles').select('id,email,first_name,last_name,phone').in('id', missingIds);
+    if (fetched?.length) (_allUsers = _allUsers || []).push(...fetched.filter(f => !_allUsers.find(x => x.id === f.id)));
+  }
   tbody.innerHTML = data.map(a => {
     const u = a.target_user_id ? (_allUsers||[]).find(x => x.id === a.target_user_id) : null;
     const uName  = u ? (userName(u)) : '';
