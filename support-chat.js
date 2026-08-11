@@ -78,30 +78,41 @@
        panel on desktop. */
     const style = document.createElement('style');
     style.textContent = `
-      /* Same genie open/close the site's popup modals use, so the chat feels
-         like the rest of the product rather than a bolted-on widget. */
-      @keyframes svGenieIn{
-        0%{opacity:.7;clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);}
-        18%{opacity:1;clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.58);}
-        50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);}
-        78%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}
-        100%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}
+      /* Only transform and opacity are animated: both are composited on the GPU,
+         so the panel never repaints mid-flight. Anything touching clip-path,
+         width or height forces a repaint every frame and visibly stutters on a
+         panel this size. */
+      @keyframes svPopIn{
+        from{opacity:0;transform:translate3d(0,10px,0) scale(.94);}
+        to  {opacity:1;transform:translate3d(0,0,0) scale(1);}
       }
-      @keyframes svGenieOut{
-        0%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}
-        20%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}
-        50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);opacity:1;}
-        80%{clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.56);opacity:.8;}
-        100%{clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);opacity:0;}
+      @keyframes svPopOut{
+        from{opacity:1;transform:translate3d(0,0,0) scale(1);}
+        to  {opacity:0;transform:translate3d(0,6px,0) scale(.97);}
+      }
+      /* phones get a sheet that slides up, which is what a fullscreen panel
+         should do and is the cheapest thing a compositor can draw */
+      @keyframes svSheetIn{
+        from{transform:translate3d(0,100%,0);}
+        to  {transform:translate3d(0,0,0);}
+      }
+      @keyframes svSheetOut{
+        from{transform:translate3d(0,0,0);}
+        to  {transform:translate3d(0,100%,0);}
       }
       #sv-chat-overlay{
-        position:fixed;inset:0;background:rgba(0,0,0,.72);
+        position:fixed;inset:0;background:rgba(0,0,0,.6);
         z-index:${Z - 1};opacity:0;pointer-events:none;
-        transition:opacity .32s cubic-bezier(.4,0,.2,1);
+        transition:opacity .22s linear;   /* matched to the panel, no easing lag */
+        will-change:opacity;
       }
       #sv-chat-overlay.sv-open{opacity:1;pointer-events:auto;}
-      #sv-chat-panel.sv-genie-in{animation:svGenieIn .54s cubic-bezier(0.34,1.1,0.64,1) both;}
-      #sv-chat-panel.sv-genie-out{animation:svGenieOut .36s cubic-bezier(0.4,0,0.8,1) both;}
+      #sv-chat-panel.sv-genie-in{animation:svPopIn .24s cubic-bezier(.16,1,.3,1) both;}
+      #sv-chat-panel.sv-genie-out{animation:svPopOut .16s cubic-bezier(.4,0,1,1) both;}
+      @media (prefers-reduced-motion:reduce){
+        #sv-chat-panel.sv-genie-in,#sv-chat-panel.sv-genie-out{animation:none;}
+        #sv-chat-overlay{transition:none;}
+      }
       #sv-chat-panel{
         position:absolute;left:0;bottom:70px;
         width:min(360px,calc(100vw - 40px));
@@ -110,10 +121,12 @@
         border-radius:16px;
         box-shadow:0 18px 50px rgba(0,0,0,.55);
         transform-origin:14% 100%;      /* grows out of the bubble */
-        will-change:clip-path,transform;
+        will-change:transform,opacity;
       }
       @media (max-width:640px){
         #sv-chat-panel{transform-origin:50% 100%;}
+        #sv-chat-panel.sv-genie-in{animation:svSheetIn .26s cubic-bezier(.16,1,.3,1) both;}
+        #sv-chat-panel.sv-genie-out{animation:svSheetOut .2s cubic-bezier(.4,0,1,1) both;}
         #sv-chat-wrap.sv-open{left:0;right:0;top:0;bottom:0;}
         /* the bubble carries an inline display, which would otherwise win */
         #sv-chat-wrap.sv-open #sv-chat-bubble{display:none !important;}
@@ -476,6 +489,8 @@
       if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
       panel.style.display = 'flex';
       panel.classList.remove('sv-genie-out');
+      /* applied in the same frame as display: the animation's `both` fill means
+         frame zero already shows the start state, so there is no flash */
       panel.classList.add('sv-genie-in');
       panel.classList.add('sv-open');
       wrap.classList.add('sv-open');
@@ -493,9 +508,13 @@
         showPrechat();
       } else {
         showChat();
+        /* jump the list to the bottom before the first animated frame, so the
+           scroll is not competing with the animation */
         scrollDown();
-        /* don't autofocus on phones — the keyboard would cover the conversation */
-        if (!isPhone()) input.focus();
+        /* focus after it settles: focusing mid-animation triggers a scroll
+           adjustment on desktop and the keyboard on mobile, both of which
+           fight the transition */
+        if (!isPhone()) setTimeout(() => input.focus(), 260);
       }
       if (unread > 0) markRead();
     }
@@ -515,7 +534,7 @@
         wrap.classList.remove('sv-open');
         bubble.style.display = 'flex';
         closeTimer = null;
-      }, 360);
+      }, 210);        // just past the longest close animation (200ms sheet)
       if (scrollLocked) {
         document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
