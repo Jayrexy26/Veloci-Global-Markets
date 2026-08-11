@@ -975,6 +975,7 @@
                   <button class="btn btn--sm" id="chat-filter-all"    onclick="setChatFilter('all',this)"    style="flex:1;">All</button>
                   <button class="btn btn--sm" id="chat-filter-unread" onclick="setChatFilter('unread',this)" style="flex:1;">Unread</button>
                   <button class="btn btn--sm" onclick="testChatSound()" title="Test notification sound" style="flex-shrink:0;">🔊</button>
+                  <button class="btn btn--sm" onclick="enableChatNotifications()" title="Enable / test phone notifications" style="flex-shrink:0;">🔔</button>
                 </div>
               </div>
               <div id="chat-conv-list" style="flex:1;overflow-y:auto;"></div>
@@ -2622,6 +2623,46 @@ function chatBeep() {
   } catch(e) {}
 }
 
+/* iOS only grants permission from inside a user gesture, and only when the
+   console has been installed to the home screen — so this lives on a button
+   rather than firing on page load. */
+window.enableChatNotifications = async function() {
+  chatUnlockSound();
+  if (!('Notification' in window)) {
+    showToast('This browser cannot show notifications', 'error');
+    return;
+  }
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    try { perm = await Notification.requestPermission(); } catch(e) {}
+  }
+  if (perm !== 'granted') {
+    showToast(perm === 'denied'
+      ? 'Notifications blocked — enable them in browser settings'
+      : 'Notification permission not granted', 'error');
+    return;
+  }
+  const opts = {
+    body: 'Alerts are working. New chat messages will appear here.',
+    icon: '/assets/admin-icon-192.png',
+    badge: '/assets/admin-icon-192.png',
+    vibrate: [120, 60, 120],
+    tag: 'sv-chat-test',
+    data: { url: '/ops-new.html' },
+  };
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('Veloci OPS notifications enabled', opts);
+    } else {
+      new Notification('Veloci OPS notifications enabled', opts);
+    }
+    showToast('Test notification sent');
+  } catch(e) {
+    showToast('Could not show notification: ' + (e.message || e), 'error');
+  }
+};
+
 window.testChatSound = function() {
   chatUnlockSound();
   chatBeep();
@@ -2630,15 +2671,31 @@ window.testChatSound = function() {
             ctxState === 'running' ? 'success' : 'error');
 };
 
+/* Android Chrome throws on `new Notification()` — on mobile a notification can
+   only be raised through the service worker registration. Try that first and
+   fall back to the constructor for desktop browsers without a worker. */
 function chatNotify(conv, body) {
   try {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    if (document.visibilityState === 'visible' &&
-        document.getElementById('page-support-chat').classList.contains('active')) return;
-    const n = new Notification('New message — ' + chatNameFor(conv), {
-      body: String(body || '').slice(0, 140),
-      tag:  'sv-chat-' + conv.id,
-    });
+
+    const title = 'New message — ' + chatNameFor(conv);
+    const opts  = {
+      body:  String(body || '').slice(0, 140),
+      tag:   'sv-chat-' + conv.id,
+      icon:  '/assets/admin-icon-192.png',
+      badge: '/assets/admin-icon-192.png',
+      vibrate: [120, 60, 120],
+      renotify: true,
+      data: { url: '/ops-new.html', conversation: conv.id },
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then(reg => reg.showNotification(title, opts))
+        .catch(() => { try { new Notification(title, opts); } catch(e) {} });
+      return;
+    }
+    const n = new Notification(title, opts);
     n.onclick = () => { window.focus(); openChatThread(conv.id); n.close(); };
   } catch(e) {}
 }

@@ -1,6 +1,10 @@
 (function () {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    /* The ops PWA needs its own worker — it was registering the customer one,
+       which meant sw-ops.js never ran and notifications had nowhere to come
+       from. Scoped to /ops so it wins over the root worker on ops pages
+       without disturbing the customer PWA elsewhere. */
+    navigator.serviceWorker.register('/sw-ops.js', { scope: '/ops' }).catch(() => {});
   }
 
   window.__pwaPrompt = null;

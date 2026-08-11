@@ -24,6 +24,24 @@ self.addEventListener('activate', e => {
   );
 });
 
+/* Tapping a chat notification should jump straight to the console, reusing an
+   already-open window instead of piling up new ones. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || '/ops-new.html';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes('ops-new.html') && 'focus' in c) {
+          if ('navigate' in c) c.navigate(target).catch(() => {});
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow ? self.clients.openWindow(target) : undefined;
+    })
+  );
+});
+
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return;
