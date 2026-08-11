@@ -63,7 +63,45 @@
     if (!convId) return;
 
     /* ── shell ── */
+    /* Geometry lives in a stylesheet rather than inline styles so the panel can
+       go fullscreen on phones the way Smartsupp does, while staying a corner
+       panel on desktop. */
+    const style = document.createElement('style');
+    style.textContent = `
+      #sv-chat-panel{
+        position:absolute;left:0;bottom:70px;
+        width:min(360px,calc(100vw - 40px));
+        height:min(520px,calc(100vh - 120px));
+        border:1px solid rgba(255,255,255,.09);
+        border-radius:16px;
+        box-shadow:0 18px 50px rgba(0,0,0,.55);
+      }
+      @media (max-width:640px){
+        #sv-chat-wrap.sv-open{left:0;right:0;top:0;bottom:0;}
+        #sv-chat-wrap.sv-open #sv-chat-bubble{display:none;}
+        #sv-chat-panel.sv-open{
+          position:fixed;
+          left:0;right:0;top:0;bottom:0;
+          width:100%;
+          height:100vh;
+          height:100dvh;          /* keeps the composer above mobile browser chrome */
+          max-height:none;
+          border:none;
+          border-radius:0;
+          box-shadow:none;
+        }
+        #sv-chat-panel.sv-open .sv-chat-head{
+          padding-top:max(14px, env(safe-area-inset-top));
+        }
+        #sv-chat-panel.sv-open .sv-chat-foot{
+          padding-bottom:max(10px, env(safe-area-inset-bottom));
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
     const wrap = el('div', `position:fixed;left:20px;bottom:20px;z-index:${Z};font-family:'Inter',system-ui,sans-serif;`);
+    wrap.id = 'sv-chat-wrap';
 
     const badge = el('span', `position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 6px;
       border-radius:10px;background:#e0245e;color:#fff;font-size:11px;font-weight:700;display:none;
@@ -72,6 +110,7 @@
     const bubble = el('button', `position:relative;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;
       background:${ACCENT};box-shadow:0 6px 20px rgba(240,90,26,.45);display:flex;align-items:center;
       justify-content:center;transition:transform .15s;padding:0;`);
+    bubble.id = 'sv-chat-bubble';
     bubble.setAttribute('aria-label', 'Support chat');
     bubble.innerHTML =
       '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" ' +
@@ -82,13 +121,13 @@
     bubble.onmouseenter = () => { bubble.style.transform = 'scale(1.06)'; };
     bubble.onmouseleave = () => { bubble.style.transform = 'none'; };
 
-    const panel = el('div', `position:absolute;left:0;bottom:70px;width:min(360px,calc(100vw - 40px));
-      height:min(520px,calc(100vh - 120px));background:#12141a;border:1px solid rgba(255,255,255,.09);
-      border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:none;flex-direction:column;overflow:hidden;`);
+    const panel = el('div', 'background:#12141a;display:none;flex-direction:column;overflow:hidden;');
+    panel.id = 'sv-chat-panel';
 
     /* header */
     const head = el('div', `padding:14px 16px;background:linear-gradient(135deg,${ACCENT},#ff8c42);
       display:flex;align-items:center;gap:10px;flex-shrink:0;`);
+    head.className = 'sv-chat-head';
     const dot = el('span', 'width:8px;height:8px;border-radius:50%;background:#0ecb81;flex-shrink:0;');
     const headText = el('div', 'flex:1;min-width:0;');
     headText.appendChild(el('div', 'font-size:14px;font-weight:700;color:#fff;line-height:1.2;', 'Veloci Support'));
@@ -108,6 +147,7 @@
     /* composer */
     const foot = el('div', `padding:10px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;
       align-items:flex-end;background:#12141a;flex-shrink:0;`);
+    foot.className = 'sv-chat-foot';
     const fileInput = el('input', 'display:none;');
     fileInput.type = 'file';
     fileInput.accept = ALLOWED.join(',');
@@ -251,15 +291,52 @@
       .subscribe();
 
     /* ── interactions ── */
+    const isPhone = () => window.matchMedia('(max-width:640px)').matches;
+    let scrollLocked = false;
+
     function open() {
       isOpen = true;
       panel.style.display = 'flex';
+      panel.classList.add('sv-open');
+      wrap.classList.add('sv-open');
       bubble.style.transform = 'none';
+      /* fullscreen on phones: stop the page behind from scrolling underneath */
+      if (isPhone()) {
+        scrollLocked = true;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
       scrollDown();
-      input.focus();
+      /* don't autofocus on phones — the keyboard would cover the conversation */
+      if (!isPhone()) input.focus();
       if (unread > 0) markRead();
     }
-    function close() { isOpen = false; panel.style.display = 'none'; }
+
+    function close() {
+      isOpen = false;
+      panel.style.display = 'none';
+      panel.classList.remove('sv-open');
+      wrap.classList.remove('sv-open');
+      if (scrollLocked) {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        scrollLocked = false;
+      }
+    }
+
+    /* rotating or resizing out of phone width must not leave the page locked */
+    window.addEventListener('resize', () => {
+      if (!isOpen) return;
+      if (!isPhone() && scrollLocked) {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        scrollLocked = false;
+      } else if (isPhone() && !scrollLocked) {
+        scrollLocked = true;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      }
+    });
 
     bubble.onclick   = () => (isOpen ? close() : open());
     closeBtn.onclick = e => { e.stopPropagation(); close(); };
