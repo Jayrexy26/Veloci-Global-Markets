@@ -10,6 +10,7 @@
 (function () {
   const ACCENT = '#f05a1a';
   const Z      = 99990;          // below the PWA install banner (99999)
+  const SUPPORT_AVATAR = '/assets/support-avatar.png';
 
   const el = (tag, css, text) => {
     const n = document.createElement(tag);
@@ -130,14 +131,23 @@
     const head = el('div', `padding:14px 16px;background:linear-gradient(135deg,${ACCENT},#ff8c42);
       display:flex;align-items:center;gap:10px;flex-shrink:0;`);
     head.className = 'sv-chat-head';
-    const dot = el('span', 'width:8px;height:8px;border-radius:50%;background:#0ecb81;flex-shrink:0;');
+    /* avatar with an online dot tucked into its corner */
+    const avatarWrap = el('div', 'position:relative;flex-shrink:0;width:36px;height:36px;');
+    const avatar = el('img', `width:36px;height:36px;border-radius:50%;display:block;object-fit:cover;
+      background:rgba(255,255,255,.9);border:1.5px solid rgba(255,255,255,.65);`);
+    avatar.src = SUPPORT_AVATAR;
+    avatar.alt = 'Veloci Support';
+    avatar.onerror = () => { avatarWrap.style.display = 'none'; };
+    const dot = el('span', `position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;
+      background:#0ecb81;border:2px solid #f2701f;`);
+    avatarWrap.append(avatar, dot);
     const headText = el('div', 'flex:1;min-width:0;');
     headText.appendChild(el('div', 'font-size:14px;font-weight:700;color:#fff;line-height:1.2;', 'Veloci Support'));
     headText.appendChild(el('div', 'font-size:11px;color:rgba(255,255,255,.85);', 'We typically reply in a few minutes'));
     const closeBtn = el('button', `background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;
       padding:0 2px;opacity:.9;`, '×');
     closeBtn.setAttribute('aria-label', 'Close chat');
-    head.append(dot, headText, closeBtn);
+    head.append(avatarWrap, headText, closeBtn);
 
     /* messages */
     const list = el('div', `flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;
@@ -255,7 +265,21 @@
          actually sent it, even if an older row still carries a name. */
       const meta = el('div', 'font-size:10px;color:rgba(234,236,239,.35);padding:0 4px;',
         (mine ? '' : 'Veloci Support · ') + fmtTime(m.created_at));
-      row.append(b, meta);
+
+      if (mine) {
+        row.append(b, meta);
+      } else {
+        /* support messages sit next to the avatar, like Smartsupp */
+        const line = el('div', 'display:flex;align-items:flex-end;gap:7px;max-width:100%;');
+        const av = el('img', `width:24px;height:24px;border-radius:50%;flex-shrink:0;object-fit:cover;
+          background:rgba(255,255,255,.9);margin-bottom:2px;`);
+        av.src = SUPPORT_AVATAR;
+        av.alt = '';
+        av.onerror = () => { av.style.display = 'none'; };
+        line.append(av, b);
+        meta.style.paddingLeft = '35px';       // line the timestamp up with the bubble
+        row.append(line, meta);
+      }
       list.appendChild(row);
     }
 
