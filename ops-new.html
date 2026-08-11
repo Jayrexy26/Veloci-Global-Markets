@@ -974,6 +974,7 @@
                 <div style="display:flex;gap:6px;margin-top:8px;">
                   <button class="btn btn--sm" id="chat-filter-all"    onclick="setChatFilter('all',this)"    style="flex:1;">All</button>
                   <button class="btn btn--sm" id="chat-filter-unread" onclick="setChatFilter('unread',this)" style="flex:1;">Unread</button>
+                  <button class="btn btn--sm" onclick="testChatSound()" title="Test notification sound" style="flex-shrink:0;">🔊</button>
                 </div>
               </div>
               <div id="chat-conv-list" style="flex:1;overflow-y:auto;"></div>
@@ -2581,23 +2582,53 @@ function chatTime(ts) {
   } catch(e) { return ''; }
 }
 
-function chatBeep() {
+/* Browsers start an AudioContext suspended until the page has been interacted
+   with, and resume() is async — creating the oscillator straight after it made
+   the first beeps silent. Unlock on the first click/keypress, and when the
+   context is still suspended, wait for resume() before playing. */
+function chatUnlockSound() {
   try {
-    if (!_chatAudio) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      _chatAudio = new Ctx();
-    }
-    if (_chatAudio.state === 'suspended') _chatAudio.resume();
-    const o = _chatAudio.createOscillator(), g = _chatAudio.createGain();
-    o.connect(g); g.connect(_chatAudio.destination);
-    o.frequency.value = 660; o.type = 'sine';
-    g.gain.setValueAtTime(0.0001, _chatAudio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.16, _chatAudio.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, _chatAudio.currentTime + 0.35);
-    o.start(); o.stop(_chatAudio.currentTime + 0.36);
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!_chatAudio) _chatAudio = new Ctx();
+    if (_chatAudio.state === 'suspended') _chatAudio.resume().catch(() => {});
   } catch(e) {}
 }
+
+function chatBeep() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!_chatAudio) _chatAudio = new Ctx();
+
+    const tone = () => {
+      try {
+        const t = _chatAudio.currentTime;
+        const o = _chatAudio.createOscillator(), g = _chatAudio.createGain();
+        o.connect(g); g.connect(_chatAudio.destination);
+        o.type = 'sine';
+        /* two quick notes so it reads as a notification, not a click */
+        o.frequency.setValueAtTime(660, t);
+        o.frequency.setValueAtTime(880, t + 0.12);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.22, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+        o.start(t); o.stop(t + 0.43);
+      } catch(e) {}
+    };
+
+    if (_chatAudio.state === 'suspended') _chatAudio.resume().then(tone).catch(() => {});
+    else tone();
+  } catch(e) {}
+}
+
+window.testChatSound = function() {
+  chatUnlockSound();
+  chatBeep();
+  const ctxState = _chatAudio ? _chatAudio.state : 'unavailable';
+  showToast(ctxState === 'running' ? 'Sound played' : 'Audio blocked by browser (' + ctxState + ')',
+            ctxState === 'running' ? 'success' : 'error');
+};
 
 function chatNotify(conv, body) {
   try {
@@ -2814,6 +2845,10 @@ window.initChatInbox = async function() {
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
   } catch(e) {}
 
+  /* the browser only lets us create audio after an interaction — take the first one */
+  document.addEventListener('click',   chatUnlockSound, { once: true });
+  document.addEventListener('keydown', chatUnlockSound, { once: true });
+
   const reply = document.getElementById('chat-reply');
   if (reply) {
     reply.addEventListener('input', () => {
@@ -2850,8 +2885,15 @@ window.initChatInbox = async function() {
     })
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages' }, p => {
       const m = p.new; if (!m || m.sender !== 'user') return;
-      if (m.conversation_id === _chatActiveId &&
-          document.getElementById('page-support-chat').classList.contains('active')) return;
+      /* Stay quiet only when the message is genuinely already in front of you:
+         right conversation, right page, tab visible AND focused. Anything else
+         — another tab, another window, another ops page — should make noise. */
+      const watching =
+        m.conversation_id === _chatActiveId &&
+        document.getElementById('page-support-chat').classList.contains('active') &&
+        document.visibilityState === 'visible' &&
+        document.hasFocus();
+      if (watching) return;
       const conv = _chatConvs.find(c => c.id === m.conversation_id);
       chatBeep();
       if (conv) chatNotify(conv, m.body);
