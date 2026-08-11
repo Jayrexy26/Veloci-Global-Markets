@@ -48,18 +48,27 @@
     } catch (_) { return; }
     if (!session || !session.user) return;
 
+    let cfg = {};
     try {
-      const { data } = await db.from('system_settings')
-        .select('value').eq('key', 'support_chat_enabled').maybeSingle();
-      if (data && data.value === 'false') return;
+      const { data } = await db.from('system_settings').select('key,value')
+        .in('key', ['support_chat_enabled','chat_status','chat_prechat_enabled']);
+      (data || []).forEach(r => { cfg[r.key] = r.value; });
+      if (cfg.support_chat_enabled === 'false') return;
     } catch (_) { /* absent or unreadable -> stay enabled */ }
+
+    let isOffline    = cfg.chat_status === 'offline';
+    const needPrechat = cfg.chat_prechat_enabled !== 'false';
 
     /* ── conversation ── */
     let convId = null;
+    let prechatDone = false;
     try {
       const { data, error } = await db.rpc('chat_my_conversation');
       if (error) throw error;
       convId = data;
+      const { data: conv } = await db.from('chat_conversations')
+        .select('prechat_at').eq('id', convId).maybeSingle();
+      prechatDone = !!(conv && conv.prechat_at);
     } catch (_) { return; }
     if (!convId) return;
 
@@ -143,7 +152,15 @@
     avatarWrap.append(avatar, dot);
     const headText = el('div', 'flex:1;min-width:0;');
     headText.appendChild(el('div', 'font-size:14px;font-weight:700;color:#fff;line-height:1.2;', 'Veloci Support'));
-    headText.appendChild(el('div', 'font-size:11px;color:rgba(255,255,255,.85);', 'We typically reply in a few minutes'));
+    const headSub = el('div', 'font-size:11px;color:rgba(255,255,255,.85);');
+    headText.appendChild(headSub);
+
+    function renderStatus() {
+      headSub.textContent = isOffline
+        ? "We're offline — leave a message and we'll reply"
+        : 'We typically reply in a few minutes';
+      dot.style.background = isOffline ? '#8b8f9a' : '#0ecb81';
+    }
     const closeBtn = el('button', `background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;
       padding:0 2px;opacity:.9;`, '×');
     closeBtn.setAttribute('aria-label', 'Close chat');
@@ -190,7 +207,36 @@
     brand.appendChild(el('span', '', 'Powered by '));
     brand.appendChild(el('span', `color:${ACCENT};font-weight:600;`, 'Veloci Engine'));
 
-    panel.append(head, list, foot, brand);
+    /* ── pre-chat form ── */
+    const form = el('div', `flex:1;overflow-y:auto;padding:18px 16px;display:none;flex-direction:column;
+      gap:12px;background:#0d0f14;`);
+    form.appendChild(el('div', 'font-size:14px;font-weight:700;color:#eaecef;', 'Before we start'));
+    form.appendChild(el('div', 'font-size:12px;color:rgba(234,236,239,.5);line-height:1.6;margin-bottom:2px;',
+      'Please share your details so our team can follow up with you.'));
+
+    const fieldCss = `width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:#12141a;color:#eaecef;font-size:13px;font-family:inherit;outline:none;`;
+    function field(labelText, type, placeholder) {
+      const w = el('div', 'display:flex;flex-direction:column;gap:5px;');
+      w.appendChild(el('label', 'font-size:11px;color:rgba(234,236,239,.55);font-weight:600;', labelText));
+      const i = el('input', fieldCss);
+      i.type = type; i.placeholder = placeholder; i.autocomplete = 'on';
+      w.appendChild(i);
+      form.appendChild(w);
+      return i;
+    }
+    const fName  = field('Full name',    'text',  'Your name');
+    const fEmail = field('Email',        'email', 'you@example.com');
+    const fPhone = field('Phone number', 'tel',   '+234 800 000 0000');
+
+    const formErr = el('div', 'font-size:12px;color:#ff8a6a;display:none;line-height:1.5;');
+    form.appendChild(formErr);
+    const formBtn = el('button', `margin-top:4px;width:100%;padding:11px;border-radius:10px;border:none;
+      background:${ACCENT};color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;`,
+      'Start chat');
+    form.appendChild(formBtn);
+
+    panel.append(head, form, list, foot, brand);
     wrap.append(panel, bubble);
     document.body.appendChild(wrap);
 
@@ -291,15 +337,79 @@
     }
 
     /* ── history ── */
-    try {
-      const { data } = await db.from('chat_messages')
-        .select('id,sender,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
-        .eq('conversation_id', convId)
-        .order('created_at', { ascending: true })
-        .limit(200);
-      (data || []).forEach(addMessage);
-      scrollDown();
-    } catch (_) {}
+    async function loadHistory() {
+      try {
+        const { data } = await db.from('chat_messages')
+          .select('id,sender,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
+          .eq('conversation_id', convId)
+          .order('created_at', { ascending: true })
+          .limit(200);
+        (data || []).forEach(addMessage);
+        scrollDown();
+      } catch (_) {}
+    }
+    await loadHistory();
+
+    /* ── pre-chat gate ── */
+    function showPrechat() {
+      form.style.display = 'flex';
+      list.style.display = 'none';
+      foot.style.display = 'none';
+    }
+    function showChat() {
+      form.style.display = 'none';
+      list.style.display = 'flex';
+      foot.style.display = 'flex';
+    }
+    const prechatRequired = () => needPrechat && !prechatDone;
+    if (prechatRequired()) {
+      showPrechat();
+      if (session.user.email) fEmail.value = session.user.email;
+    }
+
+    formBtn.onclick = async () => {
+      formErr.style.display = 'none';
+      formBtn.disabled = true;
+      formBtn.style.opacity = '.6';
+      const label = formBtn.textContent;
+      formBtn.textContent = 'Starting…';
+      try {
+        const { error } = await db.rpc('chat_submit_prechat', {
+          p_name:  fName.value,
+          p_phone: fPhone.value,
+          p_email: fEmail.value,
+        });
+        if (error) throw error;
+        prechatDone = true;
+        showChat();
+        await loadHistory();          // picks up the automatic greeting
+        input.focus();
+      } catch (err) {
+        /* surface the database's own validation wording, without its prefix */
+        const msg = String((err && err.message) || '').replace(/^.*?:\s*/, '');
+        formErr.textContent = msg || 'Please check your details and try again.';
+        formErr.style.display = 'block';
+      }
+      formBtn.disabled = false;
+      formBtn.style.opacity = '1';
+      formBtn.textContent = label;
+    };
+
+    [fName, fEmail, fPhone].forEach(f => {
+      f.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); formBtn.click(); } });
+    });
+
+    renderStatus();
+
+    /* live online/offline switching from ops */
+    db.channel('sv-chat-status')
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'system_settings', filter: 'key=eq.chat_status',
+      }, p => {
+        isOffline = p.new && p.new.value === 'offline';
+        renderStatus();
+      })
+      .subscribe();
 
     try {
       const { data } = await db.from('chat_conversations')
@@ -342,9 +452,14 @@
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
       }
-      scrollDown();
-      /* don't autofocus on phones — the keyboard would cover the conversation */
-      if (!isPhone()) input.focus();
+      if (prechatRequired()) {
+        showPrechat();
+      } else {
+        showChat();
+        scrollDown();
+        /* don't autofocus on phones — the keyboard would cover the conversation */
+        if (!isPhone()) input.focus();
+      }
       if (unread > 0) markRead();
     }
 

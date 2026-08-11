@@ -967,6 +967,17 @@
 
             <!-- conversation list -->
             <div id="chat-list-pane" style="width:300px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;">
+              <div style="padding:12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;">
+                <span id="chat-status-dot" style="width:9px;height:9px;border-radius:50%;background:#0ecb81;flex-shrink:0;"></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:600;color:var(--text);" id="chat-status-label">Online</div>
+                  <div style="font-size:11px;color:var(--sub);">Status shown to users</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-chat-status" onchange="saveChatStatus()">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
               <div style="padding:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
                 <input type="text" id="chat-conv-search" placeholder="Search conversations…" autocomplete="off"
                   oninput="renderChatConversations()"
@@ -988,6 +999,7 @@
                 <div style="flex:1;min-width:0;">
                   <div id="chat-thread-name" style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                   <div id="chat-thread-email" style="font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                  <div id="chat-thread-contact" style="font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;"></div>
                 </div>
                 <button class="btn btn--sm" id="chat-close-conv" onclick="toggleChatConversationStatus()" style="flex-shrink:0;white-space:nowrap;">Close</button>
               </div>
@@ -1371,6 +1383,51 @@
                   <span class="toggle-slider"></span>
                 </label>
               </div>
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Pre-chat Form</div>
+                  <div class="toggle-wrap__sub">Ask for name, email and phone before the first message</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-prechat" onchange="saveChatSetting('chat_prechat_enabled', this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Welcome Message</div>
+                  <div class="toggle-wrap__sub">Sent automatically once, when a user starts a conversation</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-welcome" onchange="saveChatSetting('chat_welcome_enabled', this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+                <div style="width:100%;padding-top:12px;">
+                  <textarea id="chat-welcome-msg" rows="2" maxlength="1000"
+                    style="width:100%;resize:vertical;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;line-height:1.5;"></textarea>
+                  <button class="btn btn--primary btn--sm" style="margin-top:8px;"
+                    onclick="saveChatText('chat_welcome_message','chat-welcome-msg','Welcome message saved')">Save Welcome Message</button>
+                </div>
+              </div>
+
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Offline Auto-Reply</div>
+                  <div class="toggle-wrap__sub">Sent when a user writes while you are offline, at most once every 10 minutes</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-offline-msg" onchange="saveChatSetting('chat_offline_enabled', this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+                <div style="width:100%;padding-top:12px;">
+                  <textarea id="chat-offline-msg" rows="2" maxlength="1000"
+                    style="width:100%;resize:vertical;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;line-height:1.5;"></textarea>
+                  <button class="btn btn--primary btn--sm" style="margin-top:8px;"
+                    onclick="saveChatText('chat_offline_message','chat-offline-msg','Offline message saved')">Save Offline Message</button>
+                </div>
+              </div>
+
               <div class="toggle-wrap" style="flex-wrap:wrap;border-bottom:none;">
                 <div style="flex:1;min-width:0;">
                   <div class="toggle-wrap__label">Smartsupp</div>
@@ -2570,12 +2627,15 @@ function chatUserFor(conv) {
   return (_allUsers || []).find(u => u.id === conv.user_id) || null;
 }
 function chatNameFor(conv) {
+  /* what they typed in the pre-chat form wins — it is how they introduced
+     themselves — then the account name, then a truncated id */
+  if (conv.visitor_name) return conv.visitor_name;
   const u = chatUserFor(conv);
   return u ? userName(u) : (conv.user_id || '').slice(0, 8) + '…';
 }
 function chatEmailFor(conv) {
   const u = chatUserFor(conv);
-  return u ? (u.email || '') : '';
+  return (u && u.email) || conv.visitor_email || '';
 }
 
 function chatTime(ts) {
@@ -2782,6 +2842,15 @@ window.openChatThread = async function(convId) {
   document.getElementById('chat-thread-foot').style.display = 'flex';
   document.getElementById('chat-thread-name').textContent  = conv ? chatNameFor(conv)  : '';
   document.getElementById('chat-thread-email').textContent = conv ? chatEmailFor(conv) : '';
+  /* details from the pre-chat form, when they differ from the account */
+  const contact = document.getElementById('chat-thread-contact');
+  if (contact) {
+    const bits = [];
+    if (conv && conv.visitor_phone) bits.push('📞 ' + conv.visitor_phone);
+    if (conv && conv.visitor_email && conv.visitor_email !== chatEmailFor(conv)) bits.push('✉ ' + conv.visitor_email);
+    contact.textContent = bits.join('   ');
+    contact.style.display = bits.length ? '' : 'none';
+  }
   document.getElementById('chat-close-conv').textContent   = conv && conv.status === 'closed' ? 'Reopen' : 'Close';
 
   /* mobile: the two panes swap instead of sitting side by side */
@@ -3063,7 +3132,9 @@ let _chatDisabledUsers = [];
 window.loadChatSettings = async function() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('system_settings').select('key,value')
-    .in('key', ['chat_enabled','chat_visibility','chat_disabled_users','support_chat_enabled']);
+    .in('key', ['chat_enabled','chat_visibility','chat_disabled_users','support_chat_enabled',
+                'chat_status','chat_prechat_enabled','chat_welcome_enabled','chat_welcome_message',
+                'chat_offline_enabled','chat_offline_message']);
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   try {
@@ -3078,6 +3149,15 @@ window.loadChatSettings = async function() {
   document.getElementById('chat-visibility').value =
     map['chat_visibility'] === 'logged_in' ? 'logged_in' : 'all';
   document.getElementById('toggle-support-chat').checked = map['support_chat_enabled'] !== 'false';
+
+  const online = map['chat_status'] !== 'offline';
+  const statusToggle = document.getElementById('toggle-chat-status');
+  if (statusToggle) { statusToggle.checked = online; renderChatStatus(online); }
+  document.getElementById('toggle-prechat').checked     = map['chat_prechat_enabled'] !== 'false';
+  document.getElementById('toggle-welcome').checked     = map['chat_welcome_enabled'] !== 'false';
+  document.getElementById('toggle-offline-msg').checked = map['chat_offline_enabled'] !== 'false';
+  document.getElementById('chat-welcome-msg').value     = map['chat_welcome_message'] || '';
+  document.getElementById('chat-offline-msg').value     = map['chat_offline_message'] || '';
   renderChatVisibilityNote();
   populateChatUserSelect();
   renderChatUserList();
@@ -3096,6 +3176,31 @@ window.onChatToggle = function() {
   saveChatSettings('chat_enabled', String(on),
     on ? '✓ Live chat enabled' : '✗ Live chat disabled sitewide');
 };
+
+window.saveChatSetting = function(key, val) {
+  saveChatSettings(key, String(val),
+    key.replace(/_/g,' ').replace('chat ','') + (val ? ' enabled' : ' disabled'));
+};
+
+window.saveChatText = function(key, elId, msg) {
+  const v = (document.getElementById(elId).value || '').trim();
+  if (!v) { showToast('Message cannot be empty', 'error'); return; }
+  saveChatSettings(key, v, msg);
+};
+
+window.saveChatStatus = async function() {
+  const online = document.getElementById('toggle-chat-status').checked;
+  renderChatStatus(online);
+  await saveChatSettings('chat_status', online ? 'online' : 'offline',
+    online ? '✓ You are online' : '✗ You are offline — auto-reply will answer');
+};
+
+function renderChatStatus(online) {
+  const dot = document.getElementById('chat-status-dot');
+  const lbl = document.getElementById('chat-status-label');
+  if (dot) dot.style.background = online ? '#0ecb81' : '#8b8f9a';
+  if (lbl) lbl.textContent = online ? 'Online' : 'Offline';
+}
 
 window.saveSupportChatEnabled = function() {
   const on = document.getElementById('toggle-support-chat').checked;
