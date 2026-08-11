@@ -470,6 +470,13 @@
         All Transactions
       </button>
 
+      <div class="sidebar__section-label">Support</div>
+      <button class="nav-item" onclick="showPage('support-chat',this)">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Live Chat
+        <span class="nav-item__badge badge-red" id="chat-badge" style="display:none;">0</span>
+      </button>
+
       <div class="sidebar__section-label">Content</div>
       <button class="nav-item" onclick="showPage('announcements',this)">
         <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
@@ -948,6 +955,56 @@
       </div>
 
       <!-- ANNOUNCEMENTS -->
+      <div class="page" id="page-support-chat">
+        <style>
+          @media(max-width:768px){
+            #chat-inbox{height:calc(100vh - 150px);}
+            #chat-list-pane{width:100%;border-right:none;}
+          }
+        </style>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div id="chat-inbox" style="display:flex;height:calc(100vh - 190px);min-height:420px;">
+
+            <!-- conversation list -->
+            <div id="chat-list-pane" style="width:300px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;">
+              <div style="padding:12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+                <input type="text" id="chat-conv-search" placeholder="Search conversations…" autocomplete="off"
+                  oninput="renderChatConversations()"
+                  style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;"/>
+                <div style="display:flex;gap:6px;margin-top:8px;">
+                  <button class="btn btn--sm" id="chat-filter-all"    onclick="setChatFilter('all',this)"    style="flex:1;">All</button>
+                  <button class="btn btn--sm" id="chat-filter-unread" onclick="setChatFilter('unread',this)" style="flex:1;">Unread</button>
+                </div>
+              </div>
+              <div id="chat-conv-list" style="flex:1;overflow-y:auto;"></div>
+            </div>
+
+            <!-- thread -->
+            <div id="chat-thread-pane" style="flex:1;min-width:0;display:flex;flex-direction:column;">
+              <div id="chat-thread-head" style="padding:12px 16px;border-bottom:1px solid var(--border);display:none;align-items:center;gap:10px;flex-shrink:0;">
+                <button class="btn btn--sm" id="chat-back-btn" onclick="closeChatThread()" style="display:none;flex-shrink:0;">←</button>
+                <div style="flex:1;min-width:0;">
+                  <div id="chat-thread-name" style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                  <div id="chat-thread-email" style="font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                </div>
+                <button class="btn btn--sm" id="chat-close-conv" onclick="toggleChatConversationStatus()" style="flex-shrink:0;white-space:nowrap;">Close</button>
+              </div>
+              <div id="chat-thread-msgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
+                <div id="chat-thread-empty" style="margin:auto;text-align:center;color:var(--sub);font-size:13px;">
+                  Select a conversation to view messages
+                </div>
+              </div>
+              <div id="chat-thread-foot" style="padding:10px;border-top:1px solid var(--border);display:none;gap:8px;align-items:flex-end;flex-shrink:0;">
+                <textarea id="chat-reply" placeholder="Type a reply…  (Enter to send)" rows="1"
+                  style="flex:1;min-width:0;resize:none;max-height:120px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;outline:none;line-height:1.4;"></textarea>
+                <button class="btn btn--primary btn--sm" onclick="sendChatReply()" style="flex-shrink:0;">Send</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="page-announcements">
         <div class="page-header">
           <div><div class="page-header__title">Announcements</div><div class="page-header__sub">Push notifications to user dashboards</div></div>
@@ -1295,12 +1352,22 @@
             </div>
           </div>
           <div class="card">
-            <div class="card__head"><div class="card__title">Live Chat (Smartsupp)</div><div class="card__sub">Control who sees the support chat widget</div></div>
+            <div class="card__head"><div class="card__title">Live Chat</div><div class="card__sub">Control who sees the support chat widgets</div></div>
             <div class="card__body">
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Veloci Chat (in-house)</div>
+                  <div class="toggle-wrap__sub">Our own chat, bottom-left. Logged-in users only — replies come from the Live Chat page</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-support-chat" onchange="saveSupportChatEnabled()">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
               <div class="toggle-wrap" style="flex-wrap:wrap;border-bottom:none;">
                 <div style="flex:1;min-width:0;">
-                  <div class="toggle-wrap__label">Enable Live Chat</div>
-                  <div class="toggle-wrap__sub">Off hides the chat widget across the entire site</div>
+                  <div class="toggle-wrap__label">Smartsupp</div>
+                  <div class="toggle-wrap__sub">Third-party widget, bottom-right. Off hides it across the entire site</div>
                 </div>
                 <label class="toggle-switch" style="flex-shrink:0;">
                   <input type="checkbox" id="toggle-chat" onchange="onChatToggle()">
@@ -2058,6 +2125,7 @@
     emails:'Email Users', settings:'System Settings', audit:'Audit Log',
     signals:'Signal Activations',
     'upgrade-users':'Upgrade Users',
+    'support-chat':'Live Chat',
   };
   function showPage(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2073,6 +2141,7 @@
     if (id === 'activity') { if (window.renderActivity)     window.renderActivity(); }
     if (id === 'accounts')      { if (window.renderAccountsLive)      window.renderAccountsLive(); }
     if (id === 'transactions')  { if (window.renderTransactionsLive)  window.renderTransactionsLive(); }
+    if (id === 'support-chat')  { if (window.loadChatConversations)   window.loadChatConversations(); }
   }
 
   /* ── Modals ── */
@@ -2302,6 +2371,7 @@
   await loadBankMaintenanceSettings();
   await loadGeoBlocking();
   await loadChatSettings();
+  await initChatInbox();
   await loadReviews();
 })();
 
@@ -2477,13 +2547,325 @@ async function saveWithdrawalsDisabled() {
   showToast(restricted ? '✗ Withdrawals restricted' : '✓ Withdrawals unrestricted');
 }
 
+/* ── Support Chat inbox ── */
+let _chatConvs      = [];
+let _chatActiveId   = null;
+let _chatFilter     = 'all';
+let _chatSeenMsgs   = new Set();
+let _chatThreadChan = null;
+let _chatAudio      = null;
+
+const chatEsc = s => String(s == null ? '' : s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+function chatUserFor(conv) {
+  return (_allUsers || []).find(u => u.id === conv.user_id) || null;
+}
+function chatNameFor(conv) {
+  const u = chatUserFor(conv);
+  return u ? userName(u) : (conv.user_id || '').slice(0, 8) + '…';
+}
+function chatEmailFor(conv) {
+  const u = chatUserFor(conv);
+  return u ? (u.email || '') : '';
+}
+
+function chatTime(ts) {
+  try {
+    const d = new Date(ts), now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    return sameDay
+      ? d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+      : d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+  } catch(e) { return ''; }
+}
+
+function chatBeep() {
+  try {
+    if (!_chatAudio) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      _chatAudio = new Ctx();
+    }
+    if (_chatAudio.state === 'suspended') _chatAudio.resume();
+    const o = _chatAudio.createOscillator(), g = _chatAudio.createGain();
+    o.connect(g); g.connect(_chatAudio.destination);
+    o.frequency.value = 660; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, _chatAudio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.16, _chatAudio.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, _chatAudio.currentTime + 0.35);
+    o.start(); o.stop(_chatAudio.currentTime + 0.36);
+  } catch(e) {}
+}
+
+function chatNotify(conv, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (document.visibilityState === 'visible' &&
+        document.getElementById('page-support-chat').classList.contains('active')) return;
+    const n = new Notification('New message — ' + chatNameFor(conv), {
+      body: String(body || '').slice(0, 140),
+      tag:  'sv-chat-' + conv.id,
+    });
+    n.onclick = () => { window.focus(); openChatThread(conv.id); n.close(); };
+  } catch(e) {}
+}
+
+function chatTotalUnread() {
+  return _chatConvs.reduce((s, c) => s + (c.unread_admin || 0), 0);
+}
+
+function renderChatBadge() {
+  const b = document.getElementById('chat-badge'); if (!b) return;
+  const n = chatTotalUnread();
+  b.textContent = n > 99 ? '99+' : String(n);
+  b.style.display = n > 0 ? '' : 'none';
+  const base = 'Veloci Ops';
+  document.title = n > 0 ? `(${n}) ${base}` : base;
+}
+
+window.setChatFilter = function(f, btn) {
+  _chatFilter = f;
+  ['all','unread'].forEach(k => {
+    const el = document.getElementById('chat-filter-' + k);
+    if (el) el.classList.toggle('btn--primary', k === f);
+  });
+  renderChatConversations();
+};
+
+window.renderChatConversations = function() {
+  const box = document.getElementById('chat-conv-list'); if (!box) return;
+  const raw = (document.getElementById('chat-conv-search')?.value || '').trim();
+  const q   = window.SV_FOLD ? window.SV_FOLD(raw) : raw.toLowerCase();
+
+  let list = _chatConvs.slice();
+  if (_chatFilter === 'unread') list = list.filter(c => (c.unread_admin || 0) > 0);
+  if (q) {
+    const fold = s => window.SV_FOLD ? window.SV_FOLD(String(s||'')) : String(s||'').toLowerCase();
+    list = list.filter(c => fold(chatNameFor(c)).includes(q) || fold(chatEmailFor(c)).includes(q));
+  }
+
+  if (!list.length) {
+    box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--sub);font-size:13px;">No conversations</div>';
+    return;
+  }
+
+  box.innerHTML = list.map(c => {
+    const unread = c.unread_admin || 0;
+    const active = c.id === _chatActiveId;
+    const closed = c.status === 'closed';
+    return `<div onclick="openChatThread('${c.id}')" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;${active?'background:rgba(240,90,26,.12);':''}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+        <span style="flex:1;min-width:0;font-size:13px;font-weight:${unread?'700':'600'};color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(chatNameFor(c))}</span>
+        ${closed ? '<span style="font-size:10px;color:var(--sub);border:1px solid var(--border);border-radius:4px;padding:1px 5px;flex-shrink:0;">closed</span>' : ''}
+        <span style="font-size:11px;color:var(--sub);flex-shrink:0;">${chatTime(c.last_message_at)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="flex:1;min-width:0;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.last_sender==='admin'?'You: ':''}${chatEsc(c.last_message || 'No messages yet')}</span>
+        ${unread ? `<span style="flex-shrink:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#e0245e;color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${unread>9?'9+':unread}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.loadChatConversations = async function() {
+  const db = window.SV_DB; if (!db) return;
+  const { data, error } = await db.from('chat_conversations')
+    .select('*').order('last_message_at', { ascending: false }).limit(300);
+  if (error) return;
+  _chatConvs = data || [];
+  renderChatConversations();
+  renderChatBadge();
+};
+
+window.openChatThread = async function(convId) {
+  const db = window.SV_DB; if (!db) return;
+  _chatActiveId = convId;
+  _chatSeenMsgs = new Set();
+
+  const conv = _chatConvs.find(c => c.id === convId);
+  document.getElementById('chat-thread-head').style.display = 'flex';
+  document.getElementById('chat-thread-foot').style.display = 'flex';
+  document.getElementById('chat-thread-name').textContent  = conv ? chatNameFor(conv)  : '';
+  document.getElementById('chat-thread-email').textContent = conv ? chatEmailFor(conv) : '';
+  document.getElementById('chat-close-conv').textContent   = conv && conv.status === 'closed' ? 'Reopen' : 'Close';
+
+  /* mobile: the two panes swap instead of sitting side by side */
+  if (window.innerWidth <= 768) {
+    document.getElementById('chat-list-pane').style.display   = 'none';
+    document.getElementById('chat-thread-pane').style.display = 'flex';
+    document.getElementById('chat-back-btn').style.display    = '';
+  }
+
+  const msgs = document.getElementById('chat-thread-msgs');
+  msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">Loading…</div>';
+
+  const { data } = await db.from('chat_messages')
+    .select('id,sender,sender_name,body,created_at')
+    .eq('conversation_id', convId).order('created_at', { ascending: true }).limit(300);
+
+  msgs.innerHTML = '';
+  (data || []).forEach(appendChatMessage);
+  if (!(data || []).length) {
+    msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">No messages yet</div>';
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try { await db.rpc('chat_mark_read', { p_conversation: convId }); } catch(e) {}
+  const c = _chatConvs.find(x => x.id === convId);
+  if (c) { c.unread_admin = 0; renderChatConversations(); renderChatBadge(); }
+
+  if (_chatThreadChan) { try { db.removeChannel(_chatThreadChan); } catch(e) {} }
+  _chatThreadChan = db.channel('sv-ops-thread-' + convId)
+    .on('postgres_changes', {
+      event:'INSERT', schema:'public', table:'chat_messages',
+      filter:'conversation_id=eq.' + convId,
+    }, p => {
+      if (!p.new || _chatSeenMsgs.has(p.new.id)) return;
+      appendChatMessage(p.new);
+      msgs.scrollTop = msgs.scrollHeight;
+      if (p.new.sender === 'user') {
+        db.rpc('chat_mark_read', { p_conversation: convId }).then(null, () => {});
+      }
+    })
+    .subscribe();
+
+  renderChatConversations();
+};
+
+window.closeChatThread = function() {
+  _chatActiveId = null;
+  document.getElementById('chat-list-pane').style.display = '';
+  if (window.innerWidth <= 768) document.getElementById('chat-thread-pane').style.display = 'none';
+  document.getElementById('chat-back-btn').style.display  = 'none';
+  document.getElementById('chat-thread-head').style.display = 'none';
+  document.getElementById('chat-thread-foot').style.display = 'none';
+  document.getElementById('chat-thread-msgs').innerHTML =
+    '<div style="margin:auto;text-align:center;color:var(--sub);font-size:13px;">Select a conversation to view messages</div>';
+  renderChatConversations();
+};
+
+function appendChatMessage(m) {
+  if (_chatSeenMsgs.has(m.id)) return;
+  _chatSeenMsgs.add(m.id);
+  const msgs = document.getElementById('chat-thread-msgs'); if (!msgs) return;
+  const placeholder = msgs.querySelector('div[style*="margin:auto"]');
+  if (placeholder) placeholder.remove();
+
+  const mine = m.sender === 'admin';
+  const row = document.createElement('div');
+  row.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};gap:2px;`;
+  const bubble = document.createElement('div');
+  bubble.style.cssText = 'max-width:74%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap;' +
+    (mine ? 'background:#f05a1a;color:#fff;border-bottom-right-radius:4px;'
+          : 'background:var(--bg2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px;');
+  bubble.textContent = m.body;
+  const meta = document.createElement('div');
+  meta.style.cssText = 'font-size:10px;color:var(--sub);padding:0 4px;';
+  meta.textContent = (mine ? (m.sender_name || 'You') + ' · ' : '') + chatTime(m.created_at);
+  row.append(bubble, meta);
+  msgs.appendChild(row);
+}
+
+window.sendChatReply = async function() {
+  const db = window.SV_DB; if (!db || !_chatActiveId) return;
+  const box = document.getElementById('chat-reply');
+  const body = (box.value || '').trim();
+  if (!body) return;
+  box.value = '';
+  box.style.height = 'auto';
+  const { error } = await db.from('chat_messages').insert({
+    conversation_id: _chatActiveId,
+    sender: 'admin',
+    sender_id: _adminUser?.id,
+    sender_name: (_adminUser?.email || 'Support').split('@')[0],
+    body: body.slice(0, 4000),
+  });
+  if (error) { showToast('Error: ' + error.message, 'error'); box.value = body; return; }
+  logAudit('chat_reply', _chatActiveId, body.slice(0, 120));
+};
+
+window.toggleChatConversationStatus = async function() {
+  const db = window.SV_DB; if (!db || !_chatActiveId) return;
+  const conv = _chatConvs.find(c => c.id === _chatActiveId); if (!conv) return;
+  const next = conv.status === 'closed' ? 'open' : 'closed';
+  const { error } = await db.from('chat_conversations')
+    .update({ status: next }).eq('id', _chatActiveId);
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  conv.status = next;
+  document.getElementById('chat-close-conv').textContent = next === 'closed' ? 'Reopen' : 'Close';
+  renderChatConversations();
+  logAudit('chat_status', _chatActiveId, next);
+  showToast(next === 'closed' ? 'Conversation closed' : 'Conversation reopened');
+};
+
+window.initChatInbox = async function() {
+  const db = window.SV_DB; if (!db) return;
+  await loadChatConversations();
+
+  /* on phones the thread pane only appears once a conversation is picked */
+  if (window.innerWidth <= 768) {
+    document.getElementById('chat-thread-pane').style.display = 'none';
+  }
+
+  /* ask once, so background replies can raise a desktop notification */
+  try {
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  } catch(e) {}
+
+  const reply = document.getElementById('chat-reply');
+  if (reply) {
+    reply.addEventListener('input', () => {
+      reply.style.height = 'auto';
+      reply.style.height = Math.min(reply.scrollHeight, 120) + 'px';
+    });
+    reply.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatReply(); }
+    });
+  }
+
+  /* inbox-wide listener: keeps the list, badge, sound and notifications live
+     no matter which ops page is open */
+  db.channel('sv-ops-chat-inbox')
+    .on('postgres_changes', { event:'*', schema:'public', table:'chat_conversations' }, async p => {
+      const row = p.new || p.old; if (!row) return;
+      const known = _chatConvs.find(c => c.id === row.id);
+      if (p.eventType === 'DELETE') {
+        _chatConvs = _chatConvs.filter(c => c.id !== row.id);
+      } else if (known) {
+        Object.assign(known, row);
+      } else {
+        _chatConvs.unshift(row);
+        if (!(_allUsers || []).find(u => u.id === row.user_id)) {
+          try {
+            const { data } = await db.from('profiles').select('*').eq('id', row.user_id).maybeSingle();
+            if (data) (_allUsers = _allUsers || []).push(data);
+          } catch(e) {}
+        }
+      }
+      _chatConvs.sort((a,b) => new Date(b.last_message_at) - new Date(a.last_message_at));
+      renderChatConversations();
+      renderChatBadge();
+    })
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages' }, p => {
+      const m = p.new; if (!m || m.sender !== 'user') return;
+      if (m.conversation_id === _chatActiveId &&
+          document.getElementById('page-support-chat').classList.contains('active')) return;
+      const conv = _chatConvs.find(c => c.id === m.conversation_id);
+      chatBeep();
+      if (conv) chatNotify(conv, m.body);
+    })
+    .subscribe();
+};
+
 /* ── Live Chat (Smartsupp) ── */
 let _chatDisabledUsers = [];
 
 window.loadChatSettings = async function() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('system_settings').select('key,value')
-    .in('key', ['chat_enabled','chat_visibility','chat_disabled_users']);
+    .in('key', ['chat_enabled','chat_visibility','chat_disabled_users','support_chat_enabled']);
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   try {
@@ -2497,6 +2879,7 @@ window.loadChatSettings = async function() {
   document.getElementById('chat-opts').style.display = on ? '' : 'none';
   document.getElementById('chat-visibility').value =
     map['chat_visibility'] === 'logged_in' ? 'logged_in' : 'all';
+  document.getElementById('toggle-support-chat').checked = map['support_chat_enabled'] !== 'false';
   renderChatVisibilityNote();
   populateChatUserSelect();
   renderChatUserList();
@@ -2514,6 +2897,12 @@ window.onChatToggle = function() {
   document.getElementById('chat-opts').style.display = on ? '' : 'none';
   saveChatSettings('chat_enabled', String(on),
     on ? '✓ Live chat enabled' : '✗ Live chat disabled sitewide');
+};
+
+window.saveSupportChatEnabled = function() {
+  const on = document.getElementById('toggle-support-chat').checked;
+  saveChatSettings('support_chat_enabled', String(on),
+    on ? '✓ Veloci Chat enabled' : '✗ Veloci Chat hidden');
 };
 
 window.saveChatVisibility = function() {
