@@ -1307,12 +1307,20 @@
                   <span class="toggle-slider"></span>
                 </label>
                 <div id="geo-block-opts" style="display:none;width:100%;padding-top:14px;">
-                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                  <div style="position:relative;margin-bottom:8px;">
+                    <input type="text" id="geo-country-search" placeholder="Search countries — name or code…" autocomplete="off"
+                      oninput="filterGeoCountries()" onkeydown="onGeoSearchKey(event)"
+                      style="width:100%;padding:8px 30px 8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;"/>
+                    <span id="geo-search-clear" onclick="clearGeoCountrySearch()" title="Clear search"
+                      style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--sub);font-size:15px;line-height:1;">×</span>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
                     <select id="geo-country-select" style="flex:1;min-width:0;width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;color-scheme:dark;">
                       <option value="">— Select country to block —</option>
                     </select>
                     <button class="btn btn--primary btn--sm" onclick="addBlockedCountry()" style="flex-shrink:0;white-space:nowrap;">+ Add</button>
                   </div>
+                  <div id="geo-country-count" style="font-size:12px;color:var(--sub);margin-bottom:10px;"></div>
                   <div id="geo-country-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;min-height:0;"></div>
                   <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;">
                     <label class="field__label">Bypass Key <span style="opacity:.6;font-weight:400;">(optional)</span></label>
@@ -2434,7 +2442,8 @@ window.loadGeoBlocking = async function() {
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   _blockedCountries = String(map['blocked_countries'] || '')
-    .split(',').map(c => c.trim().toUpperCase()).filter(c => c.length === 2);
+    .split(',').map(c => c.trim().toUpperCase()).filter(c => c.length === 2)
+    .sort((a,b) => (window.SV_COUNTRY_NAME(a) || a).localeCompare(window.SV_COUNTRY_NAME(b) || b));
 
   const on = map['geo_blocking_enabled'] === 'true';
   document.getElementById('toggle-geo-block').checked = on;
@@ -2457,17 +2466,70 @@ window.onGeoBlockToggle = function() {
   saveGeoBlocking();
 };
 
+/* Ranks a country against the search term. Lower is better; null = no match.
+   Exact code beats name-prefix beats code-prefix beats substring, so typing
+   "us" surfaces United States before Belarus/Cyprus/Mauritius. */
+function geoMatchRank(c, q) {
+  const name = c.fold;                      // accent-folded: "cote d'ivoire"
+  const code = c.code.toLowerCase();
+  if (code === q)            return 0;
+  if (name.startsWith(q))    return 1;
+  if (code.startsWith(q))    return 2;
+  if (name.includes(q))      return 3;
+  return null;
+}
+
 function populateGeoCountrySelect() {
   const sel = document.getElementById('geo-country-select'); if (!sel) return;
-  sel.innerHTML = '<option value="">— Select country to block —</option>';
-  (window.SV_COUNTRIES || []).forEach(c => {
-    if (_blockedCountries.includes(c.code)) return;
-    const opt = document.createElement('option');
-    opt.value = c.code;
-    opt.textContent = window.SV_COUNTRY_FLAG(c.code) + '  ' + c.name + ' (' + c.code + ')';
-    sel.appendChild(opt);
-  });
+  const raw = (document.getElementById('geo-country-search')?.value || '').trim();
+  const q   = window.SV_FOLD(raw);
+
+  let matches = (window.SV_COUNTRIES || []).filter(c => !_blockedCountries.includes(c.code));
+  if (q) {
+    matches = matches
+      .map(c => ({ c, rank: geoMatchRank(c, q) }))
+      .filter(x => x.rank !== null)
+      .sort((a, b) => a.rank - b.rank || a.c.name.localeCompare(b.c.name))
+      .map(x => x.c);
+  }
+
+  sel.innerHTML = '';
+  if (!matches.length) {
+    sel.innerHTML = `<option value="">${q ? '— No countries match —' : '— All countries blocked —'}</option>`;
+  } else {
+    /* With an active search the best match is pre-selected, so Enter or "+ Add"
+       works straight away without opening the dropdown. */
+    if (!q) sel.appendChild(new Option('— Select country to block —', ''));
+    matches.forEach(c => {
+      sel.appendChild(new Option(window.SV_COUNTRY_FLAG(c.code) + '  ' + c.name + ' (' + c.code + ')', c.code));
+    });
+  }
+
+  const clear = document.getElementById('geo-search-clear');
+  if (clear) clear.style.display = q ? '' : 'none';
+
+  const count = document.getElementById('geo-country-count');
+  if (count) {
+    count.textContent = q
+      ? (matches.length ? `${matches.length} match${matches.length === 1 ? '' : 'es'} for “${raw}”` : `No countries match “${raw}”`)
+      : '';
+  }
 }
+
+window.filterGeoCountries = function() {
+  populateGeoCountrySelect();
+};
+
+window.clearGeoCountrySearch = function() {
+  const s = document.getElementById('geo-country-search');
+  if (s) { s.value = ''; s.focus(); }
+  populateGeoCountrySelect();
+};
+
+window.onGeoSearchKey = function(e) {
+  if (e.key === 'Enter')  { e.preventDefault(); addBlockedCountry(); }
+  if (e.key === 'Escape') { e.preventDefault(); clearGeoCountrySearch(); }
+};
 
 function renderBlockedCountryList() {
   const c = document.getElementById('geo-country-list'); if (!c) return;
@@ -2483,9 +2545,24 @@ function renderBlockedCountryList() {
 
 window.addBlockedCountry = function() {
   const sel = document.getElementById('geo-country-select');
-  const code = sel.value; if (!code) { showToast('Select a country first','error'); return; }
+  const code = sel.value;
+  if (!code) { showToast('Select a country first','error'); return; }
   if (!_blockedCountries.includes(code)) _blockedCountries.push(code);
-  sel.value = ''; populateGeoCountrySelect(); renderBlockedCountryList();
+  /* keep chips alphabetical so a long list stays scannable */
+  _blockedCountries.sort((a,b) =>
+    (window.SV_COUNTRY_NAME(a) || a).localeCompare(window.SV_COUNTRY_NAME(b) || b));
+
+  const search = document.getElementById('geo-country-search');
+  populateGeoCountrySelect();
+  /* if that was the last match for the current term, reset it rather than
+     leaving the admin staring at "No countries match" */
+  if (search && search.value.trim() && !sel.querySelector('option[value]:not([value=""])')) {
+    search.value = '';
+    populateGeoCountrySelect();
+  }
+  if (search && document.activeElement === search) search.focus();
+
+  renderBlockedCountryList();
   saveGeoBlocking();
 };
 

@@ -43,6 +43,14 @@
     "VG:British Virgin Islands|VI:U.S. Virgin Islands|VN:Vietnam|VU:Vanuatu|WF:Wallis and Futuna|" +
     "WS:Samoa|YE:Yemen|YT:Mayotte|ZA:South Africa|ZM:Zambia|ZW:Zimbabwe";
 
+  /* Strip diacritics so searching "cote" finds "Côte d'Ivoire",
+     "sao tome" finds "São Tomé and Príncipe", "turkiye" finds "Türkiye". */
+  function fold(s) {
+    /* NFD splits accented letters into base + combining mark; dropping every
+       non-ASCII byte then leaves the plain base letters. */
+    return String(s || '').normalize('NFD').replace(/[^\x00-\x7F]/g, '').toLowerCase();
+  }
+
   const list = [];
   const byCode = {};
   RAW.split('|').forEach(pair => {
@@ -51,7 +59,7 @@
     const code = pair.slice(0, i).trim();
     const name = pair.slice(i + 1).trim();
     if (code.length !== 2 || !name) return;   // skips malformed entries
-    list.push({ code, name });
+    list.push({ code, name, fold: fold(name) });
     byCode[code] = name;
   });
   list.sort((a, b) => a.name.localeCompare(b.name));
@@ -65,6 +73,7 @@
   }
 
   window.SV_COUNTRIES     = list;
+  window.SV_FOLD          = fold;
   window.SV_COUNTRY_NAME  = code => byCode[String(code || '').toUpperCase()] || null;
   window.SV_COUNTRY_FLAG  = flag;
 })();
