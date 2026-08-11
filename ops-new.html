@@ -974,7 +974,7 @@
                   <div style="font-size:11px;color:var(--sub);">Status shown to users</div>
                 </div>
                 <label class="toggle-switch" style="flex-shrink:0;">
-                  <input type="checkbox" id="toggle-chat-status" onchange="saveChatStatus()">
+                  <input type="checkbox" id="toggle-chat-status" onchange="saveChatStatus(this.checked)">
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -1383,6 +1383,17 @@
                   <span class="toggle-slider"></span>
                 </label>
               </div>
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Support Status</div>
+                  <div class="toggle-wrap__sub" id="chat-status-sub">Online — users see your usual reply time</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-chat-status-2" onchange="saveChatStatus(this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
               <div class="toggle-wrap" style="flex-wrap:wrap;">
                 <div style="flex:1;min-width:0;">
                   <div class="toggle-wrap__label">Pre-chat Form</div>
@@ -3150,9 +3161,7 @@ window.loadChatSettings = async function() {
     map['chat_visibility'] === 'logged_in' ? 'logged_in' : 'all';
   document.getElementById('toggle-support-chat').checked = map['support_chat_enabled'] !== 'false';
 
-  const online = map['chat_status'] !== 'offline';
-  const statusToggle = document.getElementById('toggle-chat-status');
-  if (statusToggle) { statusToggle.checked = online; renderChatStatus(online); }
+  renderChatStatus(map['chat_status'] !== 'offline');   // sets both toggles
   document.getElementById('toggle-prechat').checked     = map['chat_prechat_enabled'] !== 'false';
   document.getElementById('toggle-welcome').checked     = map['chat_welcome_enabled'] !== 'false';
   document.getElementById('toggle-offline-msg').checked = map['chat_offline_enabled'] !== 'false';
@@ -3188,18 +3197,27 @@ window.saveChatText = function(key, elId, msg) {
   saveChatSettings(key, v, msg);
 };
 
-window.saveChatStatus = async function() {
-  const online = document.getElementById('toggle-chat-status').checked;
+window.saveChatStatus = async function(online) {
   renderChatStatus(online);
   await saveChatSettings('chat_status', online ? 'online' : 'offline',
     online ? '✓ You are online' : '✗ You are offline — auto-reply will answer');
 };
 
+/* One setting, two places to flip it: the inbox for quick access while working
+   a queue, and Settings alongside the other chat controls. Keep both in step. */
 function renderChatStatus(online) {
   const dot = document.getElementById('chat-status-dot');
   const lbl = document.getElementById('chat-status-label');
+  const sub = document.getElementById('chat-status-sub');
   if (dot) dot.style.background = online ? '#0ecb81' : '#8b8f9a';
   if (lbl) lbl.textContent = online ? 'Online' : 'Offline';
+  if (sub) sub.textContent = online
+    ? 'Online — users see your usual reply time'
+    : 'Offline — users see an offline notice and get the auto-reply';
+  ['toggle-chat-status','toggle-chat-status-2'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t && t.checked !== online) t.checked = online;
+  });
 }
 
 window.saveSupportChatEnabled = function() {
