@@ -109,6 +109,18 @@ export default async function middleware(request) {
     if (isExempt(url.pathname)) return;
 
     const country = (request.headers.get('x-vercel-ip-country') || '').toUpperCase();
+
+    /* Diagnostic: what country does the edge think this visitor is in, and would
+       they be blocked? Deliberately does not expose the full blocked list. */
+    if (url.pathname === '/__geo') {
+      const c = await getSettings();
+      return Response.json({
+        country: country || null,
+        enabled: !!c?.enabled,
+        blocked: !!(c?.enabled && country && c.blocked.has(country)),
+      }, { headers: { 'cache-control': 'no-store' } });
+    }
+
     if (!country) return;                       // unknown origin -> allow
 
     const cfg = await getSettings();
