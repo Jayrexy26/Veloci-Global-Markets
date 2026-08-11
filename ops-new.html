@@ -2795,7 +2795,7 @@ window.openChatThread = async function(convId) {
   msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">Loading…</div>';
 
   const { data } = await db.from('chat_messages')
-    .select('id,sender,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
+    .select('id,sender,sender_id,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
     .eq('conversation_id', convId).order('created_at', { ascending: true }).limit(300);
 
   msgs.innerHTML = '';
@@ -2912,7 +2912,7 @@ function appendChatMessage(m) {
 
   const meta = document.createElement('div');
   meta.style.cssText = 'font-size:10px;color:var(--sub);padding:0 4px;';
-  meta.textContent = (mine ? (m.sender_name || 'You') + ' · ' : '') + chatTime(m.created_at);
+  meta.textContent = (mine ? ((m.sender_id && _adminUser && m.sender_id === _adminUser.id) ? 'You' : 'Veloci Support') + ' · ' : '') + chatTime(m.created_at);
   row.append(bubble, meta);
   msgs.appendChild(row);
 }
@@ -2940,7 +2940,7 @@ window.sendChatAttachment = async function(fileInput) {
       conversation_id: _chatActiveId,
       sender: 'admin',
       sender_id: _adminUser?.id,
-      sender_name: (_adminUser?.email || 'Support').split('@')[0],
+      sender_name: 'Veloci Support',
       body: '',
       attachment_path: path,
       attachment_name: (file.name || 'file').slice(0,120),
@@ -2966,7 +2966,7 @@ window.sendChatReply = async function() {
     conversation_id: _chatActiveId,
     sender: 'admin',
     sender_id: _adminUser?.id,
-    sender_name: (_adminUser?.email || 'Support').split('@')[0],
+    sender_name: 'Veloci Support',
     body: body.slice(0, 4000),
   });
   if (error) { showToast('Error: ' + error.message, 'error'); box.value = body; return; }

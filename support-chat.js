@@ -94,8 +94,9 @@
         #sv-chat-panel.sv-open .sv-chat-head{
           padding-top:max(14px, env(safe-area-inset-top));
         }
-        #sv-chat-panel.sv-open .sv-chat-foot{
-          padding-bottom:max(10px, env(safe-area-inset-bottom));
+        /* the brand bar is the bottom-most element, so it carries the inset */
+        #sv-chat-panel.sv-open .sv-chat-brand{
+          padding-bottom:max(7px, env(safe-area-inset-bottom));
         }
       }
     `;
@@ -173,7 +174,13 @@
       '<polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
     foot.append(clip, input, send, fileInput);
 
-    panel.append(head, list, foot);
+    const brand = el('div', `padding:7px 10px;background:#0d0f14;border-top:1px solid rgba(255,255,255,.05);
+      text-align:center;font-size:10px;letter-spacing:.03em;color:rgba(234,236,239,.3);flex-shrink:0;`);
+    brand.className = 'sv-chat-brand';
+    brand.appendChild(el('span', '', 'Powered by '));
+    brand.appendChild(el('span', `color:${ACCENT};font-weight:600;`, 'Veloci Engine'));
+
+    panel.append(head, list, foot, brand);
     wrap.append(panel, bubble);
     document.body.appendChild(wrap);
 
@@ -244,8 +251,10 @@
       if (m.attachment_path) b.appendChild(attachmentNode(m, mine));
       if (m.body && m.body.trim()) b.appendChild(el('span', 'white-space:pre-wrap;', m.body));
 
+      /* Always brand support replies. Never surface whichever admin account
+         actually sent it, even if an older row still carries a name. */
       const meta = el('div', 'font-size:10px;color:rgba(234,236,239,.35);padding:0 4px;',
-        (mine ? '' : (m.sender_name || 'Support') + ' · ') + fmtTime(m.created_at));
+        (mine ? '' : 'Veloci Support · ') + fmtTime(m.created_at));
       row.append(b, meta);
       list.appendChild(row);
     }
