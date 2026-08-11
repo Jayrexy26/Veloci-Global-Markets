@@ -78,7 +78,8 @@
       }
       @media (max-width:640px){
         #sv-chat-wrap.sv-open{left:0;right:0;top:0;bottom:0;}
-        #sv-chat-wrap.sv-open #sv-chat-bubble{display:none;}
+        /* the bubble carries an inline display, which would otherwise win */
+        #sv-chat-wrap.sv-open #sv-chat-bubble{display:none !important;}
         #sv-chat-panel.sv-open{
           position:fixed;
           left:0;right:0;top:0;bottom:0;
@@ -300,8 +301,10 @@
       panel.classList.add('sv-open');
       wrap.classList.add('sv-open');
       bubble.style.transform = 'none';
-      /* fullscreen on phones: stop the page behind from scrolling underneath */
+      /* fullscreen on phones: stop the page behind from scrolling underneath,
+         and take the bubble out of the way of the panel header */
       if (isPhone()) {
+        bubble.style.display = 'none';
         scrollLocked = true;
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
@@ -317,6 +320,7 @@
       panel.style.display = 'none';
       panel.classList.remove('sv-open');
       wrap.classList.remove('sv-open');
+      bubble.style.display = 'flex';
       if (scrollLocked) {
         document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
@@ -327,14 +331,20 @@
     /* rotating or resizing out of phone width must not leave the page locked */
     window.addEventListener('resize', () => {
       if (!isOpen) return;
-      if (!isPhone() && scrollLocked) {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        scrollLocked = false;
-      } else if (isPhone() && !scrollLocked) {
-        scrollLocked = true;
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
+      if (!isPhone()) {
+        bubble.style.display = 'flex';       // corner layout again, bubble is the toggle
+        if (scrollLocked) {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          scrollLocked = false;
+        }
+      } else {
+        bubble.style.display = 'none';
+        if (!scrollLocked) {
+          scrollLocked = true;
+          document.documentElement.style.overflow = 'hidden';
+          document.body.style.overflow = 'hidden';
+        }
       }
     });
 
