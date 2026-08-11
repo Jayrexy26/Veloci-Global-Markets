@@ -24,6 +24,17 @@
     } catch (_) { return ''; }
   };
 
+  const fmtSize = b => {
+    if (!b && b !== 0) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  };
+
+  const MAX_BYTES = 10 * 1024 * 1024;
+  const ALLOWED = ['image/png','image/jpeg','image/jpg','image/gif','image/webp',
+                   'application/pdf','text/plain'];
+
   (async function init() {
     const db = window.SV_DB;
     if (!db) return;
@@ -97,6 +108,18 @@
     /* composer */
     const foot = el('div', `padding:10px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;
       align-items:flex-end;background:#12141a;flex-shrink:0;`);
+    const fileInput = el('input', 'display:none;');
+    fileInput.type = 'file';
+    fileInput.accept = ALLOWED.join(',');
+
+    const clip = el('button', `flex-shrink:0;width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+      background:#0d0f14;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;`);
+    clip.setAttribute('aria-label', 'Attach a file');
+    clip.title = 'Attach a file (max 10 MB)';
+    clip.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(234,236,239,.75)" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l' +
+      '9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+
     const input = el('textarea', `flex:1;min-width:0;resize:none;max-height:96px;height:40px;padding:10px 12px;
       border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0d0f14;color:#eaecef;font-size:13px;
       font-family:inherit;outline:none;line-height:1.4;`);
@@ -107,7 +130,7 @@
     send.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" ' +
       'stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/>' +
       '<polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
-    foot.append(input, send);
+    foot.append(clip, input, send, fileInput);
 
     panel.append(head, list, foot);
     wrap.append(panel, bubble);
@@ -124,6 +147,47 @@
       badge.style.display = unread > 0 ? 'flex' : 'none';
     }
 
+    /* The bucket is private, so every attachment needs a short-lived signed URL.
+       Cached per path so re-renders don't re-sign the same file. */
+    const urlCache = new Map();
+    async function signedUrl(path) {
+      if (urlCache.has(path)) return urlCache.get(path);
+      try {
+        const { data } = await db.storage.from('chat-attachments').createSignedUrl(path, 3600);
+        const u = data && data.signedUrl;
+        if (u) urlCache.set(path, u);
+        return u || null;
+      } catch (_) { return null; }
+    }
+
+    function attachmentNode(m, mine) {
+      const isImg = String(m.attachment_type || '').startsWith('image/');
+      if (isImg) {
+        const img = el('img', `max-width:200px;max-height:200px;border-radius:8px;display:block;cursor:pointer;
+          background:rgba(255,255,255,.06);min-height:60px;`);
+        img.alt = m.attachment_name || 'attachment';
+        signedUrl(m.attachment_path).then(u => {
+          if (!u) return;
+          img.src = u;
+          img.onclick = () => window.open(u, '_blank', 'noopener');
+        });
+        return img;
+      }
+      const card = el('div', `display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;
+        background:${mine ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.07)'};`);
+      card.appendChild(el('span', 'font-size:15px;flex-shrink:0;', '📎'));
+      const info = el('div', 'min-width:0;');
+      info.appendChild(el('div', `font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;
+        text-overflow:ellipsis;max-width:150px;`, m.attachment_name || 'file'));
+      info.appendChild(el('div', 'font-size:10px;opacity:.7;', fmtSize(m.attachment_size)));
+      card.appendChild(info);
+      card.onclick = async () => {
+        const u = await signedUrl(m.attachment_path);
+        if (u) window.open(u, '_blank', 'noopener');
+      };
+      return card;
+    }
+
     function addMessage(m) {
       if (seen.has(m.id)) return;
       seen.add(m.id);
@@ -132,10 +196,13 @@
       const mine = m.sender === 'user';
       const row = el('div', `display:flex;flex-direction:column;align-items:${mine ? 'flex-end' : 'flex-start'};gap:2px;`);
       const b = el('div', `max-width:82%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.5;
-        word-break:break-word;white-space:pre-wrap;` + (mine
+        word-break:break-word;white-space:pre-wrap;display:flex;flex-direction:column;gap:6px;` + (mine
           ? `background:${ACCENT};color:#fff;border-bottom-right-radius:4px;`
-          : 'background:#1c1f27;color:#eaecef;border-bottom-left-radius:4px;'),
-        m.body);
+          : 'background:#1c1f27;color:#eaecef;border-bottom-left-radius:4px;'));
+
+      if (m.attachment_path) b.appendChild(attachmentNode(m, mine));
+      if (m.body && m.body.trim()) b.appendChild(el('span', 'white-space:pre-wrap;', m.body));
+
       const meta = el('div', 'font-size:10px;color:rgba(234,236,239,.35);padding:0 4px;',
         (mine ? '' : (m.sender_name || 'Support') + ' · ') + fmtTime(m.created_at));
       row.append(b, meta);
@@ -152,7 +219,7 @@
     /* ── history ── */
     try {
       const { data } = await db.from('chat_messages')
-        .select('id,sender,sender_name,body,created_at')
+        .select('id,sender,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
         .eq('conversation_id', convId)
         .order('created_at', { ascending: true })
         .limit(200);
@@ -229,5 +296,54 @@
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
     });
+
+    /* ── attachments ── */
+    function toast(msg) {
+      const t = el('div', `position:absolute;left:10px;right:10px;bottom:56px;padding:8px 10px;border-radius:8px;
+        background:#2a1410;border:1px solid rgba(240,90,26,.4);color:#ffb492;font-size:12px;text-align:center;z-index:2;`, msg);
+      panel.appendChild(t);
+      setTimeout(() => t.remove(), 3200);
+    }
+
+    clip.onclick = () => { if (!sending) fileInput.click(); };
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';                       // allow re-picking the same file
+      if (!file || sending) return;
+
+      if (file.size > MAX_BYTES) { toast('File is too large (max 10 MB)'); return; }
+      if (file.type && ALLOWED.indexOf(file.type) === -1) {
+        toast('Only images, PDF or text files'); return;
+      }
+
+      sending = true;
+      clip.style.opacity = '.5';
+      const safe = (file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80);
+      const path = convId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + safe;
+
+      try {
+        const up = await db.storage.from('chat-attachments')
+          .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+        if (up.error) throw up.error;
+
+        const { error } = await db.from('chat_messages').insert({
+          conversation_id: convId,
+          sender: 'user',
+          sender_id: session.user.id,
+          body: '',
+          attachment_path: path,
+          attachment_name: (file.name || 'file').slice(0, 120),
+          attachment_type: file.type || null,
+          attachment_size: file.size,
+        });
+        if (error) throw error;
+      } catch (err) {
+        toast('Upload failed. Please try again.');
+      }
+
+      sending = false;
+      clip.style.opacity = '1';
+    };
   })();
 })();

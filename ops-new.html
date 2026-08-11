@@ -997,6 +997,11 @@
                 </div>
               </div>
               <div id="chat-thread-foot" style="padding:10px;border-top:1px solid var(--border);display:none;gap:8px;align-items:flex-end;flex-shrink:0;">
+                <input type="file" id="chat-file" style="display:none;"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf,text/plain"
+                  onchange="sendChatAttachment(this)"/>
+                <button class="btn btn--sm" onclick="document.getElementById('chat-file').click()"
+                  title="Attach a file (max 10 MB)" style="flex-shrink:0;">📎</button>
                 <textarea id="chat-reply" placeholder="Type a reply…  (Enter to send)" rows="1"
                   style="flex:1;min-width:0;resize:none;max-height:120px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;outline:none;line-height:1.4;"></textarea>
                 <button class="btn btn--primary btn--sm" onclick="sendChatReply()" style="flex-shrink:0;">Send</button>
@@ -2790,7 +2795,7 @@ window.openChatThread = async function(convId) {
   msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">Loading…</div>';
 
   const { data } = await db.from('chat_messages')
-    .select('id,sender,sender_name,body,created_at')
+    .select('id,sender,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
     .eq('conversation_id', convId).order('created_at', { ascending: true }).limit(300);
 
   msgs.innerHTML = '';
@@ -2834,6 +2839,54 @@ window.closeChatThread = function() {
   renderChatConversations();
 };
 
+const _chatUrlCache = new Map();
+async function chatSignedUrl(path) {
+  if (_chatUrlCache.has(path)) return _chatUrlCache.get(path);
+  try {
+    const { data } = await window.SV_DB.storage.from('chat-attachments').createSignedUrl(path, 3600);
+    const u = data && data.signedUrl;
+    if (u) _chatUrlCache.set(path, u);
+    return u || null;
+  } catch(e) { return null; }
+}
+
+function chatFmtSize(b) {
+  if (!b && b !== 0) return '';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(0) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function chatAttachmentNode(m) {
+  if (String(m.attachment_type || '').startsWith('image/')) {
+    const img = document.createElement('img');
+    img.alt = m.attachment_name || 'attachment';
+    img.style.cssText = 'max-width:220px;max-height:220px;border-radius:8px;display:block;cursor:pointer;background:rgba(255,255,255,.05);min-height:60px;';
+    chatSignedUrl(m.attachment_path).then(u => {
+      if (!u) return;
+      img.src = u;
+      img.onclick = () => window.open(u, '_blank', 'noopener');
+    });
+    return img;
+  }
+  const card = document.createElement('div');
+  card.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;background:rgba(255,255,255,.08);';
+  const icon = document.createElement('span'); icon.textContent = '📎'; icon.style.cssText = 'font-size:15px;flex-shrink:0;';
+  const info = document.createElement('div'); info.style.cssText = 'min-width:0;';
+  const nm = document.createElement('div');
+  nm.style.cssText = 'font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;';
+  nm.textContent = m.attachment_name || 'file';
+  const sz = document.createElement('div');
+  sz.style.cssText = 'font-size:10px;opacity:.7;';
+  sz.textContent = chatFmtSize(m.attachment_size);
+  info.append(nm, sz); card.append(icon, info);
+  card.onclick = async () => {
+    const u = await chatSignedUrl(m.attachment_path);
+    if (u) window.open(u, '_blank', 'noopener');
+  };
+  return card;
+}
+
 function appendChatMessage(m) {
   if (_chatSeenMsgs.has(m.id)) return;
   _chatSeenMsgs.add(m.id);
@@ -2845,16 +2898,62 @@ function appendChatMessage(m) {
   const row = document.createElement('div');
   row.style.cssText = `display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};gap:2px;`;
   const bubble = document.createElement('div');
-  bubble.style.cssText = 'max-width:74%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap;' +
+  bubble.style.cssText = 'max-width:74%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.5;word-break:break-word;display:flex;flex-direction:column;gap:6px;' +
     (mine ? 'background:#f05a1a;color:#fff;border-bottom-right-radius:4px;'
           : 'background:var(--bg2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px;');
-  bubble.textContent = m.body;
+
+  if (m.attachment_path) bubble.appendChild(chatAttachmentNode(m));
+  if (m.body && m.body.trim()) {
+    const txt = document.createElement('span');
+    txt.style.cssText = 'white-space:pre-wrap;';
+    txt.textContent = m.body;
+    bubble.appendChild(txt);
+  }
+
   const meta = document.createElement('div');
   meta.style.cssText = 'font-size:10px;color:var(--sub);padding:0 4px;';
   meta.textContent = (mine ? (m.sender_name || 'You') + ' · ' : '') + chatTime(m.created_at);
   row.append(bubble, meta);
   msgs.appendChild(row);
 }
+
+window.sendChatAttachment = async function(fileInput) {
+  const db = window.SV_DB;
+  const file = fileInput.files && fileInput.files[0];
+  fileInput.value = '';
+  if (!db || !file || !_chatActiveId) return;
+
+  if (file.size > 10485760) { showToast('File is too large (max 10 MB)', 'error'); return; }
+  const allowed = ['image/png','image/jpeg','image/jpg','image/gif','image/webp','application/pdf','text/plain'];
+  if (file.type && allowed.indexOf(file.type) === -1) {
+    showToast('Only images, PDF or text files', 'error'); return;
+  }
+
+  const safe = (file.name || 'file').replace(/[^\w.\-]+/g,'_').slice(-80);
+  const path = _chatActiveId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '-' + safe;
+  showToast('Uploading…');
+  try {
+    const up = await db.storage.from('chat-attachments')
+      .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+    if (up.error) throw up.error;
+    const { error } = await db.from('chat_messages').insert({
+      conversation_id: _chatActiveId,
+      sender: 'admin',
+      sender_id: _adminUser?.id,
+      sender_name: (_adminUser?.email || 'Support').split('@')[0],
+      body: '',
+      attachment_path: path,
+      attachment_name: (file.name || 'file').slice(0,120),
+      attachment_type: file.type || null,
+      attachment_size: file.size,
+    });
+    if (error) throw error;
+    logAudit('chat_attachment', _chatActiveId, (file.name || '').slice(0,100));
+    showToast('File sent');
+  } catch(e) {
+    showToast('Upload failed: ' + (e.message || e), 'error');
+  }
+};
 
 window.sendChatReply = async function() {
   const db = window.SV_DB; if (!db || !_chatActiveId) return;
