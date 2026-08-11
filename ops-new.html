@@ -1295,6 +1295,49 @@
             </div>
           </div>
           <div class="card">
+            <div class="card__head"><div class="card__title">Live Chat (Smartsupp)</div><div class="card__sub">Control who sees the support chat widget</div></div>
+            <div class="card__body">
+              <div class="toggle-wrap" style="flex-wrap:wrap;border-bottom:none;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Enable Live Chat</div>
+                  <div class="toggle-wrap__sub">Off hides the chat widget across the entire site</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-chat" onchange="onChatToggle()">
+                  <span class="toggle-slider"></span>
+                </label>
+                <div id="chat-opts" style="display:none;width:100%;padding-top:14px;">
+                  <div class="field" style="margin:0 0 14px;">
+                    <label class="field__label">Show To</label>
+                    <select id="chat-visibility" onchange="saveChatVisibility()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;color-scheme:dark;">
+                      <option value="all">Everyone</option>
+                      <option value="logged_in">Logged-in users only</option>
+                    </select>
+                    <div id="chat-visibility-note" style="font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5;"></div>
+                  </div>
+                  <div style="border-top:1px solid var(--border);padding-top:14px;">
+                    <label class="field__label">Hide From Specific Users</label>
+                    <div style="position:relative;margin:6px 0 8px;">
+                      <input type="text" id="chat-user-search" placeholder="Search users — name or email…" autocomplete="off"
+                        oninput="filterChatUsers()" onkeydown="onChatUserSearchKey(event)"
+                        style="width:100%;padding:8px 30px 8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;"/>
+                      <span id="chat-user-search-clear" onclick="clearChatUserSearch()" title="Clear search"
+                        style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--sub);font-size:15px;line-height:1;">×</span>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                      <select id="chat-user-select" style="flex:1;min-width:0;width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;color-scheme:dark;">
+                        <option value="">— Select user to hide chat from —</option>
+                      </select>
+                      <button class="btn btn--primary btn--sm" onclick="addChatDisabledUser()" style="flex-shrink:0;white-space:nowrap;">+ Add</button>
+                    </div>
+                    <div id="chat-user-count" style="font-size:12px;color:var(--sub);margin-bottom:10px;"></div>
+                    <div id="chat-user-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;min-height:0;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
             <div class="card__head"><div class="card__title">Country Access Blocking</div><div class="card__sub">Deny site access to visitors from selected countries</div></div>
             <div class="card__body">
               <div class="toggle-wrap" style="flex-wrap:wrap;border-bottom:none;">
@@ -2258,6 +2301,7 @@
   await loadMinWithdrawalSettings();
   await loadBankMaintenanceSettings();
   await loadGeoBlocking();
+  await loadChatSettings();
   await loadReviews();
 })();
 
@@ -2431,6 +2475,143 @@ async function saveWithdrawalsDisabled() {
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   logAudit('withdrawals_toggle', 'system', `restricted=${restricted} scope=${scopeVal}`);
   showToast(restricted ? '✗ Withdrawals restricted' : '✓ Withdrawals unrestricted');
+}
+
+/* ── Live Chat (Smartsupp) ── */
+let _chatDisabledUsers = [];
+
+window.loadChatSettings = async function() {
+  const db = window.SV_DB; if (!db) return;
+  const { data } = await db.from('system_settings').select('key,value')
+    .in('key', ['chat_enabled','chat_visibility','chat_disabled_users']);
+  const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
+
+  try {
+    const parsed = JSON.parse(map['chat_disabled_users'] || '[]');
+    _chatDisabledUsers = Array.isArray(parsed) ? parsed : [];
+  } catch(e) { _chatDisabledUsers = []; }
+
+  /* absent setting means enabled, matching how the site behaved before */
+  const on = map['chat_enabled'] === undefined ? true : map['chat_enabled'] === 'true';
+  document.getElementById('toggle-chat').checked = on;
+  document.getElementById('chat-opts').style.display = on ? '' : 'none';
+  document.getElementById('chat-visibility').value =
+    map['chat_visibility'] === 'logged_in' ? 'logged_in' : 'all';
+  renderChatVisibilityNote();
+  populateChatUserSelect();
+  renderChatUserList();
+};
+
+function renderChatVisibilityNote() {
+  const el = document.getElementById('chat-visibility-note'); if (!el) return;
+  el.textContent = document.getElementById('chat-visibility').value === 'logged_in'
+    ? 'Signed-out visitors never see the chat — including on the login, register and password-reset pages.'
+    : 'Every visitor sees the chat, signed in or not.';
+}
+
+window.onChatToggle = function() {
+  const on = document.getElementById('toggle-chat').checked;
+  document.getElementById('chat-opts').style.display = on ? '' : 'none';
+  saveChatSettings('chat_enabled', String(on),
+    on ? '✓ Live chat enabled' : '✗ Live chat disabled sitewide');
+};
+
+window.saveChatVisibility = function() {
+  const v = document.getElementById('chat-visibility').value === 'logged_in' ? 'logged_in' : 'all';
+  renderChatVisibilityNote();
+  saveChatSettings('chat_visibility', v,
+    v === 'logged_in' ? 'Chat limited to logged-in users' : 'Chat shown to everyone');
+};
+
+function populateChatUserSelect() {
+  const sel = document.getElementById('chat-user-select'); if (!sel) return;
+  const raw = (document.getElementById('chat-user-search')?.value || '').trim();
+  const q   = window.SV_FOLD ? window.SV_FOLD(raw) : raw.toLowerCase();
+
+  let matches = (_allUsers || []).filter(u => !_chatDisabledUsers.includes(u.id));
+  if (q) {
+    matches = matches.filter(u => {
+      const fold = s => window.SV_FOLD ? window.SV_FOLD(String(s||'')) : String(s||'').toLowerCase();
+      return fold(userName(u)).includes(q) || fold(u.email).includes(q);
+    });
+  }
+
+  sel.innerHTML = '';
+  if (!matches.length) {
+    sel.appendChild(new Option(q ? '— No users match —' : '— No users available —', ''));
+  } else {
+    if (!q) sel.appendChild(new Option('— Select user to hide chat from —', ''));
+    matches.forEach(u => sel.appendChild(new Option(userName(u) + ' (' + u.email + ')', u.id)));
+  }
+
+  const clear = document.getElementById('chat-user-search-clear');
+  if (clear) clear.style.display = raw ? '' : 'none';
+  const count = document.getElementById('chat-user-count');
+  if (count) {
+    count.textContent = raw
+      ? (matches.length ? `${matches.length} match${matches.length === 1 ? '' : 'es'} for “${raw}”` : `No users match “${raw}”`)
+      : '';
+  }
+}
+
+window.filterChatUsers = function() { populateChatUserSelect(); };
+
+window.clearChatUserSearch = function() {
+  const s = document.getElementById('chat-user-search');
+  if (s) { s.value = ''; s.focus(); }
+  populateChatUserSelect();
+};
+
+window.onChatUserSearchKey = function(e) {
+  if (e.key === 'Enter')  { e.preventDefault(); addChatDisabledUser(); }
+  if (e.key === 'Escape') { e.preventDefault(); clearChatUserSearch(); }
+};
+
+function renderChatUserList() {
+  const c = document.getElementById('chat-user-list'); if (!c) return;
+  if (!_chatDisabledUsers.length) {
+    c.innerHTML = '<span style="font-size:12px;color:var(--sub);">Chat is visible to all users</span>';
+    return;
+  }
+  c.innerHTML = _chatDisabledUsers.map(id => {
+    const u = (_allUsers||[]).find(x => x.id === id);
+    const label = u ? userName(u) : id.slice(0,8)+'…';
+    return `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(240,90,26,.15);border:1px solid rgba(240,90,26,.3);color:var(--text);font-size:12px;font-weight:500;padding:4px 10px 4px 12px;border-radius:20px;">${label}<span onclick="removeChatDisabledUser('${id}')" style="cursor:pointer;color:var(--sub);font-size:14px;line-height:1;" title="Remove">×</span></span>`;
+  }).join('');
+}
+
+window.addChatDisabledUser = function() {
+  const sel = document.getElementById('chat-user-select');
+  const id = sel.value;
+  if (!id) { showToast('Select a user first','error'); return; }
+  if (!_chatDisabledUsers.includes(id)) _chatDisabledUsers.push(id);
+
+  const search = document.getElementById('chat-user-search');
+  populateChatUserSelect();
+  if (search && search.value.trim() && !sel.querySelector('option[value]:not([value=""])')) {
+    search.value = '';
+    populateChatUserSelect();
+  }
+  renderChatUserList();
+  const u = (_allUsers||[]).find(x => x.id === id);
+  saveChatSettings('chat_disabled_users', JSON.stringify(_chatDisabledUsers),
+    'Chat hidden from ' + (u ? userName(u) : 'user'));
+};
+
+window.removeChatDisabledUser = function(id) {
+  _chatDisabledUsers = _chatDisabledUsers.filter(x => x !== id);
+  populateChatUserSelect();
+  renderChatUserList();
+  saveChatSettings('chat_disabled_users', JSON.stringify(_chatDisabledUsers), 'Chat restored for user');
+};
+
+async function saveChatSettings(key, value, toast) {
+  const db = window.SV_DB; if (!db) return;
+  const { error } = await db.from('system_settings')
+    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  logAudit('chat_settings', key, String(value).slice(0,200));
+  showToast(toast);
 }
 
 /* ── Country Access Blocking ── */
