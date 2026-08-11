@@ -2733,9 +2733,56 @@ window.enableChatNotifications = async function() {
     } else {
       new Notification('Veloci OPS notifications enabled', opts);
     }
-    showToast('Test notification sent');
+    const pushed = await registerChatPush();
+    showToast(pushed
+      ? 'Notifications on — alerts work with the console closed'
+      : 'Notifications on (this device only alerts while ops is open)');
   } catch(e) {
     showToast('Could not show notification: ' + (e.message || e), 'error');
+  }
+};
+
+/* ── Web Push registration ──
+   Realtime only delivers while a page is running. A push subscription lets the
+   browser wake the service worker when the console is fully closed. */
+const VAPID_PUBLIC_KEY = 'BJy8FLL9Tb4flDboX7vmI3i15M_BAM5gJ47Av_ZkMAkxptkueSW5JiAHa2YUvdXh9fcslKzR3sckNkhVFnFdm8k';
+
+function urlBase64ToUint8Array(base64) {
+  const padding = '='.repeat((4 - base64.length % 4) % 4);
+  const raw = atob((base64 + padding).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+window.registerChatPush = async function() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (Notification.permission !== 'granted') return false;
+
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const json = sub.toJSON();
+    if (!json || !json.endpoint || !json.keys) return false;
+
+    const db = window.SV_DB; if (!db || !_adminUser?.id) return false;
+    /* endpoint is unique, so re-registering the same device is a no-op */
+    const { error } = await db.from('push_subscriptions').upsert({
+      admin_id: _adminUser.id,
+      endpoint: json.endpoint,
+      p256dh:   json.keys.p256dh,
+      auth:     json.keys.auth,
+      user_agent: (navigator.userAgent || '').slice(0, 300),
+    }, { onConflict: 'endpoint' });
+    if (error) return false;
+    logAudit('push_subscribe', 'system', (navigator.userAgent || '').slice(0, 80));
+    return true;
+  } catch(e) {
+    return false;
   }
 };
 
@@ -3084,6 +3131,11 @@ window.initChatInbox = async function() {
   /* the browser only lets us create audio after an interaction — take the first one */
   document.addEventListener('click',   chatUnlockSound, { once: true });
   document.addEventListener('keydown', chatUnlockSound, { once: true });
+
+  /* keep this device's push subscription current; endpoints rotate over time */
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') registerChatPush();
+  } catch(e) {}
 
   const reply = document.getElementById('chat-reply');
   if (reply) {

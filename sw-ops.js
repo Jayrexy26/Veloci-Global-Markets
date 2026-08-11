@@ -24,6 +24,27 @@ self.addEventListener('activate', e => {
   );
 });
 
+/* Web Push arrives with no payload — customer message text is deliberately not
+   sent through Apple's and Google's push services. If a console window happens
+   to be open it is already showing the message live, so stay quiet there. */
+self.addEventListener('push', e => {
+  e.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const visible = clients.some(c => c.visibilityState === 'visible' && c.url.includes('ops-new.html'));
+    if (visible) return;
+
+    await self.registration.showNotification('New support message', {
+      body: 'A user has sent a message. Tap to open the console.',
+      icon: '/assets/admin-icon-192.png',
+      badge: '/assets/admin-icon-192.png',
+      vibrate: [120, 60, 120],
+      tag: 'sv-chat-push',
+      renotify: true,
+      data: { url: '/ops-new.html' },
+    });
+  })());
+});
+
 /* Tapping a chat notification should jump straight to the console, reusing an
    already-open window instead of piling up new ones. */
 self.addEventListener('notificationclick', e => {

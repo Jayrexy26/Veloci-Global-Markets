@@ -78,6 +78,30 @@
        panel on desktop. */
     const style = document.createElement('style');
     style.textContent = `
+      /* Same genie open/close the site's popup modals use, so the chat feels
+         like the rest of the product rather than a bolted-on widget. */
+      @keyframes svGenieIn{
+        0%{opacity:.7;clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);}
+        18%{opacity:1;clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.58);}
+        50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);}
+        78%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}
+        100%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}
+      }
+      @keyframes svGenieOut{
+        0%{clip-path:polygon(0% 0%,100% 0%,100% 50%,100% 100%,0% 100%,0% 50%);transform:scaleY(1);opacity:1;}
+        20%{clip-path:polygon(0% 0%,100% 0%,98% 50%,94% 100%,6% 100%,2% 50%);transform:scaleY(0.97);}
+        50%{clip-path:polygon(0% 0%,100% 0%,90% 50%,82% 100%,18% 100%,10% 50%);transform:scaleY(0.84);opacity:1;}
+        80%{clip-path:polygon(0% 0%,100% 0%,74% 50%,62% 100%,38% 100%,26% 50%);transform:scaleY(0.56);opacity:.8;}
+        100%{clip-path:polygon(48% 100%,52% 100%,52% 100%,48% 100%,48% 100%,52% 100%);transform:scaleY(0.02);opacity:0;}
+      }
+      #sv-chat-overlay{
+        position:fixed;inset:0;background:rgba(0,0,0,.72);
+        z-index:${Z - 1};opacity:0;pointer-events:none;
+        transition:opacity .32s cubic-bezier(.4,0,.2,1);
+      }
+      #sv-chat-overlay.sv-open{opacity:1;pointer-events:auto;}
+      #sv-chat-panel.sv-genie-in{animation:svGenieIn .54s cubic-bezier(0.34,1.1,0.64,1) both;}
+      #sv-chat-panel.sv-genie-out{animation:svGenieOut .36s cubic-bezier(0.4,0,0.8,1) both;}
       #sv-chat-panel{
         position:absolute;left:0;bottom:70px;
         width:min(360px,calc(100vw - 40px));
@@ -85,8 +109,11 @@
         border:1px solid rgba(255,255,255,.09);
         border-radius:16px;
         box-shadow:0 18px 50px rgba(0,0,0,.55);
+        transform-origin:14% 100%;      /* grows out of the bubble */
+        will-change:clip-path,transform;
       }
       @media (max-width:640px){
+        #sv-chat-panel{transform-origin:50% 100%;}
         #sv-chat-wrap.sv-open{left:0;right:0;top:0;bottom:0;}
         /* the bubble carries an inline display, which would otherwise win */
         #sv-chat-wrap.sv-open #sv-chat-bubble{display:none !important;}
@@ -111,6 +138,10 @@
       }
     `;
     document.head.appendChild(style);
+
+    const overlay = el('div', '');
+    overlay.id = 'sv-chat-overlay';
+    document.body.appendChild(overlay);
 
     const wrap = el('div', `position:fixed;left:20px;bottom:20px;z-index:${Z};font-family:'Inter',system-ui,sans-serif;`);
     wrap.id = 'sv-chat-wrap';
@@ -438,11 +469,17 @@
     const isPhone = () => window.matchMedia('(max-width:640px)').matches;
     let scrollLocked = false;
 
+    let closeTimer = null;
+
     function open() {
       isOpen = true;
+      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
       panel.style.display = 'flex';
+      panel.classList.remove('sv-genie-out');
+      panel.classList.add('sv-genie-in');
       panel.classList.add('sv-open');
       wrap.classList.add('sv-open');
+      overlay.classList.add('sv-open');
       bubble.style.transform = 'none';
       /* fullscreen on phones: stop the page behind from scrolling underneath,
          and take the bubble out of the way of the panel header */
@@ -465,16 +502,29 @@
 
     function close() {
       isOpen = false;
-      panel.style.display = 'none';
-      panel.classList.remove('sv-open');
-      wrap.classList.remove('sv-open');
-      bubble.style.display = 'flex';
+      overlay.classList.remove('sv-open');
+      panel.classList.remove('sv-genie-in');
+      panel.classList.add('sv-genie-out');
+      /* keep the panel mounted until the close animation has played out */
+      if (closeTimer) clearTimeout(closeTimer);
+      closeTimer = setTimeout(() => {
+        panel.style.display = 'none';
+        panel.classList.remove('sv-genie-out', 'sv-open');
+        /* wrap and bubble last: while the wrap is still fullscreen the bubble
+           would flash in the top-left corner mid-animation */
+        wrap.classList.remove('sv-open');
+        bubble.style.display = 'flex';
+        closeTimer = null;
+      }, 360);
       if (scrollLocked) {
         document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
         scrollLocked = false;
       }
     }
+
+    overlay.onclick = () => { if (isOpen) close(); };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen) close(); });
 
     /* rotating or resizing out of phone width must not leave the page locked */
     window.addEventListener('resize', () => {
