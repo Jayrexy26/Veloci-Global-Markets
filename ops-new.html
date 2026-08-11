@@ -1323,6 +1323,14 @@
                   <div id="geo-country-count" style="font-size:12px;color:var(--sub);margin-bottom:10px;"></div>
                   <div id="geo-country-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;min-height:0;"></div>
                   <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;">
+                    <label class="field__label">Block Page Appearance</label>
+                    <select id="geo-block-style" onchange="saveGeoBlockStyle()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;color-scheme:dark;">
+                      <option value="branded">Branded notice — “Not Available in Your Region”</option>
+                      <option value="error">Browser error — site appears unreachable</option>
+                    </select>
+                    <div id="geo-style-note" style="font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5;"></div>
+                  </div>
+                  <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;">
                     <label class="field__label">Bypass Key <span style="opacity:.6;font-weight:400;">(optional)</span></label>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;">
                       <input type="text" class="field__input" id="geo-bypass-key" placeholder="min. 8 characters" autocomplete="off" style="flex:1;min-width:0;"/>
@@ -2438,7 +2446,7 @@ async function sha256Hex(text) {
 window.loadGeoBlocking = async function() {
   const db = window.SV_DB; if (!db) return;
   const { data } = await db.from('system_settings').select('key,value')
-    .in('key', ['geo_blocking_enabled','blocked_countries','geo_bypass_hash']);
+    .in('key', ['geo_blocking_enabled','blocked_countries','geo_bypass_hash','block_page_style']);
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   _blockedCountries = String(map['blocked_countries'] || '')
@@ -2448,9 +2456,31 @@ window.loadGeoBlocking = async function() {
   const on = map['geo_blocking_enabled'] === 'true';
   document.getElementById('toggle-geo-block').checked = on;
   document.getElementById('geo-block-opts').style.display = on ? '' : 'none';
+  document.getElementById('geo-block-style').value =
+    map['block_page_style'] === 'error' ? 'error' : 'branded';
+  renderGeoStyleNote();
   renderGeoBypassState(!!String(map['geo_bypass_hash'] || '').trim());
   populateGeoCountrySelect();
   renderBlockedCountryList();
+};
+
+function renderGeoStyleNote() {
+  const el = document.getElementById('geo-style-note'); if (!el) return;
+  const style = document.getElementById('geo-block-style').value;
+  el.innerHTML = style === 'error'
+    ? 'Blocked visitors get an empty error response, so their browser shows its own “This page isn’t working” screen. Nothing reveals that the block is by country — it looks like the site is down. <a href="/blocked-new.html" target="_blank" style="color:var(--accent,#f05a1a);">Preview the other style</a>'
+    : 'Blocked visitors see a branded page explaining their region is restricted. <a href="/blocked-new.html" target="_blank" style="color:var(--accent,#f05a1a);">Preview it</a>';
+}
+
+window.saveGeoBlockStyle = async function() {
+  const db = window.SV_DB; if (!db) return;
+  const style = document.getElementById('geo-block-style').value === 'error' ? 'error' : 'branded';
+  const { error } = await db.from('system_settings')
+    .upsert({ key:'block_page_style', value: style, updated_at: new Date().toISOString() }, { onConflict:'key' });
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  renderGeoStyleNote();
+  logAudit('geo_block_style', 'system', style);
+  showToast(style === 'error' ? 'Block page set to browser error' : 'Block page set to branded notice');
 };
 
 function renderGeoBypassState(isSet) {

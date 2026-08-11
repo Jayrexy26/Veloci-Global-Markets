@@ -17,7 +17,7 @@
 const SUPABASE_URL  = 'https://xdcscknfomlzwysczegc.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4';
 
-const SETTINGS_KEYS = 'geo_blocking_enabled,blocked_countries,geo_bypass_hash';
+const SETTINGS_KEYS = 'geo_blocking_enabled,blocked_countries,geo_bypass_hash,block_page_style';
 const CACHE_TTL_MS  = 60_000;
 const BLOCKED_PAGE  = '/blocked-new.html';
 const BYPASS_COOKIE = 'vgm_geo_bypass';
@@ -60,6 +60,9 @@ async function fetchSettings() {
        is readable with the public anon key. Comparing hashes means a leaked
        setting can't be replayed as a working bypass. */
     bypassHash: String(map.geo_bypass_hash || '').trim().toLowerCase(),
+    /* 'branded' = the region-restricted notice page.
+       'error'   = empty 503 so the browser renders its own native error page. */
+    style: map.block_page_style === 'error' ? 'error' : 'branded',
   };
 }
 
@@ -118,6 +121,7 @@ export default async function middleware(request) {
         country: country || null,
         enabled: !!c?.enabled,
         blocked: !!(c?.enabled && country && c.blocked.has(country)),
+        style:   c?.style || 'branded',
       }, { headers: { 'cache-control': 'no-store' } });
     }
 
@@ -145,6 +149,19 @@ export default async function middleware(request) {
       }
       const cookieKey = readCookie(request, BYPASS_COOKIE);
       if (cookieKey && (await sha256Hex(cookieKey)) === cfg.bypassHash) return;
+    }
+
+    /* Blocked, "error" style: an empty body under an error status makes every
+       browser fall back to its own native error page ("This page isn't
+       working" in Chrome). Nothing here identifies it as a geo block — no
+       marker header, no cookie — so it is indistinguishable from an outage.
+       503 rather than 404 so search engines treat it as temporary and don't
+       drop the pages of crawlers that happen to sit in a blocked country. */
+    if (cfg.style === 'error') {
+      return new Response(null, {
+        status: 503,
+        headers: { 'cache-control': 'no-store, no-cache, must-revalidate' },
+      });
     }
 
     /* Blocked. Serve the notice page body under a 451, keeping the URL intact. */
