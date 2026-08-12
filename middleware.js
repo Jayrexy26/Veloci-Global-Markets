@@ -17,7 +17,7 @@
 const SUPABASE_URL  = 'https://xdcscknfomlzwysczegc.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkY3Nja25mb21send5c2N6ZWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MTYzMDMsImV4cCI6MjA4MzI5MjMwM30.E6o2wFFMOpK1DghLUqnxG6Ig09djy4bmDQexprhAiB4';
 
-const SETTINGS_KEYS = 'geo_blocking_enabled,blocked_countries,geo_bypass_hash,block_page_style';
+const SETTINGS_KEYS = 'geo_blocking_enabled,blocked_countries,geo_bypass_hash,block_page_style,blocked_ips';
 const CACHE_TTL_MS  = 60_000;
 const BLOCKED_PAGE  = '/blocked-new.html';
 const BYPASS_COOKIE = 'vgm_geo_bypass';
@@ -78,7 +78,21 @@ async function parseSettings(res) {
     /* 'branded' = the region-restricted notice page.
        'error'   = empty 503 so the browser renders its own native error page. */
     style: map.block_page_style === 'error' ? 'error' : 'branded',
+    ips: new Set(
+      String(map.blocked_ips || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    ),
   };
+}
+
+/* Vercel puts the real client first in x-forwarded-for; anything after it is
+   proxy chain and must not be trusted. */
+function clientIp(request) {
+  const xff = request.headers.get('x-forwarded-for') || '';
+  const first = xff.split(',')[0].trim();
+  return first || request.headers.get('x-real-ip') || '';
 }
 
 /* Fire-and-forget decision log. Never awaited, so it cannot slow a page down,
@@ -141,6 +155,36 @@ function readCookie(request, name) {
   return null;
 }
 
+/* Shared by the country block and the IP block so both look identical to the
+   visitor — nothing should reveal which rule caught them. */
+async function blockResponse(cfg, url, country) {
+  if (cfg.style === 'error') {
+    return new Response(null, {
+      status: 503,
+      headers: { 'cache-control': 'no-store, no-cache, must-revalidate' },
+    });
+  }
+
+  const pageRes = await fetch(new URL(BLOCKED_PAGE, url.origin).toString(), {
+    headers: { 'x-vgm-internal': '1' },
+  });
+  const html = pageRes.ok
+    ? await pageRes.text()
+    : '<!doctype html><meta charset="utf-8"><title>Unavailable</title>' +
+      '<body style="background:#0a0b0f;color:#eaecef;font-family:sans-serif;text-align:center;padding:80px 20px">' +
+      '<h1>Service unavailable in your region</h1></body>';
+
+  const headers = {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store, no-cache, must-revalidate',
+  };
+  if (country) {
+    headers['x-vgm-geo-block'] = country;
+    headers['set-cookie'] = `${COUNTRY_COOKIE}=${country}; Path=/; Max-Age=600; SameSite=Lax`;
+  }
+  return new Response(html, { status: 451, headers });
+}
+
 export default async function middleware(request) {
   try {
     const url = new URL(request.url);
@@ -163,10 +207,20 @@ export default async function middleware(request) {
         city:     h('x-vercel-ip-city'),
         region:   h('x-vercel-ip-country-region'),
         timezone: h('x-vercel-ip-timezone'),
+        ip:       clientIp(request) || null,
         enabled:  !!c?.enabled,
         blocked:  !!(c?.enabled && country && c.blocked.has(country)),
         style:    c?.style || 'branded',
       }, { headers: { 'cache-control': 'no-store' } });
+    }
+
+    /* IP blocking runs before the country check and regardless of whether geo
+       blocking is switched on — it is a direct ban on one visitor. */
+    const ip = clientIp(request);
+    const cfgEarly = await getSettings();
+    if (cfgEarly && ip && cfgEarly.ips.has(ip)) {
+      logDecision(country || null, 'blocked_ip', url.pathname);
+      return blockResponse(cfgEarly, url, country);
     }
 
     if (!country) {
@@ -174,7 +228,7 @@ export default async function middleware(request) {
       return;                                   // unknown origin -> allow
     }
 
-    const cfg = await getSettings();
+    const cfg = cfgEarly;
     if (!cfg) {
       /* settings unreachable: we fail open, and this is the one path that can
          let a blocked visitor through, so it is recorded explicitly */
@@ -216,33 +270,7 @@ export default async function middleware(request) {
        503 rather than 404 so search engines treat it as temporary and don't
        drop the pages of crawlers that happen to sit in a blocked country. */
     logDecision(country, 'blocked', url.pathname);
-
-    if (cfg.style === 'error') {
-      return new Response(null, {
-        status: 503,
-        headers: { 'cache-control': 'no-store, no-cache, must-revalidate' },
-      });
-    }
-
-    /* Blocked. Serve the notice page body under a 451, keeping the URL intact. */
-    const pageRes = await fetch(new URL(BLOCKED_PAGE, url.origin).toString(), {
-      headers: { 'x-vgm-internal': '1' },
-    });
-    const html = pageRes.ok
-      ? await pageRes.text()
-      : '<!doctype html><meta charset="utf-8"><title>Unavailable</title>' +
-        '<body style="background:#0a0b0f;color:#eaecef;font-family:sans-serif;text-align:center;padding:80px 20px">' +
-        '<h1>Service unavailable in your region</h1></body>';
-
-    return new Response(html, {
-      status: 451,                              // Unavailable For Legal Reasons
-      headers: {
-        'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'no-store, no-cache, must-revalidate',
-        'x-vgm-geo-block': country,
-        'set-cookie': `${COUNTRY_COOKIE}=${country}; Path=/; Max-Age=600; SameSite=Lax`,
-      },
-    });
+    return blockResponse(cfg, url, country);
   } catch (_) {
     return;   // fail open
   }

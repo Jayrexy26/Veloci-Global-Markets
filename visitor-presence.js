@@ -107,6 +107,7 @@
           p_os:       d.os,
           p_browser:  d.browser,
           p_referrer: document.referrer || '',
+          p_ip:       g.ip || '',
         }),
         keepalive: true,
       });

@@ -509,6 +509,7 @@
           p_language: navigator.language || '',
           p_page:     location.pathname + location.search,
           p_referrer: document.referrer || '',
+          p_ip:       geo.ip || '',
         });
       } catch (_) {}
     }
