@@ -96,6 +96,14 @@
 
     const loggedInOnly = cfg.chat_visibility === 'logged_in';
 
+    /* Never mint an anonymous identity on a page that is part of signing in.
+       Those pages resolve auth through onAuthStateChange, and an anonymous
+       sign-in fires that same event — it can resolve their promise before a
+       real OAuth exchange finishes and throw the user back to login. Chat
+       still shows on these pages for someone already signed in. */
+    const AUTH_PAGES = /(^|\/)(login|register|signup|forgot-password|reset-password|reset-pin|session|phone-setup|verify)(-new)?\.html$/i;
+    const onAuthPage = AUTH_PAGES.test(location.pathname);
+
     let session = null;
     try {
       const { data } = await db.auth.getSession();
@@ -107,7 +115,7 @@
        working unchanged — their conversation is still keyed to auth.uid(),
        it simply belongs to a visitor rather than a customer. */
     if (!session || !session.user) {
-      if (loggedInOnly) return;
+      if (loggedInOnly || onAuthPage) return;
       try {
         const { data, error } = await db.auth.signInAnonymously();
         if (error) throw error;
