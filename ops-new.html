@@ -3098,13 +3098,23 @@ window.renderVisitors = function() {
         <div style="font-size:11px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(v.page || '')}</div>
         ${meta ? `<div style="font-size:10px;color:var(--sub);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(meta)}</div>` : ''}
       </div>
-      ${trail.length ? `
+      ${(trail.length || v.ip) ? `
         <div onclick="event.stopPropagation();toggleVisitorTrail('${v.id}')"
              style="padding:3px 12px 6px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px;">
           <span style="font-size:10px;color:var(--sub);">${open ? '▾' : '▸'}</span>
-          <span style="font-size:10px;color:var(--sub);">${trail.length} page${trail.length===1?'':'s'} this visit</span>
+          <span style="font-size:10px;color:var(--sub);">${trail.length ? trail.length + ' page' + (trail.length===1?'':'s') + ' this visit' : 'Details'}</span>
         </div>
-        <div style="display:${open ? '' : 'none'};padding:0 12px 8px 12px;">${trailRows}</div>` : ''}
+        <div style="display:${open ? '' : 'none'};padding:0 12px 8px 12px;">
+          ${v.ip ? `
+            <div onclick="event.stopPropagation();" style="display:flex;align-items:center;gap:6px;padding:4px 0 6px;border-bottom:1px solid var(--border);margin-bottom:4px;">
+              <span style="font-size:9.5px;color:var(--sub);flex-shrink:0;width:34px;">IP</span>
+              <span style="flex:1;min-width:0;font-size:11px;color:var(--text);font-family:monospace;word-break:break-all;">${chatEsc(v.ip)}</span>
+              ${_blockedIps.includes(v.ip)
+                ? `<span style="flex-shrink:0;font-size:9.5px;color:#ff8a6a;border:1px solid rgba(240,90,26,.4);border-radius:10px;padding:1px 7px;">blocked</span>`
+                : `<button onclick="blockVisitorIp('${chatEsc(v.ip)}')" style="flex-shrink:0;font-size:9.5px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--sub);cursor:pointer;font-family:inherit;">Block</button>`}
+            </div>` : ''}
+          ${trailRows}
+        </div>` : ''}
     </div>`;
   }).join('');
 };
@@ -3305,6 +3315,9 @@ async function saveBlockedIps(msg) {
   if (error) { showToast('Error: ' + error.message, 'error'); return; }
   logAudit('blocked_ips', 'system', _blockedIps.join(',') || 'none');
   renderBlockedIps();
+  /* so the online list immediately shows the row as blocked */
+  if (window.renderVisitors) renderVisitors();
+  if (_chatActiveId && document.getElementById('chat-details').style.display !== 'none') renderChatDetails();
   showToast(msg + ' — takes effect within a minute');
 }
 
