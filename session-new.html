@@ -618,7 +618,7 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
   // If PIN already passed this session, skip to next page
   if (sessionStorage.getItem(SS_KEY)) {
     const { data: { session } } = await db.auth.getSession();
-    if (session) {
+    if (session && !session.user?.is_anonymous) {
       const { data: p } = await db.from('profiles').select('kyc_status, status').eq('id', session.user.id).single();
       if (p?.status === 'banned') {
         await db.auth.signOut();

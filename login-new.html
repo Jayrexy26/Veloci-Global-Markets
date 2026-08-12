@@ -251,7 +251,11 @@ function togglePwd(id, btn) {
 /* Redirect if already logged in */
 (async () => {
   const { data: { session } } = await window.SV_DB.auth.getSession();
-  if (session) { sessionStorage.removeItem('sv_pin_ok'); window.location.href = 'session-new.html'; }
+  /* An anonymous session exists whenever a signed-out visitor has opened the
+     support chat. Treating it as "already logged in" bounced them to the PIN
+     page, which sent them straight back here — a redirect loop on the login
+     page itself. */
+  if (session && !session.user?.is_anonymous) { sessionStorage.removeItem('sv_pin_ok'); window.location.href = 'session-new.html'; }
 })();
 
 /* Show banned error if redirected back from session-new.html */
