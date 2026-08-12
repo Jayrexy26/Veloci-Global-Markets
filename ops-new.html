@@ -2915,23 +2915,37 @@ window.openChatThread = async function(convId) {
   /* keep the panel closed by default, but refresh it if it was left open */
   if (document.getElementById('chat-details').style.display !== 'none') renderChatDetails();
 
-  /* mobile: the two panes swap instead of sitting side by side */
-  if (window.innerWidth <= 768) {
-    document.getElementById('chat-list-pane').style.display   = 'none';
-    document.getElementById('chat-thread-pane').style.display = 'flex';
-    document.getElementById('chat-back-btn').style.display    = '';
-  }
+  /* Set both panes explicitly on every open. Only setting them on the mobile
+     branch meant a window that had ever been narrow kept the thread pane
+     hidden after widening, so opening a conversation showed a blank pane. */
+  applyChatPanes(true);
 
   const msgs = document.getElementById('chat-thread-msgs');
   msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">Loading…</div>';
 
-  const { data } = await db.from('chat_messages')
+  const { data, error } = await db.from('chat_messages')
     .select('id,sender,sender_id,sender_name,body,created_at,attachment_path,attachment_name,attachment_type,attachment_size')
     .eq('conversation_id', convId).order('created_at', { ascending: true }).limit(300);
 
+  /* Report failures instead of rendering an empty thread. A silent catch here
+     is indistinguishable from "no messages", which is how this looked blank. */
+  if (error) {
+    msgs.innerHTML = '';
+    const box = document.createElement('div');
+    box.style.cssText = 'margin:auto;text-align:center;color:var(--sub);font-size:13px;padding:0 16px;line-height:1.6;';
+    box.textContent = 'Could not load this conversation: ' + (error.message || 'unknown error');
+    msgs.appendChild(box);
+    showToast('Chat load failed: ' + (error.message || 'unknown error'), 'error');
+    return;
+  }
+
   msgs.innerHTML = '';
-  (data || []).forEach(appendChatMessage);
-  if (!(data || []).length) {
+  /* one malformed row must not abort the render and leave the pane blank */
+  (data || []).forEach(m => {
+    try { appendChatMessage(m); }
+    catch (e) { console.error('chat message render failed', m && m.id, e); }
+  });
+  if (!msgs.children.length) {
     msgs.innerHTML = '<div style="margin:auto;color:var(--sub);font-size:13px;">No messages yet</div>';
   }
   msgs.scrollTop = msgs.scrollHeight;
@@ -2957,6 +2971,26 @@ window.openChatThread = async function(convId) {
 
   renderChatConversations();
 };
+
+/* Single source of truth for which panes are visible.
+   Narrow: one pane at a time. Wide: list and thread side by side. */
+function applyChatPanes(threadOpen) {
+  const list   = document.getElementById('chat-list-pane');
+  const thread = document.getElementById('chat-thread-pane');
+  const back   = document.getElementById('chat-back-btn');
+  if (!list || !thread) return;
+  const narrow = window.innerWidth <= 768;
+
+  if (narrow) {
+    list.style.display   = threadOpen ? 'none' : '';
+    thread.style.display = threadOpen ? 'flex' : 'none';
+    if (back) back.style.display = threadOpen ? '' : 'none';
+  } else {
+    list.style.display   = '';
+    thread.style.display = 'flex';
+    if (back) back.style.display = 'none';
+  }
+}
 
 /* ── visitor details panel ── */
 window.toggleChatDetails = function() {
@@ -3021,9 +3055,8 @@ function renderChatDetails() {
 
 window.closeChatThread = function() {
   _chatActiveId = null;
-  document.getElementById('chat-list-pane').style.display = '';
-  if (window.innerWidth <= 768) document.getElementById('chat-thread-pane').style.display = 'none';
-  document.getElementById('chat-back-btn').style.display  = 'none';
+  applyChatPanes(false);
+  document.getElementById('chat-details').style.display = 'none';
   document.getElementById('chat-thread-head').style.display = 'none';
   document.getElementById('chat-thread-foot').style.display = 'none';
   document.getElementById('chat-thread-msgs').innerHTML =
@@ -3183,10 +3216,9 @@ window.initChatInbox = async function() {
   const db = window.SV_DB; if (!db) return;
   await loadChatConversations();
 
-  /* on phones the thread pane only appears once a conversation is picked */
-  if (window.innerWidth <= 768) {
-    document.getElementById('chat-thread-pane').style.display = 'none';
-  }
+  applyChatPanes(!!_chatActiveId);
+  /* crossing the breakpoint must not strand a pane hidden */
+  window.addEventListener('resize', () => applyChatPanes(!!_chatActiveId));
 
   /* ask once, so background replies can raise a desktop notification */
   try {
