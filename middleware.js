@@ -38,12 +38,27 @@ let _inflight = null;  // dedupes concurrent refreshes
 
 async function fetchSettings() {
   const url = `${SUPABASE_URL}/rest/v1/system_settings?select=key,value&key=in.(${SETTINGS_KEYS})`;
-  const res = await fetch(url, {
-    headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` },
-    signal: AbortSignal.timeout(2000),   // never hang a page load on Supabase
-  });
-  if (!res.ok) throw new Error(`supabase ${res.status}`);
+  /* A cold edge isolate has no cached settings, so a slow first call here means
+     falling open and letting a blocked visitor through. Give the cold path a
+     realistic budget and one retry; a warm isolate still serves from cache and
+     never waits on this at all. */
+  let lastErr;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` },
+        signal: AbortSignal.timeout(attempt === 0 ? 4000 : 2500),
+      });
+      if (!res.ok) throw new Error(`supabase ${res.status}`);
+      return await parseSettings(res);
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr;
+}
 
+async function parseSettings(res) {
   const map = {};
   for (const row of await res.json()) map[row.key] = row.value;
 
@@ -64,6 +79,27 @@ async function fetchSettings() {
        'error'   = empty 503 so the browser renders its own native error page. */
     style: map.block_page_style === 'error' ? 'error' : 'branded',
   };
+}
+
+/* Fire-and-forget decision log. Never awaited, so it cannot slow a page down,
+   and any failure is swallowed — diagnostics must not affect serving. */
+function logDecision(country, decision, path) {
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/geo_events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        country: country || null,
+        decision,
+        path: String(path || '').slice(0, 200),
+      }),
+    }).catch(() => {});
+  } catch (_) {}
 }
 
 async function sha256Hex(text) {
@@ -125,10 +161,21 @@ export default async function middleware(request) {
       }, { headers: { 'cache-control': 'no-store' } });
     }
 
-    if (!country) return;                       // unknown origin -> allow
+    if (!country) {
+      logDecision(null, 'allowed_no_country', url.pathname);
+      return;                                   // unknown origin -> allow
+    }
 
     const cfg = await getSettings();
-    if (!cfg || !cfg.enabled || cfg.blocked.size === 0) return;
+    if (!cfg) {
+      /* settings unreachable: we fail open, and this is the one path that can
+         let a blocked visitor through, so it is recorded explicitly */
+      logDecision(country, 'allowed_no_config', url.pathname);
+      return;
+    }
+    if (!cfg.enabled || cfg.blocked.size === 0) return;
+    /* deliberately not logged: this is ordinary traffic, and a row per page view
+       from every allowed visitor would swamp the table */
     if (!cfg.blocked.has(country)) return;
 
     /* Escape hatch: ?geo_key=<secret> stores a bypass cookie so you can reach
@@ -148,7 +195,10 @@ export default async function middleware(request) {
         return out;
       }
       const cookieKey = readCookie(request, BYPASS_COOKIE);
-      if (cookieKey && (await sha256Hex(cookieKey)) === cfg.bypassHash) return;
+      if (cookieKey && (await sha256Hex(cookieKey)) === cfg.bypassHash) {
+        logDecision(country, 'allowed_bypass', url.pathname);
+        return;
+      }
     }
 
     /* Blocked, "error" style: an empty body under an error status makes every
@@ -157,6 +207,8 @@ export default async function middleware(request) {
        marker header, no cookie — so it is indistinguishable from an outage.
        503 rather than 404 so search engines treat it as temporary and don't
        drop the pages of crawlers that happen to sit in a blocked country. */
+    logDecision(country, 'blocked', url.pathname);
+
     if (cfg.style === 'error') {
       return new Response(null, {
         status: 503,
