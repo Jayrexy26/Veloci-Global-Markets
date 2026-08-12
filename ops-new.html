@@ -989,7 +989,19 @@
                   <button class="btn btn--sm" onclick="enableChatNotifications()" title="Enable / test phone notifications" style="flex-shrink:0;">🔔</button>
                 </div>
               </div>
-              <div id="chat-conv-list" style="flex:1;overflow-y:auto;"></div>
+              <div id="chat-conv-list" style="flex:1;overflow-y:auto;min-height:80px;"></div>
+
+              <!-- who is on the site right now -->
+              <div style="border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;max-height:45%;">
+                <div onclick="toggleVisitorPane()" style="padding:10px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#0ecb81;flex-shrink:0;"></span>
+                  <span style="flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;">
+                    Online now <span id="visitor-count" style="color:var(--sub);font-weight:600;">(0)</span>
+                  </span>
+                  <span id="visitor-caret" style="font-size:11px;color:var(--sub);flex-shrink:0;">▾</span>
+                </div>
+                <div id="visitor-list" style="flex:1;overflow-y:auto;padding-bottom:6px;"></div>
+              </div>
             </div>
 
             <!-- thread -->
@@ -1392,6 +1404,17 @@
                 </div>
                 <label class="toggle-switch" style="flex-shrink:0;">
                   <input type="checkbox" id="toggle-chat-status-2" onchange="saveChatStatus(this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:1;min-width:0;">
+                  <div class="toggle-wrap__label">Visitor Arrival Alerts</div>
+                  <div class="toggle-wrap__sub">Sound and notification when someone new lands on the site</div>
+                </div>
+                <label class="toggle-switch" style="flex-shrink:0;">
+                  <input type="checkbox" id="toggle-visitor-alerts" onchange="saveVisitorAlerts(this.checked)">
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -2449,6 +2472,7 @@
   await loadGeoBlocking();
   await loadChatSettings();
   await initChatInbox();
+  await initVisitors();
   await loadReviews();
 })();
 
@@ -2972,6 +2996,128 @@ window.openChatThread = async function(convId) {
   renderChatConversations();
 };
 
+/* ── Live visitors ── */
+let _visitors      = [];
+let _visitorAlerts = true;
+let _visitorPaneOpen = true;
+let _visitorFirstLoad = true;
+const VISITOR_STALE_MS = 90000;   // no heartbeat for 90s counts as gone
+
+window.toggleVisitorPane = function() {
+  _visitorPaneOpen = !_visitorPaneOpen;
+  document.getElementById('visitor-list').style.display = _visitorPaneOpen ? '' : 'none';
+  document.getElementById('visitor-caret').textContent  = _visitorPaneOpen ? '▾' : '▸';
+};
+
+function visitorIsLive(v) {
+  return Date.now() - new Date(v.last_seen_at).getTime() < VISITOR_STALE_MS;
+}
+
+function visitorLabel(v) {
+  if (v.user_id) {
+    const u = (_allUsers || []).find(x => x.id === v.user_id);
+    if (u) return userName(u);
+    return 'Signed-in user';
+  }
+  return 'Visitor';
+}
+
+function visitorSince(v) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(v.started_at).getTime()) / 60000));
+  if (mins < 1)  return 'just arrived';
+  if (mins < 60) return mins + 'm on site';
+  return Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm on site';
+}
+
+window.renderVisitors = function() {
+  const box = document.getElementById('visitor-list'); if (!box) return;
+  _visitors = _visitors.filter(visitorIsLive);
+  const n = _visitors.length;
+  const cnt = document.getElementById('visitor-count');
+  if (cnt) cnt.textContent = '(' + n + ')';
+
+  if (!n) {
+    box.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--sub);">Nobody on the site right now</div>';
+    return;
+  }
+
+  _visitors.sort((a, b) => new Date(b.last_seen_at) - new Date(a.last_seen_at));
+  box.innerHTML = _visitors.map(v => {
+    const flag = v.country && window.SV_COUNTRY_FLAG ? window.SV_COUNTRY_FLAG(v.country) + ' ' : '';
+    const place = [v.city, v.country && window.SV_COUNTRY_NAME
+      ? (window.SV_COUNTRY_NAME(v.country) || v.country) : v.country].filter(Boolean).join(', ');
+    const meta = [place, v.device, v.browser].filter(Boolean).join(' · ');
+    const conv = v.user_id ? _chatConvs.find(c => c.user_id === v.user_id) : null;
+    const click = conv ? ` onclick="openChatThread('${conv.id}')" style="cursor:pointer;` : ' style="';
+    return `<div${click}padding:8px 12px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${v.user_id ? '#0ecb81' : 'var(--sub)'};flex-shrink:0;"></span>
+        <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(flag + visitorLabel(v))}</span>
+        <span style="font-size:10px;color:var(--sub);flex-shrink:0;">${chatEsc(visitorSince(v))}</span>
+      </div>
+      <div style="font-size:11px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(v.page || '')}</div>
+      ${meta ? `<div style="font-size:10px;color:var(--sub);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(meta)}</div>` : ''}
+    </div>`;
+  }).join('');
+};
+
+function visitorNotify(v) {
+  if (!_visitorAlerts) return;
+  chatBeep();
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const place = [v.city, v.country].filter(Boolean).join(', ');
+    const title = visitorLabel(v) + ' is on the site';
+    const opts = {
+      body: (place ? place + ' · ' : '') + (v.page || ''),
+      icon: '/assets/admin-icon-192.png',
+      badge: '/assets/admin-icon-192.png',
+      tag: 'sv-visitor-' + v.visitor_key,
+      data: { url: '/ops-new.html' },
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification(title, opts)).catch(() => {});
+    } else {
+      new Notification(title, opts);
+    }
+  } catch(e) {}
+}
+
+window.initVisitors = async function() {
+  const db = window.SV_DB; if (!db) return;
+
+  const { data } = await db.from('visitor_sessions')
+    .select('*')
+    .gt('last_seen_at', new Date(Date.now() - VISITOR_STALE_MS).toISOString())
+    .order('last_seen_at', { ascending: false }).limit(200);
+  _visitors = data || [];
+  renderVisitors();
+  /* whoever was already here when the console opened is not "an arrival" */
+  _visitorFirstLoad = false;
+
+  db.channel('sv-ops-visitors')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'visitor_sessions' }, p => {
+      const row = p.new || p.old; if (!row) return;
+      if (p.eventType === 'DELETE') {
+        _visitors = _visitors.filter(v => v.id !== row.id);
+      } else {
+        const i = _visitors.findIndex(v => v.id === row.id);
+        if (i >= 0) {
+          _visitors[i] = row;
+        } else {
+          _visitors.push(row);
+          /* a genuinely new session, not a heartbeat on an existing one */
+          if (!_visitorFirstLoad && p.eventType === 'INSERT') visitorNotify(row);
+        }
+      }
+      renderVisitors();
+    })
+    .subscribe();
+
+  /* entries expire on a timer rather than an event, so re-render periodically */
+  setInterval(renderVisitors, 20000);
+};
+
 /* Single source of truth for which panes are visible.
    Narrow: one pane at a time. Wide: list and thread side by side. */
 function applyChatPanes(threadOpen) {
@@ -3299,7 +3445,7 @@ window.loadChatSettings = async function() {
   const { data } = await db.from('system_settings').select('key,value')
     .in('key', ['chat_enabled','chat_visibility','chat_disabled_users','support_chat_enabled',
                 'chat_status','chat_prechat_enabled','chat_welcome_enabled','chat_welcome_message',
-                'chat_offline_enabled','chat_offline_message']);
+                'chat_offline_enabled','chat_offline_message','visitor_alerts_enabled']);
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   try {
@@ -3314,6 +3460,9 @@ window.loadChatSettings = async function() {
   document.getElementById('chat-visibility').value =
     map['chat_visibility'] === 'logged_in' ? 'logged_in' : 'all';
   document.getElementById('toggle-support-chat').checked = map['support_chat_enabled'] !== 'false';
+  _visitorAlerts = map['visitor_alerts_enabled'] !== 'false';
+  const va = document.getElementById('toggle-visitor-alerts');
+  if (va) va.checked = _visitorAlerts;
 
   renderChatStatus(map['chat_status'] !== 'offline');   // sets both toggles
   document.getElementById('toggle-prechat').checked     = map['chat_prechat_enabled'] !== 'false';
@@ -3373,6 +3522,12 @@ function renderChatStatus(online) {
     if (t && t.checked !== online) t.checked = online;
   });
 }
+
+window.saveVisitorAlerts = function(on) {
+  _visitorAlerts = !!on;
+  saveChatSettings('visitor_alerts_enabled', String(!!on),
+    on ? '✓ Visitor arrival alerts on' : '✗ Visitor arrival alerts off');
+};
 
 window.saveSupportChatEnabled = function() {
   const on = document.getElementById('toggle-support-chat').checked;
