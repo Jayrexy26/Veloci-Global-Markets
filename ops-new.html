@@ -3001,7 +3001,14 @@ let _visitors      = [];
 let _visitorAlerts = true;
 let _visitorPaneOpen = true;
 let _visitorFirstLoad = true;
-const VISITOR_STALE_MS = 90000;   // no heartbeat for 90s counts as gone
+const _visitorTrailOpen = new Set();   // which visitors have their trail expanded
+const VISITOR_STALE_MS = 90000;        // no heartbeat for 90s counts as gone
+
+window.toggleVisitorTrail = function(id) {
+  if (_visitorTrailOpen.has(id)) _visitorTrailOpen.delete(id);
+  else _visitorTrailOpen.add(id);
+  renderVisitors();
+};
 
 window.toggleVisitorPane = function() {
   _visitorPaneOpen = !_visitorPaneOpen;
@@ -3048,15 +3055,34 @@ window.renderVisitors = function() {
       ? (window.SV_COUNTRY_NAME(v.country) || v.country) : v.country].filter(Boolean).join(', ');
     const meta = [place, v.device, v.browser].filter(Boolean).join(' · ');
     const conv = v.user_id ? _chatConvs.find(c => c.user_id === v.user_id) : null;
-    const click = conv ? ` onclick="openChatThread('${conv.id}')" style="cursor:pointer;` : ' style="';
-    return `<div${click}padding:8px 12px;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="width:6px;height:6px;border-radius:50%;background:${v.user_id ? '#0ecb81' : 'var(--sub)'};flex-shrink:0;"></span>
-        <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(flag + visitorLabel(v))}</span>
-        <span style="font-size:10px;color:var(--sub);flex-shrink:0;">${chatEsc(visitorSince(v))}</span>
+    const open = _visitorTrailOpen.has(v.id);
+    const trail = Array.isArray(v.nav) ? v.nav.slice().reverse() : [];
+    const trailRows = trail.map(e => {
+      let t = '';
+      try { t = new Date(e.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }); } catch(_) {}
+      return `<div style="display:flex;gap:6px;padding:2px 0;">
+        <span style="font-size:9.5px;color:var(--sub);flex-shrink:0;width:34px;">${chatEsc(t)}</span>
+        <span style="flex:1;min-width:0;font-size:10.5px;color:var(--sub);word-break:break-all;">${chatEsc(e.p||'')}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="border-bottom:1px solid var(--border);">
+      <div ${conv ? `onclick="openChatThread('${conv.id}')" style="cursor:pointer;` : 'style="'}padding:8px 12px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${v.user_id ? '#0ecb81' : 'var(--sub)'};flex-shrink:0;"></span>
+          <span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(flag + visitorLabel(v))}</span>
+          <span style="font-size:10px;color:var(--sub);flex-shrink:0;">${chatEsc(visitorSince(v))}</span>
+        </div>
+        <div style="font-size:11px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(v.page || '')}</div>
+        ${meta ? `<div style="font-size:10px;color:var(--sub);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(meta)}</div>` : ''}
       </div>
-      <div style="font-size:11px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(v.page || '')}</div>
-      ${meta ? `<div style="font-size:10px;color:var(--sub);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${chatEsc(meta)}</div>` : ''}
+      ${trail.length ? `
+        <div onclick="event.stopPropagation();toggleVisitorTrail('${v.id}')"
+             style="padding:3px 12px 6px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px;">
+          <span style="font-size:10px;color:var(--sub);">${open ? '▾' : '▸'}</span>
+          <span style="font-size:10px;color:var(--sub);">${trail.length} page${trail.length===1?'':'s'} this visit</span>
+        </div>
+        <div style="display:${open ? '' : 'none'};padding:0 12px 8px 12px;">${trailRows}</div>` : ''}
     </div>`;
   }).join('');
 };
@@ -3194,9 +3220,67 @@ function renderChatDetails() {
   if (c.visitor_name)  add('Gave name', c.visitor_name);
   if (c.visitor_email) add('Gave email', c.visitor_email);
 
-  box.innerHTML = rows.length
+  box.innerHTML = (rows.length
     ? rows.join('')
-    : '<div style="font-size:12px;color:var(--sub);">No visitor details captured yet — they arrive when the user next opens the chat.</div>';
+    : '<div style="font-size:12px;color:var(--sub);">No visitor details captured yet — they arrive when the user next opens the chat.</div>')
+    + '<div id="chat-nav-trail" style="margin-top:8px;"></div>';
+
+  renderChatNavTrail(c.user_id);
+}
+
+/* ── navigation trail ──
+   Collapsed by default: it can run to 30 entries and would otherwise push the
+   rest of the details off screen. */
+let _navTrailOpen = false;
+
+window.toggleChatNavTrail = function() {
+  _navTrailOpen = !_navTrailOpen;
+  const body  = document.getElementById('chat-nav-body');
+  const caret = document.getElementById('chat-nav-caret');
+  if (body)  body.style.display = _navTrailOpen ? '' : 'none';
+  if (caret) caret.textContent  = _navTrailOpen ? '▾' : '▸';
+};
+
+async function renderChatNavTrail(userId) {
+  const wrap = document.getElementById('chat-nav-trail');
+  const db = window.SV_DB;
+  if (!wrap || !db || !userId) return;
+
+  let sess = null;
+  try {
+    const { data } = await db.from('visitor_sessions')
+      .select('nav,page,started_at,last_seen_at,page_views')
+      .eq('user_id', userId)
+      .order('last_seen_at', { ascending: false })
+      .limit(1);
+    sess = (data || [])[0] || null;
+  } catch(e) { return; }
+
+  /* the panel may have been closed or switched while this was in flight */
+  if (!document.getElementById('chat-nav-trail')) return;
+  if (!sess || !Array.isArray(sess.nav) || !sess.nav.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:var(--sub);padding-top:4px;">No navigation recorded for this visit.</div>';
+    return;
+  }
+
+  const items = sess.nav.slice().reverse();   // newest first reads better here
+  const rows = items.map(e => {
+    let t = '';
+    try { t = new Date(e.t).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }); } catch(_) {}
+    return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:10px;color:var(--sub);flex-shrink:0;width:38px;">${chatEsc(t)}</span>
+      <span style="flex:1;min-width:0;font-size:11.5px;color:var(--text);word-break:break-all;">${chatEsc(e.p || '')}</span>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div onclick="toggleChatNavTrail()" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:6px 0;border-top:1px solid var(--border);">
+      <span style="flex:1;min-width:0;font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;font-weight:700;">
+        Pages visited (${items.length})
+      </span>
+      <span id="chat-nav-caret" style="font-size:11px;color:var(--sub);">${_navTrailOpen ? '▾' : '▸'}</span>
+    </div>
+    <div id="chat-nav-body" style="display:${_navTrailOpen ? '' : 'none'};">${rows}</div>`;
 }
 
 window.closeChatThread = function() {
