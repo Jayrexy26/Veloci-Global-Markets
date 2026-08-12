@@ -1082,6 +1082,37 @@
                 </div>
               </div>
 
+              <div class="toggle-wrap" style="flex-wrap:wrap;">
+                <div style="flex:0 0 100%;min-width:0;">
+                  <div class="toggle-wrap__label">Notification Sounds</div>
+                  <div class="toggle-wrap__sub">Upload your own, or leave empty for the built-in tone. Max 2 MB.</div>
+                </div>
+                <div style="flex:0 0 100%;min-width:0;padding-top:12px;">
+                  <div style="margin-bottom:14px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">New message</div>
+                    <input type="file" id="sound-message-file" accept="audio/*" style="display:none;"
+                      onchange="uploadNotificationSound('message', this)"/>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                      <button class="btn btn--sm" onclick="document.getElementById('sound-message-file').click()" style="flex-shrink:0;">Upload</button>
+                      <button class="btn btn--sm" onclick="testNotificationSound('message')" style="flex-shrink:0;">▶ Test</button>
+                      <button class="btn btn--sm" onclick="clearNotificationSound('message')" style="flex-shrink:0;">Reset</button>
+                    </div>
+                    <div id="sound-message-state" style="font-size:12px;color:var(--sub);margin-top:6px;"></div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;">Visitor arrival</div>
+                    <input type="file" id="sound-visitor-file" accept="audio/*" style="display:none;"
+                      onchange="uploadNotificationSound('visitor', this)"/>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                      <button class="btn btn--sm" onclick="document.getElementById('sound-visitor-file').click()" style="flex-shrink:0;">Upload</button>
+                      <button class="btn btn--sm" onclick="testNotificationSound('visitor')" style="flex-shrink:0;">▶ Test</button>
+                      <button class="btn btn--sm" onclick="clearNotificationSound('visitor')" style="flex-shrink:0;">Reset</button>
+                    </div>
+                    <div id="sound-visitor-state" style="font-size:12px;color:var(--sub);margin-top:6px;"></div>
+                  </div>
+                </div>
+              </div>
+
               <!-- No toggle in this row, so both children need flex:0 0 100% to
                    stack. With flex:1 on the label the input row shrank alongside
                    it instead of wrapping, squeezing the heading to one word a line. -->
@@ -2839,6 +2870,101 @@ window.registerChatPush = async function() {
   }
 };
 
+/* ── custom notification sounds ──
+   Empty setting means the built-in tone. A custom file that will not play —
+   blocked, missing, wrong format — falls back to the tone rather than leaving
+   support with silence. */
+let _soundUrls  = { message: '', visitor: '' };
+const _soundEls = { message: null, visitor: null };
+
+function soundEl(kind) {
+  const url = _soundUrls[kind];
+  if (!url) return null;
+  let el = _soundEls[kind];
+  if (!el || el.dataset.src !== url) {
+    el = new Audio(url);
+    el.preload = 'auto';
+    el.volume = 0.7;
+    el.dataset.src = url;
+    _soundEls[kind] = el;
+  }
+  return el;
+}
+
+window.playChatSound = function(kind) {
+  const el = soundEl(kind);
+  if (!el) { chatBeep(); return; }
+  try {
+    el.currentTime = 0;
+    const p = el.play();
+    if (p && p.catch) p.catch(() => chatBeep());
+  } catch(e) { chatBeep(); }
+};
+
+window.testNotificationSound = function(kind) {
+  chatUnlockSound();
+  playChatSound(kind);
+  showToast(_soundUrls[kind] ? 'Playing your ' + kind + ' sound' : 'No custom sound set — playing the built-in tone');
+};
+
+window.uploadNotificationSound = async function(kind, input) {
+  const db = window.SV_DB;
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!db || !file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('Keep the sound under 2 MB', 'error'); return; }
+  if (!/^audio\//.test(file.type || '')) { showToast('That is not an audio file', 'error'); return; }
+
+  const safe = (file.name || 'sound').replace(/[^\w.\-]+/g, '_').slice(-60);
+  const path = 'sounds/' + kind + '-' + Date.now() + '-' + safe;
+  showToast('Uploading…');
+  try {
+    const up = await db.storage.from('public-assets')
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) throw up.error;
+    const { data } = db.storage.from('public-assets').getPublicUrl(path);
+    const url = data && data.publicUrl;
+    if (!url) throw new Error('no public url');
+
+    const { error } = await db.from('system_settings').upsert(
+      { key: 'sound_' + kind + '_url', value: url, updated_at: new Date().toISOString() },
+      { onConflict: 'key' });
+    if (error) throw error;
+
+    _soundUrls[kind] = url;
+    renderSoundSettings();
+    logAudit('notification_sound', kind, safe);
+    showToast(kind + ' sound saved');
+    playChatSound(kind);
+  } catch(e) {
+    showToast('Upload failed: ' + (e.message || e), 'error');
+  }
+};
+
+window.clearNotificationSound = async function(kind) {
+  const db = window.SV_DB; if (!db) return;
+  const { error } = await db.from('system_settings').upsert(
+    { key: 'sound_' + kind + '_url', value: '', updated_at: new Date().toISOString() },
+    { onConflict: 'key' });
+  if (error) { showToast('Error: ' + error.message, 'error'); return; }
+  _soundUrls[kind] = '';
+  _soundEls[kind] = null;
+  renderSoundSettings();
+  logAudit('notification_sound', kind, 'cleared');
+  showToast('Back to the built-in tone');
+};
+
+function renderSoundSettings() {
+  [['message','sound-message-state'], ['visitor','sound-visitor-state']].forEach(([kind, id]) => {
+    const el = document.getElementById(id); if (!el) return;
+    const url = _soundUrls[kind];
+    el.innerHTML = url
+      ? '<span style="color:#0ecb81;">●</span> Custom sound set — ' +
+        chatEsc(decodeURIComponent(url.split('/').pop() || '')).slice(0, 40)
+      : '<span style="color:var(--sub);">○</span> Using the built-in tone';
+  });
+}
+
 window.testChatSound = function() {
   chatUnlockSound();
   chatBeep();
@@ -3131,7 +3257,7 @@ window.renderVisitors = function() {
 
 function visitorNotify(v) {
   if (!_visitorAlerts) return;
-  chatBeep();
+  playChatSound('visitor');
   try {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const place = [v.city, v.country].filter(Boolean).join(', ');
@@ -3598,8 +3724,14 @@ window.initChatInbox = async function() {
   } catch(e) {}
 
   /* the browser only lets us create audio after an interaction — take the first one */
-  document.addEventListener('click',   chatUnlockSound, { once: true });
-  document.addEventListener('keydown', chatUnlockSound, { once: true });
+  const unlockAll = () => {
+    chatUnlockSound();
+    /* prime any custom files too, so the first real alert is not the request
+       that has to download them */
+    ['message','visitor'].forEach(k => { const el = soundEl(k); if (el) { try { el.load(); } catch(e) {} } });
+  };
+  document.addEventListener('click',   unlockAll, { once: true });
+  document.addEventListener('keydown', unlockAll, { once: true });
 
   /* keep this device's push subscription current; endpoints rotate over time */
   try {
@@ -3657,7 +3789,7 @@ window.initChatInbox = async function() {
         document.hasFocus();
       if (watching) return;
       const conv = _chatConvs.find(c => c.id === m.conversation_id);
-      chatBeep();
+      playChatSound('message');
       if (conv) chatNotify(conv, m.body);
     })
     .subscribe();
@@ -3671,7 +3803,7 @@ window.loadChatSettings = async function() {
   const { data } = await db.from('system_settings').select('key,value')
     .in('key', ['chat_enabled','chat_visibility','chat_disabled_users','support_chat_enabled',
                 'chat_status','chat_prechat_enabled','chat_welcome_enabled','chat_welcome_message',
-                'chat_offline_enabled','chat_offline_message','visitor_alerts_enabled','blocked_ips']);
+                'chat_offline_enabled','chat_offline_message','visitor_alerts_enabled','blocked_ips','sound_message_url','sound_visitor_url']);
   const map = Object.fromEntries((data||[]).map(r => [r.key, r.value]));
 
   try {
@@ -3688,6 +3820,9 @@ window.loadChatSettings = async function() {
   document.getElementById('toggle-support-chat').checked = map['support_chat_enabled'] !== 'false';
   _blockedIps = String(map['blocked_ips'] || '').split(',').map(s => s.trim()).filter(Boolean);
   renderBlockedIps();
+  _soundUrls.message = map['sound_message_url'] || '';
+  _soundUrls.visitor = map['sound_visitor_url'] || '';
+  renderSoundSettings();
   _visitorAlerts = map['visitor_alerts_enabled'] !== 'false';
   const va = document.getElementById('toggle-visitor-alerts');
   if (va) va.checked = _visitorAlerts;
