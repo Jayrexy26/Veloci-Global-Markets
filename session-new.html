@@ -528,7 +528,7 @@ async function doReset() {
   btn.disabled = true; btn.textContent = 'Sending…';
 
   const { data: { session } } = await window.SV_DB.auth.getSession();
-  if (!session) {
+  if (!session || session.user?.is_anonymous) {
     errEl.textContent = 'Session expired. Please sign in again.';
     errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Send Reset Link';
@@ -647,7 +647,7 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
     setTimeout(() => { if (!done) { done = true; subscription.unsubscribe(); resolve(null); } }, 8000);
   });
 
-  if (!session) { window.location.href = 'login-new.html'; return; }
+  if (!session || session.user?.is_anonymous) { window.location.href = 'login-new.html'; return; }
   _user = session.user;
 
   // Detect new Google OAuth registration and notify admin
@@ -711,5 +711,6 @@ document.getElementById('btn-signout').addEventListener('click', async () => {
 })();
 </script>
 <script src="/pwa-install.js"></script>
+<script src="/support-chat.js" defer></script>
 </body>
 </html>

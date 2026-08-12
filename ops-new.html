@@ -2687,10 +2687,15 @@ function chatUserFor(conv) {
 }
 function chatNameFor(conv) {
   /* what they typed in the pre-chat form wins — it is how they introduced
-     themselves — then the account name, then a truncated id */
+     themselves — then the account name. Signed-out visitors have no profile,
+     so name them by where they are rather than by a raw uuid. */
   if (conv.visitor_name) return conv.visitor_name;
   const u = chatUserFor(conv);
-  return u ? userName(u) : (conv.user_id || '').slice(0, 8) + '…';
+  if (u) return userName(u);
+  const place = conv.visitor_city
+    || (conv.visitor_country && window.SV_COUNTRY_NAME
+        ? window.SV_COUNTRY_NAME(conv.visitor_country) : conv.visitor_country);
+  return place ? 'Visitor · ' + place : 'Visitor';
 }
 function chatEmailFor(conv) {
   const u = chatUserFor(conv);

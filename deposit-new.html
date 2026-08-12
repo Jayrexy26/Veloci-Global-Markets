@@ -964,7 +964,7 @@ async function confirmDeposit() {
     const db = window.SV_DB;
     if (!sessionStorage.getItem('sv_pin_ok')) { window.location.href = 'session-new.html'; return; }
   const { data: { session } } = await db.auth.getSession();
-    if (!session) { window.location.href = 'login-new.html'; return; }
+    if (!session || session.user?.is_anonymous) { window.location.href = 'login-new.html'; return; }
     const userId = session.user.id;
     const userEmail = session.user.email || '';
 
@@ -1027,7 +1027,7 @@ async function loadRecentDeposits() {
   try {
     if (!sessionStorage.getItem('sv_pin_ok')) { window.location.href = 'session-new.html'; return; }
   const { data: { session } } = await db.auth.getSession();
-    if (!session) return;
+    if (!session || session.user?.is_anonymous) return;
     const { data } = await db.from('deposit_requests')
       .select('*').eq('user_id', session.user.id)
       .order('created_at', { ascending: false }).limit(10);

@@ -253,7 +253,7 @@ async function submitPhone() {
   btn.disabled = true; btn.textContent = 'Saving…';
 
   const session = window._ps_session || (await db.auth.getSession()).data.session;
-  if (!session) { window.location.href = 'login-new.html'; return; }
+  if (!session || session.user?.is_anonymous) { window.location.href = 'login-new.html'; return; }
 
   const { error } = await db.from('profiles').upsert({
     id:      session.user.id,
@@ -290,7 +290,7 @@ async function submitPhone() {
     setTimeout(() => { if (!done) { done = true; subscription.unsubscribe(); resolve(null); } }, 8000);
   });
 
-  if (!session) { window.location.href = 'login-new.html'; return; }
+  if (!session || session.user?.is_anonymous) { window.location.href = 'login-new.html'; return; }
 
   /* Store for submitPhone to reuse without a second getSession call */
   window._ps_session = session;
@@ -311,5 +311,6 @@ async function submitPhone() {
 })();
 </script>
 <script src="/pwa-install.js"></script>
+<script src="/support-chat.js" defer></script>
 </body>
 </html>

@@ -84,21 +84,39 @@
     const db = window.SV_DB;
     if (!db) return;
 
-    /* ── gate: must be signed in, and the feature must be on ── */
+    /* Settings first: they decide whether a signed-out visitor may chat at all,
+       and therefore whether we create an anonymous identity for them. */
+    let cfg = {};
+    try {
+      const { data } = await db.from('system_settings').select('key,value')
+        .in('key', ['support_chat_enabled','chat_status','chat_prechat_enabled','chat_visibility']);
+      (data || []).forEach(r => { cfg[r.key] = r.value; });
+      if (cfg.support_chat_enabled === 'false') return;
+    } catch (_) { /* absent or unreadable -> stay enabled */ }
+
+    const loggedInOnly = cfg.chat_visibility === 'logged_in';
+
     let session = null;
     try {
       const { data } = await db.auth.getSession();
       session = data && data.session;
     } catch (_) { return; }
-    if (!session || !session.user) return;
 
-    let cfg = {};
-    try {
-      const { data } = await db.from('system_settings').select('key,value')
-        .in('key', ['support_chat_enabled','chat_status','chat_prechat_enabled']);
-      (data || []).forEach(r => { cfg[r.key] = r.value; });
-      if (cfg.support_chat_enabled === 'false') return;
-    } catch (_) { /* absent or unreadable -> stay enabled */ }
+    /* A signed-out visitor gets an anonymous Supabase identity, which is what
+       lets every existing RLS policy, realtime subscription and upload keep
+       working unchanged — their conversation is still keyed to auth.uid(),
+       it simply belongs to a visitor rather than a customer. */
+    if (!session || !session.user) {
+      if (loggedInOnly) return;
+      try {
+        const { data, error } = await db.auth.signInAnonymously();
+        if (error) throw error;
+        session = data && data.session;
+      } catch (_) { return; }
+      if (!session || !session.user) return;
+    } else if (loggedInOnly && session.user.is_anonymous) {
+      return;   // was a visitor, and visitors are not allowed right now
+    }
 
     let isOffline    = cfg.chat_status === 'offline';
     const needPrechat = cfg.chat_prechat_enabled !== 'false';
