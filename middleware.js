@@ -153,11 +153,19 @@ export default async function middleware(request) {
        they be blocked? Deliberately does not expose the full blocked list. */
     if (url.pathname === '/__geo') {
       const c = await getSettings();
+      const h = n => {
+        const v = request.headers.get(n);
+        /* Vercel percent-encodes city names with non-ASCII characters */
+        try { return v ? decodeURIComponent(v) : null; } catch (_) { return v || null; }
+      };
       return Response.json({
-        country: country || null,
-        enabled: !!c?.enabled,
-        blocked: !!(c?.enabled && country && c.blocked.has(country)),
-        style:   c?.style || 'branded',
+        country:  country || null,
+        city:     h('x-vercel-ip-city'),
+        region:   h('x-vercel-ip-country-region'),
+        timezone: h('x-vercel-ip-timezone'),
+        enabled:  !!c?.enabled,
+        blocked:  !!(c?.enabled && country && c.blocked.has(country)),
+        style:    c?.style || 'branded',
       }, { headers: { 'cache-control': 'no-store' } });
     }
 

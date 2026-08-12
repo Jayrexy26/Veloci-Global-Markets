@@ -32,6 +32,50 @@
     return (b / 1048576).toFixed(1) + ' MB';
   };
 
+  /* ── visitor context ──
+     Everything here comes from what the browser already tells every site, plus
+     the country the edge derives from the connection. Captured when the chat is
+     opened, not on every page, so support gets context without a tracking log. */
+  function deviceInfo() {
+    const ua = navigator.userAgent || '';
+    const mobile = /Mobi|Android|iPhone|iPod/i.test(ua);
+    const tablet = /iPad|Tablet/i.test(ua) || (/Android/i.test(ua) && !/Mobi/i.test(ua));
+
+    let os = 'Unknown';
+    if (/Windows NT 11/.test(ua))      os = 'Windows 11';
+    else if (/Windows NT 10/.test(ua)) os = 'Windows 10';
+    else if (/Windows/.test(ua))       os = 'Windows';
+    else if (/iPhone|iPad|iPod/.test(ua)) os = 'iOS';
+    else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + RegExp.$1;
+    else if (/Mac OS X/.test(ua))      os = 'macOS';
+    else if (/Linux/.test(ua))         os = 'Linux';
+
+    /* order matters: Edge and Opera both claim Chrome, Chrome claims Safari */
+    let browser = 'Unknown';
+    if (/Edg\//.test(ua))            browser = 'Edge';
+    else if (/OPR\/|Opera/.test(ua)) browser = 'Opera';
+    else if (/SamsungBrowser/.test(ua)) browser = 'Samsung Internet';
+    else if (/Firefox\//.test(ua))   browser = 'Firefox';
+    else if (/Chrome\//.test(ua))    browser = 'Chrome';
+    else if (/Safari\//.test(ua))    browser = 'Safari';
+
+    return {
+      device: tablet ? 'Tablet' : (mobile ? 'Mobile' : 'Desktop'),
+      os,
+      browser,
+      screen: (window.screen && window.screen.width)
+        ? window.screen.width + '×' + window.screen.height : '',
+    };
+  }
+
+  async function edgeGeo() {
+    try {
+      const r = await fetch('/__geo', { cache: 'no-store' });
+      if (!r.ok) return {};
+      return await r.json();
+    } catch (_) { return {}; }
+  }
+
   const MAX_BYTES = 10 * 1024 * 1024;
   const ALLOWED = ['image/png','image/jpeg','image/jpg','image/gif','image/webp',
                    'application/pdf','text/plain'];
@@ -445,6 +489,30 @@
 
     renderStatus();
 
+    /* Refreshed on each open so "opened chat from /withdraw" stays accurate.
+       Fire-and-forget: context is never worth delaying or breaking the chat. */
+    async function captureContext() {
+      try {
+        const geo = await edgeGeo();
+        const d   = deviceInfo();
+        let tz = geo.timezone || '';
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || tz; } catch (_) {}
+        await db.rpc('chat_update_context', {
+          p_country:  geo.country || '',
+          p_city:     geo.city    || '',
+          p_region:   geo.region  || '',
+          p_tz:       tz,
+          p_device:   d.device,
+          p_os:       d.os,
+          p_browser:  d.browser,
+          p_screen:   d.screen,
+          p_language: navigator.language || '',
+          p_page:     location.pathname + location.search,
+          p_referrer: document.referrer || '',
+        });
+      } catch (_) {}
+    }
+
     /* live online/offline switching from ops */
     db.channel('sv-chat-status')
       .on('postgres_changes', {
@@ -517,6 +585,7 @@
         if (!isPhone()) setTimeout(() => input.focus(), 260);
       }
       if (unread > 0) markRead();
+      captureContext();
     }
 
     function close() {
