@@ -3029,6 +3029,7 @@ let _visitorAlerts = true;
 let _visitorPaneOpen = true;
 let _visitorFirstLoad = true;
 const _visitorTrailOpen = new Set();   // which visitors have their trail expanded
+const _visitorSeen      = new Set();   // who we have already alerted about
 const VISITOR_STALE_MS = 90000;        // no heartbeat for 90s counts as gone
 
 window.toggleVisitorTrail = function(id) {
@@ -3066,6 +3067,10 @@ function visitorSince(v) {
 window.renderVisitors = function() {
   const box = document.getElementById('visitor-list'); if (!box) return;
   _visitors = _visitors.filter(visitorIsLive);
+  /* forget anyone who has gone quiet, so returning later counts as a new
+     arrival and alerts again */
+  const liveIds = new Set(_visitors.map(v => v.id));
+  _visitorSeen.forEach(id => { if (!liveIds.has(id)) _visitorSeen.delete(id); });
   const n = _visitors.length;
   const cnt = document.getElementById('visitor-count');
   if (cnt) cnt.textContent = '(' + n + ')';
@@ -3156,26 +3161,54 @@ window.initVisitors = async function() {
   _visitors = data || [];
   renderVisitors();
   /* whoever was already here when the console opened is not "an arrival" */
+  _visitors.forEach(v => _visitorSeen.add(v.id));
   _visitorFirstLoad = false;
+
+  /* Merge a row in, alerting if this visitor was not already present.
+     Deliberately not limited to INSERT: a returning visitor keeps the same
+     row, so their comeback arrives as an UPDATE — only a brand new browser
+     ever produced an INSERT, which is why arrivals went unannounced. */
+  function upsertVisitor(row, allowAlert) {
+    const i = _visitors.findIndex(v => v.id === row.id);
+    if (i >= 0) _visitors[i] = row;
+    else _visitors.push(row);
+
+    if (allowAlert && !_visitorFirstLoad && visitorIsLive(row) && !_visitorSeen.has(row.id)) {
+      _visitorSeen.add(row.id);
+      visitorNotify(row);
+    } else if (visitorIsLive(row)) {
+      _visitorSeen.add(row.id);
+    }
+  }
 
   db.channel('sv-ops-visitors')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'visitor_sessions' }, p => {
       const row = p.new || p.old; if (!row) return;
       if (p.eventType === 'DELETE') {
         _visitors = _visitors.filter(v => v.id !== row.id);
+        _visitorSeen.delete(row.id);
       } else {
-        const i = _visitors.findIndex(v => v.id === row.id);
-        if (i >= 0) {
-          _visitors[i] = row;
-        } else {
-          _visitors.push(row);
-          /* a genuinely new session, not a heartbeat on an existing one */
-          if (!_visitorFirstLoad && p.eventType === 'INSERT') visitorNotify(row);
-        }
+        upsertVisitor(row, true);
       }
       renderVisitors();
     })
     .subscribe();
+
+  /* Safety net: realtime can drop a message or the socket can nap. Reconcile
+     against the table periodically so an arrival is never missed outright. */
+  async function reconcile() {
+    try {
+      const { data } = await db.from('visitor_sessions')
+        .select('*')
+        .gt('last_seen_at', new Date(Date.now() - VISITOR_STALE_MS).toISOString())
+        .order('last_seen_at', { ascending: false }).limit(200);
+      (data || []).forEach(row => upsertVisitor(row, true));
+      const liveIds = new Set((data || []).map(r => r.id));
+      _visitors = _visitors.filter(v => liveIds.has(v.id) || visitorIsLive(v));
+      renderVisitors();
+    } catch(e) {}
+  }
+  setInterval(reconcile, 30000);
 
   /* entries expire on a timer rather than an event, so re-render periodically */
   setInterval(renderVisitors, 20000);
