@@ -24,6 +24,27 @@
 <title>Veloci Global Markets – Ultimate Trading Machine</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link rel="preload" href="assets/hero.mp4" as="video" type="video/mp4">
+<link rel="preload" href="assets/hero-poster.jpg" as="image">
+<script>
+/* First visit this session: hold the page behind the intro curtain (site-fx.js lifts it).
+   The timeout is a failsafe so the page can never stay covered. */
+(function(){
+  var d = document.documentElement;
+  try {
+    if (!sessionStorage.getItem('vgm_intro') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      d.classList.add('fx-intro-on');
+      setTimeout(function(){ d.classList.remove('fx-intro-on'); }, 3600);
+    }
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="site-fx.css"/>
+<script src="vendor/gsap.min.js" defer></script>
+<script src="vendor/ScrollTrigger.min.js" defer></script>
+<script src="vendor/lenis.min.js" defer></script>
+<script src="site-fx.js" defer></script>
+<script src="fx-webgl.js" defer></script>
+<script src="home-fx.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{overflow-x:hidden;}
@@ -60,22 +81,7 @@ nav{position:sticky;top:0;z-index:9999;background:#fff;border-bottom:1px solid #
 .btn-login{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:#333;padding:10px 14px;text-decoration:none;white-space:nowrap;transition:color .15s;}
 .btn-login:hover{color:#f05a1a;}
 
-/* HERO */
-.hero{position:relative;width:100%;height:440px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:60px;background:#080c18;}
-.hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;}
-.hero-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.50) 35%,rgba(0,0,0,.15) 65%,rgba(0,0,0,.0) 100%);}
-.hero-content{position:relative;z-index:2;padding:0 40px;max-width:680px;}
-.hero-title{font-size:50px;font-weight:900;line-height:1.05;letter-spacing:-1px;margin-bottom:14px;color:#fff;}
-.hero-title .orange{color:#f05a1a;}
-.hero-sub{font-size:15px;color:rgba(255,255,255,.78);margin-bottom:28px;font-weight:400;line-height:1.5;}
-.hero-form-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.hero-input-wrap{display:flex;align-items:center;background:#fff;border-radius:50px;padding:0 18px 0 20px;height:52px;width:320px;gap:10px;}
-.hero-input-wrap input{flex:1;border:none;outline:none;font-size:14px;color:#333;font-family:inherit;background:transparent;}
-.hero-input-wrap input::placeholder{color:#aaa;}
-.btn-signup{display:inline-flex;align-items:center;height:52px;padding:0 28px;background:#f05a1a;color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:800;letter-spacing:.5px;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap;text-decoration:none;}
-.btn-signup:hover{background:#c94508;}
-.btn-qr{width:52px;height:52px;flex-shrink:0;background:#f05a1a;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;border:none;}
-.btn-qr:hover{background:#c94508;}
+/* HERO — styles live in site-fx.css (.hs-*) */
 
 /* PROMO CARDS */
 .promos{background:#fff;padding:32px 0 40px;}
@@ -86,8 +92,12 @@ nav{position:sticky;top:0;z-index:9999;background:#fff;border-bottom:1px solid #
 .promo-arrow:disabled{opacity:.3;cursor:default;box-shadow:none;}
 .promos-viewport{flex:1;overflow:hidden;}
 .promos-cards{display:flex;gap:16px;transition:transform .4s ease;}
-.pcard{position:relative;background:#ebebeb;border-radius:14px;overflow:hidden;cursor:pointer;height:178px;flex:0 0 calc(33.333% - 11px);transition:box-shadow .2s;}
-.pcard:hover{box-shadow:0 6px 24px rgba(0,0,0,.1);}
+.pcard{position:relative;background:linear-gradient(135deg,#f1f1f3 0%,#e6e6ea 100%);border-radius:16px;overflow:hidden;cursor:pointer;height:178px;flex:0 0 calc(33.333% - 11px);transition:box-shadow .3s;}
+.pcard:hover{box-shadow:0 18px 40px rgba(0,0,0,.14);}
+.pcard-img img{transition:transform .8s cubic-bezier(.22,1,.36,1);}
+.pcard:hover .pcard-img img{transform:scale(1.62) rotate(-3deg);}
+.promos-viewport{touch-action:pan-y;}
+.promos-cards.is-dragging{transition:none !important;}
 .pcard-left{position:relative;z-index:1;padding:16px 20px;height:100%;display:flex;flex-direction:column;justify-content:flex-start;gap:10px;width:52%;}
 .pcard-badge{display:inline-block;background:rgba(255,255,255,.8);color:#444;font-size:11px;font-weight:600;padding:4px 12px;border-radius:50px;width:fit-content;}
 .pcard-title{font-size:17px;font-weight:800;color:#1a1a1a;line-height:1.3;}
@@ -134,6 +144,18 @@ nav{position:sticky;top:0;z-index:9999;background:#fff;border-bottom:1px solid #
 .cmp-td-us{padding:18px 20px;background:#f2f2f2;text-align:center;font-size:16px;font-weight:700;color:#f05a1a;vertical-align:middle;}
 .cmp-td-mkt{padding:18px 20px;background:#f2f2f2;text-align:center;font-size:16px;color:#555;border-left:1px solid #e0e0e0;vertical-align:middle;}
 .cmp-crown{font-size:13px;margin-right:5px;}
+.cmp-table tbody tr{transition:background-color .25s;}
+.cmp-table tbody tr:hover td{background:#fff4ee;}
+.cmp-table tbody tr:hover .cmp-td-broker{background:#fff;}
+.cmp-val{font-variant-numeric:tabular-nums;}
+.cmp-save{display:block;margin:7px auto 0;width:fit-content;padding:3px 9px;border-radius:50px;background:rgba(34,197,94,.12);color:#15803d;font-size:11px;font-weight:700;letter-spacing:.2px;}
+.cmp-meter{display:block;height:5px;margin:8px auto 0;max-width:150px;border-radius:5px;background:rgba(0,0,0,.07);overflow:hidden;}
+.cmp-meter i{display:block;height:100%;border-radius:inherit;transform-origin:0 50%;transform:scaleX(0);transition:transform 1.6s cubic-bezier(.22,1,.36,1) .3s;}
+.cmp-td-us .cmp-meter i{background:linear-gradient(90deg,#f05a1a,#ff9a4d);}
+.cmp-td-mkt .cmp-meter i{background:#b5b5b5;}
+.cmp-table.fx-in .cmp-meter i{transform:scaleX(var(--w,0));}
+.cmp-bar-orange{transform-origin:0 50%;transition:transform 1.4s cubic-bezier(.22,1,.36,1);}
+.fx-js .cmp-table:not(.fx-in) .cmp-bar-orange{transform:scaleX(0);}
 .cmp-notes{margin-top:18px;list-style:disc;padding-left:20px;}
 .cmp-notes li{font-size:13px;color:#555;margin-bottom:4px;line-height:1.5;}
 .cmp-notes li:nth-child(2){color:#f05a1a;}
@@ -186,7 +208,7 @@ table.mkt tbody td{padding:13px 14px;white-space:nowrap;}
 .trade-wrap{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:flex-end;}
 .trade-left{padding-bottom:80px;}
 .trade-left h2{font-size:38px;font-weight:800;color:#1a1a1a;line-height:1.15;margin-bottom:20px;}
-.trade-left h2 span{color:#f05a1a;}
+.trade-left h2 .hl{color:#f05a1a;}
 .trade-left p{font-size:15px;color:#444;line-height:1.7;margin-bottom:14px;max-width:440px;}
 .trade-signup-btn{display:inline-block;background:#f05a1a;color:#fff;font-weight:700;font-size:15px;padding:16px 48px;border-radius:6px;text-decoration:none;letter-spacing:.5px;margin-bottom:28px;transition:background .2s;}
 .trade-signup-btn:hover{background:#c94400;}
@@ -207,26 +229,71 @@ table.mkt tbody td{padding:13px 14px;white-space:nowrap;}
 .trade-man{position:absolute;bottom:0;right:-20px;height:540px;width:auto;object-fit:contain;z-index:2;}
 .trade-support{position:absolute;bottom:120px;left:0;width:160px;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.13);z-index:3;}
 
-/* EXCELLENCE */
-.excellence{padding:88px 0;background:#fff;}
-.exc-wrap{display:grid;grid-template-columns:1fr 420px;gap:60px;align-items:center;}
-.exc-heading{font-size:38px;font-weight:800;color:#1a1a1a;line-height:1.2;margin-bottom:32px;}
-.exc-heading span{color:#f05a1a;}
-.exc-tabs{display:flex;gap:0;border-bottom:1.5px solid #e8e8e8;margin-bottom:28px;flex-wrap:wrap;}
-.etab{padding:10px 0;margin-right:22px;font-size:12px;font-weight:700;color:#999;cursor:pointer;border:none;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap;transition:color .15s;background:none;font-family:inherit;letter-spacing:.4px;}
-.etab.active,.etab:hover{color:#f05a1a;border-bottom-color:#f05a1a;}
-.exc-panel{display:none;}
-.exc-panel.active{display:block;}
-.exc-panel-title{font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:14px;letter-spacing:.2px;}
-.exc-panel-desc{font-size:14px;color:#555;line-height:1.8;margin-bottom:12px;max-width:480px;}
-.exc-learn-btn{display:inline-block;background:#f05a1a;color:#fff;font-weight:700;font-size:13px;padding:13px 28px;border-radius:30px;text-decoration:none;letter-spacing:.5px;margin-top:10px;transition:background .2s;}
-.exc-learn-btn:hover{background:#c94400;}
-.exc-img-wrap{display:flex;align-items:center;justify-content:center;}
-.exc-market-img{width:100%;max-width:400px;height:auto;display:none;animation:fadeIn .35s ease;}
-.exc-market-img.active{display:block;}
-@keyframes fadeIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
-.price-up{color:#2e7d32;font-weight:600;}
-.price-dn{color:#c62828;font-weight:600;}
+/* STATEMENT — words light up as you scroll (home-fx.js) */
+.statement{padding:130px 0 110px;background:#fff;position:relative;overflow:hidden;}
+.statement::before{content:'';position:absolute;width:620px;height:620px;right:-180px;top:-160px;border-radius:50%;background:radial-gradient(circle,rgba(240,90,26,.12),transparent 65%);pointer-events:none;}
+.statement-text{font-size:clamp(28px,3.9vw,56px);font-weight:800;line-height:1.16;letter-spacing:-.035em;color:#16181d;max-width:1120px;}
+.statement-text em{font-style:normal;color:#f05a1a;}
+.statement-text .fx-w{overflow:visible;}
+.statement-text .fx-w>span{transition:none;}
+.statement-foot{display:flex;align-items:center;gap:18px;margin-top:44px;flex-wrap:wrap;}
+.statement-foot small{font-size:12px;color:#999;}
+
+/* GLOBE / SESSIONS */
+.globe-sec{position:relative;padding:120px 0;color:#fff;overflow:hidden;background:radial-gradient(ellipse 70% 70% at 75% 45%,#111b36 0%,#080c18 55%,#04060b 100%);}
+.globe-sec::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:radial-gradient(ellipse at 30% 40%,#000,transparent 70%);mask-image:radial-gradient(ellipse at 30% 40%,#000,transparent 70%);pointer-events:none;}
+.globe-grid{position:relative;display:grid;grid-template-columns:minmax(0,.86fr) minmax(0,1.14fr);gap:48px;align-items:center;}
+.globe-sec .tag{color:#ff9a4d;}
+.globe-h{font-size:clamp(32px,3.6vw,52px);font-weight:900;line-height:1.05;letter-spacing:-.035em;margin-bottom:18px;}
+.globe-h em{font-style:normal;color:#f05a1a;}
+.globe-p{font-size:15.5px;line-height:1.7;color:rgba(255,255,255,.66);max-width:470px;margin-bottom:30px;}
+.globe-hint{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.35);pointer-events:none;white-space:nowrap;}
+
+/* MARKETS SHOWCASE — pinned horizontal scroll on desktop, swipe on touch */
+.mx{position:relative;background:#07090f;color:#fff;overflow:hidden;}
+.mx::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 60% at 15% 20%,rgba(240,90,26,.16),transparent 70%),radial-gradient(ellipse 40% 50% at 90% 90%,rgba(26,74,88,.35),transparent 70%);pointer-events:none;}
+.mx-pin{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:96px 0 64px;}
+.mx-pinned .mx-pin{height:100vh;min-height:0;justify-content:flex-start;padding:clamp(40px,7vh,84px) 0 clamp(24px,4vh,44px);}
+.mx-pinned .mx-viewport{flex:1;min-height:0;}
+.mx-pinned .mx-track{height:100%;}
+.mx-pinned .mx-card{min-height:0;height:100%;}
+.mx-pinned .mx-img{min-height:110px;flex:1 1 0;}
+.mx-pinned .mx-img img{max-height:100%;}
+.mx-head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:clamp(24px,4vh,44px);width:100%;}
+.mx .tag{color:#ff9a4d;}
+.mx-title{font-size:clamp(30px,3.6vw,52px);font-weight:900;line-height:1.05;letter-spacing:-.035em;max-width:640px;}
+.mx-title em{font-style:normal;color:#f05a1a;}
+.mx-meta{display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex-shrink:0;}
+.mx-count{font-size:13px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:1px;font-variant-numeric:tabular-nums;}
+.mx-count b{font-size:28px;font-weight:900;color:#fff;margin-right:4px;}
+.mx-progress{width:220px;height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;}
+.mx-progress i{display:block;height:100%;background:linear-gradient(90deg,#f05a1a,#ff9a4d);transform-origin:0 50%;transform:scaleX(var(--mx-p,0));}
+.mx-hint{font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.mx-viewport{position:relative;width:100%;}
+.mx-track{display:flex;gap:24px;padding:0 max(48px,calc((100vw - 1280px) / 2 + 48px));width:max-content;will-change:transform;}
+.mx-card{position:relative;flex:0 0 auto;width:min(410px,80vw);min-height:min(66vh,600px);display:flex;flex-direction:column;padding:28px 30px 30px;border-radius:24px;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);overflow:hidden;}
+.mx-card-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.45);position:relative;z-index:1;}
+.mx-num{font-size:13px;color:#f05a1a;font-variant-numeric:tabular-nums;}
+.mx-img{position:relative;z-index:1;flex:1;min-height:210px;display:flex;align-items:center;justify-content:center;margin:12px -10px 6px;}
+.mx-img::before{content:'';position:absolute;width:62%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(240,90,26,.35),transparent 68%);filter:blur(10px);}
+.mx-img img{position:relative;width:min(100%,300px);height:auto;max-height:250px;object-fit:contain;filter:drop-shadow(0 30px 40px rgba(0,0,0,.55));will-change:transform;}
+.mx-card h3{position:relative;z-index:1;font-size:clamp(24px,3.2vh,30px);font-weight:900;letter-spacing:-.03em;margin-bottom:10px;}
+@media(max-height:820px){.mx-pinned .mx-sub{display:none;}.mx-pinned .mx-lead{margin-bottom:18px;}}
+.mx-lead{position:relative;z-index:1;font-size:14px;line-height:1.7;color:rgba(255,255,255,.78);margin-bottom:10px;}
+.mx-sub{position:relative;z-index:1;font-size:12.5px;line-height:1.65;color:rgba(255,255,255,.45);margin-bottom:22px;}
+.mx-link{position:relative;z-index:1;margin-top:auto;display:inline-flex;align-items:center;gap:10px;width:fit-content;font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;padding:12px 20px;border-radius:50px;border:1px solid rgba(255,255,255,.22);transition:background-color .25s,border-color .25s;}
+.mx-link svg{width:16px;height:16px;transition:transform .35s cubic-bezier(.22,1,.36,1);}
+.mx-link:hover{background:#f05a1a;border-color:#f05a1a;}
+.mx-link:hover svg{transform:translateX(4px);}
+.mx-end{flex:0 0 auto;width:min(380px,80vw);display:flex;flex-direction:column;justify-content:center;gap:22px;padding:30px;}
+.mx-end h3{font-size:clamp(30px,3vw,44px);font-weight:900;line-height:1.05;letter-spacing:-.035em;}
+.mx-end h3 em{font-style:normal;color:#f05a1a;}
+.mx:not(.mx-pinned) .mx-viewport{overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:8px;}
+.mx:not(.mx-pinned) .mx-viewport::-webkit-scrollbar{display:none;}
+.mx:not(.mx-pinned) .mx-card,.mx:not(.mx-pinned) .mx-end{scroll-snap-align:center;}
+
+/* FOOTER WORDMARK */
+.ft-mega{position:relative;margin:36px 0 -6px;font-size:clamp(80px,21vw,330px);font-weight:900;line-height:.8;letter-spacing:-.06em;text-align:center;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,.09);background:radial-gradient(380px circle at var(--fx,50%) var(--fy,50%),rgba(240,90,26,.95),rgba(240,90,26,.25) 40%,transparent 70%);-webkit-background-clip:text;background-clip:text;user-select:none;pointer-events:auto;overflow:hidden;}
 
 /* SUPPORT */
 .support{padding:80px 0;background:#eef0f3;}
@@ -255,29 +322,27 @@ table.mkt tbody td{padding:13px 14px;white-space:nowrap;}
 .sn-start-btn:hover{background:#c94400;}
 .sn-start-btn svg{width:20px;height:20px;background:#fff;border-radius:50%;padding:3px;flex-shrink:0;}
 
-/* HERO ENTRANCE ANIMATIONS */
-@keyframes heroFadeUp{from{opacity:0;transform:translateY(36px);}to{opacity:1;transform:translateY(0);}}
-@keyframes heroFadeLeft{from{opacity:0;transform:translateX(-36px);}to{opacity:1;transform:translateX(0);}}
-.hero-title{animation:heroFadeUp .8s ease both;}
-.hero-sub{animation:heroFadeUp .8s ease .25s both;}
-.hero-form-row{animation:heroFadeUp .8s ease .5s both;}
-
-/* SCROLL REVEAL */
+/* SCROLL REVEAL (review cards, rendered from Supabase) */
 .reveal{opacity:0;transform:translateY(40px);transition:opacity .7s ease,transform .7s ease;}
 .reveal.visible{opacity:1;transform:translateY(0);}
 
-/* IMAGE ANIMATIONS */
-@keyframes imgZoomFade{from{opacity:0;transform:scale(0.82) translateY(28px);}to{opacity:1;transform:scale(1) translateY(0);}}
-@keyframes imgSlideIn{from{opacity:0;transform:translateX(52px) scale(0.9);}to{opacity:1;transform:translateX(0) scale(1);}}
-@keyframes imgPop{from{opacity:0;transform:scale(0.7);}to{opacity:1;transform:scale(1);}}
-@keyframes fadeIn{from{opacity:0;transform:scale(0.88) translateY(18px);}to{opacity:1;transform:scale(1) translateY(0);}}
-
-.img-zoom{opacity:0;}
-.img-zoom.img-in{animation:imgZoomFade .85s cubic-bezier(.22,.68,0,1.15) both;}
-.img-slide{opacity:0;}
-.img-slide.img-in{animation:imgSlideIn .9s cubic-bezier(.22,.68,0,1.1) both;}
-.img-pop{opacity:0;}
-.img-pop.img-in{animation:imgPop .6s cubic-bezier(.34,1.56,.64,1) both;}
+/* SECTION POLISH */
+.awards-stat-num{font-variant-numeric:tabular-nums;}
+.awards-feature-icon{position:relative;transition:box-shadow .4s;}
+.awards-feature-icon:hover{box-shadow:0 22px 50px rgba(240,90,26,.18);}
+.awards-feature-icon img{animation:fxFloat 6s ease-in-out infinite;}
+.awards-feature:nth-child(2) .awards-feature-icon img{animation-delay:-2s;}
+.awards-feature:nth-child(3) .awards-feature-icon img{animation-delay:-4s;}
+.trust-card{position:relative;transition:box-shadow .35s,border-color .35s;}
+.trust-card:hover{box-shadow:0 18px 44px rgba(0,0,0,.1);border-color:rgba(240,90,26,.35);}
+.sup-card{position:relative;overflow:hidden;}
+.sup-card>*:not(.fx-glare){position:relative;z-index:1;}
+.trade-earnings-card .tec-amount{font-variant-numeric:tabular-nums;}
+.startnow{position:relative;overflow:hidden;}
+.startnow .si{position:relative;z-index:1;}
+.sn-title{font-size:clamp(34px,4.4vw,64px) !important;letter-spacing:-.035em !important;font-weight:900 !important;}
+.sn-stat-num{font-variant-numeric:tabular-nums;}
+.sn-start-btn{box-shadow:0 16px 44px rgba(240,90,26,.5);}
 
 /* FOOTER */
 footer{background:#111;padding:60px 0 28px;}
@@ -337,17 +402,6 @@ html{overflow-x:hidden;max-width:100%;}
   .nav-logo img{height:72px;}
   .nav-links,.nav-right{display:none !important;}
   .nav-hamburger{display:flex;}
-
-  /* HERO — force true full-viewport width */
-  .hero{width:100vw;height:auto;min-height:380px;padding-bottom:40px;overflow:hidden;}
-  .hero-overlay{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.8) 100%);}
-  .hero-content{padding:0 20px;width:100%;max-width:100%;}
-  .hero-title{font-size:28px;letter-spacing:0;margin-bottom:10px;word-break:break-word;}
-  .hero-sub{font-size:13px;margin-bottom:20px;}
-  .hero-form-row{flex-direction:column;align-items:flex-start;gap:10px;width:100%;}
-  .hero-input-wrap{width:100%;max-width:none;}
-  .btn-signup{width:auto;}
-  .btn-qr{display:none;}
 
   /* PROMO CARDS — use vw so arrows never overflow */
   .promos{padding:20px 0 24px;width:100%;overflow:hidden;}
@@ -411,20 +465,31 @@ html{overflow-x:hidden;max-width:100%;}
   .trade-man{height:255px;right:-6px;max-width:none;}
   .trade-support{width:90px;bottom:36px;}
 
-  /* EXCELLENCE */
-  .excellence{padding:40px 0;width:100%;overflow:hidden;}
-  .exc-wrap{grid-template-columns:1fr;gap:24px;width:100%;overflow:hidden;}
-  .exc-wrap>*{min-width:0;max-width:100%;overflow:hidden;}
-  .exc-heading{font-size:24px;margin-bottom:18px;word-break:break-word;}
-  .exc-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;width:100%;}
-  .exc-tabs::-webkit-scrollbar{display:none;}
-  .etab{flex-shrink:0;font-size:11px;padding:8px 0;margin-right:14px;}
-  .exc-panel-title{font-size:16px;word-break:break-word;}
-  .exc-panel-desc{font-size:13px;max-width:100%;word-break:break-word;}
-  .exc-learn-btn{display:inline-block;width:auto;}
-  .exc-img-wrap{order:1;width:100%;overflow:hidden;display:block;}
-  .exc-market-img{width:100%;max-width:100%;height:auto;display:none;}
-  .exc-market-img.active{display:block;}
+  /* STATEMENT */
+  .statement{padding:64px 0 56px;}
+  .statement-text{font-size:26px;line-height:1.2;}
+  .statement-foot{margin-top:28px;}
+
+  /* GLOBE / SESSIONS */
+  .globe-sec{padding:64px 0 56px;}
+  .globe-grid{grid-template-columns:1fr;gap:8px;}
+  .globe-grid>.globe{order:-1;max-width:440px;}
+  .globe-h{font-size:30px;}
+  .globe-p{font-size:14px;margin-bottom:22px;}
+
+  /* MARKETS SHOWCASE */
+  .mx-pin{min-height:0;padding:64px 0 48px;}
+  .mx-head{flex-direction:column;align-items:flex-start;gap:16px;margin-bottom:28px;}
+  .mx-meta{align-items:flex-start;}
+  .mx-progress{width:160px;}
+  .mx-track{gap:14px;padding:0 16px;}
+  .mx-card{width:82vw;min-height:0;padding:22px 22px 24px;}
+  .mx-img{min-height:180px;}
+  .mx-card h3{font-size:24px;}
+  .mx-end{width:78vw;padding:22px;}
+
+  /* FOOTER WORDMARK */
+  .ft-mega{margin-top:24px;}
 
   /* SUPPORT */
   .support{padding:40px 0;width:100%;}
@@ -453,8 +518,12 @@ html{overflow-x:hidden;max-width:100%;}
   /* CHAT BTN */
 }
 
+@media(max-width:1024px) and (min-width:769px){
+  .globe-grid{grid-template-columns:1fr;}
+  .globe-grid>.globe{order:-1;max-width:560px;margin:0 auto;}
+}
+
 @media(max-width:400px){
-  .hero-title{font-size:23px;}
   .pcard{flex:0 0 calc(100vw - 80px);max-width:calc(100vw - 80px);}
   .ft-cols{grid-template-columns:1fr;}
 }
@@ -485,8 +554,18 @@ html{overflow-x:hidden;max-width:100%;}
 <script src="/chat-widget.js" defer></script>
 <script src="/visitor-presence.js" defer></script>
 </head>
-<body>
+<body data-fx-smooth data-fx-cursor>
 
+<!-- FIRST-VISIT INTRO (site-fx.js) -->
+<div class="fx-intro" id="fx-intro" aria-hidden="true">
+  <div class="fx-intro-panel fx-intro-top"></div>
+  <div class="fx-intro-panel fx-intro-bot"></div>
+  <div class="fx-intro-core">
+    <img class="fx-intro-logo" src="assets/vgm-logo.png" alt=""/>
+    <div class="fx-intro-meta"><span>Ultimate Trading Machine</span><span><b data-intro-num>0</b>%</span></div>
+    <div class="fx-intro-bar"><i></i></div>
+  </div>
+</div>
 
 <!-- NAVBAR -->
 <nav>
@@ -587,7 +666,7 @@ html{overflow-x:hidden;max-width:100%;}
 </nav>
 
 <!-- MOBILE NAV DRAWER -->
-<div class="mobile-nav" id="mobile-nav">
+<div class="mobile-nav" id="mobile-nav" data-fx-drawer data-lenis-prevent>
   <a href="sponsorship-new.html" class="mnav-item orange">🏁 Sponsorship</a>
 
   <div class="mnav-group-title">Markets</div>
@@ -639,19 +718,35 @@ html{overflow-x:hidden;max-width:100%;}
 </div>
 
 
-<!-- HERO -->
-<div class="hero">
-  <video class="hero-video" id="hero-vid" autoplay muted loop playsinline preload="auto">
-    <source src="assets/hero.mp4" type="video/mp4"/>
-  </video>
-  <div class="hero-overlay"></div>
-  <div class="hero-content">
-    <h1 class="hero-title">Veloci <span class="orange">Ultimate Trading Machine*</span></h1>
-    <p class="hero-sub">An award-winning CFD platform trusted by 5,000,000+ traders.</p>
-    <div class="hero-form-row">
-      <a href="register-new.html" class="btn-signup">SIGN UP NOW</a>
-      <button class="btn-qr">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+<!-- HERO SLIDESHOW (site-fx.js drives it; fx-webgl.js renders the transitions) -->
+<section class="hs" id="top" data-fx-slider data-interval="7500" data-parallax="34" data-cursor="Drag" tabindex="-1" aria-roledescription="carousel" aria-label="Veloci highlights">
+  <div class="hs-media" aria-hidden="true">
+    <div class="hs-bg is-active">
+      <video id="hero-vid" autoplay muted loop playsinline preload="auto" poster="assets/hero-poster.jpg">
+        <source src="assets/hero.mp4" type="video/mp4"/>
+      </video>
+    </div>
+    <div class="hs-bg"><img src="assets/market-movers-bg.jpg" alt="" decoding="async" fetchpriority="low"/></div>
+    <div class="hs-bg"><img src="assets/portfolio-bg.webp" alt="" decoding="async" fetchpriority="low"/></div>
+    <div class="hs-bg"><img src="assets/hero-poster.jpg" alt="" decoding="async" fetchpriority="low"/></div>
+    <div class="hs-sweep"></div>
+  </div>
+  <div class="hs-shade"></div>
+
+  <div class="hs-slides">
+    <!-- 01 Platform -->
+    <div class="hs-slide is-active">
+      <div class="hs-inner">
+        <div class="hs-content">
+          <span class="hs-eyebrow hs-anim" style="--d:0"><i></i>Award-winning CFD platform</span>
+          <h1 class="hs-title">Veloci <em>Ultimate Trading Machine*</em></h1>
+          <p class="hs-sub hs-anim" style="--d:2">An award-winning CFD platform trusted by 5,000,000+ traders.</p>
+          <div class="hs-ctas hs-anim" style="--d:3">
+            <a href="register-new.html" class="hs-btn hs-btn--primary" data-magnetic="0.22">SIGN UP NOW
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <button class="hs-btn hs-btn--icon btn-qr" type="button" aria-label="QR code">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <rect x="3" y="3" width="7" height="7" rx="1" stroke="white" stroke-width="2"/>
           <rect x="5" y="5" width="3" height="3" fill="white"/>
           <rect x="14" y="3" width="7" height="7" rx="1" stroke="white" stroke-width="2"/>
@@ -663,10 +758,119 @@ html{overflow-x:hidden;max-width:100%;}
           <line x1="17" y1="14" x2="21" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>
           <line x1="21" y1="17" x2="21" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>
           <line x1="17" y1="21" x2="18" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="hs-visual">
+          <div class="hs-stat-pos hs-anim" style="--d:5;top:6%;right:4%;" data-depth="1.1"><div class="hs-stat fx-glass hs-float"><b>5,000,000+</b><span>Registered users</span></div></div>
+          <div class="hs-stat-pos hs-anim" style="--d:6;top:40%;left:2%;" data-depth="0.55"><div class="hs-stat fx-glass hs-float" style="animation-delay:-2.4s"><b>1,000+</b><span>CFD products</span></div></div>
+          <div class="hs-stat-pos hs-anim" style="--d:7;bottom:8%;right:14%;" data-depth="1.5"><div class="hs-stat fx-glass hs-float" style="animation-delay:-4.6s"><b>24/7</b><span>Customer support</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 Markets -->
+    <div class="hs-slide">
+      <div class="hs-inner">
+        <div class="hs-content">
+          <span class="hs-eyebrow hs-anim" style="--d:0"><i></i>1,000+ instruments · 6 asset classes</span>
+          <h2 class="hs-title">Trade the World’s <em>Markets</em> from One Account</h2>
+          <p class="hs-sub hs-anim" style="--d:2">Forex, indices, commodities, shares, ETFs and even bonds — on desktop or mobile, from your home country.</p>
+          <div class="hs-ctas hs-anim" style="--d:3">
+            <a href="markets-new.html" class="hs-btn hs-btn--primary" data-magnetic="0.22">EXPLORE MARKETS
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="register-new.html" class="hs-btn hs-btn--ghost">OPEN ACCOUNT</a>
+          </div>
+        </div>
+        <div class="hs-visual">
+          <div class="hs-chips" data-depth="0.8">
+            <a href="markets/forex-new.html" class="hs-chip fx-glass hs-anim" style="--d:4"><img src="assets/nav-forex.svg" alt=""/><div><b>Forex</b><span>Major, minor &amp; exotic pairs</span></div></a>
+            <a href="markets/indices-new.html" class="hs-chip fx-glass hs-anim" style="--d:5"><img src="assets/nav-indices.svg" alt=""/><div><b>Indices</b><span>DJI 30, S&amp;P 500, DAX</span></div></a>
+            <a href="markets/commodities-new.html" class="hs-chip fx-glass hs-anim" style="--d:6"><img src="assets/nav-commodities.svg" alt=""/><div><b>Commodities</b><span>Gold, oil &amp; silver</span></div></a>
+            <a href="markets/shares-new.html" class="hs-chip fx-glass hs-anim" style="--d:7"><img src="assets/nav-shares.svg" alt=""/><div><b>Shares CFD</b><span>US, UK, EU &amp; AU</span></div></a>
+            <a href="markets/etfs-new.html" class="hs-chip fx-glass hs-anim" style="--d:8"><img src="assets/nav-etf.svg" alt=""/><div><b>ETFs</b><span>Baskets of assets</span></div></a>
+            <a href="markets/bonds-new.html" class="hs-chip fx-glass hs-anim" style="--d:9"><img src="assets/nav-bonds.svg" alt=""/><div><b>Bonds</b><span>US 10-year Treasury</span></div></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 Pricing -->
+    <div class="hs-slide">
+      <div class="hs-inner">
+        <div class="hs-content">
+          <span class="hs-eyebrow hs-anim" style="--d:0"><i></i>Ultra-tight pricing</span>
+          <h2 class="hs-title">Spreads from <em>0.0 pips.</em> $0 Deposit Fees*</h2>
+          <p class="hs-sub hs-anim" style="--d:2">Competitive pricing across every product, backed by seamless execution and 24/7 support.<small>*Other fees may apply. Spreads are indicative.</small></p>
+          <div class="hs-ctas hs-anim" style="--d:3">
+            <a href="#spreads" class="hs-btn hs-btn--primary" data-magnetic="0.22">COMPARE SPREADS
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+            </a>
+            <a href="register-new.html" class="hs-btn hs-btn--ghost">START TRADING</a>
+          </div>
+        </div>
+        <div class="hs-visual">
+          <div class="hs-cmp fx-glass" data-depth="0.9">
+            <div class="hs-cmp-h"><span>Spread in pips</span><span class="hs-cmp-legend"><span><i class="us"></i>Veloci</span><span><i class="mkt"></i>Market avg</span></span></div>
+            <div class="hs-cmp-row"><b>XAUUSD</b><span class="hs-cmp-bar us"><i style="--w:.22;--d:0"></i></span><span class="hs-cmp-v us">0.75</span><span class="hs-cmp-bar mkt"><i style="--w:.27;--d:0"></i></span><span class="hs-cmp-v mkt">0.89</span></div>
+            <div class="hs-cmp-row"><b>GBP/CHF</b><span class="hs-cmp-bar us"><i style="--w:.27;--d:1"></i></span><span class="hs-cmp-v us">0.90</span><span class="hs-cmp-bar mkt"><i style="--w:.39;--d:1"></i></span><span class="hs-cmp-v mkt">1.30</span></div>
+            <div class="hs-cmp-row"><b>HK50</b><span class="hs-cmp-bar us"><i style="--w:.12;--d:2"></i></span><span class="hs-cmp-v us">0.41</span><span class="hs-cmp-bar mkt"><i style="--w:.6;--d:2"></i></span><span class="hs-cmp-v mkt">1.99</span></div>
+            <div class="hs-cmp-row"><b>UKOUSD</b><span class="hs-cmp-bar us"><i style="--w:.69;--d:3"></i></span><span class="hs-cmp-v us">2.30</span><span class="hs-cmp-bar mkt"><i style="--w:1;--d:3"></i></span><span class="hs-cmp-v mkt">3.34</span></div>
+            <p class="hs-cmp-foot">Last updated 25 May 2026. Indicative only.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 Partnership -->
+    <div class="hs-slide" data-visual-mobile>
+      <div class="hs-inner">
+        <div class="hs-content">
+          <span class="hs-eyebrow hs-anim" style="--d:0"><i></i>Partner of Scuderia Ferrari HP</span>
+          <h2 class="hs-title">A Pursuit of <em>Excellence</em></h2>
+          <p class="hs-sub hs-anim" style="--d:2">A partnership built on passion, innovation and a relentless pursuit of excellence. Veloci is proud to be partnering with Scuderia Ferrari HP on its journey in Formula 1.</p>
+          <div class="hs-ctas hs-anim" style="--d:3">
+            <a href="sponsorship-new.html" class="hs-btn hs-btn--primary" data-magnetic="0.22">DISCOVER THE PARTNERSHIP
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="hs-visual hs-visual--ferrari" data-depth="0.6">
+        <img class="hs-drivers" src="assets/partner-ferrari.webp" alt="" loading="lazy" decoding="async"/>
+        <img class="hs-lockup" src="assets/lockup-ferrari.png" alt="" loading="lazy" decoding="async"/>
+      </div>
     </div>
   </div>
+
+  <div class="hs-ui">
+    <div class="hs-ui-inner">
+      <div class="hs-tabs" role="tablist" aria-label="Choose a slide">
+        <button class="hs-tab is-active" role="tab" aria-selected="true" type="button"><i></i><b>01</b><span>Platform</span></button>
+        <button class="hs-tab" role="tab" aria-selected="false" type="button"><i></i><b>02</b><span>Global markets</span></button>
+        <button class="hs-tab" role="tab" aria-selected="false" type="button"><i></i><b>03</b><span>Pricing</span></button>
+        <button class="hs-tab" role="tab" aria-selected="false" type="button"><i></i><b>04</b><span>Ferrari HP</span></button>
+      </div>
+      <div class="hs-nav">
+        <span class="hs-count"><b>01</b>/ 04</span>
+        <button class="hs-arrow hs-toggle" type="button" data-hs-toggle aria-label="Pause slideshow" aria-pressed="false">
+          <svg class="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg>
+        </button>
+        <button class="hs-arrow" type="button" data-hs-prev aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="hs-arrow" type="button" data-hs-next aria-label="Next slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="hs-scroll" aria-hidden="true"></div>
+</section>
+
+<!-- LIVE TICKER (hidden until /api/markets answers) -->
+<div class="fx-ticker" data-fx-ticker="forex:6,indices:5,crypto:5" hidden>
+  <div class="fx-ticker-label"><i></i>Live</div>
+  <div class="fx-ticker-view"><div class="fx-ticker-track"></div></div>
 </div>
 
 <!-- PROMO CARDS -->
@@ -677,7 +881,7 @@ html{overflow-x:hidden;max-width:100%;}
       <div class="promos-viewport">
         <div class="promos-cards" id="promos-cards">
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">Promotion</span>
               <div class="pcard-title">Veloci Glory 2026:<br/>Pre-Game Draw</div>
@@ -685,7 +889,7 @@ html{overflow-x:hidden;max-width:100%;}
             <div class="pcard-img"><img src="assets/glory-nobg.png" alt="Pre-Game Draw"/></div>
           </div>
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">Promotion</span>
               <div class="pcard-title">Bumper Bonus<br/>Promotion</div>
@@ -693,7 +897,7 @@ html{overflow-x:hidden;max-width:100%;}
             <div class="pcard-img"><img src="assets/bumper-bonus-nobg.png" alt="Bumper Bonus"/></div>
           </div>
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">Promotion</span>
               <div class="pcard-title">Cashback <em>Prime</em><br/>Promotion</div>
@@ -701,7 +905,7 @@ html{overflow-x:hidden;max-width:100%;}
             <div class="pcard-img"><img src="assets/cashback-prime-nobg.png" alt="Cashback Prime"/></div>
           </div>
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">News</span>
               <div class="pcard-title">Latest on Trump's<br/>Tariffs</div>
@@ -709,7 +913,7 @@ html{overflow-x:hidden;max-width:100%;}
             <div class="pcard-img"><img src="assets/trump-tariffs.png" alt="Trump Tariffs"/></div>
           </div>
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">Platform</span>
               <div class="pcard-title">Trade Smarter on<br/>Veloci Web Trading</div>
@@ -717,7 +921,7 @@ html{overflow-x:hidden;max-width:100%;}
             <div class="pcard-img"><img src="assets/web-trading.png" alt="Web Trading"/></div>
           </div>
 
-          <div class="pcard">
+          <div class="pcard" data-tilt="6" data-tilt-lift="4">
             <div class="pcard-left">
               <span class="pcard-badge">Promotion</span>
               <div class="pcard-title">Deposit <em>Bonus</em></div>
@@ -735,12 +939,24 @@ html{overflow-x:hidden;max-width:100%;}
   </div>
 </div>
 
-<!-- SPREADS SECTION -->
-<section class="spreads">
+<!-- STATEMENT — words light up as you scroll -->
+<section class="statement">
   <div class="si">
-    <h2 class="spreads-heading">See Our <em>Competitive Spreads</em></h2>
+    <span class="tag" data-scramble>Why Veloci</span>
+    <p class="statement-text" data-fill>With over 15 years of experience, Veloci is an <em>award-winning</em> CFD broker trusted by <em>5,000,000+ traders</em> — offering <em>1,000+ products</em>, spreads from <em>0.0 pips</em>, $0 deposit fees* and support around the clock.</p>
+    <div class="statement-foot" data-reveal>
+      <a href="register-new.html" class="obtn" data-magnetic="0.25">Open an account <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+      <small>*Other fees may apply.</small>
+    </div>
+  </div>
+</section>
+
+<!-- SPREADS SECTION -->
+<section class="spreads" id="spreads">
+  <div class="si">
+    <h2 class="spreads-heading" data-split>See Our <em>Competitive Spreads</em></h2>
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-    <table class="cmp-table">
+    <table class="cmp-table" data-reveal>
       <colgroup><col/><col/><col/></colgroup>
       <thead>
         <tr>
@@ -757,28 +973,28 @@ html{overflow-x:hidden;max-width:100%;}
       <tbody>
         <tr>
           <td class="cmp-td-broker"><div class="cmp-instr">XAUUSD</div><div class="cmp-cat">Gold</div></td>
-          <td class="cmp-td-us"><span class="cmp-crown">👑</span>0.75</td>
-          <td class="cmp-td-mkt">0.89</td>
+          <td class="cmp-td-us"><span class="cmp-crown">👑</span><span class="cmp-val" data-count>0.75</span></td>
+          <td class="cmp-td-mkt"><span class="cmp-val">0.89</span></td>
         </tr>
         <tr>
           <td class="cmp-td-broker"><div class="cmp-instr">GBP/CHF</div><div class="cmp-cat">Forex</div></td>
-          <td class="cmp-td-us"><span class="cmp-crown">👑</span>0.90</td>
-          <td class="cmp-td-mkt">1.30</td>
+          <td class="cmp-td-us"><span class="cmp-crown">👑</span><span class="cmp-val" data-count>0.90</span></td>
+          <td class="cmp-td-mkt"><span class="cmp-val">1.30</span></td>
         </tr>
         <tr>
           <td class="cmp-td-broker"><div class="cmp-instr">GBP/NZD</div><div class="cmp-cat">Forex</div></td>
-          <td class="cmp-td-us"><span class="cmp-crown">👑</span>2.65</td>
-          <td class="cmp-td-mkt">3.31</td>
+          <td class="cmp-td-us"><span class="cmp-crown">👑</span><span class="cmp-val" data-count>2.65</span></td>
+          <td class="cmp-td-mkt"><span class="cmp-val">3.31</span></td>
         </tr>
         <tr>
           <td class="cmp-td-broker"><div class="cmp-instr">HK50</div><div class="cmp-cat">Indices</div></td>
-          <td class="cmp-td-us"><span class="cmp-crown">👑</span>0.41</td>
-          <td class="cmp-td-mkt">1.99</td>
+          <td class="cmp-td-us"><span class="cmp-crown">👑</span><span class="cmp-val" data-count>0.41</span></td>
+          <td class="cmp-td-mkt"><span class="cmp-val">1.99</span></td>
         </tr>
         <tr>
           <td class="cmp-td-broker"><div class="cmp-instr">UKOUSD</div><div class="cmp-cat">Energy</div></td>
-          <td class="cmp-td-us"><span class="cmp-crown">👑</span>2.30</td>
-          <td class="cmp-td-mkt">3.34</td>
+          <td class="cmp-td-us"><span class="cmp-crown">👑</span><span class="cmp-val" data-count>2.30</span></td>
+          <td class="cmp-td-mkt"><span class="cmp-val">3.34</span></td>
         </tr>
       </tbody>
     </table>
@@ -795,44 +1011,44 @@ html{overflow-x:hidden;max-width:100%;}
 <section class="awards">
   <div class="si">
     <div class="awards-brand">Veloci</div>
-    <div class="awards-title">An Award-Winning Broker</div>
+    <div class="awards-title" data-split>An Award-Winning Broker</div>
 
-    <div class="awards-stats">
-      <div class="awards-stat">
-        <div class="awards-stat-num">5,000,000+</div>
+    <div class="awards-stats" data-stagger="90">
+      <div class="awards-stat" data-reveal>
+        <div class="awards-stat-num" data-count>5,000,000+</div>
         <div class="awards-stat-label">Registered Users</div>
       </div>
-      <div class="awards-stat">
-        <div class="awards-stat-num">1,000+</div>
+      <div class="awards-stat" data-reveal>
+        <div class="awards-stat-num" data-count>1,000+</div>
         <div class="awards-stat-label">Products</div>
       </div>
-      <div class="awards-stat">
-        <div class="awards-stat-num">From 0.0 pips</div>
+      <div class="awards-stat" data-reveal>
+        <div class="awards-stat-num" data-count>From 0.0 pips</div>
         <div class="awards-stat-label">Spreads</div>
       </div>
-      <div class="awards-stat">
-        <div class="awards-stat-num">$0</div>
+      <div class="awards-stat" data-reveal>
+        <div class="awards-stat-num" data-count>$0</div>
         <div class="awards-stat-label">Deposit Fees*</div>
       </div>
     </div>
 
-    <div class="awards-features">
-      <div class="awards-feature">
-        <div class="awards-feature-icon">
+    <div class="awards-features" data-stagger="130">
+      <div class="awards-feature" data-reveal>
+        <div class="awards-feature-icon" data-tilt="14" data-tilt-lift="6">
           <img src="assets/icon-trusted-broker.webp" alt="Trusted CFD Broker"/>
         </div>
         <div class="awards-feature-title">Trusted CFD Broker</div>
         <div class="awards-feature-desc">With over 15 years of experience, Veloci has built a reputation as a trusted, award-winning CFD broker. Trade 1,000+ CFD products backed by seamless execution and 24/7 support. Our commitment to transparency, rigorous security measures, and industry-leading practices provides a secure and reliable trading platform.</div>
       </div>
-      <div class="awards-feature">
-        <div class="awards-feature-icon">
+      <div class="awards-feature" data-reveal>
+        <div class="awards-feature-icon" data-tilt="14" data-tilt-lift="6">
           <img src="assets/icon-secure-funds.webp" alt="Secure Funds"/>
         </div>
         <div class="awards-feature-title">Secure Funds</div>
         <div class="awards-feature-desc">Client funds at Veloci are held in segregated trust accounts with top-tier banks, separate from our operational capital. For added protection, clients will benefit from an additional insurance arrangement at no extra cost.</div>
       </div>
-      <div class="awards-feature">
-        <div class="awards-feature-icon">
+      <div class="awards-feature" data-reveal>
+        <div class="awards-feature-icon" data-tilt="14" data-tilt-lift="6">
           <img src="assets/icon-competitive-spreads.webp" alt="Competitive Spreads"/>
         </div>
         <div class="awards-feature-title">Competitive Spreads</div>
@@ -844,25 +1060,128 @@ html{overflow-x:hidden;max-width:100%;}
   </div>
 </section>
 
+<!-- LIVE TRADING SESSIONS — WebGL globe (fx-globe.js, lazy-loaded) -->
+<section class="globe-sec" id="sessions">
+  <div class="si globe-grid">
+    <div class="globe-copy">
+      <span class="tag" data-scramble>Markets around the clock</span>
+      <h2 class="globe-h" data-split>The market never sleeps. <em>Neither do we.</em></h2>
+      <p class="globe-p" data-reveal>Follow the trading day as it moves from Sydney to Tokyo, London and New York. The globe shows real daylight right now; session times are in your own time zone. Tap a session to fly there.</p>
+      <div class="sessions" data-fx-sessions data-reveal>
+        <div class="ses-head"><b>Forex trading sessions</b></div>
+        <div class="ses-row"><span class="ses-dot"></span><span class="ses-name">Sydney</span><span class="ses-hours">07:00 – 16:00 AEST</span></div>
+        <div class="ses-row"><span class="ses-dot"></span><span class="ses-name">Tokyo</span><span class="ses-hours">09:00 – 18:00 JST</span></div>
+        <div class="ses-row"><span class="ses-dot"></span><span class="ses-name">London</span><span class="ses-hours">08:00 – 17:00 UK</span></div>
+        <div class="ses-row"><span class="ses-dot"></span><span class="ses-name">New York</span><span class="ses-hours">08:00 – 17:00 ET</span></div>
+      </div>
+    </div>
+    <div class="globe" data-fx-globe="[data-fx-sessions]" data-fx-lazy="fx-globe.js" data-cursor="Drag" data-reveal="zoom">
+      <div class="globe-fallback"></div>
+      <span class="globe-hint">Drag to spin</span>
+    </div>
+  </div>
+</section>
+
+<!-- MARKETS SHOWCASE — pinned horizontal scroll (home-fx.js) -->
+<section class="mx" id="markets">
+  <div class="mx-pin">
+    <div class="mx-head si">
+      <div>
+        <span class="tag" data-scramble>Trade 1,000+ CFDs</span>
+        <h2 class="mx-title" data-split>Driving <em>Excellence</em> with a Leading CFD Broker</h2>
+      </div>
+      <div class="mx-meta">
+        <span class="mx-count"><b>01</b>/ 07</span>
+        <div class="mx-progress"><i></i></div>
+        <span class="mx-hint">Scroll to explore</span>
+      </div>
+    </div>
+    <div class="mx-viewport">
+      <div class="mx-track">
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">01</span><span>Currencies</span></div>
+          <div class="mx-img"><img src="assets/mkt-forex.webp" alt="Forex" loading="lazy" decoding="async"/></div>
+          <h3>Forex</h3>
+          <p class="mx-lead">Access 40+ major, minor, and exotic forex pairs with low spreads from 0.0. Start trading the world's leading currencies including EUR/USD, GBP/USD, and USD/JPY.</p>
+          <p class="mx-sub">Trade the world's most popular forex and currency pairs with a trusted forex broker whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
+          <a href="markets/forex-new.html" class="mx-link">Learn Forex <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">02</span><span>Global indices</span></div>
+          <div class="mx-img"><img src="assets/mkt-indices.webp" alt="Indices" loading="lazy" decoding="async"/></div>
+          <h3>Indices</h3>
+          <p class="mx-lead">Leverage on the volatility of the largest stock market indices in the world like SP500, DAX, NAS100, and DJ30. Try indices trading with Veloci today.</p>
+          <p class="mx-sub">Open positions and diversify your portfolio with global indices whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
+          <a href="markets/indices-new.html" class="mx-link">Learn Indices <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">03</span><span>Precious metals</span></div>
+          <div class="mx-img"><img src="assets/mkt-gold-silver.webp" alt="Gold &amp; Silver" loading="lazy" decoding="async"/></div>
+          <h3>Gold &amp; Silver</h3>
+          <p class="mx-lead">Trade gold and silver, the world's most popular precious metals, which have historically been used as a hedge against inflation and a store of value during uncertain economic times.</p>
+          <p class="mx-sub">Buy or sell the world's most highly traded precious metals — gold and silver whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
+          <a href="markets/commodities-new.html" class="mx-link">Learn Gold &amp; Silver <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">04</span><span>Energy</span></div>
+          <div class="mx-img"><img src="assets/mkt-energy.webp" alt="Energy" loading="lazy" decoding="async"/></div>
+          <h3>Energy</h3>
+          <p class="mx-lead">Veloci offers a broad range of energy commodities, providing traders with access to the highly liquid global energy markets. Our energy trading options include crude oil, natural gas, and Brent oil.</p>
+          <p class="mx-sub">Trade energy instruments including crude oil, natural gas, and Brent oil whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
+          <a href="markets/commodities-new.html" class="mx-link">Learn Energy <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">05</span><span>Funds</span></div>
+          <div class="mx-img"><img src="assets/mkt-etfs.webp" alt="ETFs" loading="lazy" decoding="async"/></div>
+          <h3>ETFs</h3>
+          <p class="mx-lead">ETFs track the performance of a pool of underlying assets – including commodities, stocks, currencies, indices and more. Start trading popular ETFs like the SPDR S&amp;P 500 ETF and Invesco QQQ Trust.</p>
+          <p class="mx-sub">Diversify your portfolio and gain exposure to more markets with ETFs whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
+          <a href="markets/etfs-new.html" class="mx-link">Learn ETFs <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">06</span><span>Agriculture</span></div>
+          <div class="mx-img"><img src="assets/mkt-soft-commodities.webp" alt="Soft Commodities" loading="lazy" decoding="async"/></div>
+          <h3>Soft Commodities</h3>
+          <p class="mx-lead">Soft commodities refer to commodities that are grown rather than mined. When trading soft commodities CFDs, traders will have to consider factors including weather conditions, global demand, and geopolitical events that impact their production.</p>
+          <p class="mx-sub">Trade soft commodities or agricultural goods, such as sugar, coffee, cotton and more from your home country, whether you are from South Africa or beyond.</p>
+          <a href="markets/commodities-new.html" class="mx-link">Learn Soft Commodities <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <article class="mx-card" data-glow>
+          <div class="mx-card-top"><span class="mx-num">07</span><span>Equities</span></div>
+          <div class="mx-img"><img src="assets/mkt-shares.webp" alt="Shares" loading="lazy" decoding="async"/></div>
+          <h3>Shares</h3>
+          <p class="mx-lead">You can invest in the likes of Tesla, Netflix, Meta, and other listed companies through shares CFD. Get access to international share markets including US, Europe, Australia and Asia.</p>
+          <p class="mx-sub">Choose from the hundreds of individual stocks available in US and more, from wherever you are in the world, be it in South Africa or beyond.</p>
+          <a href="markets/shares-new.html" class="mx-link">Learn Shares <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </article>
+        <div class="mx-end">
+          <h3>1,000+ instruments. <em>One account.</em></h3>
+          <a href="markets-new.html" class="obtn" data-magnetic="0.3">View all markets <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- TRUST SECTION -->
 <section class="trust">
   <div class="si" style="text-align:center;margin-bottom:44px;">
-    <h2 class="sec-h" style="margin-bottom:8px;"><span style="color:#f05a1a;">Trust</span> We Have Earned</h2>
+    <h2 class="sec-h" style="margin-bottom:8px;" data-split><span style="color:#f05a1a;">Trust</span> We Have Earned</h2>
     <p class="sec-p" style="margin:0 auto;max-width:500px;">Recognised by the world's most trusted review platforms and industry experts.</p>
   </div>
   <div class="si">
-    <div class="trust-grid">
-      <div class="trust-card"><img src="assets/google.webp" alt="Google Reviews"/></div>
-      <div class="trust-card"><img src="assets/google-play.webp" alt="Google Play"/></div>
-      <div class="trust-card"><img src="assets/apple-store.webp" alt="App Store"/></div>
-      <div class="trust-card"><img src="assets/trustpilot.webp" alt="Trustpilot"/></div>
-      <div class="trust-card"><img src="assets/forexbrokers.webp" alt="ForexBrokers.com"/></div>
-      <div class="trust-card"><img src="assets/wikifx.webp" alt="WikiFX"/></div>
-      <div class="trust-card"><img src="assets/daytrading.webp" alt="DayTrading.com"/></div>
-      <div class="trust-card"><img src="assets/fr.webp" alt="FR"/></div>
+    <div class="trust-grid" data-stagger="70">
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/google.webp" alt="Google Reviews"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/google-play.webp" alt="Google Play"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/apple-store.webp" alt="App Store"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/trustpilot.webp" alt="Trustpilot"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/forexbrokers.webp" alt="ForexBrokers.com"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/wikifx.webp" alt="WikiFX"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/daytrading.webp" alt="DayTrading.com"/></div>
+      <div class="trust-card" data-reveal="zoom" data-tilt="12"><img src="assets/fr.webp" alt="FR"/></div>
     </div>
   </div>
-  <div class="trust-media-wrap">
+  <div class="trust-media-wrap" data-fx-marquee="70">
     <div class="trust-media-track">
       <span class="trust-media-logo"><img src="assets/media-business-insider.webp" alt="Business Insider"/></span>
       <span class="trust-media-logo"><img src="assets/media-yahoo.webp" alt="Yahoo!"/></span>
@@ -890,28 +1209,28 @@ html{overflow-x:hidden;max-width:100%;}
   <div class="si">
     <div class="trade-wrap">
       <div class="trade-left">
-        <h2>Trade <span>Anytime, Anywhere</span></h2>
+        <h2 data-split>Trade <span class="hl">Anytime, Anywhere</span></h2>
         <p>One of the world's leading CFD brokers with over 15 years of market experience, Veloci provides traders with access to 1,000+ CFD products, including forex, indices, commodities, shares, ETFs, and even bonds.</p>
         <p>Trade CFDs with ease on desktop or mobile using our variety of advanced trading tools and features from your home country.</p>
-        <a href="#" class="trade-signup-btn">SIGN UP NOW</a>
+        <a href="register-new.html" class="trade-signup-btn" data-magnetic="0.2">SIGN UP NOW</a>
         <div class="trade-store-row">
           <a href="#"><img src="assets/btn-google-play.webp" alt="Get it on Google Play"/></a>
           <a href="#"><img src="assets/btn-app-store.webp" alt="Download on the App Store"/></a>
         </div>
       </div>
-      <div class="trade-right">
-        <div class="trade-bg-oval"></div>
-        <div class="trade-bg-orange1"></div>
-        <div class="trade-bg-orange2"></div>
-        <div class="trade-bg-teal"></div>
-        <img class="trade-man" src="assets/trade-man.webp" alt="Trader with laptop"/>
-        <div class="trade-earnings-card">
+      <div class="trade-right" data-parallax="46">
+        <div class="trade-bg-oval" data-depth="0.3"></div>
+        <div class="trade-bg-orange1" data-depth="1.3"></div>
+        <div class="trade-bg-orange2" data-depth="1"></div>
+        <div class="trade-bg-teal" data-depth="0.8"></div>
+        <img class="trade-man" src="assets/trade-man.webp" alt="Trader with laptop" data-depth="0.5"/>
+        <div class="trade-earnings-card" data-depth="1.6">
           <div class="tec-label">Earnings</div>
           <div class="tec-sub">Trading Performance</div>
-          <div class="tec-amount">125,324.23 USD</div>
+          <div class="tec-amount" data-count data-count-duration="2400">125,324.23 USD</div>
           <svg class="tec-chart" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <polyline points="0,45 30,38 60,30 90,35 120,20 150,15 180,8 200,5" stroke="#f05a1a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="0,45 30,38 60,30 90,35 120,20 150,15 180,8 200,5 200,50 0,50" fill="rgba(232,83,10,0.08)"/>
+            <polyline data-draw points="0,45 30,38 60,30 90,35 120,20 150,15 180,8 200,5" stroke="#f05a1a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline data-draw-fill points="0,45 30,38 60,30 90,35 120,20 150,15 180,8 200,5 200,50 0,50" fill="rgba(232,83,10,0.08)"/>
             <text x="0" y="50" font-size="8" fill="#bbb">APR</text>
             <text x="33" y="50" font-size="8" fill="#bbb">MAY</text>
             <text x="66" y="50" font-size="8" fill="#bbb">JUN</text>
@@ -920,7 +1239,7 @@ html{overflow-x:hidden;max-width:100%;}
             <text x="165" y="50" font-size="8" fill="#bbb">SEPT</text>
           </svg>
         </div>
-        <img class="trade-support" src="assets/trade-support.webp" alt="24/7 Customer Support"/>
+        <img class="trade-support" src="assets/trade-support.webp" alt="24/7 Customer Support" data-depth="2"/>
       </div>
     </div>
   </div>
@@ -930,81 +1249,10 @@ html{overflow-x:hidden;max-width:100%;}
 <section class="reviews-section">
   <div class="si">
     <p class="reviews-eyebrow">Client Reviews</p>
-    <h2 class="reviews-h2">Trusted by traders worldwide</h2>
+    <h2 class="reviews-h2" data-split>Trusted by traders worldwide</h2>
     <p class="reviews-sub">Real feedback from real traders on our platform.</p>
     <div class="reviews-grid" id="reviews-grid">
       <!-- populated from Supabase -->
-    </div>
-  </div>
-</section>
-
-<!-- DRIVING EXCELLENCE -->
-<section class="excellence">
-  <div class="si">
-    <div class="exc-wrap">
-      <div>
-        <h2 class="exc-heading">Driving <span>Excellence</span> with a<br/>Leading CFD Broker</h2>
-        <div class="exc-tabs">
-          <button class="etab active" onclick="switchExc(this,'forex')">FOREX</button>
-          <button class="etab" onclick="switchExc(this,'indices')">INDICES</button>
-          <button class="etab" onclick="switchExc(this,'gold')">GOLD &amp; SILVER</button>
-          <button class="etab" onclick="switchExc(this,'energy')">ENERGY</button>
-          <button class="etab" onclick="switchExc(this,'etfs')">ETFS</button>
-          <button class="etab" onclick="switchExc(this,'soft')">SOFT COMMODITIES</button>
-          <button class="etab" onclick="switchExc(this,'shares')">SHARES</button>
-        </div>
-        <div class="exc-panel active" id="exc-panel-forex">
-          <div class="exc-panel-title">FOREX</div>
-          <p class="exc-panel-desc">Trade the world's most popular forex and currency pairs with a trusted forex broker whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
-          <p class="exc-panel-desc">Access 40+ major, minor, and exotic forex pairs with low spreads from 0.0. Start trading the world's leading currencies including EUR/USD, GBP/USD, and USD/JPY.</p>
-          <a href="#" class="exc-learn-btn">LEARN FOREX</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-indices">
-          <div class="exc-panel-title">INDICES</div>
-          <p class="exc-panel-desc">Open positions and diversify your portfolio with global indices whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
-          <p class="exc-panel-desc">Leverage on the volatility of the largest stock market indices in the world like SP500, DAX, NAS100, and DJ30. Try indices trading with Veloci today.</p>
-          <a href="#" class="exc-learn-btn">LEARN INDICES</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-gold">
-          <div class="exc-panel-title">GOLD &amp; SILVER</div>
-          <p class="exc-panel-desc">Buy or sell the world's most highly traded precious metals — gold and silver whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
-          <p class="exc-panel-desc">Trade gold and silver, the world's most popular precious metals, which have historically been used as a hedge against inflation and a store of value during uncertain economic times.</p>
-          <a href="#" class="exc-learn-btn">LEARN GOLD &amp; SILVER</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-energy">
-          <div class="exc-panel-title">ENERGY</div>
-          <p class="exc-panel-desc">Trade energy instruments including crude oil, natural gas, and Brent oil whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
-          <p class="exc-panel-desc">Veloci offers a broad range of energy commodities, providing traders with access to the highly liquid global energy markets. Our energy trading options include crude oil, natural gas, and Brent oil.</p>
-          <a href="#" class="exc-learn-btn">LEARN ENERGY</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-etfs">
-          <div class="exc-panel-title">ETFS</div>
-          <p class="exc-panel-desc">Diversify your portfolio and gain exposure to more markets with ETFs whether you are from South Africa, Kenya, Botswana or Nigeria.</p>
-          <p class="exc-panel-desc">ETFs track the performance of a pool of underlying assets – including commodities, stocks, currencies, indices and more. Start trading popular ETFs like the SPDR S&amp;P 500 ETF and Invesco QQQ Trust.</p>
-          <a href="#" class="exc-learn-btn">LEARN ETFS</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-soft">
-          <div class="exc-panel-title">SOFT COMMODITIES</div>
-          <p class="exc-panel-desc">Trade soft commodities or agricultural goods, such as sugar, coffee, cotton and more from your home country, whether you are from South Africa or beyond.</p>
-          <p class="exc-panel-desc">Soft commodities refer to commodities that are grown rather than mined. When trading soft commodities CFDs, traders will have to consider factors including weather conditions, global demand, and geopolitical events that impact their production.</p>
-          <a href="#" class="exc-learn-btn">LEARN SOFT COMMODITIES</a>
-        </div>
-        <div class="exc-panel" id="exc-panel-shares">
-          <div class="exc-panel-title">SHARES</div>
-          <p class="exc-panel-desc">Choose from the hundreds of individual stocks available in US and more, from wherever you are in the world, be it in South Africa or beyond.</p>
-          <p class="exc-panel-desc">You can invest in the likes of Tesla, Netflix, Meta, and other listed companies through shares CFD. Get access to international share markets including US, Europe, Australia and Asia.</p>
-          <a href="#" class="exc-learn-btn">LEARN SHARES</a>
-        </div>
-      </div>
-      <div class="exc-img-wrap">
-        <img id="exc-img-forex"   class="exc-market-img active" src="assets/mkt-forex.webp"            alt="Forex"/>
-        <img id="exc-img-indices" class="exc-market-img"        src="assets/mkt-indices.webp"          alt="Indices"/>
-        <img id="exc-img-gold"    class="exc-market-img"        src="assets/mkt-gold-silver.webp"      alt="Gold &amp; Silver"/>
-        <img id="exc-img-energy"  class="exc-market-img"        src="assets/mkt-energy.webp"           alt="Energy"/>
-        <img id="exc-img-etfs"    class="exc-market-img"        src="assets/mkt-etfs.webp"             alt="ETFs"/>
-        <img id="exc-img-soft"    class="exc-market-img"        src="assets/mkt-soft-commodities.webp" alt="Soft Commodities"/>
-        <img id="exc-img-shares"  class="exc-market-img"        src="assets/mkt-shares.webp"           alt="Shares"/>
-      </div>
     </div>
   </div>
 </section>
@@ -1013,23 +1261,23 @@ html{overflow-x:hidden;max-width:100%;}
 <section class="support">
   <div class="si">
     <div class="sup-head">
-      <h2>Support &amp; Resources</h2>
+      <h2 data-split>Support &amp; Resources</h2>
       <p>Get the answers, assistance, and education you need to support your trading journey.</p>
     </div>
-    <div class="sup-grid">
-      <div class="sup-card">
+    <div class="sup-grid" data-stagger="120">
+      <div class="sup-card" data-reveal data-glow data-tilt="5" data-tilt-glare="false">
         <div class="sup-icon"><img src="assets/sup-247.webp" alt="24/7 Customer Support"/></div>
         <div class="sup-title">24/7 Customer Support</div>
         <div class="sup-desc">We provide support and account assistance at every stage of your journey. Our dedicated customer support team is available 24/7 to assist with any trading-related inquiries.</div>
         <a href="#" class="sup-link">CHAT NOW</a>
       </div>
-      <div class="sup-card">
+      <div class="sup-card" data-reveal data-glow data-tilt="5" data-tilt-glare="false">
         <div class="sup-icon"><img src="assets/sup-help.webp" alt="Help Center"/></div>
         <div class="sup-title">Help Center</div>
         <div class="sup-desc">Find answers to your questions quickly with our comprehensive Help Center. From account setup to trading strategies, our resources provide clear and detailed guidance to support your trading journey.</div>
         <a href="#" class="sup-link">VIEW MORE</a>
       </div>
-      <div class="sup-card">
+      <div class="sup-card" data-reveal data-glow data-tilt="5" data-tilt-glare="false">
         <div class="sup-icon"><img src="assets/sup-learn.webp" alt="Learn"/></div>
         <div class="sup-title">Learn</div>
         <div class="sup-desc">Access free educational resources to expand your trading knowledge. Whether you're a beginner or an experienced trader, we have articles, webinars, videos, and courses to support your learning.</div>
@@ -1040,28 +1288,28 @@ html{overflow-x:hidden;max-width:100%;}
 </section>
 
 <!-- START NOW -->
-<section class="startnow">
+<section class="startnow" data-fx-ember>
   <div class="si">
-    <h2 class="sn-title">Start Your Trading Now</h2>
-    <div class="sn-stats">
-      <div class="sn-stat">
-        <div class="sn-stat-num">5,000,000+</div>
+    <h2 class="sn-title" data-split>Start Your Trading Now</h2>
+    <div class="sn-stats" data-stagger="100">
+      <div class="sn-stat" data-reveal>
+        <div class="sn-stat-num" data-count>5,000,000+</div>
         <div class="sn-stat-label">Registered Users</div>
       </div>
-      <div class="sn-stat">
-        <div class="sn-stat-num">1,000+</div>
+      <div class="sn-stat" data-reveal>
+        <div class="sn-stat-num" data-count>1,000+</div>
         <div class="sn-stat-label">Products</div>
       </div>
-      <div class="sn-stat">
-        <div class="sn-stat-num">From 0.0 pips</div>
+      <div class="sn-stat" data-reveal>
+        <div class="sn-stat-num" data-count>From 0.0 pips</div>
         <div class="sn-stat-label">Spreads</div>
       </div>
-      <div class="sn-stat">
-        <div class="sn-stat-num">$0</div>
+      <div class="sn-stat" data-reveal>
+        <div class="sn-stat-num" data-count>$0</div>
         <div class="sn-stat-label">Deposit Fees*<br/><span style="font-size:11px;">*Other fees may apply</span></div>
       </div>
     </div>
-    <a href="#" class="sn-start-btn">
+    <a href="register-new.html" class="sn-start-btn" data-magnetic="0.3">
       START NOW
       <svg viewBox="0 0 24 24" fill="none" stroke="#f05a1a" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7,7 17,7 17,17"/></svg>
     </a>
@@ -1145,74 +1393,11 @@ html{overflow-x:hidden;max-width:100%;}
         <a href="#">Sitemap</a>
       </div>
     </div>
+    <div class="ft-mega" aria-hidden="true">VELOCI</div>
   </div>
 </footer>
 
 <script>
-const spreadsData = {
-  forex:[
-    {icon:'🇪🇺',sym:'EUR/USD',spread:'0.0',lev:'500:1',bull:72,bear:28},
-    {icon:'🇬🇧',sym:'GBP/USD',spread:'0.4',lev:'500:1',bull:55,bear:45},
-    {icon:'🇺🇸',sym:'USD/JPY',spread:'0.3',lev:'500:1',bull:61,bear:39},
-    {icon:'🇦🇺',sym:'AUD/USD',spread:'0.6',lev:'500:1',bull:48,bear:52},
-    {icon:'🇨🇦',sym:'USD/CAD',spread:'1.2',lev:'500:1',bull:53,bear:47},
-    {icon:'🇪🇺',sym:'EUR/GBP',spread:'1.1',lev:'500:1',bull:44,bear:56},
-  ],
-  indices:[
-    {icon:'📈',sym:'S&P 500',spread:'0.3',lev:'200:1',bull:68,bear:32},
-    {icon:'📈',sym:'NASDAQ 100',spread:'0.8',lev:'200:1',bull:71,bear:29},
-    {icon:'📊',sym:'DOW JONES',spread:'1.5',lev:'200:1',bull:66,bear:34},
-    {icon:'🇬🇧',sym:'FTSE 100',spread:'1.0',lev:'200:1',bull:52,bear:48},
-    {icon:'🇩🇪',sym:'DAX 40',spread:'1.2',lev:'200:1',bull:58,bear:42},
-    {icon:'🇦🇺',sym:'AUS 200',spread:'0.5',lev:'200:1',bull:54,bear:46},
-  ],
-  commodities:[
-    {icon:'🥇',sym:'XAU/USD',spread:'0.13',lev:'100:1',bull:64,bear:36},
-    {icon:'🥈',sym:'XAG/USD',spread:'0.03',lev:'100:1',bull:57,bear:43},
-    {icon:'🛢️',sym:'Crude Oil WTI',spread:'0.03',lev:'100:1',bull:51,bear:49},
-    {icon:'⛽',sym:'Natural Gas',spread:'0.5',lev:'100:1',bull:46,bear:54},
-    {icon:'🔶',sym:'Copper',spread:'0.02',lev:'100:1',bull:53,bear:47},
-  ],
-  crypto:[
-    {icon:'₿',sym:'BTC/USD',spread:'35',lev:'5:1',bull:66,bear:34},
-    {icon:'Ξ',sym:'ETH/USD',spread:'2.5',lev:'5:1',bull:60,bear:40},
-    {icon:'◎',sym:'SOL/USD',spread:'0.5',lev:'5:1',bull:58,bear:42},
-    {icon:'✕',sym:'XRP/USD',spread:'0.01',lev:'5:1',bull:55,bear:45},
-  ]
-};
-
-function renderSpreads(cat){
-  const sbody = document.getElementById('spreads-body');
-  if(!sbody) return;
-  sbody.innerHTML = (spreadsData[cat]||spreadsData.forex).map(r=>`
-    <tr>
-      <td><div class="sym"><span class="sym-icon">${r.icon}</span><strong>${r.sym}</strong></div></td>
-      <td><strong>${r.spread}</strong></td>
-      <td><span class="lev">${r.lev}</span></td>
-      <td><span class="bull">▲ ${r.bull}%</span> <span class="bear">▼ ${r.bear}%</span></td>
-      <td><a href="#" class="tbtn">Trade ›</a></td>
-    </tr>`).join('');
-}
-function switchSpreads(btn,cat){
-  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  renderSpreads(cat);
-}
-
-
-function switchExc(btn,cat){
-  document.querySelectorAll('.etab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.exc-panel').forEach(p=>p.classList.remove('active'));
-  const panel=document.getElementById('exc-panel-'+cat);
-  if(panel) panel.classList.add('active');
-  document.querySelectorAll('.exc-market-img').forEach(i=>i.classList.remove('active'));
-  const img=document.getElementById('exc-img-'+cat);
-  if(img) img.classList.add('active');
-}
-
-renderSpreads('forex');
-
 // Promo infinite auto-scroll
 (function(){
   const track      = document.getElementById('promos-cards');
@@ -1256,7 +1441,7 @@ renderSpreads('forex');
 
   function slideTo(i){
     if(busy) return;
-    busy = true;
+    busy = i !== idx;
     track.style.transition = `transform ${DURATION}ms ease`;
     track.style.transform  = `translateX(-${i * cardW()}px)`;
     idx = i;
@@ -1277,103 +1462,45 @@ renderSpreads('forex');
   track.parentElement.addEventListener('mouseenter', stopAuto);
   track.parentElement.addEventListener('mouseleave', startAuto);
 
+  // Swipe / drag: the strip follows the finger, then settles on the nearest card
+  let drag = null;
+  const vp = track.parentElement;
+  vp.addEventListener('pointerdown', e => {
+    if (busy || e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false, dx: 0 };
+  });
+  vp.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.on) {
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { drag = null; return; }
+      if (Math.abs(dx) < 8) return;
+      drag.on = true; stopAuto();
+      try { vp.setPointerCapture(e.pointerId); } catch (err) {}
+      track.classList.add('is-dragging');
+    }
+    drag.dx = dx;
+    track.style.transform = `translateX(${-idx * cardW() + dx}px)`;
+  });
+  function endDrag(){
+    if (!drag) return;
+    const d = drag; drag = null;
+    track.classList.remove('is-dragging');
+    if (!d.on) return;
+    const step = Math.abs(d.dx) > cardW() * 0.18 ? (d.dx < 0 ? 1 : -1) : 0;
+    slideTo(idx + step);
+    startAuto();
+    // Swallow the click that immediately follows a drag so cards don't activate
+    const swallow = ev => { ev.preventDefault(); ev.stopPropagation(); };
+    vp.addEventListener('click', swallow, true);
+    setTimeout(() => vp.removeEventListener('click', swallow, true), 60);
+  }
+  vp.addEventListener('pointerup', endDrag);
+  vp.addEventListener('pointercancel', endDrag);
+
   jumpTo(total);
   updateCaption(total);
   startAuto();
-})();
-
-// ── SCROLL REVEAL ──────────────────────────────────────────────
-(function(){
-  const revealEls = [
-    ...document.querySelectorAll('.si'),
-    ...document.querySelectorAll('.pcard'),
-    ...document.querySelectorAll('.awards-feature'),
-    ...document.querySelectorAll('.trust-card'),
-    ...document.querySelectorAll('.sup-card'),
-    ...document.querySelectorAll('.exc-wrap'),
-    ...document.querySelectorAll('.trade-wrap'),
-    ...document.querySelectorAll('.sn-stats'),
-    ...document.querySelectorAll('.sn-start-btn'),
-  ];
-  revealEls.forEach((el,i)=>{
-    el.classList.add('reveal');
-    el.style.transitionDelay = (i % 4) * 0.08 + 's';
-  });
-  const ro = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
-  },{threshold:0.12});
-  revealEls.forEach(el=>ro.observe(el));
-})();
-
-// ── NUMBER COUNTER ─────────────────────────────────────────────
-(function(){
-  function parseNum(txt){
-    const m = txt.match(/[\d,.]+/);
-    return m ? parseFloat(m[0].replace(/,/g,'')) : null;
-  }
-  function formatNum(n, template){
-    if(n >= 1000000) return (n/1000000).toFixed(n%1000000===0?0:1).replace(/\.0$/,'') + ',000,000+';
-    if(n >= 1000)    return n.toLocaleString() + (template.includes('+') ? '+' : '');
-    return template.startsWith('$') ? '$' + n : n + (template.includes('+') ? '+' : '');
-  }
-  const counterEls = [
-    ...document.querySelectorAll('.awards-stat-num'),
-    ...document.querySelectorAll('.sn-stat-num'),
-  ].filter(el => parseNum(el.textContent) !== null);
-
-  const ro = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(!e.isIntersecting) return;
-      ro.unobserve(e.target);
-      const el = e.target;
-      const original = el.textContent.trim();
-      const target = parseNum(original);
-      if(target === null) return;
-      const duration = 1800;
-      const steps = 60;
-      let step = 0;
-      const timer = setInterval(()=>{
-        step++;
-        const progress = step/steps;
-        const eased = 1 - Math.pow(1-progress, 3);
-        const current = Math.round(eased * target);
-        el.textContent = formatNum(current, original);
-        if(step >= steps){ el.textContent = original; clearInterval(timer); }
-      }, duration/steps);
-    });
-  },{threshold:0.5});
-  counterEls.forEach(el=>ro.observe(el));
-})();
-
-// ── IMAGE ANIMATIONS ───────────────────────────────────────────
-(function(){
-  // Large feature images — slide in from right
-  document.querySelectorAll('.trade-man, .trade-support').forEach(el=>{
-    el.classList.add('img-slide');
-  });
-  // Market tab images — zoom fade (already handled by @keyframes fadeIn on .active, enhanced above)
-  // Trust card logos, support icons, awards icons — zoom fade with stagger
-  document.querySelectorAll('.trust-card img, .sup-icon img').forEach((el,i)=>{
-    el.classList.add('img-zoom');
-    el.style.animationDelay = (i * 0.07) + 's';
-  });
-  // Store/app buttons, earnings card — pop in
-  document.querySelectorAll('.trade-store-row img, .trade-earnings-card').forEach((el,i)=>{
-    el.classList.add('img-pop');
-    el.style.animationDelay = (i * 0.1 + 0.2) + 's';
-  });
-
-  const imgObserver = new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(!e.isIntersecting) return;
-      e.target.classList.add('img-in');
-      imgObserver.unobserve(e.target);
-    });
-  },{threshold:0.15});
-
-  document.querySelectorAll('.img-zoom,.img-slide,.img-pop').forEach(el=>{
-    imgObserver.observe(el);
-  });
 })();
 
 // Hamburger mobile menu
@@ -1422,11 +1549,13 @@ renderSpreads('forex');
   var v = document.getElementById('hero-vid');
   if (!v) return;
   function tryPlay() {
+    // The slideshow pauses the video while another slide is showing
+    if (!v.closest('.hs-bg.is-active')) return;
     var p = v.play();
     if (p && p.then) {
       p.then(null, function() {
         // Autoplay blocked — retry on first user gesture
-        function onGesture() { v.play(); }
+        function onGesture() { if (v.closest('.hs-bg.is-active')) v.play(); }
         document.addEventListener('click',      onGesture, { once: true });
         document.addEventListener('touchstart', onGesture, { once: true });
       });
